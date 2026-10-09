@@ -1,5 +1,6 @@
 import { ApiError } from "./apiError";
 import type { BillData, BillSnapshot, ItemClaims } from "./bill";
+import { checkForUpdate } from "./updates";
 import { DEMO } from "./demo";
 import { localApi } from "./localApi";
 import { deviceKey } from "./storage";
@@ -63,11 +64,18 @@ const serverApi: Api = {
   subscribe(id, onSnapshot, onLive) {
     // EventSource cannot send headers, so the device key goes into the query.
     const source = new EventSource(`${bill(id)}/events?key=${encodeURIComponent(deviceKey())}`);
+    let dropped = false;
     source.addEventListener("snapshot", (e) => {
+      // A dropped connection often means a new version was deployed.
+      if (dropped) void checkForUpdate();
+      dropped = false;
       onSnapshot(JSON.parse((e as MessageEvent<string>).data) as BillSnapshot);
       onLive(true);
     });
-    source.onerror = () => onLive(false);
+    source.onerror = () => {
+      dropped = true;
+      onLive(false);
+    };
     return () => source.close();
   },
 };
