@@ -64,6 +64,14 @@ von den Positionen. Sie werden wie das Trinkgeld gleichmäßig pro Person vertei
 oder Abholbestellung (Gebühren auf dem Beleg oder typische Liefer-App), fragt es vor dem QR-Code:
 „Wie viele haben mitbestellt?“. Gebühren lassen sich im Editor ergänzen oder korrigieren.
 
+### Gleichverteilung
+
+Für Rechnungen, bei denen niemand einzelne Positionen zuordnen will (z. B. ein gemeinsamer Supermarkt-Einkauf),
+schaltet der Rechnungssteller oberhalb der Rechnung die **Gleichverteilung** ein. Dann kann niemand abhaken; vor
+jedem Preis steht klein der Anteil pro Person, und unter der Summe wird sie durch die Personenzahl geteilt. Gezählt
+wird wie beim Trinkgeld: alle Beigetretenen plus Rechnungssteller, oder die erwartete Personenzahl, solange noch
+jemand fehlt.
+
 ### Originalbeleg
 
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten

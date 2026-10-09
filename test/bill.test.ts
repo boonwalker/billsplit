@@ -65,6 +65,19 @@ describe("claims", () => {
     expect(isFullyAssigned(data.items[0], offered)).toBe(true);
   });
 
+  it("splits the whole bill equally when the payer chooses so", () => {
+    // 33,00 € + 10 % tip = 36,30 €; claims do not matter.
+    const equal: BillData = { ...data, equalSplit: true };
+    const ps = [p("owner", { pizza: [0] }, true), p("anna", {}), p("ben", { bier: [0, 1, 2] })];
+    expect(participantShare(equal, ps, "anna")).toEqual({ subtotal: 1100, shared: 110, total: 1210 });
+    expect(participantShare(equal, ps, "ben").total).toBe(1210);
+    expect(unassignedAmount(equal, ps)).toBe(0);
+    // One more person expected: 4 parts, one of them still open.
+    const four: BillData = { ...equal, tipSplitCount: 4 };
+    expect(participantShare(four, ps, "anna").total).toBe(908);
+    expect(unassignedAmount(four, ps)).toBe(908);
+  });
+
   it("detects fully assigned lines", () => {
     const ps = [p("a", { bier: [0, 1] }), p("b", { bier: [2], pizza: [0] })];
     expect(isFullyAssigned(data.items[1], ps)).toBe(true);

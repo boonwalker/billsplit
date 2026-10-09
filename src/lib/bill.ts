@@ -43,6 +43,11 @@ export interface BillData {
   tipSplitCount?: number;
   /** Delivery, service and similar fees – split equally per person. */
   fees?: BillFee[];
+  /**
+   * Equal split (e.g. a supermarket receipt): nobody ticks items, everyone pays the
+   * same part of the whole bill, counted like tip and fees (splitHeadCount).
+   */
+  equalSplit?: boolean;
   items: BillItem[];
   payment: PaymentInfo;
 }
@@ -196,8 +201,18 @@ export function claimCost(item: BillItem, units: number): Cents {
   return Math.round((item.total * units) / item.qty);
 }
 
+/** In an equal split: what every person pays of the whole bill. */
+export function equalShare(data: BillData, participants: PublicParticipant[]): Cents {
+  return Math.round(billTotal(data) / splitHeadCount(data, participants));
+}
+
 export function participantShare(data: BillData, participants: PublicParticipant[], participantId: string): ShareSummary {
   if (!participants.some((p) => p.id === participantId)) return { subtotal: 0, shared: 0, total: 0 };
+  if (data.equalSplit) {
+    const total = equalShare(data, participants);
+    const shared = sharedPerPerson(data, participants);
+    return { subtotal: total - shared, shared, total };
+  }
   const sub = data.items.reduce((sum, item) => sum + claimCost(item, unitShare(item, participants, participantId)), 0);
   const shared = sharedPerPerson(data, participants);
   return { subtotal: sub, shared, total: sub + shared };
@@ -205,6 +220,8 @@ export function participantShare(data: BillData, participants: PublicParticipant
 
 /** Value of all units nobody has claimed yet, plus the tip and fee parts of people who have not joined yet. */
 export function unassignedAmount(data: BillData, participants: PublicParticipant[]): Cents {
+  // Equal split: only the parts of people who have not joined yet are open.
+  if (data.equalSplit) return (splitHeadCount(data, participants) - participants.length) * equalShare(data, participants);
   const sub = data.items.reduce((sum, item) => sum + claimCost(item, item.qty - assignedUnits(item, participants)), 0);
   const missingPeople = splitHeadCount(data, participants) - participants.length;
   return sub + missingPeople * sharedPerPerson(data, participants);

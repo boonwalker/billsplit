@@ -43,6 +43,8 @@ interface Draft {
   delivery: boolean;
   receiptTotal: number | null;
   engine: "ai" | "ocr" | null;
+  /** Kept from the bill when it is edited (set on the bill page). */
+  equalSplit?: boolean;
 }
 
 const newFeeRow = (fee?: { id?: string; name: string; amount: number }): FeeRow => ({
@@ -93,6 +95,7 @@ function draftFromData(data: BillData): Draft {
       persons: data.tipSplitCount ? String(data.tipSplitCount) : "",
     },
     tipOnReceipt: false,
+    equalSplit: data.equalSplit,
     rows: data.items.map(newRow),
     fees: (data.fees ?? []).map(newFeeRow),
     delivery: (data.fees ?? []).length > 0,
@@ -121,6 +124,7 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     items,
     payment: paymentFromProfile(),
     tipSplitCount: tipPersons(draft.tip),
+    equalSplit: draft.equalSplit || undefined,
     fees: draftFees(draft).length ? draftFees(draft) : undefined,
   };
   if (draft.tip.mode === "total") {

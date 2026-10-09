@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   billTotal,
   claimCost,
+  equalShare,
   hasTip,
   isFullyAssigned,
   sharedPerPerson,
@@ -68,12 +69,15 @@ function ReceiptLine({
   me,
   currency,
   onSetSlots,
+  each,
 }: {
   item: BillItem;
   index: number;
   participants: PublicParticipant[];
   me: string | null;
   currency: string;
+  /** Equal split: what every person pays of this line (nothing can be ticked then). */
+  each?: number;
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
 }) {
   const holders = slotHolders(item.id, participants);
@@ -92,7 +96,7 @@ function ReceiptLine({
     .map((p) => `${p.id}:${p.claims[item.id].join("+")}`)
     .join(",");
   const flash = useFlash(others);
-  const canEdit = Boolean(onSetSlots && me);
+  const canEdit = Boolean(onSetSlots && me) && each === undefined;
   // A single item that is taken can still be shared by ticking it; a unit of a
   // multi-quantity item is shared by tapping the name of whoever has it.
   const interactive = canEdit && (myUnits > 0 || freeSlots.length > 0 || item.qty === 1);
@@ -136,7 +140,7 @@ function ReceiptLine({
 
   return (
     <li
-      className={`rline${done ? " done" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}`}
+      className={`rline${done ? " done" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${each !== undefined ? " equal" : ""}`}
       style={{ animationDelay: `${180 + index * 70}ms` }}
     >
       <button
@@ -165,6 +169,11 @@ function ReceiptLine({
           {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
         </span>
         <span className="rline-dots" aria-hidden="true" />
+        {each !== undefined && (
+          <span className="rline-each" title="Anteil pro Person">
+            {formatMoney(each, currency)}
+          </span>
+        )}
         <span className="rline-price">{formatMoney(item.total, currency)}</span>
       </button>
 
@@ -187,7 +196,7 @@ function ReceiptLine({
         </div>
       )}
 
-      {claimants.length > 0 && (
+      {claimants.length > 0 && each === undefined && (
         <ul className="rline-claims">
           {claimants.map((p) => {
             const units = unitShare(item, participants, p.id);
@@ -251,12 +260,35 @@ function ReceiptLine({
   );
 }
 
-function FeeLine({ name, amount, currency }: { name: string; amount: number; currency: string }) {
+function FeeLine({ name, amount, currency, each }: { name: string; amount: number; currency: string; each?: number }) {
   return (
     <>
       <dt>{name}</dt>
-      <dd>{formatMoney(amount, currency)}</dd>
+      <dd>
+        {each !== undefined && <span className="rline-each">{formatMoney(each, currency)}</span>}
+        {formatMoney(amount, currency)}
+      </dd>
     </>
+  );
+}
+
+/** Equal split: the total over a hand-drawn fraction bar, the head count below, and the share next to it. */
+function EqualFraction({ total, people, share, currency }: { total: number; people: number; share: number; currency: string }) {
+  return (
+    <span className="fraction" aria-label={`${formatMoney(total, currency)} geteilt durch ${people} ist ${formatMoney(share, currency)} pro Person`}>
+      <span className="fraction-stack" aria-hidden="true">
+        <span>{formatMoney(total, currency)}</span>
+        <svg className="fraction-bar" viewBox="0 0 120 10" preserveAspectRatio="none">
+          <path d="M3 6.2 C 18 3.8, 30 7.4, 46 5.1 S 76 3.6, 92 5.6 S 110 6.4, 117 4.2" />
+          <path d="M8 7.4 C 30 6.1, 58 6.9, 86 6.2 S 108 5.8, 114 6.6" className="fraction-bar-thin" />
+        </svg>
+        <span className="fraction-den">{people}</span>
+      </span>
+      <span className="fraction-result" aria-hidden="true">
+        = {formatMoney(share, currency)}
+        <small>pro Person</small>
+      </span>
+    </span>
   );
 }
 
@@ -266,6 +298,9 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
   const sub = subtotal(data.items);
   const total = billTotal(data);
   const assigned = data.items.filter((i) => isFullyAssigned(i, participants)).length;
+  const equal = Boolean(data.equalSplit);
+  const people = splitHeadCount(data, participants);
+  const perPerson = (amount: number) => (equal ? Math.round(amount / people) : undefined);
 
   return (
     <article className="receipt" aria-label="Digitale Rechnung">
@@ -295,6 +330,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
               me={me}
               currency={data.currency}
               onSetSlots={onSetSlots}
+              each={perPerson(item.total)}
             />
           ))}
         </ul>
@@ -304,17 +340,25 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
           {sharedTotal(data) !== 0 && (
             <>
               <dt>Zwischensumme</dt>
-              <dd>{formatMoney(sub, data.currency)}</dd>
+              <dd>
+                {equal && <span className="rline-each">{formatMoney(perPerson(sub)!, data.currency)}</span>}
+                {formatMoney(sub, data.currency)}
+              </dd>
               {(data.fees ?? []).map((fee) => (
-                <FeeLine key={fee.id} name={fee.name} amount={fee.amount} currency={data.currency} />
+                <FeeLine key={fee.id} name={fee.name} amount={fee.amount} currency={data.currency} each={perPerson(fee.amount)} />
               ))}
               {hasTip(data) && (
                 <FeeLine
                   name={`Trinkgeld${data.tipAmount ? "" : ` ${data.tipPercent} %`}`}
                   amount={tipTotal(data)}
                   currency={data.currency}
+                  each={perPerson(tipTotal(data))}
                 />
               )}
+            </>
+          )}
+          {sharedTotal(data) !== 0 && !equal && (
+            <>
               <dt className="tip-split">
                 {(data.fees ?? []).length > 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"} ÷{" "}
                 {splitHeadCount(data, participants)} Personen
@@ -323,11 +367,17 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
             </>
           )}
           <dt className="grand">SUMME</dt>
-          <dd className="grand">{formatMoney(total, data.currency)}</dd>
+          {equal ? (
+            <dd className="grand">
+              <EqualFraction total={total} people={people} share={equalShare(data, participants)} currency={data.currency} />
+            </dd>
+          ) : (
+            <dd className="grand">{formatMoney(total, data.currency)}</dd>
+          )}
         </dl>
         <div className="receipt-rule double" aria-hidden="true" />
         <p className="receipt-progress">
-          {assigned} von {data.items.length} Positionen vollständig zugeordnet
+          {equal ? `Gleichmäßig auf ${people} Personen verteilt` : `${assigned} von ${data.items.length} Positionen vollständig zugeordnet`}
         </p>
         <div className="receipt-barcode" aria-hidden="true" />
         <p className="receipt-thanks">Danke &amp; bis zum nächsten Mal!</p>

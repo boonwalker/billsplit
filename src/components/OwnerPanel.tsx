@@ -1,5 +1,6 @@
 import {
   billTotal,
+  equalShare,
   participantShare,
   feesTotal,
   hasTip,
@@ -18,8 +19,28 @@ interface Props {
   onToggleReceived: (debtor: Debtor, received: boolean) => void;
 }
 
+/** Switch for the payer: split the whole bill equally instead of ticking items (e.g. supermarket receipts). */
+export function EqualSplitToggle({ snapshot, onUpdateData }: { snapshot: BillSnapshot; onUpdateData: (data: BillData) => void }) {
+  const on = Boolean(snapshot.data.equalSplit);
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      className={`equal-toggle${on ? " on" : ""}`}
+      onClick={() => onUpdateData({ ...snapshot.data, equalSplit: on ? undefined : true })}
+    >
+      <span className="equal-toggle-text">
+        <b>Gleichverteilung</b>
+        <small>{on ? "Alle zahlen gleich viel – Abhaken ist aus." : "Alle zahlen gleich viel, z. B. beim Supermarkt-Einkauf."}</small>
+      </span>
+      <span className="switch" aria-hidden="true" />
+    </button>
+  );
+}
+
 /**
- * Shown above the bill for the payer: how many people share tip and fees. Defaults to everyone who joined; the payer can
+ * Shown above the bill for the payer: how many people share tip and fees (or, with an equal split, the whole bill). Defaults to everyone who joined; the payer can
  * raise it when someone will only scan later (e.g. the next day).
  */
 export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; onUpdateData: (data: BillData) => void }) {
@@ -28,14 +49,15 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
   const count = splitHeadCount(data, participants);
   const missing = count - joined;
   const setCount = (n: number) => onUpdateData({ ...data, tipSplitCount: n <= joined ? undefined : n });
+  const equal = Boolean(data.equalSplit);
 
   return (
     <div className="tip-split-panel">
       <div className="row between">
         <span>
           <b>
-            {feesTotal(data) !== 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"}{" "}
-            {formatMoney(sharedTotal(data), data.currency)}
+            {equal ? "Rechnung" : feesTotal(data) !== 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"}{" "}
+            {formatMoney(equal ? billTotal(data) : sharedTotal(data), data.currency)}
           </b>{" "}
           aufteilen auf
         </span>
@@ -50,7 +72,7 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
         </div>
       </div>
       <p className="muted small">
-        {formatMoney(sharedPerPerson(data, participants), data.currency)} pro Person ·{" "}
+        {formatMoney(equal ? equalShare(data, participants) : sharedPerPerson(data, participants), data.currency)} pro Person ·{" "}
         {missing > 0
           ? `${joined} beigetreten (inkl. dir), ${missing} ${missing === 1 ? "kommt" : "kommen"} noch dazu`
           : `gezählt: alle, die beigetreten sind, plus du`}
@@ -104,7 +126,9 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
                       ? "Zahlungseingang bestätigt"
                       : d.payClickedAt
                         ? `hat um ${time(d.payClickedAt)} auf Bezahlen getippt`
-                        : "ist beigetreten · wählt noch aus …"}
+                        : snapshot.data.equalSplit
+                          ? "ist beigetreten"
+                          : "ist beigetreten · wählt noch aus …"}
                     {changed && <> · Auswahl jetzt {formatMoney(d.amount, currency)}</>}
                   </span>
                 </span>
@@ -131,7 +155,12 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
         <dt className="strong">Dir fehlen noch</dt>
         <dd className="strong">{formatMoney(missing, currency)}</dd>
       </dl>
-      {unassigned > 0 && (
+      {unassigned > 0 && snapshot.data.equalSplit && (
+        <p className="hint">
+          {formatMoney(unassigned, currency)} entfallen auf Personen, die noch nicht beigetreten sind.
+        </p>
+      )}
+      {unassigned > 0 && !snapshot.data.equalSplit && (
         <p className="hint">
           {formatMoney(unassigned, currency)} sind noch keiner Person zugeordnet – hast du deine eigenen Positionen schon
           abgehakt?

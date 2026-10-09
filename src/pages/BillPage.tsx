@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import DemoBar from "../components/DemoBar";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
-import OwnerPanel, { ownerSummary, TipSplit } from "../components/OwnerPanel";
+import OwnerPanel, { EqualSplitToggle, ownerSummary, TipSplit } from "../components/OwnerPanel";
 import PayBar from "../components/PayBar";
 import QrCode from "../components/QrCode";
 import Receipt from "../components/Receipt";
@@ -88,6 +88,7 @@ export default function BillPage({ id }: { id: string }) {
   }
 
   const snap = snapshot;
+  const equal = Boolean(snap.data.equalSplit);
   const url = billUrl(id, window.location.href, snap.data.payment);
   const mine = snap.participants.find((p) => p.id === snap.me);
 
@@ -184,7 +185,10 @@ export default function BillPage({ id }: { id: string }) {
         {!snap.isOwner && (
           <section className="guest-intro">
             <p>
-              <b>{snap.ownerName}</b> hat bezahlt. Hake ab, was du hattest – alle sehen live, wer was übernimmt.
+              <b>{snap.ownerName}</b> hat bezahlt.{" "}
+              {equal
+                ? "Die Rechnung wird gleichmäßig auf alle verteilt – du musst nichts abhaken."
+                : "Hake ab, was du hattest – alle sehen live, wer was übernimmt."}
             </p>
           </section>
         )}
@@ -192,11 +196,12 @@ export default function BillPage({ id }: { id: string }) {
         {(error || actionError) && <div className="alert">{actionError ?? error}</div>}
 
         <div id="receipt" className="receipt-anchor">
-          {snap.isOwner && sharedTotal(snap.data) !== 0 && <TipSplit snapshot={snap} onUpdateData={updateData} />}
-          {snap.isOwner && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
+          {snap.isOwner && <EqualSplitToggle snapshot={snap} onUpdateData={updateData} />}
+          {snap.isOwner && (sharedTotal(snap.data) !== 0 || equal) && <TipSplit snapshot={snap} onUpdateData={updateData} />}
+          {snap.isOwner && !equal && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
           <Receipt
             snapshot={snap}
-            onSetSlots={snap.me ? setSlots : undefined}
+            onSetSlots={snap.me && !equal ? setSlots : undefined}
             onShowOriginal={snap.hasReceiptImage ? () => navigate(`/b/${id}/beleg`) : undefined}
           />
         </div>
