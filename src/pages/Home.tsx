@@ -96,7 +96,7 @@ export default function Home() {
               </span>
               <span className="action-text">
                 <b>Rechnung fotografieren</b>
-                <small>Du hast bezahlt und willst das Geld zurück</small>
+                <small>Du hast bezahlt und willst anteilig Geld zurück</small>
               </span>
               <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
             </label>
@@ -127,7 +127,7 @@ export default function Home() {
               </span>
               <span className="action-text">
                 <b>Screenshot hochladen</b>
-                <small>Für digitale Rechnungen aus App oder E-Mail</small>
+                <small>Für digitale Rechnungen aus App oder Mail</small>
               </span>
               <input type="file" accept="image/*" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
             </label>
@@ -142,7 +142,7 @@ export default function Home() {
               </span>
               <span className="action-text">
                 <b>Screenshot hochladen</b>
-                <small>Für digitale Rechnungen aus App oder E-Mail</small>
+                <small>Für digitale Rechnungen aus App oder Mail</small>
               </span>
             </button>
           )}
@@ -169,7 +169,7 @@ export default function Home() {
             </span>
             <span className="action-text">
               <b>QR-Code scannen</b>
-              <small>Ein Freund hat bezahlt – du übernimmst deinen Teil</small>
+              <small>Ein Freund hat bezahlt – du übernimmst deinen Anteil</small>
             </span>
           </button>
           )}
