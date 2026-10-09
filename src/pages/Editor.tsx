@@ -199,7 +199,7 @@ export default function Editor({ billId }: { billId?: string }) {
   useEffect(() => () => void (preview && URL.revokeObjectURL(preview)), [preview]);
 
   async function publish(data: BillData) {
-    setBusy({ message: "QR-Code wird erstellt …" });
+    setBusy({ message: "Rechnung wird erstellt …" });
     try {
       const snap = await api.createBill(data, loadProfile().name.trim() || "Ich");
       // Keep the photo the bill was read from, so everyone can check it later.
@@ -471,7 +471,7 @@ export default function Editor({ billId }: { billId?: string }) {
 
             <div className="sticky-footer">
               <button className="btn btn-primary btn-large" onClick={submit}>
-                {editing ? "Änderungen speichern" : "QR-Code erstellen"}
+                {editing ? "Änderungen speichern" : "Rechnung erstellen"}
               </button>
             </div>
           </>
@@ -556,7 +556,7 @@ export default function Editor({ billId }: { billId?: string }) {
               </>
             )}
 
-            <button className="btn btn-primary btn-large">QR-Code erstellen</button>
+            <button className="btn btn-primary btn-large">Rechnung erstellen</button>
             {!draft.tipOnReceipt && (
               <button
                 type="button"
