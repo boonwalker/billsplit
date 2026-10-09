@@ -1,29 +1,25 @@
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { BillItem } from "../lib/bill";
-import { boundsOf, recognizeDivisor, type InkPoint, type Stroke } from "../lib/ink";
+import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
 import InkLayer from "./InkLayer";
 import { PencilFilter } from "./Receipt";
 
-/**
- * What the payer marked on a line: struck through (not billed), divided by a written
- * number ("/3"), or – by tapping the price – divided by the number of people below.
- */
+/** What the payer marked on a line: struck through (not billed) or – by tapping it – divided by the number of people below. */
 export interface Mark {
   struck?: boolean;
-  divisor?: number;
   perPerson?: boolean;
 }
 
 /** The divisor a mark stands for; persons is the head count set below the receipt. */
 export function markDivisor(mark: Mark | undefined, persons: number | undefined): number {
   if (!mark || mark.struck) return 1;
-  return (mark.perPerson ? persons : mark.divisor) ?? 1;
+  return mark.perPerson ? (persons ?? 1) : 1;
 }
 
-const isMarked = (mark: Mark | undefined) => Boolean(mark && (mark.struck || mark.perPerson || (mark.divisor ?? 1) > 1));
+const isMarked = (mark: Mark | undefined) => Boolean(mark?.struck || mark?.perPerson);
 
-/** The items as billed: struck lines left out, divided lines reduced to their part (like divideItem). */
+/** The items as billed: struck lines left out, divided lines reduced to their part. */
 export function applyMarks(items: BillItem[], marks: Record<string, Mark>, persons?: number): BillItem[] {
   return items.flatMap((item) => {
     const mark = marks[item.id];
@@ -37,7 +33,7 @@ export function applyMarks(items: BillItem[], marks: Record<string, Mark>, perso
 /** A long, flat stroke across a line: crossing it out. */
 export function isStrikeThrough(strokes: Stroke[], areaWidth: number): boolean {
   if (strokes.length !== 1) return false;
-  const b = boundsOf(strokes);
+  const b = boundsOf(strokes[0]);
   const width = b.maxX - b.minX;
   return width > Math.max(60, areaWidth * 0.3) && b.maxY - b.minY < width * 0.35;
 }
@@ -52,12 +48,9 @@ interface Props {
   onDone: (items: BillItem[], equalSplit: boolean, persons: number | undefined, partial: boolean) => void;
 }
 
-/** Where the demo animations run: across the first line, and on the price of the second. */
+/** Where the demo animations run: a stroke across the first line, a tap on the price of the second. */
 interface DemoSpots {
   strikeY: number;
-  writeY: number;
-  writeX: number;
-  /** Centre of the price that is tapped in the third demo. */
   tapX: number;
   tapY: number;
   width: number;
@@ -94,15 +87,11 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
     if (!lines.length || !wrap) return;
     const centre = (el: HTMLElement) => el.offsetTop + el.offsetHeight / 2;
     const second = lines[1] ?? lines[0];
-    const third = lines[2] ?? lines[lines.length - 1];
     const price = second.querySelector<HTMLElement>(".rline-price");
-    const tapped = third.querySelector<HTMLElement>(".rline-price");
     setDemo({
       strikeY: centre(lines[0]),
-      writeY: centre(second),
-      writeX: price ? second.offsetLeft + price.offsetLeft - 34 : wrap.offsetWidth - 110,
-      tapX: tapped ? third.offsetLeft + tapped.offsetLeft + tapped.offsetWidth / 2 : wrap.offsetWidth - 40,
-      tapY: centre(third),
+      tapX: price ? second.offsetLeft + price.offsetLeft + price.offsetWidth / 2 : wrap.offsetWidth - 40,
+      tapY: centre(second),
       width: wrap.offsetWidth,
     });
   }, [step, items]);
@@ -118,7 +107,7 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
     return lines.reduce((best, el) => (distance(el) < distance(best) ? el : best)).dataset.item ?? null;
   }
 
-  /** Tapping a drawing removes it; tapping a price divides it by the number of people. */
+  /** Tapping a marked line removes the mark; tapping any other line (name or price) divides it by the number of people. */
   function tap(point: InkPoint) {
     const line = [...(list.current?.querySelectorAll<HTMLElement>("li[data-item]") ?? [])].find((el) => {
       const r = el.getBoundingClientRect();
@@ -131,8 +120,6 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
       setNotice(`${item.name}: Markierung entfernt.`);
       return;
     }
-    const price = line.querySelector(".rline-price")?.getBoundingClientRect();
-    if (!price || point.x < price.left - 16 || point.x > price.right + 16) return;
     setMarks((m) => ({ ...m, [item.id]: { perPerson: true } }));
     if (persons) {
       setNotice(`${item.name} ÷ ${persons}: ${formatMoney(Math.round(item.total / persons), currency)} statt ${formatMoney(item.total, currency)}`);
@@ -144,28 +131,18 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
   }
 
   function readInk(strokes: Stroke[]) {
-    const usable = strokes.filter((s) => s.length > 1);
+    const usable = strokes.filter((st) => st.length > 1);
     if (!usable.length) return;
-    const b = boundsOf(usable);
+    if (!isStrikeThrough(usable, list.current?.getBoundingClientRect().width ?? 300)) {
+      setNotice("Streich eine Zeile quer durch – oder tipp sie an, um sie durch die Personenzahl zu teilen.");
+      return;
+    }
+    const b = boundsOf(usable[0]);
     const item = items.find((i) => i.id === lineAt((b.minY + b.maxY) / 2));
     if (!item) return;
-    if (isStrikeThrough(usable, list.current?.getBoundingClientRect().width ?? 300)) {
-      const struck = !marks[item.id]?.struck;
-      setMarks((m) => ({ ...m, [item.id]: { struck } }));
-      setNotice(struck ? `${item.name} wird nicht abgerechnet.` : `${item.name} wird wieder abgerechnet.`);
-      return;
-    }
-    const read = recognizeDivisor(usable);
-    if (!read) {
-      setNotice("Nicht erkannt – streich eine Zeile durch oder schreib z. B. /2 auf den Preis.");
-      return;
-    }
-    setMarks((m) => ({ ...m, [item.id]: read.divisor > 1 ? { divisor: read.divisor } : {} }));
-    setNotice(
-      read.divisor > 1
-        ? `${item.name} ÷ ${read.divisor}: ${formatMoney(Math.round(item.total / read.divisor), currency)} statt ${formatMoney(item.total, currency)}`
-        : `${item.name}: wieder voller Preis`,
-    );
+    const struck = !marks[item.id]?.struck;
+    setMarks((m) => ({ ...m, [item.id]: { struck } }));
+    setNotice(struck ? `${item.name} wird nicht abgerechnet.` : `${item.name} wird wieder abgerechnet.`);
   }
 
   const submit = (e: FormEvent) => {
@@ -196,15 +173,14 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
           </button>
           <h2 className="pencil">Was soll nicht mit?</h2>
           <p className="pencil scribble-help">
-            durchstreichen = raus · /2 /3 … schreiben = teilen · Preis antippen = ÷ Personen · Kritzel antippen = weg ·
-            zwei Finger = scrollen
+            durchstreichen = raus · antippen = ÷ Personen · nochmal antippen = zurück · zwei Finger = scrollen
           </p>
         </header>
 
         <div className="scribble-scroll ink-scroll">
           <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
             <div className="receipt-paper">
-              <div className="receipt-lines-wrap writing">
+              <div className="receipt-lines-wrap">
                 <InkLayer onInk={readInk} onTap={tap} onStart={() => setTouched(true)} />
                 {demo && !touched && (
                   <svg className="ink-demo" width={demo.width} height="100%" aria-hidden="true">
@@ -212,16 +188,6 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
                       className="ink-demo-strike"
                       pathLength={1}
                       d={`M6 ${demo.strikeY + 2} C ${demo.width * 0.3} ${demo.strikeY - 3}, ${demo.width * 0.6} ${demo.strikeY + 4}, ${demo.width - 8} ${demo.strikeY - 1}`}
-                    />
-                    <path
-                      className="ink-demo-slash"
-                      pathLength={1}
-                      d={`M${demo.writeX} ${demo.writeY + 15} L ${demo.writeX + 13} ${demo.writeY - 15}`}
-                    />
-                    <path
-                      className="ink-demo-digit"
-                      pathLength={1}
-                      d={`M${demo.writeX + 17} ${demo.writeY - 7} C ${demo.writeX + 19} ${demo.writeY - 17}, ${demo.writeX + 34} ${demo.writeY - 16}, ${demo.writeX + 32} ${demo.writeY - 6} C ${demo.writeX + 30} ${demo.writeY + 2}, ${demo.writeX + 18} ${demo.writeY + 9}, ${demo.writeX + 16} ${demo.writeY + 15} L ${demo.writeX + 34} ${demo.writeY + 14}`}
                     />
                     <circle className="ink-demo-tap" cx={demo.tapX} cy={demo.tapY} r="16" />
                     <text className="pencil ink-demo-tapped" x={demo.tapX - 72} y={demo.tapY + 8}>
@@ -234,7 +200,7 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
                     const mark = marks[item.id] ?? {};
                     const divisor = markDivisor(mark, persons);
                     const divided = divisor > 1 ? Math.round(item.total / divisor) : null;
-                    const label = mark.perPerson ? (persons ?? "?") : mark.divisor;
+                    const label = persons ?? "?";
                     return (
                       <li key={item.id} data-item={item.id} className={`rline${mark.struck ? " done" : ""}`}>
                         <div className="rline-main">
@@ -244,7 +210,7 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
                                 {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
                                 {item.name}
                               </span>
-                              {(divided !== null || mark.perPerson) && <span className="pencil rline-divisor">/{label}</span>}
+                              {mark.perPerson && <span className="pencil rline-divisor">/{label}</span>}
                             </span>
                           </span>
                           <span className="rline-dots" aria-hidden="true" />

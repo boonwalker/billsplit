@@ -9,22 +9,22 @@ const items = [
 ];
 
 describe("supermarket receipts", () => {
-  it("leaves crossed-out lines out and bills divided lines in part", () => {
-    expect(applyMarks(items, { milch: { divisor: 4 }, dusch: { struck: true } })).toEqual([
+  it("leaves crossed-out lines out and divides tapped lines by the number of people", () => {
+    expect(applyMarks(items, { milch: { perPerson: true }, dusch: { struck: true } }, 4)).toEqual([
       { id: "milch", name: "Vollmilch 1l", qty: 1, total: 30, fullTotal: 119, divisor: 4 },
       { id: "nudeln", name: "Spaghetti", qty: 2, total: 258 },
     ]);
-    expect(applyMarks(items, { nudeln: { divisor: 1 } })).toEqual(items);
+    expect(applyMarks(items, {})).toEqual(items);
   });
 
-  it("divides a tapped price by the number of people set below", () => {
+  it("follows the head count set below", () => {
     expect(applyMarks(items, { dusch: { perPerson: true } }, 3)[2]).toMatchObject({ total: 65, fullTotal: 195, divisor: 3 });
     // Without a head count the price stays as it is until one is set.
     expect(applyMarks(items, { dusch: { perPerson: true } })[2]).toEqual(items[2]);
-    expect(markDivisor({ struck: true, divisor: 3 }, 2)).toBe(1);
+    expect(markDivisor({ struck: true }, 2)).toBe(1);
   });
 
-  it("tells a crossing-out stroke from writing", () => {
+  it("tells a crossing-out stroke from other strokes", () => {
     const flat = [{ x: 10, y: 50 }, { x: 150, y: 56 }, { x: 290, y: 48 }];
     expect(isStrikeThrough([flat], 300)).toBe(true);
     expect(isStrikeThrough([[{ x: 10, y: 80 }, { x: 40, y: 20 }]], 300)).toBe(false);

@@ -8,7 +8,7 @@ export interface BillItem {
   qty: number;
   /** Total price of the whole line in cents (qty × unit price); after a division the billed part. */
   total: Cents;
-  /** Set when the payer divided the line (e.g. wrote "/3" on it): the price on the receipt … */
+  /** Set when the payer divided the line (tapped it in the supermarket view): the price on the receipt … */
   fullTotal?: Cents;
   /** … and the divisor; only total / divisor is billed. */
   divisor?: number;
@@ -49,7 +49,7 @@ export interface BillData {
   fees?: BillFee[];
   /** Recognised as a supermarket purchase. */
   supermarket?: boolean;
-  /** The payer answered "Manches nicht": some items are billed not or only partly (enables writing "/3" on lines). */
+  /** The payer answered "Manches nicht": some items are billed not or only partly. */
   partial?: boolean;
   /**
    * Equal split (e.g. a supermarket receipt): nobody ticks items, everyone pays the
@@ -209,19 +209,6 @@ export function unitShare(item: BillItem, participants: PublicParticipant[], par
 export function claimCost(item: BillItem, units: number): Cents {
   if (units <= 0) return 0;
   return Math.round((item.total * units) / item.qty);
-}
-
-/** Bills only 1/divisor of a line (divisor 1 restores the full price). */
-export function divideItem(data: BillData, itemId: string, divisor: number): BillData {
-  return {
-    ...data,
-    items: data.items.map((item) => {
-      if (item.id !== itemId) return item;
-      const full = item.fullTotal ?? item.total;
-      if (divisor <= 1) return { id: item.id, name: item.name, qty: item.qty, total: full };
-      return { ...item, fullTotal: full, divisor, total: Math.round(full / divisor) };
-    }),
-  };
 }
 
 /** In an equal split: what every person pays of the whole bill. */

@@ -17,9 +17,7 @@ import {
   type BillSnapshot,
   type PublicParticipant,
 } from "../lib/bill";
-import { recognizeDivisor, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
-import InkLayer from "./InkLayer";
 
 interface Props {
   snapshot: BillSnapshot;
@@ -27,10 +25,6 @@ interface Props {
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
   /** Opens the stored photo the bill was read from; undefined when there is none. */
   onShowOriginal?: () => void;
-  /** Writing mode: the payer writes e.g. "/3" on a line with a finger. */
-  writing?: boolean;
-  /** Result of a handwritten divisor: the line it was written on, or null if unreadable. */
-  onDivide?: (result: { itemId: string; divisor: number } | null) => void;
 }
 
 function formatDate(iso: string): string {
@@ -324,31 +318,7 @@ function EqualFraction({ total, people, share, currency }: { total: number; peop
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots, onShowOriginal, writing, onDivide }: Props) {
-  /** Reads the handwriting and finds the line it was written on (by its vertical centre). */
-  function readInk(strokes: Stroke[]) {
-    const read = recognizeDivisor(strokes);
-    const lines = [...document.querySelectorAll<HTMLElement>(".receipt-lines > .rline[data-item]")];
-    if (!read || !lines.length) return onDivide?.(null);
-    const y = (read.bounds.minY + read.bounds.maxY) / 2;
-    const distance = (el: HTMLElement) => {
-      const r = el.getBoundingClientRect();
-      return y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
-    };
-    const line = lines.reduce((best, el) => (distance(el) < distance(best) ? el : best));
-    onDivide?.({ itemId: line.dataset.item!, divisor: read.divisor });
-  }
-
-  /** Tapping a divided line removes the handwritten divisor again. */
-  function tapLine(point: { x: number; y: number }) {
-    const line = [...document.querySelectorAll<HTMLElement>(".receipt-lines > .rline[data-item]")].find((el) => {
-      const r = el.getBoundingClientRect();
-      return point.y >= r.top && point.y <= r.bottom;
-    });
-    const item = line && data.items.find((i) => i.id === line.dataset.item);
-    if (item?.divisor) onDivide?.({ itemId: item.id, divisor: 1 });
-  }
-
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props) {
   const { data, participants, me, ownerName } = snapshot;
   const sub = subtotal(data.items);
   const total = billTotal(data);
@@ -376,8 +346,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, writing,
           <span>{data.currency}</span>
         </div>
 
-        <div className={`receipt-lines-wrap${writing ? " writing" : ""}`}>
-          {writing && <InkLayer onInk={readInk} onTap={tapLine} />}
+        <div className="receipt-lines-wrap">
           <ul className="receipt-lines">
             {data.items.map((item, idx) => (
               <ReceiptLine

@@ -1605,15 +1605,9 @@ input[aria-invalid="true"] {
   transform: translateX(18px);
 }
 
-/* Writing "/3" on supermarket lines. */
+/* Crossing out and tapping lines in the supermarket view. */
 .receipt-lines-wrap {
   position: relative;
-}
-
-.receipt-lines-wrap.writing .receipt-lines {
-  outline: 2px dashed color-mix(in srgb, var(--pencil) 35%, transparent);
-  outline-offset: 4px;
-  border-radius: 8px;
 }
 
 .ink-layer {
@@ -1640,34 +1634,6 @@ input[aria-invalid="true"] {
   font-size: 0.75rem;
   font-weight: 400;
   color: var(--ink-soft);
-}
-
-.write-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 10px 12px 10px 16px;
-  border: 1.5px solid var(--border);
-  border-radius: 18px;
-  background: var(--surface);
-}
-
-.write-bar.on {
-  border-color: color-mix(in srgb, var(--mint) 60%, var(--surface));
-  background: color-mix(in srgb, var(--mint) 14%, var(--surface));
-}
-
-.write-bar p {
-  flex: 1;
-  margin: 0;
-  font-size: 0.85rem;
-}
-
-.write-bar .btn {
-  flex: none;
-  min-height: 40px;
-  padding: 6px 14px;
 }
 
 /* "Manches nicht": the whole screen is the receipt paper, scribbled on with a pencil. */
@@ -1740,10 +1706,6 @@ input[aria-invalid="true"] {
   padding: 6px 10px 24px;
   font-size: 1.05rem;
   animation: none;
-}
-
-.scribble .receipt-lines-wrap.writing .receipt-lines {
-  outline: none;
 }
 
 .scribble .rline {
@@ -1871,15 +1833,7 @@ input[aria-invalid="true"] {
 }
 
 .ink-demo-strike {
-  animation: demo-strike 10.5s ease-in-out 0.8s infinite;
-}
-
-.ink-demo-slash {
-  animation: demo-slash 10.5s ease-in-out 0.8s infinite;
-}
-
-.ink-demo-digit {
-  animation: demo-digit 10.5s ease-in-out 0.8s infinite;
+  animation: demo-strike 7s ease-in-out 0.8s infinite;
 }
 
 /* Third demo: a finger taps the price, then "/n" appears in pencil. */
@@ -1891,14 +1845,14 @@ input[aria-invalid="true"] {
   filter: none;
   transform-box: fill-box;
   transform-origin: center;
-  animation: demo-tap 10.5s ease-out 0.8s infinite;
+  animation: demo-tap 7s ease-out 0.8s infinite;
 }
 
 .ink-demo-tapped {
   font-size: 1.3rem;
   fill: var(--pencil);
   opacity: 0;
-  animation: demo-tapped 10.5s ease-out 0.8s infinite;
+  animation: demo-tapped 7s ease-out 0.8s infinite;
 }
 
 @keyframes demo-strike {
@@ -1906,56 +1860,12 @@ input[aria-invalid="true"] {
     stroke-dashoffset: 1;
     opacity: 0.9;
   }
-  10%,
-  24% {
+  15%,
+  36% {
     stroke-dashoffset: 0;
     opacity: 0.9;
   }
-  29%,
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-
-@keyframes demo-slash {
-  0%,
-  31% {
-    stroke-dashoffset: 1;
-    opacity: 0;
-  }
-  32% {
-    stroke-dashoffset: 1;
-    opacity: 0.9;
-  }
-  36%,
-  56% {
-    stroke-dashoffset: 0;
-    opacity: 0.9;
-  }
-  61%,
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-
-@keyframes demo-digit {
-  0%,
-  37% {
-    stroke-dashoffset: 1;
-    opacity: 0;
-  }
-  38% {
-    stroke-dashoffset: 1;
-    opacity: 0.9;
-  }
-  44%,
-  56% {
-    stroke-dashoffset: 0;
-    opacity: 0.9;
-  }
-  61%,
+  42%,
   100% {
     stroke-dashoffset: 0;
     opacity: 0;
@@ -1964,15 +1874,15 @@ input[aria-invalid="true"] {
 
 @keyframes demo-tap {
   0%,
-  65% {
+  50% {
     opacity: 0;
     transform: scale(0.3);
   }
-  67% {
+  53% {
     opacity: 0.9;
     transform: scale(0.6);
   }
-  74% {
+  62% {
     opacity: 0;
     transform: scale(1.5);
   }
@@ -1983,10 +1893,10 @@ input[aria-invalid="true"] {
 
 @keyframes demo-tapped {
   0%,
-  70% {
+  58% {
     opacity: 0;
   }
-  74%,
+  63%,
   90% {
     opacity: 0.9;
   }
@@ -2000,47 +1910,6 @@ input[aria-invalid="true"] {
   50% {
     background: color-mix(in srgb, var(--mint) 35%, transparent);
     box-shadow: 0 0 0 6px color-mix(in srgb, var(--mint) 35%, transparent);
-  }
-}
-
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 108px);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: min(92vw, 480px);
-  padding: 12px 14px 12px 16px;
-  border-radius: 16px;
-  background: var(--brand);
-  color: var(--paper);
-  font-size: 0.9rem;
-  box-shadow: var(--shadow-lg);
-  transform: translateX(-50%);
-  animation: toast-in 0.25s ease both;
-}
-
-.toast span {
-  flex: 1;
-}
-
-.toast button {
-  flex: none;
-  border: 0;
-  background: none;
-  color: var(--mint);
-  font: inherit;
-  font-weight: 700;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 12px);
   }
 }
 

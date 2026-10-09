@@ -76,17 +76,10 @@ jemand fehlt.
 
 Die Erkennung merkt anhand des Geschäftsnamens und der Produkte, ob es ein Supermarkt- oder Drogerie-Einkauf ist.
 Dann fragt billsplit vor dem QR-Code, ob etwas nicht oder nur teilweise abgerechnet werden soll: „Alles aufteilen“
-oder „Manches nicht“. Bei „Manches nicht“ erscheint die Rechnung als Papierbeleg, auf dem Bleistift-Animationen
-vorführen, was geht: eine Zeile mit dem Finger **durchstreichen** (wird nicht abgerechnet) oder **/2, /3 …** auf den
-Preis schreiben (nur dieser Teil wird abgerechnet, z. B. 1 l Milch gekauft, aber nur 250 ml gebraucht → /4). Ein
-**Tipp auf einen Preis** teilt ihn durch die darunter eingestellte Personenzahl, ein Tipp auf eine Markierung entfernt
-sie wieder. Gescrollt wird dort mit zwei Fingern. Auf der fertigen Rechnung steht das Schreiben mit dem Finger weiterhin bereit. Die Gleichverteilung ist dabei vorausgewählt, optional
-mit der Zahl der Personen, die sich den Einkauf teilen.
-
-**Testweise: auf die Rechnung schreiben.** Bei Supermarkt-Rechnungen mit „Manches nicht“ kann der Rechnungssteller über „✏️ Schreiben“
-mit dem Finger z. B. `/3` auf eine Zeile schreiben – dann wird nur ein Drittel des Artikels abgerechnet (`/1` macht es
-rückgängig). Schrägstrich und Ziffern werden direkt auf dem Gerät erkannt ($P-Point-Cloud-Erkenner mit
-Ziffernvorlagen); nach jeder Erkennung lässt sie sich mit „Rückgängig“ zurücknehmen.
+oder „Manches nicht“. Bei „Manches nicht“ wird der ganze Bildschirm zum Belegpapier: eine Zeile mit dem Finger
+**durchstreichen** nimmt den Artikel aus der Rechnung, **antippen** (Name oder Preis) teilt ihn durch die unten
+eingestellte Personenzahl (z. B. 1 l Milch gekauft, aber nur ein Teil für alle), nochmal antippen hebt die Markierung
+auf. Bleistift-Animationen führen beides vor; gescrollt wird dort mit zwei Fingern.
 
 ### Originalbeleg
 

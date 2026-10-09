@@ -13,7 +13,7 @@ interface Props {
 /** Movement up to which a touch counts as a tap, not as a stroke. */
 const TAP_SLOP = 8;
 
-/** Pause after the last stroke before the writing is read, so "/" and "3" can be drawn separately. */
+/** Pause after the last stroke before it is read. */
 const IDLE_MS = 800;
 
 /** A transparent sheet over the receipt lines to write on with a finger, drawn like pencil. */
@@ -124,7 +124,7 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
     <canvas
       ref={canvas}
       className="ink-layer"
-      aria-label="Schreibfläche: mit dem Finger z. B. /3 auf eine Zeile schreiben"
+      aria-label="Fläche zum Durchstreichen und Antippen der Zeilen"
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
