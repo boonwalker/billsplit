@@ -1807,26 +1807,27 @@ input[aria-invalid="true"] {
   gap: 2px;
 }
 
-.divide-by-slash {
+.divide-by-sign {
   color: var(--pencil);
-  width: 34px;
+  width: 36px;
   height: 78px;
   overflow: visible;
   filter: url(#pencil-grain);
 }
 
-.divide-by-slash path,
+.divide-by-sign path {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
 .divide-by-number svg path {
   fill: none;
   stroke: currentColor;
   stroke-width: 4;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.divide-by-slash .divide-by-slash-thin {
-  stroke-width: 1.6;
-  opacity: 0.45;
 }
 
 .divide-by-number {
