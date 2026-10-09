@@ -1,13 +1,13 @@
 {
-  "name": "billsplit – Rechnungen teilen",
+  "name": "billsplit",
   "short_name": "billsplit",
   "description": "Rechnung abfotografieren, per QR-Code teilen, Positionen abhaken und per PayPal bezahlen.",
   "lang": "de",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f6f7f5",
-  "theme_color": "#0f766e",
+  "background_color": "#eef1ec",
+  "theme_color": "#0d3b2a",
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]

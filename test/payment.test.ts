@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatIban, isValidIban, normalizePaypalUser, paypalLink } from "../src/lib/payment";
+import { isValidEmail, normalizePaypalMe, payAction, paypalMeLink, PAYPAL_SEND_URL } from "../src/lib/payment";
 
 describe("PayPal", () => {
   it.each([
@@ -10,23 +10,25 @@ describe("PayPal", () => {
     ["https://www.paypal.com/paypalme/niklas", "niklas"],
     ["  niklas ", "niklas"],
   ])("normalizes %s", (input, expected) => {
-    expect(normalizePaypalUser(input)).toBe(expected);
+    expect(normalizePaypalMe(input)).toBe(expected);
   });
 
-  it("builds a link with recipient and amount", () => {
-    expect(paypalLink("paypal.me/niklas", 2035)).toBe("https://www.paypal.com/paypalme/niklas/20.35EUR");
-    expect(paypalLink("niklas", 0)).toBe("https://www.paypal.com/paypalme/niklas");
-  });
-});
-
-describe("IBAN", () => {
-  it("validates the checksum", () => {
-    expect(isValidIban("DE89 3704 0044 0532 0130 00")).toBe(true);
-    expect(isValidIban("DE88 3704 0044 0532 0130 00")).toBe(false);
-    expect(isValidIban("hello")).toBe(false);
+  it("builds a PayPal.Me link with recipient and amount", () => {
+    expect(paypalMeLink("paypal.me/niklas", 2035)).toBe("https://www.paypal.com/paypalme/niklas/20.35EUR");
+    expect(paypalMeLink("niklas", 0)).toBe("https://www.paypal.com/paypalme/niklas");
   });
 
-  it("formats in groups of four", () => {
-    expect(formatIban("de89370400440532013000")).toBe("DE89 3704 0044 0532 0130 00");
+  it("combines recipient and individual amount into the pay action", () => {
+    expect(payAction({ paypalMe: "niklas", paypalEmail: "n@web.de" }, 1540, "EUR")).toEqual({
+      kind: "paypalMe",
+      url: "https://www.paypal.com/paypalme/niklas/15.40EUR",
+    });
+    expect(payAction({ paypalEmail: "n@web.de" }, 1540, "EUR")).toEqual({ kind: "email", url: PAYPAL_SEND_URL, email: "n@web.de" });
+    expect(payAction({}, 1540, "EUR")).toEqual({ kind: "none" });
+  });
+
+  it("validates e-mail addresses", () => {
+    expect(isValidEmail("niklas@web.de")).toBe(true);
+    expect(isValidEmail("niklas@web")).toBe(false);
   });
 });

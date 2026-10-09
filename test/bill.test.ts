@@ -1,76 +1,71 @@
 import { describe, expect, it } from "vitest";
-import { billId, billUrl, claimAmount, computeShare, decodeBill, encodeBill, type Bill } from "../src/lib/bill";
+import {
+  billIdFromUrl,
+  billTotal,
+  billUrl,
+  claimCost,
+  isFullyAssigned,
+  participantShare,
+  sanitizeClaims,
+  unassignedAmount,
+  type BillData,
+  type PublicParticipant,
+} from "../src/lib/bill";
 
-const bill: Bill = {
+const data: BillData = {
   title: "Trattoria Da Mario",
   date: "2026-10-08",
   currency: "EUR",
-  payerName: "Niklas",
   tipPercent: 10,
-  payment: { paypal: "niklas", iban: "DE89370400440532013000", accountHolder: "Niklas B.", cash: true },
+  payment: { paypalMe: "niklas" },
   items: [
-    { name: "Pizza Margherita", qty: 1, total: 950 },
-    { name: "Bier 0,5l", qty: 3, total: 1350 },
-    { name: "Tiramisu", qty: 2, total: 1000 },
+    { id: "pizza", name: "Pizza Margherita", qty: 1, total: 950 },
+    { id: "bier", name: "Bier 0,5l", qty: 3, total: 1350 },
+    { id: "tira", name: "Tiramisu", qty: 2, total: 1000 },
   ],
 };
 
-describe("encodeBill / decodeBill", () => {
-  it("round-trips a bill", () => {
-    const encoded = encodeBill(bill);
-    expect(encoded).toMatch(/^[A-Za-z0-9+\-$]+$/);
-    expect(decodeBill(encoded)).toEqual(bill);
-  });
+const p = (id: string, claims: Record<string, number>, isOwner = false): PublicParticipant => ({ id, name: id, isOwner, claims });
 
-  it("omits empty payment fields", () => {
-    const decoded = decodeBill(encodeBill({ ...bill, payment: { paypal: "x" } }));
-    expect(decoded?.payment).toEqual({ paypal: "x", iban: undefined, accountHolder: undefined, cash: false });
-  });
-
-  it("rejects garbage", () => {
-    expect(decodeBill("not-a-bill")).toBeNull();
-    expect(decodeBill("")).toBeNull();
-  });
-
-  it("keeps a typical 25-item bill small enough for a scannable QR code", () => {
-    const big: Bill = {
-      ...bill,
-      items: Array.from({ length: 25 }, (_, i) => ({ name: `Gericht Nummer ${i} mit Beilage`, qty: (i % 3) + 1, total: 1000 + i * 37 })),
-    };
-    const url = billUrl(encodeBill(big), "https://billsplit.example.com/");
-    expect(url.length).toBeLessThan(1500);
-  });
-
-  it("derives a stable id", () => {
-    const encoded = encodeBill(bill);
-    expect(billId(encoded)).toBe(billId(encoded));
-    expect(billId(encoded)).not.toBe(billId(encodeBill({ ...bill, title: "Other" })));
-  });
-});
-
-describe("billUrl", () => {
-  it("replaces an existing hash", () => {
-    expect(billUrl("abc", "https://x.de/app/#/share/zzz")).toBe("https://x.de/app/#/b/abc");
-  });
-});
-
-describe("shares", () => {
+describe("claims", () => {
   it("charges per claimed unit of multi-quantity lines", () => {
-    expect(claimAmount(bill.items[1], { units: 1, shareCount: 1 })).toBe(450);
-    expect(claimAmount(bill.items[1], { units: 2, shareCount: 1 })).toBe(900);
-    expect(claimAmount(bill.items[1], { units: 5, shareCount: 1 })).toBe(1350);
-    expect(claimAmount(bill.items[1], { units: 0, shareCount: 1 })).toBe(0);
+    expect(claimCost(data.items[1], 1, 1)).toBe(450);
+    expect(claimCost(data.items[1], 2, 3)).toBe(900);
+    expect(claimCost(data.items[1], 0, 3)).toBe(0);
   });
 
-  it("splits shared items", () => {
-    expect(claimAmount(bill.items[0], { units: 1, shareCount: 2 })).toBe(475);
+  it("splits a line when more units are claimed than exist", () => {
+    // Two people tick the same pizza -> each pays half.
+    expect(claimCost(data.items[0], 1, 2)).toBe(475);
   });
 
-  it("sums up claims and adds the tip", () => {
-    const share = computeShare(bill, {
-      0: { units: 1, shareCount: 1 },
-      1: { units: 2, shareCount: 1 },
-    });
-    expect(share).toEqual({ subtotal: 1850, tip: 185, total: 2035 });
+  it("detects fully assigned lines", () => {
+    const ps = [p("a", { bier: 2 }), p("b", { bier: 1, pizza: 1 })];
+    expect(isFullyAssigned(data.items[1], ps)).toBe(true);
+    expect(isFullyAssigned(data.items[0], ps)).toBe(true);
+    expect(isFullyAssigned(data.items[2], ps)).toBe(false);
+  });
+
+  it("computes shares including tip and the unassigned rest", () => {
+    const ps = [p("owner", { pizza: 1 }, true), p("anna", { bier: 2, tira: 1 })];
+    expect(participantShare(data, ps, "anna")).toEqual({ subtotal: 1400, tip: 140, total: 1540 });
+    expect(participantShare(data, ps, "owner").total).toBe(1045);
+    expect(participantShare(data, ps, "nobody").total).toBe(0);
+    // 1 Bier + 1 Tiramisu are left: 950 + 10 %
+    expect(unassignedAmount(data, ps)).toBe(1045);
+    expect(billTotal(data)).toBe(3630);
+  });
+
+  it("drops unknown items and clamps units", () => {
+    expect(sanitizeClaims({ bier: 7, gone: 1, pizza: 0, tira: 1.7 }, data.items)).toEqual({ bier: 3, tira: 1 });
+  });
+});
+
+describe("links", () => {
+  it("puts bill id and recipient into the QR link", () => {
+    const url = billUrl("AbCdEf123", "https://billsplit.app/#/old", { paypalMe: "niklas" });
+    expect(url).toBe("https://billsplit.app/#/b/AbCdEf123?to=niklas");
+    expect(billIdFromUrl(url)).toBe("AbCdEf123");
+    expect(billIdFromUrl("https://example.com")).toBeNull();
   });
 });

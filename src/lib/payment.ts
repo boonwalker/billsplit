@@ -1,10 +1,11 @@
 import { centsToDecimal, type Cents } from "./money";
+import type { PaymentInfo } from "./bill";
 
 /**
- * Extracts a PayPal.me username from user input. Accepts the plain name,
+ * Extracts a PayPal.Me username from user input. Accepts the plain name,
  * "paypal.me/name", "https://www.paypal.com/paypalme/name" or "@name".
  */
-export function normalizePaypalUser(input: string): string {
+export function normalizePaypalMe(input: string): string {
   let s = input.trim();
   s = s.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
   s = s.replace(/^paypal\.me\//i, "").replace(/^paypal\.com\/paypalme\//i, "");
@@ -13,33 +14,32 @@ export function normalizePaypalUser(input: string): string {
   return s.replace(/[^A-Za-z0-9._-]/g, "");
 }
 
+export function isValidEmail(input: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(input.trim());
+}
+
 /**
- * Builds a PayPal.me link with recipient and amount preset. On phones with the
- * PayPal app installed the link opens the app directly.
+ * PayPal.Me link with recipient and amount preset. On phones with the PayPal app
+ * installed it opens the app; after logging in, the friend lands on the prefilled
+ * "send money" step and only has to confirm.
  */
-export function paypalLink(user: string, amount: Cents, currency = "EUR"): string {
-  const name = encodeURIComponent(normalizePaypalUser(user));
+export function paypalMeLink(user: string, amount: Cents, currency = "EUR"): string {
+  const name = encodeURIComponent(normalizePaypalMe(user));
   if (amount <= 0) return `https://www.paypal.com/paypalme/${name}`;
   return `https://www.paypal.com/paypalme/${name}/${centsToDecimal(amount)}${currency}`;
 }
 
-export function normalizeIban(input: string): string {
-  return input.replace(/\s+/g, "").toUpperCase();
-}
+/** PayPal's generic "send money" page, used when only an e-mail address is known. */
+export const PAYPAL_SEND_URL = "https://www.paypal.com/myaccount/transfer/homepage/pay";
 
-export function formatIban(input: string): string {
-  return normalizeIban(input).replace(/(.{4})/g, "$1 ").trim();
-}
+export type PayAction =
+  | { kind: "paypalMe"; url: string }
+  | { kind: "email"; url: string; email: string }
+  | { kind: "none" };
 
-/** Validates an IBAN via its ISO 13616 mod-97 checksum. */
-export function isValidIban(input: string): boolean {
-  const iban = normalizeIban(input);
-  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban)) return false;
-  const rearranged = iban.slice(4) + iban.slice(0, 4);
-  let remainder = 0;
-  for (const ch of rearranged) {
-    const digits = /\d/.test(ch) ? ch : String(ch.charCodeAt(0) - 55);
-    for (const d of digits) remainder = (remainder * 10 + Number(d)) % 97;
-  }
-  return remainder === 1;
+/** Combines the recipient from the bill with the friend's individual amount. */
+export function payAction(payment: PaymentInfo, amount: Cents, currency: string): PayAction {
+  if (payment.paypalMe) return { kind: "paypalMe", url: paypalMeLink(payment.paypalMe, amount, currency) };
+  if (payment.paypalEmail) return { kind: "email", url: PAYPAL_SEND_URL, email: payment.paypalEmail };
+  return { kind: "none" };
 }

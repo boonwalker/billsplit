@@ -1,7 +1,8 @@
-import LZString from "lz-string";
 import type { Cents } from "./money";
 
 export interface BillItem {
+  /** Stable id, so claims survive when the payer edits the bill later. */
+  id: string;
   name: string;
   /** Number of units on the receipt line, e.g. 3 for "3x Bier". */
   qty: number;
@@ -9,136 +10,64 @@ export interface BillItem {
   total: Cents;
 }
 
-export interface PaymentMethods {
-  /** PayPal.me username of the payer. */
-  paypal?: string;
-  /** IBAN for a regular bank transfer. */
-  iban?: string;
-  /** Account holder for the bank transfer. */
-  accountHolder?: string;
-  /** Payer also accepts cash. */
-  cash?: boolean;
+/** Where friends send their money to. */
+export interface PaymentInfo {
+  /** PayPal.Me name – the only PayPal link type that presets recipient and amount. */
+  paypalMe?: string;
+  /** PayPal e-mail address, shown as fallback for a manual transfer. */
+  paypalEmail?: string;
 }
 
-export interface Bill {
+/** The bill itself as recognized from the receipt and reviewed by the payer. */
+export interface BillData {
   title: string;
   /** ISO date (YYYY-MM-DD) or empty. */
   date: string;
   currency: string;
-  payerName: string;
   /** Tip in percent that is added on top of every share. */
   tipPercent: number;
   items: BillItem[];
-  payment: PaymentMethods;
+  payment: PaymentInfo;
 }
 
-/** Version tag of the compact wire format below. Bump when the layout changes. */
-const FORMAT_VERSION = 1;
+/** Units a participant took, per item id. */
+export type ItemClaims = Record<string, number>;
 
-type WireItem = [name: string, qty: number, total: number];
-type WirePayment = { p?: string; i?: string; h?: string; c?: 1 };
-type WireBill = [
-  version: number,
-  title: string,
-  date: string,
-  currency: string,
-  payerName: string,
-  tipPercent: number,
-  payment: WirePayment,
-  items: WireItem[],
-];
-
-/**
- * Serializes a bill into a compact, URL-safe string. The whole bill lives in the
- * link (and therefore in the QR code), so no server-side storage is needed.
- */
-export function encodeBill(bill: Bill): string {
-  const payment: WirePayment = {};
-  if (bill.payment.paypal) payment.p = bill.payment.paypal;
-  if (bill.payment.iban) payment.i = bill.payment.iban;
-  if (bill.payment.accountHolder) payment.h = bill.payment.accountHolder;
-  if (bill.payment.cash) payment.c = 1;
-  const wire: WireBill = [
-    FORMAT_VERSION,
-    bill.title,
-    bill.date,
-    bill.currency,
-    bill.payerName,
-    bill.tipPercent,
-    payment,
-    bill.items.map((it) => [it.name, it.qty, it.total]),
-  ];
-  return LZString.compressToEncodedURIComponent(JSON.stringify(wire));
+/** What every participant sees about the others: who took what. */
+export interface PublicParticipant {
+  id: string;
+  name: string;
+  isOwner: boolean;
+  claims: ItemClaims;
 }
 
-export function decodeBill(data: string): Bill | null {
-  try {
-    const json = LZString.decompressFromEncodedURIComponent(data);
-    if (!json) return null;
-    const wire = JSON.parse(json) as unknown;
-    if (!Array.isArray(wire) || wire[0] !== FORMAT_VERSION || wire.length !== 8) return null;
-    const [, title, date, currency, payerName, tipPercent, payment, items] = wire as WireBill;
-    if (!Array.isArray(items)) return null;
-    const p = (payment ?? {}) as WirePayment;
-    return {
-      title: String(title ?? ""),
-      date: String(date ?? ""),
-      currency: typeof currency === "string" && /^[A-Z]{3}$/.test(currency) ? currency : "EUR",
-      payerName: String(payerName ?? ""),
-      tipPercent: Number.isFinite(tipPercent) ? Number(tipPercent) : 0,
-      payment: {
-        paypal: typeof p.p === "string" ? p.p : undefined,
-        iban: typeof p.i === "string" ? p.i : undefined,
-        accountHolder: typeof p.h === "string" ? p.h : undefined,
-        cash: p.c === 1,
-      },
-      items: items
-        .filter((it) => Array.isArray(it) && it.length === 3)
-        .map(([name, qty, total]) => ({
-          name: String(name),
-          qty: Math.max(1, Math.floor(Number(qty)) || 1),
-          total: Math.round(Number(total)) || 0,
-        })),
-    };
-  } catch {
-    return null;
-  }
+/** What only the payer sees about a friend. */
+export interface Debtor {
+  id: string;
+  name: string;
+  joinedAt: string;
+  /** Current share according to the claims, including tip. */
+  amount: Cents;
+  /** Set when the friend tapped "Bezahlen"; the amount at that moment. */
+  payClickedAt?: string;
+  payAmount?: Cents;
+  /** The payer confirmed the money arrived on PayPal. */
+  received: boolean;
 }
 
-/** Short stable identifier for a bill, used as key for locally stored selections. */
-export function billId(encoded: string): string {
-  // FNV-1a 32 bit
-  let h = 0x811c9dc5;
-  for (let i = 0; i < encoded.length; i++) {
-    h ^= encoded.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(36);
-}
-
-export function billUrl(encoded: string, base: string): string {
-  return `${base.replace(/#.*$/, "")}#/b/${encoded}`;
-}
-
-export function subtotal(items: BillItem[]): Cents {
-  return items.reduce((sum, it) => sum + it.total, 0);
-}
-
-/** What a participant has claimed of one bill line. */
-export interface Claim {
-  /** Number of units taken (0..qty). */
-  units: number;
-  /** The claimed units are shared with this many people in total (1 = alone). */
-  shareCount: number;
-}
-
-export type Claims = Record<number, Claim>;
-
-export function claimAmount(item: BillItem, claim: Claim | undefined): Cents {
-  if (!claim || claim.units <= 0) return 0;
-  const units = Math.min(claim.units, item.qty);
-  const share = Math.max(1, claim.shareCount);
-  return Math.round((item.total * units) / item.qty / share);
+export interface BillSnapshot {
+  id: string;
+  createdAt: string;
+  data: BillData;
+  ownerName: string;
+  participants: PublicParticipant[];
+  /** Participant id of the requesting device, if it joined. */
+  me: string | null;
+  isOwner: boolean;
+  /** Payment status of the friends – only included for the payer. */
+  debtors?: Debtor[];
+  /** Pay click of the requesting participant. */
+  myPayment?: { at: string; amount: Cents };
 }
 
 export interface ShareSummary {
@@ -147,8 +76,83 @@ export interface ShareSummary {
   total: Cents;
 }
 
-export function computeShare(bill: Bill, claims: Claims): ShareSummary {
-  const sub = bill.items.reduce((sum, item, idx) => sum + claimAmount(item, claims[idx]), 0);
-  const tip = Math.round((sub * bill.tipPercent) / 100);
-  return { subtotal: sub, tip, total: sub + tip };
+export function subtotal(items: BillItem[]): Cents {
+  return items.reduce((sum, it) => sum + it.total, 0);
+}
+
+export function withTip(amount: Cents, tipPercent: number): Cents {
+  return amount + Math.round((amount * tipPercent) / 100);
+}
+
+export function billTotal(data: BillData): Cents {
+  return withTip(subtotal(data.items), data.tipPercent);
+}
+
+/** Units of an item claimed by all participants together. */
+export function claimedUnits(itemId: string, participants: PublicParticipant[]): number {
+  return participants.reduce((sum, p) => sum + (p.claims[itemId] ?? 0), 0);
+}
+
+/** An item is fully assigned once at least as many units as on the receipt are claimed. */
+export function isFullyAssigned(item: BillItem, participants: PublicParticipant[]): boolean {
+  return claimedUnits(item.id, participants) >= item.qty;
+}
+
+/**
+ * Price of the units one participant claimed. If more units are claimed than the
+ * line has (several people tick the same pizza), the line is shared: everyone pays
+ * proportionally, so the line is never charged more than once in total.
+ */
+export function claimCost(item: BillItem, units: number, totalUnits: number): Cents {
+  if (units <= 0) return 0;
+  return Math.round((item.total * units) / Math.max(item.qty, totalUnits));
+}
+
+export function participantShare(data: BillData, participants: PublicParticipant[], participantId: string): ShareSummary {
+  const me = participants.find((p) => p.id === participantId);
+  if (!me) return { subtotal: 0, tip: 0, total: 0 };
+  const sub = data.items.reduce(
+    (sum, item) => sum + claimCost(item, me.claims[item.id] ?? 0, claimedUnits(item.id, participants)),
+    0,
+  );
+  const total = withTip(sub, data.tipPercent);
+  return { subtotal: sub, tip: total - sub, total };
+}
+
+/** Value (incl. tip) of all units nobody has claimed yet. */
+export function unassignedAmount(data: BillData, participants: PublicParticipant[]): Cents {
+  const sub = data.items.reduce((sum, item) => {
+    const open = Math.max(0, item.qty - claimedUnits(item.id, participants));
+    return sum + Math.round((item.total * open) / item.qty);
+  }, 0);
+  return withTip(sub, data.tipPercent);
+}
+
+/** Drops claims for removed items and clamps units to the item quantity. */
+export function sanitizeClaims(claims: ItemClaims, items: BillItem[]): ItemClaims {
+  const out: ItemClaims = {};
+  for (const item of items) {
+    const units = Math.floor(Number(claims[item.id] ?? 0));
+    if (units > 0) out[item.id] = Math.min(units, item.qty);
+  }
+  return out;
+}
+
+/** Link that is encoded in the QR code. The recipient is part of it, too. */
+export function billUrl(id: string, base: string, payment?: PaymentInfo): string {
+  const root = base.replace(/#.*$/, "");
+  const to = payment?.paypalMe || payment?.paypalEmail;
+  return `${root}#/b/${id}${to ? `?to=${encodeURIComponent(to)}` : ""}`;
+}
+
+/** Extracts the bill id from a scanned QR code / link, or null if it is not a billsplit link. */
+export function billIdFromUrl(text: string): string | null {
+  const m = text.match(/#\/b\/([A-Za-z0-9_-]{6,40})/);
+  return m ? m[1] : null;
+}
+
+let idCounter = 0;
+export function newItemId(): string {
+  idCounter = (idCounter + 1) % 1296;
+  return Date.now().toString(36).slice(-5) + idCounter.toString(36).padStart(2, "0") + Math.random().toString(36).slice(2, 5);
 }

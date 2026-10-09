@@ -1,5 +1,3 @@
-import type { Claims, PaymentMethods } from "./bill";
-
 /** localStorage can throw (private mode, blocked storage); the app must keep working without it. */
 function read<T>(key: string, fallback: T): T {
   try {
@@ -26,50 +24,54 @@ function remove(key: string): void {
   }
 }
 
-export interface Settings {
+export interface Profile {
   name: string;
-  payment: PaymentMethods;
+  paypalMe: string;
+  paypalEmail: string;
 }
 
-const SETTINGS_KEY = "billsplit.settings";
-const MY_BILLS_KEY = "billsplit.myBills";
+const PROFILE_KEY = "billsplit.profile";
+const DEVICE_KEY = "billsplit.deviceKey";
+const RECENT_KEY = "billsplit.recent";
 const DRAFT_KEY = "billsplit.draft";
-const claimsKey = (id: string) => `billsplit.claims.${id}`;
-const paidKey = (id: string) => `billsplit.paid.${id}`;
 
-export const loadSettings = (): Settings => read<Settings>(SETTINGS_KEY, { name: "", payment: {} });
-export const saveSettings = (s: Settings) => write(SETTINGS_KEY, s);
+export const loadProfile = (): Profile => ({ name: "", paypalMe: "", paypalEmail: "", ...read<Partial<Profile>>(PROFILE_KEY, {}) });
+export const saveProfile = (p: Profile) => write(PROFILE_KEY, p);
 
-export interface SavedBill {
-  encoded: string;
+/** Creating a bill needs a name and a way to get paid. */
+export function profileReady(): boolean {
+  const p = loadProfile();
+  return Boolean(p.name.trim() && (p.paypalMe.trim() || p.paypalEmail.trim()));
+}
+
+let memoryKey: string | null = null;
+/** Random secret that identifies this device towards the server. */
+export function deviceKey(): string {
+  const stored = read<string | null>(DEVICE_KEY, null);
+  if (stored) return stored;
+  memoryKey ??= crypto.randomUUID() + crypto.randomUUID();
+  write(DEVICE_KEY, memoryKey);
+  return memoryKey;
+}
+
+export interface RecentBill {
+  id: string;
   title: string;
-  total: number;
-  currency: string;
+  role: "owner" | "guest";
   createdAt: string;
 }
 
-export const loadMyBills = (): SavedBill[] => read<SavedBill[]>(MY_BILLS_KEY, []);
+export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, []);
 
-export function addMyBill(entry: SavedBill): void {
-  const others = loadMyBills().filter((b) => b.encoded !== entry.encoded);
-  write(MY_BILLS_KEY, [entry, ...others].slice(0, 30));
+export function rememberBill(entry: RecentBill): void {
+  const others = loadRecent().filter((b) => b.id !== entry.id);
+  write(RECENT_KEY, [entry, ...others].slice(0, 30));
 }
 
-export function removeMyBill(encoded: string): void {
-  write(MY_BILLS_KEY, loadMyBills().filter((b) => b.encoded !== encoded));
+export function forgetBill(id: string): void {
+  write(RECENT_KEY, loadRecent().filter((b) => b.id !== id));
 }
 
 export const loadDraft = <T>(): T | null => read<T | null>(DRAFT_KEY, null);
 export const saveDraft = (draft: unknown) => write(DRAFT_KEY, draft);
 export const clearDraft = () => remove(DRAFT_KEY);
-
-export const loadClaims = (id: string): Claims => read<Claims>(claimsKey(id), {});
-export const saveClaims = (id: string, claims: Claims) => write(claimsKey(id), claims);
-
-export interface PaidInfo {
-  amount: number;
-  method: "paypal" | "transfer" | "cash";
-  at: string;
-}
-export const loadPaid = (id: string): PaidInfo | null => read<PaidInfo | null>(paidKey(id), null);
-export const savePaid = (id: string, info: PaidInfo | null) => (info ? write(paidKey(id), info) : remove(paidKey(id)));

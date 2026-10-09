@@ -1,4 +1,7 @@
 import type { BillItem } from "./bill";
+
+/** A recognized receipt line; ids are assigned when the bill is created. */
+export type ReceiptItem = Omit<BillItem, "id">;
 import { parseMoney, type Cents } from "./money";
 
 /** Result of reading a receipt photo, independent of the recognition engine. */
@@ -7,7 +10,7 @@ export interface ParsedReceipt {
   /** ISO date (YYYY-MM-DD) or empty. */
   date: string;
   currency: string;
-  items: BillItem[];
+  items: ReceiptItem[];
   /** Grand total printed on the receipt, if found; used to warn about missed lines. */
   total: Cents | null;
   engine: "ai" | "ocr";
@@ -67,7 +70,7 @@ export function parseReceiptText(text: string): ParsedReceipt {
     .map((l) => l.replace(/\s+/g, " ").trim())
     .filter(Boolean);
 
-  const items: BillItem[] = [];
+  const items: ReceiptItem[] = [];
   let total: Cents | null = null;
   let pendingQty: number | null = null;
   let merchant = "";

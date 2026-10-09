@@ -1,14 +1,13 @@
 import { useState } from "react";
 import Header from "../components/Header";
-import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
-import { clearDraft, loadMyBills, loadSettings, removeMyBill, type SavedBill } from "../lib/storage";
+import { clearDraft, forgetBill, loadProfile, loadRecent, profileReady, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
-  const [bills, setBills] = useState<SavedBill[]>(loadMyBills);
-  const settings = loadSettings();
-  const hasPayment = Boolean(settings.payment.paypal || settings.payment.iban || settings.payment.cash);
+  const [recent, setRecent] = useState<RecentBill[]>(loadRecent);
+  const profile = loadProfile();
+  const ready = profileReady();
 
   function onPhoto(file: File | undefined) {
     if (!file) return;
@@ -17,89 +16,92 @@ export default function Home() {
     navigate("/new");
   }
 
-  function startManual() {
-    clearDraft();
-    navigate("/new");
-  }
-
-  function remove(encoded: string) {
-    removeMyBill(encoded);
-    setBills(loadMyBills());
-  }
-
   return (
-    <div className="page">
+    <div className="page home">
       <Header
-        title="billsplit"
         action={
-          <button className="icon-btn" aria-label="Einstellungen" onClick={() => navigate("/settings")}>
-            ⚙︎
+          <button className="avatar-btn" aria-label="Profil" onClick={() => navigate("/profile")}>
+            {profile.name ? profile.name.slice(0, 1).toUpperCase() : "?"}
           </button>
         }
       />
       <main className="content">
         <section className="hero">
-          <h2>Rechnung bezahlt? Teil sie in Sekunden.</h2>
+          <p className="eyebrow">{profile.name ? `Hi ${profile.name}!` : "Willkommen bei billsplit"}</p>
+          <h2>
+            Einer zahlt.
+            <br />
+            <span className="hl">Alle splitten.</span>
+          </h2>
           <p className="muted">
-            Fotografiere den Beleg, zeig deinen Freunden den QR-Code – jeder hakt ab, was er hatte, und zahlt dir den
-            Betrag direkt per PayPal.
+            Rechnung fotografieren, QR-Code zeigen – deine Freunde haken ab, was sie hatten, und zahlen dir ihren Anteil direkt
+            per PayPal.
           </p>
-          <label className="btn btn-primary btn-large">
-            📷 Rechnung fotografieren
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              hidden
-              onChange={(e) => onPhoto(e.target.files?.[0])}
-            />
-          </label>
-          <div className="row gap">
-            <label className="btn btn-secondary grow">
-              🖼️ Foto auswählen
-              <input type="file" accept="image/*" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
+        </section>
+
+        <section className="actions">
+          {ready ? (
+            <label className="action-card primary">
+              <span className="action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.2-1.8A1.5 1.5 0 0 1 10.5 3.5h3a1.5 1.5 0 0 1 1.2.7L15.9 6h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" />
+                  <circle cx="12" cy="12.5" r="3.5" />
+                </svg>
+              </span>
+              <span className="action-text">
+                <b>Rechnung fotografieren</b>
+                <small>Du hast bezahlt und willst das Geld zurück</small>
+              </span>
+              <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
             </label>
-            <button className="btn btn-secondary grow" onClick={startManual}>
-              ✏️ Manuell erfassen
+          ) : (
+            <button className="action-card primary" onClick={() => navigate("/profile?next=new")}>
+              <span className="action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.2-1.8A1.5 1.5 0 0 1 10.5 3.5h3a1.5 1.5 0 0 1 1.2.7L15.9 6h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" />
+                  <circle cx="12" cy="12.5" r="3.5" />
+                </svg>
+              </span>
+              <span className="action-text">
+                <b>Rechnung fotografieren</b>
+                <small>Einmalig: Name &amp; PayPal hinterlegen</small>
+              </span>
             </button>
-          </div>
-        </section>
+          )}
 
-        {!hasPayment && (
-          <button className="notice" onClick={() => navigate("/settings")}>
-            <strong>Zahlungsmethode hinterlegen</strong>
-            <span>Damit deine Freunde dich bezahlen können, trag deinen PayPal.me-Namen oder deine IBAN ein. →</span>
+          <button className="action-card" onClick={() => navigate("/scan")}>
+            <span className="action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15M4 12h16" />
+              </svg>
+            </span>
+            <span className="action-text">
+              <b>QR-Code scannen</b>
+              <small>Ein Freund hat bezahlt – du übernimmst deinen Teil</small>
+            </span>
           </button>
-        )}
-
-        <section>
-          <h3 className="section-title">So funktioniert's</h3>
-          <ol className="steps">
-            <li>
-              <strong>Foto machen</strong> – alle Positionen inkl. Mengen werden automatisch erkannt.
-            </li>
-            <li>
-              <strong>Prüfen &amp; QR-Code zeigen</strong> – deine Zahlungsmethode steckt mit drin.
-            </li>
-            <li>
-              <strong>Freunde scannen</strong>, haken ihre Posten ab und zahlen mit einem Klick.
-            </li>
-          </ol>
         </section>
 
-        {bills.length > 0 && (
+        {recent.length > 0 && (
           <section>
-            <h3 className="section-title">Meine Rechnungen</h3>
+            <h3 className="section-title">Deine Rechnungen</h3>
             <ul className="list">
-              {bills.map((b) => (
-                <li key={b.encoded} className="list-item">
-                  <button className="list-main" onClick={() => navigate(`/share/${b.encoded}`)}>
+              {recent.map((b) => (
+                <li key={b.id} className="list-item">
+                  <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
                     <span className="list-title">{b.title || "Rechnung"}</span>
                     <span className="muted small">
-                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {formatMoney(b.total, b.currency)}
+                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? "du hast bezahlt" : "du bist eingeladen"}
                     </span>
                   </button>
-                  <button className="icon-btn" aria-label="Entfernen" onClick={() => remove(b.encoded)}>
+                  <button
+                    className="icon-btn subtle"
+                    aria-label="Aus Liste entfernen"
+                    onClick={() => {
+                      forgetBill(b.id);
+                      setRecent(loadRecent());
+                    }}
+                  >
                     ✕
                   </button>
                 </li>
@@ -107,6 +109,30 @@ export default function Home() {
             </ul>
           </section>
         )}
+
+        <section className="how">
+          <h3 className="section-title">So funktioniert's</h3>
+          <ol className="steps">
+            <li>
+              <span>1</span>
+              <div>
+                <b>Foto machen.</b> Alle Positionen inkl. Mengen werden automatisch erkannt.
+              </div>
+            </li>
+            <li>
+              <span>2</span>
+              <div>
+                <b>QR-Code zeigen.</b> Freunde scannen ihn mit billsplit und erscheinen sofort bei dir.
+              </div>
+            </li>
+            <li>
+              <span>3</span>
+              <div>
+                <b>Abhaken &amp; zahlen.</b> Jeder sieht live, wer was hat, und zahlt mit einem Tipp per PayPal.
+              </div>
+            </li>
+          </ol>
+        </section>
       </main>
     </div>
   );
