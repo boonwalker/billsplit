@@ -186,7 +186,7 @@ export default function Home() {
                     <span className="muted small">
                       {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? (
                         <>
-                          du leihst{b.settled && <span className="list-paid"> · ausgeglichen</span>}
+                          du leihst{b.settled && <> · <span className="list-paid">✓ ausgeglichen</span></>}
                         </>
                       ) : b.markedPaid ? <span className="list-paid">✓ als bezahlt markiert</span> : "du schuldest"}
                     </span>
