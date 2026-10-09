@@ -172,7 +172,7 @@ export default function Editor({ billId }: { billId?: string }) {
         receiptTotal: receipt.total,
         engine: receipt.engine,
         tip: receipt.tip ? { ...draft.tip, mode: "amount", amount: centsToInput(receipt.tip) } : draft.tip,
-        tipOnReceipt: receipt.tip !== null,
+        tipOnReceipt: receipt.tip != null && receipt.tip > 0,
         rows: receipt.items.length ? receipt.items.map((i) => newRow(i)) : draft.rows,
       };
       setDraft(next);
@@ -182,7 +182,7 @@ export default function Editor({ billId }: { billId?: string }) {
         // Straight to the QR code – the payer can still correct lines from there.
         // Without a tip on the receipt, ask for it first.
         const recognized = next.rows.map(rowToItem).filter((i): i is BillItem => i !== null);
-        if (receipt.tip !== null) {
+        if (receipt.tip != null && receipt.tip > 0) {
           await publish(toBillData(next, recognized));
           return;
         }

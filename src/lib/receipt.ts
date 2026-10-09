@@ -26,7 +26,11 @@ export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop rec
 - line_total is the price of the whole line (all units together). If only a unit price is printed, multiply it by the quantity.
 - Include discounts, vouchers and deposit refunds as items with a negative line_total. Include service charges that are part of the total.
 - Do not include subtotals, totals, taxes/VAT breakdowns, payment method lines, change given, or table/waiter/date information.
-- A tip ("Trinkgeld", "Tip", "Gratuity", also handwritten) is not an item: put its amount in tip, or 0 if the receipt shows no tip.
+- A tip is not an item: put its amount in tip. Look for it carefully, it appears in several ways:
+  - a printed or handwritten line such as "Trinkgeld", "Tip", "Tipp" or "Gratuity";
+  - a handwritten new total next to or below the printed total (the tip is the difference);
+  - a card or cash payment that is higher than the total without change given back, e.g. "Summe 36,50" and "Kartenzahlung 40,00" or "EC 40,00" means a tip of 3,50 (if "Rückgeld"/"Change" is printed, that difference is change, not tip).
+  Use 0 only if none of these is present.
 - receipt_total is the printed total of the purchased items before any tip, or 0 if not readable.
 - Use a dot as decimal separator in numbers, regardless of how the receipt prints them.
 - If the image is not a receipt or is unreadable, return an empty items list.`;

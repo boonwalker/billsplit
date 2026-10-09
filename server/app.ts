@@ -157,7 +157,9 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     const parts = url.pathname.split("/").filter(Boolean); // ["api", ...]
 
     if (url.pathname === "/api/health" && method === "GET") {
-      return sendJson(res, 200, { ok: true, ai: isAiConfigured() });
+      // Railway sets RAILWAY_GIT_COMMIT_SHA: shows which code version is live.
+      const version = (process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.RENDER_GIT_COMMIT ?? "dev").slice(0, 7);
+      return sendJson(res, 200, { ok: true, ai: isAiConfigured(), version });
     }
     if (url.pathname === "/api/parse-receipt" && method === "POST") {
       return handleParseReceipt(req, res);

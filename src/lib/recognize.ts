@@ -28,7 +28,8 @@ async function recognizeWithAi(image: PreparedImage, onProgress: ProgressFn): Pr
   if (!res.ok || !body) {
     throw new Error(body?.error ?? `Belegerkennung fehlgeschlagen (HTTP ${res.status}).`);
   }
-  return body;
+  // A missing field means "no tip found" – never "tip taken from the receipt".
+  return { ...body, tip: typeof body.tip === "number" && body.tip > 0 ? body.tip : null, total: body.total ?? null };
 }
 
 async function recognizeWithOcr(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
