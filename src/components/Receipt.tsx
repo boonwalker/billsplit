@@ -70,6 +70,7 @@ function ReceiptLine({
   currency,
   onSetSlots,
   each,
+  people = 1,
 }: {
   item: BillItem;
   index: number;
@@ -78,6 +79,8 @@ function ReceiptLine({
   currency: string;
   /** Equal split: what every person pays of this line (nothing can be ticked then). */
   each?: number;
+  /** Equal split: number of people the line is divided by. */
+  people?: number;
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
 }) {
   const holders = slotHolders(item.id, participants);
@@ -170,11 +173,12 @@ function ReceiptLine({
         </span>
         <span className="rline-dots" aria-hidden="true" />
         {each !== undefined && (
-          <span className="rline-each" title="Anteil pro Person">
+          <span className="pencil rline-each" title="Anteil pro Person">
             {formatMoney(each, currency)}
           </span>
         )}
         <span className="rline-price">{formatMoney(item.total, currency)}</span>
+        {each !== undefined && <span className="pencil rline-div">/{people}</span>}
       </button>
 
       {canEdit && item.qty > 1 && myUnits > 0 && (
@@ -260,15 +264,30 @@ function ReceiptLine({
   );
 }
 
-function FeeLine({ name, amount, currency, each }: { name: string; amount: number; currency: string; each?: number }) {
+function FeeLine({ name, amount, currency, each, people }: { name: string; amount: number; currency: string; each?: number; people?: number }) {
   return (
     <>
       <dt>{name}</dt>
       <dd>
-        {each !== undefined && <span className="rline-each">{formatMoney(each, currency)}</span>}
+        {each !== undefined && <span className="pencil rline-each">{formatMoney(each, currency)}</span>}
         {formatMoney(amount, currency)}
+        {each !== undefined && <span className="pencil rline-div">/{people}</span>}
       </dd>
     </>
+  );
+}
+
+/** Grain that makes handwriting and strokes look drawn with a pencil (referenced via CSS). */
+function PencilFilter() {
+  return (
+    <svg width="0" height="0" className="pencil-defs" aria-hidden="true" focusable="false">
+      <filter id="pencil-grain" x="-10%" y="-30%" width="120%" height="160%">
+        <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.2" result="wobbly" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.1 1.4" result="grain" />
+        <feComposite in="wobbly" in2="grain" operator="in" />
+      </filter>
+    </svg>
   );
 }
 
@@ -278,13 +297,14 @@ function EqualFraction({ total, people, share, currency }: { total: number; peop
     <span className="fraction" aria-label={`${formatMoney(total, currency)} geteilt durch ${people} ist ${formatMoney(share, currency)} pro Person`}>
       <span className="fraction-stack" aria-hidden="true">
         <span>{formatMoney(total, currency)}</span>
-        <svg className="fraction-bar" viewBox="0 0 120 10" preserveAspectRatio="none">
-          <path d="M3 6.2 C 18 3.8, 30 7.4, 46 5.1 S 76 3.6, 92 5.6 S 110 6.4, 117 4.2" />
-          <path d="M8 7.4 C 30 6.1, 58 6.9, 86 6.2 S 108 5.8, 114 6.6" className="fraction-bar-thin" />
+        {/* A swung pencil stroke: a filled, tapering shape plus a fainter second pass. */}
+        <svg className="fraction-bar" viewBox="0 0 120 12" preserveAspectRatio="none">
+          <path d="M2 8.2 C 22 4.4, 50 9.4, 84 5.6 S 112 4.6, 118 2.8 C 113 5.4, 102 6.6, 85 7.9 C 52 11.4, 24 6.8, 2 8.6 Z" />
+          <path d="M9 9.2 C 34 7.6, 62 9.6, 92 6.9 S 110 5.9, 114 5.2 C 108 7.1, 96 8.1, 90 8.3 C 62 10.6, 34 8.6, 9 9.6 Z" className="fraction-bar-thin" />
         </svg>
-        <span className="fraction-den">{people}</span>
+        <span className="pencil fraction-den">{people}</span>
       </span>
-      <span className="fraction-result" aria-hidden="true">
+      <span className="pencil fraction-result" aria-hidden="true">
         = {formatMoney(share, currency)}
         <small>pro Person</small>
       </span>
@@ -304,6 +324,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
 
   return (
     <article className="receipt" aria-label="Digitale Rechnung">
+      {equal && <PencilFilter />}
       <div className="receipt-paper">
         <header className="receipt-head">
           <div className="receipt-logo" aria-hidden="true">
@@ -331,6 +352,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
               currency={data.currency}
               onSetSlots={onSetSlots}
               each={perPerson(item.total)}
+              people={people}
             />
           ))}
         </ul>
@@ -341,11 +363,12 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
             <>
               <dt>Zwischensumme</dt>
               <dd>
-                {equal && <span className="rline-each">{formatMoney(perPerson(sub)!, data.currency)}</span>}
+                {equal && <span className="pencil rline-each">{formatMoney(perPerson(sub)!, data.currency)}</span>}
                 {formatMoney(sub, data.currency)}
+                {equal && <span className="pencil rline-div">/{people}</span>}
               </dd>
               {(data.fees ?? []).map((fee) => (
-                <FeeLine key={fee.id} name={fee.name} amount={fee.amount} currency={data.currency} each={perPerson(fee.amount)} />
+                <FeeLine key={fee.id} name={fee.name} amount={fee.amount} currency={data.currency} each={perPerson(fee.amount)} people={people} />
               ))}
               {hasTip(data) && (
                 <FeeLine
@@ -353,6 +376,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
                   amount={tipTotal(data)}
                   currency={data.currency}
                   each={perPerson(tipTotal(data))}
+                  people={people}
                 />
               )}
             </>
