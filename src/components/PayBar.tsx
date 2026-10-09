@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { participantShare, type BillSnapshot } from "../lib/bill";
+import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
 import { formatMoney } from "../lib/money";
 import { payAction } from "../lib/payment";
 
@@ -13,7 +13,7 @@ interface Props {
 export default function PayBar({ snapshot, onPay }: Props) {
   const [copied, setCopied] = useState(false);
   const { data, participants, me, myPayment, ownerName } = snapshot;
-  const share = me ? participantShare(data, participants, me) : { subtotal: 0, tip: 0, total: 0 };
+  const share = me ? participantShare(data, participants, me) : { subtotal: 0, shared: 0, total: 0 };
   const alreadyPaid = myPayment?.amount ?? 0;
   const due = Math.max(0, share.total - alreadyPaid);
   const action = payAction(data.payment, due, data.currency);
@@ -35,7 +35,13 @@ export default function PayBar({ snapshot, onPay }: Props) {
         <div className="paybar-sum">
           <span className="paybar-label">
             Dein Anteil
-            {share.tip > 0 && <small> inkl. {formatMoney(share.tip, data.currency)} Trinkgeld-Anteil</small>}
+            {share.shared !== 0 && (
+              <small>
+                {" "}
+                inkl. {formatMoney(share.shared, data.currency)} Anteil an{" "}
+                {(data.fees ?? []).length > 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"}
+              </small>
+            )}
           </span>
           <strong className="paybar-total" key={share.total}>
             {formatMoney(share.total, data.currency)}

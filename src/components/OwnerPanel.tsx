@@ -1,9 +1,11 @@
 import {
   billTotal,
   participantShare,
-  tipHeadCount,
-  tipPerPerson,
-  tipTotal,
+  feesTotal,
+  hasTip,
+  sharedPerPerson,
+  sharedTotal,
+  splitHeadCount,
   unassignedAmount,
   type BillData,
   type BillSnapshot,
@@ -17,13 +19,13 @@ interface Props {
 }
 
 /**
- * Shown above the bill for the payer: how many people share the tip. Defaults to everyone who joined; the payer can
+ * Shown above the bill for the payer: how many people share tip and fees. Defaults to everyone who joined; the payer can
  * raise it when someone will only scan later (e.g. the next day).
  */
 export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; onUpdateData: (data: BillData) => void }) {
   const { data, participants } = snapshot;
   const joined = participants.length;
-  const count = tipHeadCount(data, participants);
+  const count = splitHeadCount(data, participants);
   const missing = count - joined;
   const setCount = (n: number) => onUpdateData({ ...data, tipSplitCount: n <= joined ? undefined : n });
 
@@ -31,9 +33,13 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
     <div className="tip-split-panel">
       <div className="row between">
         <span>
-          <b>Trinkgeld {formatMoney(tipTotal(data), data.currency)}</b> aufteilen auf
+          <b>
+            {feesTotal(data) !== 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"}{" "}
+            {formatMoney(sharedTotal(data), data.currency)}
+          </b>{" "}
+          aufteilen auf
         </span>
-        <div className="stepper-mini" role="group" aria-label="Personen für das Trinkgeld">
+        <div className="stepper-mini" role="group" aria-label="Personen für Trinkgeld und Gebühren">
           <button type="button" onClick={() => setCount(count - 1)} disabled={count <= joined} aria-label="Eine Person weniger">
             −
           </button>
@@ -44,7 +50,7 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
         </div>
       </div>
       <p className="muted small">
-        {formatMoney(tipPerPerson(data, participants), data.currency)} pro Person ·{" "}
+        {formatMoney(sharedPerPerson(data, participants), data.currency)} pro Person ·{" "}
         {missing > 0
           ? `${joined} beigetreten (inkl. dir), ${missing} ${missing === 1 ? "kommt" : "kommen"} noch dazu`
           : `gezählt: alle, die gescannt haben, plus du`}
@@ -129,8 +135,8 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
         <p className="hint">
           {formatMoney(unassigned, currency)} sind noch keiner Person zugeordnet – hast du deine eigenen Positionen schon
           abgehakt?
-          {tipHeadCount(snapshot.data, snapshot.participants) > snapshot.participants.length &&
-            " Darin enthalten sind auch Trinkgeld-Anteile von Personen, die noch nicht gescannt haben."}
+          {splitHeadCount(snapshot.data, snapshot.participants) > snapshot.participants.length &&
+            " Darin enthalten sind auch Anteile an Trinkgeld und Gebühren von Personen, die noch nicht gescannt haben."}
         </p>
       )}
       {debtors.length > 0 && (

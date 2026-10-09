@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import TipControl, { tipCents, tipPersons, type TipValue } from "../components/TipControl";
 import { api } from "../lib/api";
-import { newItemId, subtotal, type BillData, type BillItem } from "../lib/bill";
+import { newItemId, subtotal, type BillData, type BillFee, type BillItem } from "../lib/bill";
 import { prepareImage } from "../lib/image";
 import { centsToInput, formatMoney, parseMoney } from "../lib/money";
 import type { ParsedReceipt, ReceiptItem } from "../lib/receipt";
@@ -23,6 +23,12 @@ interface Row {
   total: string;
 }
 
+interface FeeRow {
+  id: string;
+  name: string;
+  amount: string;
+}
+
 interface Draft {
   title: string;
   date: string;
@@ -31,9 +37,27 @@ interface Draft {
   /** The tip was read from the receipt, so the payer is not asked again. */
   tipOnReceipt: boolean;
   rows: Row[];
+  /** Delivery, service and similar fees – shared per person like the tip. */
+  fees: FeeRow[];
+  /** A delivery/takeaway order: ask how many people ordered together. */
+  delivery: boolean;
   receiptTotal: number | null;
   engine: "ai" | "ocr" | null;
 }
+
+const newFeeRow = (fee?: { id?: string; name: string; amount: number }): FeeRow => ({
+  id: fee?.id ?? newItemId(),
+  name: fee?.name ?? "",
+  amount: fee ? centsToInput(fee.amount) : "",
+});
+
+function feeRowToFee(row: FeeRow): BillFee | null {
+  const amount = parseMoney(row.amount);
+  if (!row.name.trim() || amount === null || amount === 0) return null;
+  return { id: row.id, name: row.name.trim(), amount };
+}
+
+const draftFees = (draft: Draft): BillFee[] => draft.fees.map(feeRowToFee).filter((f): f is BillFee => f !== null);
 
 const newRow = (item?: ReceiptItem & { id?: string }): Row => ({
   id: item?.id ?? newItemId(),
@@ -50,6 +74,8 @@ function emptyDraft(): Draft {
     tip: { mode: "percent", percent: "0", amount: "", persons: "" },
     tipOnReceipt: false,
     rows: [newRow()],
+    fees: [],
+    delivery: false,
     receiptTotal: null,
     engine: null,
   };
@@ -68,6 +94,8 @@ function draftFromData(data: BillData): Draft {
     },
     tipOnReceipt: false,
     rows: data.items.map(newRow),
+    fees: (data.fees ?? []).map(newFeeRow),
+    delivery: (data.fees ?? []).length > 0,
     receiptTotal: null,
     engine: null,
   };
@@ -93,6 +121,7 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     items,
     payment: paymentFromProfile(),
     tipSplitCount: tipPersons(draft.tip),
+    fees: draftFees(draft).length ? draftFees(draft) : undefined,
   };
   if (draft.tip.mode === "amount") {
     const amount = tipCents(draft.tip, subtotal(items));
@@ -106,19 +135,26 @@ function restoreDraft(): Draft {
   const saved = loadDraft<Partial<Draft>>();
   if (!saved?.rows) return emptyDraft();
   const empty = emptyDraft();
-  return { ...empty, ...saved, tip: { ...empty.tip, ...saved.tip }, tipOnReceipt: saved.tipOnReceipt ?? false } as Draft;
+  return {
+    ...empty,
+    ...saved,
+    tip: { ...empty.tip, ...saved.tip },
+    tipOnReceipt: saved.tipOnReceipt ?? false,
+    fees: saved.fees ?? [],
+    delivery: saved.delivery ?? false,
+  } as Draft;
 }
 
 /** Recognition is trusted enough to skip the review when the AI read it and the sum matches the printed total. */
 function isConfident(r: ParsedReceipt): boolean {
-  const sum = r.items.reduce((s, i) => s + i.total, 0);
+  const sum = r.items.reduce((s, i) => s + i.total, 0) + r.fees.reduce((s, f) => s + f.amount, 0);
   return r.engine === "ai" && r.items.length > 0 && (r.total === null || r.total === sum);
 }
 
 export default function Editor({ billId }: { billId?: string }) {
   const editing = Boolean(billId);
   const [draft, setDraft] = useState<Draft>(() => (editing ? emptyDraft() : restoreDraft()));
-  /** Items waiting for the tip question before the QR code is created. */
+  /** Items waiting for the tip / head count questions before the QR code is created. */
   const [askTip, setAskTip] = useState<BillItem[] | null>(null);
   const [loaded, setLoaded] = useState(!editing);
   const [busy, setBusy] = useState<{ message: string; progress?: number } | null>(null);
@@ -174,15 +210,17 @@ export default function Editor({ billId }: { billId?: string }) {
         tip: receipt.tip ? { ...draft.tip, mode: "amount", amount: centsToInput(receipt.tip) } : draft.tip,
         tipOnReceipt: receipt.tip != null && receipt.tip > 0,
         rows: receipt.items.length ? receipt.items.map((i) => newRow(i)) : draft.rows,
+        fees: receipt.fees.map((f) => newFeeRow(f)),
+        delivery: receipt.delivery || receipt.fees.length > 0,
       };
       setDraft(next);
       if (receipt.items.length === 0) {
         setError("Auf dem Foto wurden keine Positionen erkannt. Versuch es mit einem schärferen Foto oder trag sie unten ein.");
       } else if (isConfident(receipt)) {
         // Straight to the QR code – the payer can still correct lines from there.
-        // Without a tip on the receipt, ask for it first.
+        // Without a tip on the receipt, or for a delivery order, ask first.
         const recognized = next.rows.map(rowToItem).filter((i): i is BillItem => i !== null);
-        if (receipt.tip != null && receipt.tip > 0) {
+        if (next.tipOnReceipt && !next.delivery) {
           await publish(toBillData(next, recognized));
           return;
         }
@@ -214,13 +252,21 @@ export default function Editor({ billId }: { billId?: string }) {
   const items = draft.rows.map(rowToItem);
   const validItems = items.filter((i): i is BillItem => i !== null);
   const sum = validItems.reduce((s, i) => s + i.total, 0);
-  const mismatch = draft.receiptTotal !== null && validItems.length > 0 && draft.receiptTotal !== sum;
+  const fees = draftFees(draft);
+  const feeSum = fees.reduce((s, f) => s + f.amount, 0);
+  const mismatch = draft.receiptTotal !== null && validItems.length > 0 && draft.receiptTotal !== sum + feeSum;
+  const updateFee = (id: string, patch: Partial<FeeRow>) => setDraft((d) => ({ ...d, fees: d.fees.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
+  const removeFee = (id: string) => setDraft((d) => ({ ...d, fees: d.fees.filter((f) => f.id !== id) }));
+  const addFee = () => setDraft((d) => ({ ...d, fees: [...d.fees, newFeeRow()] }));
+  const persons = tipPersons(draft.tip);
+  const setPersons = (n: number | undefined) => update({ tip: { ...draft.tip, persons: n ? String(Math.min(100, Math.max(1, n))) : "" } });
 
   async function submit() {
     setShowErrors(true);
     if (items.some((i) => i === null) || validItems.length === 0) return;
     if (!billId) {
-      if (draft.tipOnReceipt) return publish(toBillData(draft, validItems));
+      // Nothing to ask: tip known and not an order shared by several people.
+      if (draft.tipOnReceipt && !draft.delivery) return publish(toBillData(draft, validItems));
       setAskTip(validItems);
       return;
     }
@@ -333,11 +379,50 @@ export default function Editor({ billId }: { billId?: string }) {
               </button>
             </div>
 
+            <h3 className="section-title">Gebühren</h3>
+            <div className="card items-editor">
+              <p className="muted small">
+                Liefer-, Service- und ähnliche Gebühren werden wie das Trinkgeld gleichmäßig auf alle Personen verteilt.
+              </p>
+              {draft.fees.map((fee) => {
+                const invalid = showErrors && feeRowToFee(fee) === null && (fee.name.trim() !== "" || fee.amount.trim() !== "");
+                return (
+                  <div key={fee.id} className={`fee-row${invalid ? " invalid" : ""}`}>
+                    <input aria-label="Gebühr" value={fee.name} placeholder="z. B. Liefergebühr" maxLength={80} onChange={(e) => updateFee(fee.id, { name: e.target.value })} />
+                    <input
+                      className="price-input"
+                      inputMode="decimal"
+                      aria-label="Betrag der Gebühr"
+                      value={fee.amount}
+                      placeholder="0,00"
+                      onChange={(e) => updateFee(fee.id, { amount: e.target.value })}
+                      onBlur={() => {
+                        const c = parseMoney(fee.amount);
+                        if (c !== null) updateFee(fee.id, { amount: centsToInput(c) });
+                      }}
+                    />
+                    <button className="icon-btn subtle" aria-label="Gebühr entfernen" onClick={() => removeFee(fee.id)}>
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+              <button className="btn btn-ghost" onClick={addFee}>
+                + Gebühr hinzufügen
+              </button>
+            </div>
+
             <div className="card">
               <div className="row between">
                 <span>Summe Positionen</span>
                 <strong>{formatMoney(sum, draft.currency)}</strong>
               </div>
+              {feeSum !== 0 && (
+                <div className="row between">
+                  <span>Gebühren</span>
+                  <strong>{formatMoney(feeSum, draft.currency)}</strong>
+                </div>
+              )}
               {mismatch && (
                 <p className="warning small">
                   Auf dem Beleg steht {formatMoney(draft.receiptTotal!, draft.currency)}. Fehlt eine Position oder ist ein Preis falsch erkannt?
@@ -346,9 +431,10 @@ export default function Editor({ billId }: { billId?: string }) {
               <div className="field">
                 <span>Trinkgeld – wird gleichmäßig auf alle Personen verteilt</span>
                 {draft.tipOnReceipt && <small className="muted">Vom Beleg übernommen.</small>}
-                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} />
+                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} fees={feeSum} />
               </div>
             </div>
+
 
             {showErrors && items.some((i) => i === null) && <div className="alert">Bitte vervollständige die rot markierten Positionen.</div>}
 
@@ -373,28 +459,75 @@ export default function Editor({ billId }: { billId?: string }) {
             }}
           >
             <div className="sheet-emoji" aria-hidden="true">
-              🙌
+              {draft.delivery ? "🛵" : "🙌"}
             </div>
-            <h2>Trinkgeld gegeben?</h2>
-            <p className="muted">
-              {draft.engine ? "Auf dem Beleg steht kein Trinkgeld. " : ""}Wenn du Trinkgeld gegeben hast, trag es hier ein – es
-              wird gleichmäßig auf alle Personen verteilt.
-            </p>
-            <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={subtotal(askTip)} currency={draft.currency} />
+
+            {draft.delivery && (
+              <>
+                <h2>Wie viele haben mitbestellt?</h2>
+                <p className="muted">
+                  {feeSum !== 0 ? `Gebühren (${formatMoney(feeSum, draft.currency)})` : "Gebühren"}
+                  {draft.tipOnReceipt ? " und Trinkgeld" : ""} werden gleichmäßig auf alle verteilt – inklusive dir. Wer den
+                  QR-Code scannt, wird automatisch mitgezählt.
+                </p>
+                <div className="persons-question" role="group" aria-label="Personen, die mitbestellt haben">
+                  <button type="button" onClick={() => setPersons((persons ?? 2) - 1)} disabled={(persons ?? 0) <= 1} aria-label="Eine Person weniger">
+                    −
+                  </button>
+                  <input
+                    inputMode="numeric"
+                    aria-label="Anzahl Personen"
+                    value={draft.tip.persons}
+                    placeholder="?"
+                    onChange={(e) => setPersons(parseInt(e.target.value.replace(/\D/g, ""), 10) || undefined)}
+                  />
+                  <button type="button" onClick={() => setPersons((persons ?? 1) + 1)} aria-label="Eine Person mehr">
+                    +
+                  </button>
+                </div>
+                {persons && feeSum !== 0 && (
+                  <p className="muted small center-text">
+                    {formatMoney(Math.round((feeSum + (draft.tipOnReceipt ? tipCents(draft.tip, subtotal(askTip)) : 0)) / persons), draft.currency)} pro
+                    Person{draft.tipOnReceipt ? " (Gebühren & Trinkgeld)" : " an Gebühren"}
+                  </p>
+                )}
+              </>
+            )}
+
+            {!draft.tipOnReceipt && (
+              <>
+                <h2 className={draft.delivery ? "sheet-subtitle" : undefined}>Trinkgeld gegeben?</h2>
+                <p className="muted">
+                  {draft.engine ? "Auf dem Beleg steht kein Trinkgeld. " : ""}Wenn du Trinkgeld gegeben hast, trag es hier ein – es
+                  wird gleichmäßig auf alle Personen verteilt.
+                </p>
+                <TipControl
+                  value={draft.tip}
+                  onChange={(tip) => update({ tip })}
+                  subtotal={subtotal(askTip)}
+                  currency={draft.currency}
+                  fees={feeSum}
+                  showPersons={!draft.delivery}
+                />
+              </>
+            )}
+
             <button className="btn btn-primary btn-large">QR-Code erstellen</button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => {
-                const items = askTip;
-                const noTip: Draft = { ...draft, tip: { mode: "percent", percent: "0", amount: "", persons: "" } };
-                setDraft(noTip);
-                setAskTip(null);
-                void publish(toBillData(noTip, items));
-              }}
-            >
-              Ohne Trinkgeld weiter
-            </button>
+            {!draft.tipOnReceipt && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  const items = askTip;
+                  const noTip: Draft = { ...draft, tip: { ...draft.tip, mode: "percent", percent: "0", amount: "" } };
+                  setDraft(noTip);
+                  setAskTip(null);
+                  void publish(toBillData(noTip, items));
+                }}
+              >
+                Ohne Trinkgeld weiter
+              </button>
+            )}
             <button type="button" className="link sheet-back" onClick={() => setAskTip(null)}>
               Positionen nochmal prüfen
             </button>

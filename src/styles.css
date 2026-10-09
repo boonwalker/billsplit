@@ -1963,3 +1963,58 @@ input[aria-invalid="true"] {
   font-family: var(--font-mono);
   font-weight: 700;
 }
+
+/* ───────────────────────── fees & delivery ───────────────────────── */
+.fee-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px 34px;
+  gap: 6px;
+  align-items: center;
+}
+
+.fee-row.invalid input {
+  border-color: var(--danger);
+}
+
+.fee-row .icon-btn {
+  height: 46px;
+  width: 34px;
+}
+
+.persons-question {
+  display: grid;
+  grid-template-columns: 56px 96px 56px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.persons-question button {
+  height: 56px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--mint-soft);
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.persons-question button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.persons-question input {
+  height: 56px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.sheet-subtitle {
+  font-size: 1.15rem !important;
+  margin-top: 10px !important;
+  padding-top: 14px;
+  border-top: 2px dashed var(--border);
+}

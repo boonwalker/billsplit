@@ -52,6 +52,13 @@ beigetreten ist, plus der Rechnungssteller. Optional gibt der Rechnungssteller e
 vorab im Trinkgeld-Schritt oder später direkt unter der Rechnung. Sie gilt, solange noch nicht alle gescannt haben,
 etwa wenn jemand erst am nächsten Tag scannt. Treten mehr Personen bei als erwartet, zählen alle.
 
+### Liefer- und Servicegebühren
+
+Liefergebühren, Servicegebühren, Mindestbestellwert-Zuschläge und ähnliche Gebühren erkennt billsplit getrennt
+von den Positionen. Sie werden wie das Trinkgeld gleichmäßig pro Person verteilt. Erkennt billsplit eine Liefer-
+oder Abholbestellung (Gebühren auf dem Beleg oder typische Liefer-App), fragt es vor dem QR-Code:
+„Wie viele haben mitbestellt?“. Gebühren lassen sich im Editor ergänzen oder korrigieren.
+
 ### Geteilte Positionen
 
 Hakt mehr als eine Person dieselbe Position ab (z. B. eine Vorspeisenplatte), wird sie automatisch anteilig

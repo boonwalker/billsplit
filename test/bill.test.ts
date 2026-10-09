@@ -6,9 +6,11 @@ import {
   claimCost,
   isFullyAssigned,
   participantShare,
+  feesTotal,
   sanitizeClaims,
-  tipHeadCount,
-  tipPerPerson,
+  sharedTotal,
+  splitHeadCount,
+  sharedPerPerson,
   tipTotal,
   unassignedAmount,
   type BillData,
@@ -53,9 +55,9 @@ describe("claims", () => {
     // 10 % of 33,00 € = 3,30 € tip, 2 people -> 1,65 € each
     const ps = [p("owner", { pizza: 1 }, true), p("anna", { bier: 2, tira: 1 })];
     expect(billTotal(data)).toBe(3630);
-    expect(tipHeadCount(data, ps)).toBe(2);
-    expect(participantShare(data, ps, "anna")).toEqual({ subtotal: 1400, tip: 165, total: 1565 });
-    expect(participantShare(data, ps, "owner")).toEqual({ subtotal: 950, tip: 165, total: 1115 });
+    expect(splitHeadCount(data, ps)).toBe(2);
+    expect(participantShare(data, ps, "anna")).toEqual({ subtotal: 1400, shared: 165, total: 1565 });
+    expect(participantShare(data, ps, "owner")).toEqual({ subtotal: 950, shared: 165, total: 1115 });
     expect(participantShare(data, ps, "nobody").total).toBe(0);
     // 1 Bier + 1 Tiramisu are left, nobody else is expected
     expect(unassignedAmount(data, ps)).toBe(950);
@@ -64,14 +66,35 @@ describe("claims", () => {
   it("uses the payer's expected head count while people are missing", () => {
     const fixed: BillData = { ...data, tipPercent: 0, tipAmount: 400, tipSplitCount: 4 };
     const ps = [p("owner", {}, true), p("anna", { bier: 1 })];
-    expect(tipHeadCount(fixed, ps)).toBe(4);
-    expect(participantShare(fixed, ps, "anna")).toEqual({ subtotal: 450, tip: 100, total: 550 });
+    expect(splitHeadCount(fixed, ps)).toBe(4);
+    expect(participantShare(fixed, ps, "anna")).toEqual({ subtotal: 450, shared: 100, total: 550 });
     // all items except one beer are open, plus the tip parts of the 2 missing people
     expect(unassignedAmount(fixed, ps)).toBe(3300 - 450 + 200);
     // more people than expected joined -> everyone counts
     const five = [...ps, p("ben", {}), p("clara", {}), p("dora", {})];
-    expect(tipHeadCount(fixed, five)).toBe(5);
-    expect(tipPerPerson(fixed, five)).toBe(80);
+    expect(splitHeadCount(fixed, five)).toBe(5);
+    expect(sharedPerPerson(fixed, five)).toBe(80);
+  });
+
+  it("splits delivery and service fees equally per person, together with the tip", () => {
+    const delivery: BillData = {
+      ...data,
+      tipPercent: 0,
+      tipAmount: 200,
+      tipSplitCount: 3,
+      fees: [
+        { id: "f1", name: "Liefergebühr", amount: 299 },
+        { id: "f2", name: "Servicegebühr", amount: 101 },
+      ],
+    };
+    const ps = [p("owner", { pizza: 1 }, true), p("anna", { bier: 2 })];
+    expect(feesTotal(delivery)).toBe(400);
+    expect(sharedTotal(delivery)).toBe(600);
+    expect(billTotal(delivery)).toBe(3300 + 600);
+    // 3 people expected: 6,00 € / 3 = 2,00 € each
+    expect(participantShare(delivery, ps, "anna")).toEqual({ subtotal: 900, shared: 200, total: 1100 });
+    // open items (1 Bier, 2 Tiramisu = 1450) plus the share of the person still missing
+    expect(unassignedAmount(delivery, ps)).toBe(1450 + 200);
   });
 
   it("prefers the fixed tip over the percentage", () => {

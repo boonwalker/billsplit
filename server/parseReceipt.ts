@@ -24,6 +24,8 @@ const ReceiptSchema = z.object({
   ),
   receipt_total: z.number(),
   tip: z.number(),
+  fees: z.array(z.object({ name: z.string(), amount: z.number() })),
+  delivery: z.boolean(),
 });
 
 type ReceiptOutput = z.infer<typeof ReceiptSchema>;
@@ -32,7 +34,7 @@ type ReceiptOutput = z.infer<typeof ReceiptSchema>;
 const RECEIPT_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["merchant", "date", "currency", "items", "receipt_total", "tip"],
+  required: ["merchant", "date", "currency", "items", "receipt_total", "tip", "fees", "delivery"],
   properties: {
     merchant: { type: "string", description: "Name of the restaurant or shop, empty if not printed." },
     date: { type: "string", description: "Date of the receipt as YYYY-MM-DD, empty if not printed." },
@@ -50,8 +52,22 @@ const RECEIPT_JSON_SCHEMA = {
         },
       },
     },
-    receipt_total: { type: "number", description: "Printed total of the purchased items before any tip, 0 if not readable." },
+    receipt_total: { type: "number", description: "Printed total including fees but before any tip, 0 if not readable." },
     tip: { type: "number", description: "Tip shown on the receipt (printed or handwritten), 0 if none." },
+    fees: {
+      type: "array",
+      description: "Delivery, service and similar fees (not items); negative amount for a fee discount.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name", "amount"],
+        properties: {
+          name: { type: "string", description: "Fee name as printed, e.g. Liefergebühr." },
+          amount: { type: "number", description: "Fee amount; negative for a discount on fees." },
+        },
+      },
+    },
+    delivery: { type: "boolean", description: "True for a food delivery or takeaway order, false for a restaurant visit." },
   },
 } as const;
 
@@ -86,6 +102,10 @@ export function toParsedReceipt(out: ReceiptOutput): ParsedReceipt {
       .map((it) => ({ name: it.name.trim(), qty: Math.max(1, it.quantity), total: toCents(it.line_total) })),
     total: out.receipt_total > 0 ? toCents(out.receipt_total) : null,
     tip: out.tip > 0 ? toCents(out.tip) : null,
+    fees: out.fees
+      .filter((f) => f.name.trim() && Number.isFinite(f.amount) && f.amount !== 0)
+      .map((f) => ({ name: f.name.trim(), amount: toCents(f.amount) })),
+    delivery: out.delivery,
     engine: "ai",
   };
 }

@@ -10,6 +10,14 @@ export interface BillItem {
   total: Cents;
 }
 
+/** A fee on the bill (delivery, service, …). Fees are shared equally per person, like the tip. */
+export interface BillFee {
+  id: string;
+  name: string;
+  /** Amount in cents; negative for a discount on the fees. */
+  amount: Cents;
+}
+
 /** Where friends send their money to. */
 export interface PaymentInfo {
   /** PayPal.Me name – the only PayPal link type that presets recipient and amount. */
@@ -29,10 +37,12 @@ export interface BillData {
   /** Tip as a fixed amount (from the receipt or entered by the payer). */
   tipAmount?: Cents;
   /**
-   * Number of people (payer included) the tip is split among, as expected by the payer.
+   * Number of people (payer included) that tip and fees are split among, as expected by the payer.
    * Without it, everyone who joined the bill counts; with it, people who scan late are covered.
    */
   tipSplitCount?: number;
+  /** Delivery, service and similar fees – split equally per person. */
+  fees?: BillFee[];
   items: BillItem[];
   payment: PaymentInfo;
 }
@@ -53,7 +63,7 @@ export interface Debtor {
   id: string;
   name: string;
   joinedAt: string;
-  /** Current share according to the claims, including tip. */
+  /** Current share according to the claims, including tip and fees. */
   amount: Cents;
   /** Set when the friend tapped "Bezahlen"; the amount at that moment. */
   payClickedAt?: string;
@@ -78,8 +88,10 @@ export interface BillSnapshot {
 }
 
 export interface ShareSummary {
+  /** Claimed items. */
   subtotal: Cents;
-  tip: Cents;
+  /** This person's part of tip and fees. */
+  shared: Cents;
   total: Cents;
 }
 
@@ -93,21 +105,30 @@ export function tipTotal(data: BillData): Cents {
   return Math.round((subtotal(data.items) * data.tipPercent) / 100);
 }
 
+export function feesTotal(data: BillData): Cents {
+  return (data.fees ?? []).reduce((sum, f) => sum + f.amount, 0);
+}
+
+/** Costs that everyone shares equally: tip plus fees. */
+export function sharedTotal(data: BillData): Cents {
+  return tipTotal(data) + feesTotal(data);
+}
+
 export function billTotal(data: BillData): Cents {
-  return subtotal(data.items) + tipTotal(data);
+  return subtotal(data.items) + sharedTotal(data);
 }
 
 /**
- * People the tip is split among: everyone who joined (payer included), or the payer's
- * expected head count while people are still missing.
+ * People tip and fees are split among: everyone who joined (payer included), or the
+ * payer's expected head count while people are still missing.
  */
-export function tipHeadCount(data: BillData, participants: PublicParticipant[]): number {
+export function splitHeadCount(data: BillData, participants: PublicParticipant[]): number {
   return Math.max(1, participants.length, data.tipSplitCount ?? 0);
 }
 
-/** Every person pays the same part of the tip. */
-export function tipPerPerson(data: BillData, participants: PublicParticipant[]): Cents {
-  return Math.round(tipTotal(data) / tipHeadCount(data, participants));
+/** Every person pays the same part of tip and fees. */
+export function sharedPerPerson(data: BillData, participants: PublicParticipant[]): Cents {
+  return Math.round(sharedTotal(data) / splitHeadCount(data, participants));
 }
 
 export function hasTip(data: BillData): boolean {
@@ -136,23 +157,23 @@ export function claimCost(item: BillItem, units: number, totalUnits: number): Ce
 
 export function participantShare(data: BillData, participants: PublicParticipant[], participantId: string): ShareSummary {
   const me = participants.find((p) => p.id === participantId);
-  if (!me) return { subtotal: 0, tip: 0, total: 0 };
+  if (!me) return { subtotal: 0, shared: 0, total: 0 };
   const sub = data.items.reduce(
     (sum, item) => sum + claimCost(item, me.claims[item.id] ?? 0, claimedUnits(item.id, participants)),
     0,
   );
-  const tip = tipPerPerson(data, participants);
-  return { subtotal: sub, tip, total: sub + tip };
+  const shared = sharedPerPerson(data, participants);
+  return { subtotal: sub, shared, total: sub + shared };
 }
 
-/** Value of all units nobody has claimed yet, plus the tip parts of people who have not joined yet. */
+/** Value of all units nobody has claimed yet, plus the tip and fee parts of people who have not joined yet. */
 export function unassignedAmount(data: BillData, participants: PublicParticipant[]): Cents {
   const sub = data.items.reduce((sum, item) => {
     const open = Math.max(0, item.qty - claimedUnits(item.id, participants));
     return sum + Math.round((item.total * open) / item.qty);
   }, 0);
-  const missingPeople = tipHeadCount(data, participants) - participants.length;
-  return sub + missingPeople * tipPerPerson(data, participants);
+  const missingPeople = splitHeadCount(data, participants) - participants.length;
+  return sub + missingPeople * sharedPerPerson(data, participants);
 }
 
 /** Drops claims for removed items and clamps units to the item quantity. */

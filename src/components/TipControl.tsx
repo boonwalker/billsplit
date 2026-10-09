@@ -33,10 +33,14 @@ interface Props {
   onChange: (value: TipValue) => void;
   subtotal: Cents;
   currency: string;
+  /** Fees that are shared per person together with the tip (shown in the preview). */
+  fees?: Cents;
+  /** False when the head count is asked separately (delivery orders). */
+  showPersons?: boolean;
 }
 
 /** Tip input as percentage or fixed amount, optional head count, and a live preview. */
-export default function TipControl({ value, onChange, subtotal, currency }: Props) {
+export default function TipControl({ value, onChange, subtotal, currency, fees = 0, showPersons = true }: Props) {
   const uid = useId();
   const tip = tipCents(value, subtotal);
   const persons = tipPersons(value);
@@ -86,6 +90,7 @@ export default function TipControl({ value, onChange, subtotal, currency }: Prop
         </label>
       )}
 
+      {showPersons && (
       <label className="tip-persons">
         <span>
           Aufteilen auf
@@ -101,25 +106,34 @@ export default function TipControl({ value, onChange, subtotal, currency }: Prop
         />
         <span>Personen</span>
       </label>
-      <p className="tip-hint">
-        {persons
-          ? `Inklusive dir. Wer später scannt, wird mitgezählt – es werden aber mindestens ${persons} Personen angenommen.`
-          : "Leer lassen: Gezählt wird automatisch, wer den QR-Code scannt, plus du."}
-      </p>
+      )}
+      {showPersons && (
+        <p className="tip-hint">
+          {persons
+            ? `Inklusive dir. Wer später scannt, wird mitgezählt – es werden aber mindestens ${persons} Personen angenommen.`
+            : "Leer lassen: Gezählt wird automatisch, wer den QR-Code scannt, plus du."}
+        </p>
+      )}
 
       <dl className="tip-preview">
         <dt>Rechnung</dt>
         <dd>{formatMoney(subtotal, currency)}</dd>
+        {fees !== 0 && (
+          <>
+            <dt>+ Gebühren</dt>
+            <dd>{formatMoney(fees, currency)}</dd>
+          </>
+        )}
         <dt>+ Trinkgeld</dt>
         <dd>{formatMoney(tip, currency)}</dd>
-        {persons && tip > 0 && (
+        {persons && tip + fees !== 0 && (
           <>
-            <dt>Trinkgeld pro Person</dt>
-            <dd>{formatMoney(Math.round(tip / persons), currency)}</dd>
+            <dt>{fees !== 0 ? "Gebühren & Trinkgeld pro Person" : "Trinkgeld pro Person"}</dt>
+            <dd>{formatMoney(Math.round((tip + fees) / persons), currency)}</dd>
           </>
         )}
         <dt className="strong">Du hast bezahlt</dt>
-        <dd className="strong">{formatMoney(subtotal + tip, currency)}</dd>
+        <dd className="strong">{formatMoney(subtotal + fees + tip, currency)}</dd>
       </dl>
     </div>
   );

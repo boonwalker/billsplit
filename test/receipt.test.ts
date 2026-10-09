@@ -43,6 +43,28 @@ describe("parseReceiptText", () => {
     expect(r.tip).toBe(150);
   });
 
+  it("reads delivery and service fees as fees, not items", () => {
+    const r = parseReceiptText(
+      "Lieferando Bestellung\n1x Pizza Salami 11,50\n2x Cola 0,33l 5,00\nLiefergebühr 2,99\nServicegebühr 0,99\nGesamt 20,48",
+    );
+    expect(r.items).toEqual([
+      { name: "Pizza Salami", qty: 1, total: 1150 },
+      { name: "Cola 0,33l", qty: 2, total: 500 },
+    ]);
+    expect(r.fees).toEqual([
+      { name: "Liefergebühr", amount: 299 },
+      { name: "Servicegebühr", amount: 99 },
+    ]);
+    expect(r.delivery).toBe(true);
+    expect(r.total).toBe(2048);
+  });
+
+  it("does not mark restaurant bills as delivery", () => {
+    const r = parseReceiptText("Pizza 10,00\nSumme 10,00");
+    expect(r.fees).toEqual([]);
+    expect(r.delivery).toBe(false);
+  });
+
   it("reports no tip when none is printed", () => {
     expect(parseReceiptText("Pizza 10,00\nSumme 10,00").tip).toBeNull();
   });

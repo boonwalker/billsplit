@@ -17,6 +17,16 @@ export const BillDataSchema = z.object({
   tipPercent: z.number().min(0).max(100),
   tipAmount: z.number().int().min(0).max(10_000_000).optional(),
   tipSplitCount: z.number().int().min(1).max(100).optional(),
+  fees: z
+    .array(
+      z.object({
+        id: z.string().regex(/^[A-Za-z0-9_-]{1,24}$/),
+        name: z.string().trim().min(1).max(80),
+        amount: z.number().int().min(-1_000_000).max(1_000_000),
+      }),
+    )
+    .max(10)
+    .optional(),
   items: z
     .array(
       z.object({

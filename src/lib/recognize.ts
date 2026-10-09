@@ -29,7 +29,13 @@ async function recognizeWithAi(image: PreparedImage, onProgress: ProgressFn): Pr
     throw new Error(body?.error ?? `Belegerkennung fehlgeschlagen (HTTP ${res.status}).`);
   }
   // A missing field means "no tip found" – never "tip taken from the receipt".
-  return { ...body, tip: typeof body.tip === "number" && body.tip > 0 ? body.tip : null, total: body.total ?? null };
+  return {
+    ...body,
+    tip: typeof body.tip === "number" && body.tip > 0 ? body.tip : null,
+    total: body.total ?? null,
+    fees: Array.isArray(body.fees) ? body.fees : [],
+    delivery: body.delivery === true,
+  };
 }
 
 async function recognizeWithOcr(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
@@ -62,6 +68,8 @@ interface SampleReceipt {
   items?: { name?: unknown; quantity?: unknown; line_total?: unknown }[];
   receipt_total?: unknown;
   tip?: unknown;
+  fees?: { name?: unknown; amount?: unknown }[];
+  delivery?: unknown;
 }
 
 const SAMPLE_ERRORS: Record<string, string> = {
@@ -85,7 +93,7 @@ async function recognizeWithSample(image: PreparedImage, onProgress: ProgressFn)
       `${RECEIPT_INSTRUCTIONS}
 
 Reply with only one JSON object of this shape:
-{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable), "tip": number (0 if none)}`,
+{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable), "tip": number (0 if none), "fees": [{"name": string, "amount": number}], "delivery": boolean}`,
       { images: [image.blob], modelTier: "default" },
     );
   } catch (e) {
@@ -105,6 +113,10 @@ Reply with only one JSON object of this shape:
     items,
     total: Number.isFinite(total) && total > 0 ? cents(total) : null,
     tip: Number.isFinite(tip) && tip > 0 ? cents(tip) : null,
+    fees: (Array.isArray(out.fees) ? out.fees : [])
+      .filter((f) => typeof f?.name === "string" && f.name.trim() && Number.isFinite(Number(f.amount)) && Number(f.amount) !== 0)
+      .map((f) => ({ name: String(f.name).trim(), amount: cents(f.amount) })),
+    delivery: out.delivery === true,
     engine: "ai",
   };
 }

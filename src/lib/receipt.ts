@@ -11,11 +11,21 @@ export interface ParsedReceipt {
   date: string;
   currency: string;
   items: ReceiptItem[];
-  /** Total of the purchased items printed on the receipt (before tip), if found; used to warn about missed lines. */
+  /** Printed total including fees but before tip, if found; used to warn about missed lines. */
   total: Cents | null;
   /** Tip printed on the receipt, if any. */
   tip: Cents | null;
+  /** Delivery, service and similar fees – shared per person, not items. */
+  fees: ReceiptFee[];
+  /** A delivery or takeaway order (ordered together, not a restaurant visit). */
+  delivery: boolean;
   engine: "ai" | "ocr";
+}
+
+export interface ReceiptFee {
+  name: string;
+  /** Cents; negative for a discount on the fees (e.g. free delivery). */
+  amount: Cents;
 }
 
 /** What Claude is asked to do with a receipt photo (server and demo). */
@@ -24,14 +34,16 @@ export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop rec
 - One entry per receipt line. Keep the item name as printed, but remove quantity prefixes ("2x", "3 x") and unit-price annotations ("à 4,50", "@ 4.50") from the name.
 - quantity is the number of units on the line. Receipts show it in many ways: "3 Bier 13,50", "3x Bier", "Bier 3 x 4,50 13,50", or a separate line like "3 x 4,50" above or below the item. If no quantity is shown, use 1.
 - line_total is the price of the whole line (all units together). If only a unit price is printed, multiply it by the quantity.
-- Include discounts, vouchers and deposit refunds as items with a negative line_total. Include service charges that are part of the total.
+- Include discounts on food, vouchers and deposit refunds as items with a negative line_total.
+- Fees are not items: delivery fees, service fees, small-order surcharges, packaging or bag fees and restaurant service charges (e.g. "Liefergebühr", "Lieferkosten", "Servicegebühr", "Service fee", "Bedienungszuschlag", "Mindestbestellwert-Zuschlag", "Verpackung") go into fees, each with its name as printed and its amount. A discount on a fee (e.g. "Gratis Lieferung -2,99") is a fee with a negative amount.
 - Do not include subtotals, totals, taxes/VAT breakdowns, payment method lines, change given, or table/waiter/date information.
 - A tip is not an item: put its amount in tip. Look for it carefully, it appears in several ways:
   - a printed or handwritten line such as "Trinkgeld", "Tip", "Tipp" or "Gratuity";
   - a handwritten new total next to or below the printed total (the tip is the difference);
   - a card or cash payment that is higher than the total without change given back, e.g. "Summe 36,50" and "Kartenzahlung 40,00" or "EC 40,00" means a tip of 3,50 (if "Rückgeld"/"Change" is printed, that difference is change, not tip).
   Use 0 only if none of these is present.
-- receipt_total is the printed total of the purchased items before any tip, or 0 if not readable.
+- receipt_total is the printed total including fees but before any tip (if the printed total already contains a tip, subtract it), or 0 if not readable.
+- delivery is true for a food delivery or takeaway order (delivery app or website such as Lieferando, Wolt or Uber Eats, delivery address, delivery fee), false for a bill from a visit to a restaurant or shop.
 - Use a dot as decimal separator in numbers, regardless of how the receipt prints them.
 - In screenshots, ignore app interface elements such as buttons, navigation, ads and order status texts.
 - If the image is not a receipt or is unreadable, return an empty items list.`;
@@ -48,6 +60,7 @@ const UNIT_PRICE = new RegExp(String.raw`(?:^|\s)(?:à|a|@|x|×|\*)\s*${PRICE}(?
 /** A price standing on its own (not part of e.g. "0,25l"). */
 const STANDALONE_PRICE = new RegExp(String.raw`(?<![\w.,])${PRICE}(?![\w.,])`, "g");
 
+const FEE_WORDS = /(liefergeb|lieferkosten|lieferpauschale|liefer\w*zuschlag|servicegeb|service ?fee|delivery|bedienungszuschlag|bearbeitungsgeb|mindestbestell|kleinbestell|verpackung|tütengeb)/i;
 const TIP_WORDS = /\b(trinkgeld|tip|tipp|gratuity)\b/i;
 const TOTAL_WORDS = /\b(summe|gesamt(?:betrag)?|total|zu zahlen|endbetrag|betrag)\b/i;
 const SKIP_WORDS = new RegExp(
@@ -93,6 +106,7 @@ export function parseReceiptText(text: string): ParsedReceipt {
   const items: ReceiptItem[] = [];
   let total: Cents | null = null;
   let tip: Cents | null = null;
+  const fees: ReceiptFee[] = [];
   let pendingQty: number | null = null;
   let merchant = "";
 
@@ -116,6 +130,11 @@ export function parseReceiptText(text: string): ParsedReceipt {
     if (lineTotal === null) continue;
     let rest = line.slice(0, priceMatch.index).trim();
 
+    if (FEE_WORDS.test(rest) && !TOTAL_WORDS.test(rest)) {
+      fees.push({ name: cleanName(rest) || "Gebühr", amount: lineTotal });
+      pendingQty = null;
+      continue;
+    }
     if (TIP_WORDS.test(rest)) {
       // "Gesamt inkl. Trinkgeld" is a grand total, not the tip itself.
       if (!TOTAL_WORDS.test(rest) && lineTotal > 0) tip = (tip ?? 0) + lineTotal;
@@ -155,5 +174,6 @@ export function parseReceiptText(text: string): ParsedReceipt {
     items.push({ name, qty: Math.max(1, qty), total: lineTotal });
   }
 
-  return { merchant, date: findDate(text), currency: "EUR", items, total, tip, engine: "ocr" };
+  const delivery = fees.length > 0 && /liefer|delivery|lieferando|wolt|uber ?eats/i.test(text);
+  return { merchant, date: findDate(text), currency: "EUR", items, total, tip, fees, delivery, engine: "ocr" };
 }

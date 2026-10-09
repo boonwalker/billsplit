@@ -113,6 +113,15 @@ describe("bills API", () => {
     expect(annaView.json.myPayment?.amount).toBe(1850);
   });
 
+  it("accepts delivery fees", async () => {
+    const res = await call<BillSnapshot>(OWNER, "POST", "/api/bills", {
+      data: { ...data, tipSplitCount: 3, fees: [{ id: "f1", name: "Liefergebühr", amount: 299 }] },
+      name: "Niklas",
+    });
+    expect(res.status).toBe(201);
+    expect(res.json.data.fees).toEqual([{ id: "f1", name: "Liefergebühr", amount: 299 }]);
+  });
+
   it("accepts a fixed tip", async () => {
     const res = await call<BillSnapshot>(OWNER, "POST", "/api/bills", { data: { ...data, tipAmount: 300 }, name: "Niklas" });
     expect(res.status).toBe(201);

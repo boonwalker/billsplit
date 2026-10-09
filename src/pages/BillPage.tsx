@@ -7,7 +7,7 @@ import PayBar from "../components/PayBar";
 import QrCode from "../components/QrCode";
 import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
-import { billUrl, tipTotal, type BillData, type Debtor } from "../lib/bill";
+import { billUrl, sharedTotal, type BillData, type Debtor } from "../lib/bill";
 import { DEMO } from "../lib/demo";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
@@ -170,7 +170,7 @@ export default function BillPage({ id }: { id: string }) {
         {(error || actionError) && <div className="alert">{actionError ?? error}</div>}
 
         <div id="receipt" className="receipt-anchor">
-          {snap.isOwner && tipTotal(snap.data) > 0 && <TipSplit snapshot={snap} onUpdateData={updateData} />}
+          {snap.isOwner && sharedTotal(snap.data) !== 0 && <TipSplit snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
           <Receipt snapshot={snap} onSetUnits={snap.me ? setUnits : undefined} />
         </div>

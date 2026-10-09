@@ -4,9 +4,11 @@ import {
   claimCost,
   claimedUnits,
   hasTip,
+  sharedPerPerson,
+  sharedTotal,
+  splitHeadCount,
   subtotal,
-  tipHeadCount,
-  tipPerPerson,
+  tipTotal,
   type BillItem,
   type BillSnapshot,
   type PublicParticipant,
@@ -138,6 +140,15 @@ function ReceiptLine({
   );
 }
 
+function FeeLine({ name, amount, currency }: { name: string; amount: number; currency: string }) {
+  return (
+    <>
+      <dt>{name}</dt>
+      <dd>{formatMoney(amount, currency)}</dd>
+    </>
+  );
+}
+
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
 export default function Receipt({ snapshot, onSetUnits }: Props) {
   const { data, participants, me, ownerName } = snapshot;
@@ -179,16 +190,25 @@ export default function Receipt({ snapshot, onSetUnits }: Props) {
 
         <div className="receipt-rule" aria-hidden="true" />
         <dl className="receipt-sums">
-          {hasTip(data) && (
+          {sharedTotal(data) !== 0 && (
             <>
               <dt>Zwischensumme</dt>
               <dd>{formatMoney(sub, data.currency)}</dd>
-              <dt>Trinkgeld{data.tipAmount ? "" : ` ${data.tipPercent} %`}</dt>
-              <dd>{formatMoney(total - sub, data.currency)}</dd>
+              {(data.fees ?? []).map((fee) => (
+                <FeeLine key={fee.id} name={fee.name} amount={fee.amount} currency={data.currency} />
+              ))}
+              {hasTip(data) && (
+                <FeeLine
+                  name={`Trinkgeld${data.tipAmount ? "" : ` ${data.tipPercent} %`}`}
+                  amount={tipTotal(data)}
+                  currency={data.currency}
+                />
+              )}
               <dt className="tip-split">
-                ÷ {tipHeadCount(data, participants)} Personen
+                {(data.fees ?? []).length > 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"} ÷{" "}
+                {splitHeadCount(data, participants)} Personen
               </dt>
-              <dd className="tip-split">je {formatMoney(tipPerPerson(data, participants), data.currency)}</dd>
+              <dd className="tip-split">je {formatMoney(sharedPerPerson(data, participants), data.currency)}</dd>
             </>
           )}
           <dt className="grand">SUMME</dt>
