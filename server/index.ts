@@ -13,15 +13,21 @@ try {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.env.PORT ?? process.env.API_PORT ?? 8787);
-const DATA_FILE = path.resolve(root, process.env.DATA_DIR ?? "data", "bills.json");
+// Railway mounts the attached volume at RAILWAY_VOLUME_MOUNT_PATH.
+const DATA_DIR = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || "data";
+const DATA_FILE = path.resolve(root, DATA_DIR, "bills.json");
+// Render and Railway put a proxy in front; the client address is then in X-Forwarded-For.
+const TRUST_PROXY = process.env.TRUST_PROXY === "1" || Boolean(process.env.RAILWAY_ENVIRONMENT);
 
 const store = new BillStore(DATA_FILE);
 await store.load();
 
-const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: process.env.TRUST_PROXY === "1" }));
+const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY }));
 
 server.listen(PORT, () => {
-  console.log(`billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"})`);
+  console.log(
+    `billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${DATA_FILE})`,
+  );
 });
 
 async function shutdown(): Promise<void> {

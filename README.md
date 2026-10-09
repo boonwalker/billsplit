@@ -88,6 +88,26 @@ liegen nach `npm run dev`/`npm run build` unter `public/ocr` und werden selbst a
 
 Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder `localhost`).
 
+### Live stellen (Railway)
+
+Das Repo enthält eine `railway.json` mit Build- und Startbefehl und Health-Check.
+
+1. Auf [railway.com](https://railway.com) ein Konto anlegen (Free-Tarif, keine Kreditkarte nötig) und GitHub
+   verbinden.
+2. **New Project → Deploy from GitHub repo** wählen und `billsplit` auswählen.
+3. Am Service ein **Volume** anlegen (Rechtsklick auf den Service bzw. „+ New → Volume“), z. B. mit Mount-Pfad
+   `/data`. billsplit erkennt das Volume automatisch über `RAILWAY_VOLUME_MOUNT_PATH`.
+4. Unter **Settings → Networking → Generate Domain** eine öffentliche Adresse erzeugen.
+5. Optional: Unter **Variables** `ANTHROPIC_API_KEY` setzen (KI-Belegerkennung).
+6. Optional, aber empfohlen im Free-Tarif: Unter **Settings** „Serverless“ (App Sleeping) einschalten. Der
+   Server schläft dann nach etwa 10 Minuten ohne aktive Nutzer und spart Guthaben. Die Rechnungen bleiben auf
+   dem Volume erhalten. Beim ersten Aufruf danach dauert es einen Moment.
+
+Kosten: Nach dem Testmonat enthält der Free-Tarif 1 $ Guthaben pro Monat. Abgerechnet wird vor allem der
+Arbeitsspeicher. Der Server läuft deshalb als einzelne gebündelte Datei (`node dist-server/index.js`, im Test
+ca. 70 MB). Ist das Guthaben aufgebraucht, stoppt Railway den Dienst bis zum nächsten Monat. Die Daten auf dem
+Volume bleiben erhalten. Den Verbrauch zeigt Railway unter „Usage“.
+
 ### Live stellen (Render)
 
 Das Repo enthält eine fertige `render.yaml`:

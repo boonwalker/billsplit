@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { RECEIPT_INSTRUCTIONS, type ParsedReceipt } from "../src/lib/receipt.ts";
 
@@ -65,6 +65,8 @@ export class ReceiptParseError extends Error {
 }
 
 let client: Anthropic | null = null;
+/** The SDK is only loaded when the first photo arrives, which keeps the idle server small. */
+let sdk: typeof import("@anthropic-ai/sdk") | null = null;
 
 export function isAiConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
@@ -90,7 +92,9 @@ export function toParsedReceipt(out: ReceiptOutput): ParsedReceipt {
 
 /** Reads a receipt photo with Claude and returns its line items. */
 export async function parseReceiptImage(base64: string, mediaType: ReceiptMediaType): Promise<ParsedReceipt> {
-  client ??= new Anthropic();
+  sdk ??= await import("@anthropic-ai/sdk");
+  const { default: AnthropicClient } = sdk;
+  client ??= new AnthropicClient();
 
   let response: Anthropic.Beta.BetaMessage;
   try {
@@ -114,13 +118,13 @@ export async function parseReceiptImage(base64: string, mediaType: ReceiptMediaT
       ],
     });
   } catch (error) {
-    if (error instanceof Anthropic.AuthenticationError) {
+    if (error instanceof AnthropicClient.AuthenticationError) {
       throw new ReceiptParseError("Der API-Schlüssel für die Belegerkennung ist ungültig.", 503);
-    } else if (error instanceof Anthropic.RateLimitError) {
+    } else if (error instanceof AnthropicClient.RateLimitError) {
       throw new ReceiptParseError("Die Belegerkennung ist gerade ausgelastet. Bitte gleich nochmal versuchen.", 429);
-    } else if (error instanceof Anthropic.BadRequestError) {
+    } else if (error instanceof AnthropicClient.BadRequestError) {
       throw new ReceiptParseError("Das Bild konnte nicht verarbeitet werden.", 400);
-    } else if (error instanceof Anthropic.APIError) {
+    } else if (error instanceof AnthropicClient.APIError) {
       throw new ReceiptParseError(`Belegerkennung fehlgeschlagen (${error.status ?? "Netzwerk"}).`, 502);
     }
     throw error;

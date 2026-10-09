@@ -18,18 +18,32 @@ export interface Api {
   subscribe(id: string, onSnapshot: (s: BillSnapshot) => void, onLive: (live: boolean) => void): () => void;
 }
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function request<T>(method: string, path: string, body?: unknown, init?: RequestInit): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(path, {
-      method,
-      headers: { "content-type": "application/json", "x-billsplit-key": deviceKey() },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      ...init,
-    });
-  } catch {
-    throw new ApiError("Keine Verbindung zum Server.", 0);
+  // A sleeping server (e.g. Railway "Serverless") answers the first request with 502/503
+  // or not at all while it wakes up; reads are simply tried again a few times.
+  const attempts = method === "GET" ? 4 : 1;
+  let res: Response | null = null;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      res = await fetch(path, {
+        method,
+        headers: { "content-type": "application/json", "x-billsplit-key": deviceKey() },
+        body: body === undefined ? undefined : JSON.stringify(body),
+        ...init,
+      });
+      if (attempt < attempts && (res.status === 502 || res.status === 503)) {
+        await wait(1500 * attempt);
+        continue;
+      }
+      break;
+    } catch {
+      if (attempt === attempts) throw new ApiError("Keine Verbindung zum Server.", 0);
+      await wait(1500 * attempt);
+    }
   }
+  if (!res) throw new ApiError("Keine Verbindung zum Server.", 0);
   const json = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
   if (!res.ok || json === null) throw new ApiError(json?.error ?? `Fehler (HTTP ${res.status}).`, res.status);
   return json;

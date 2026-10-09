@@ -9,14 +9,15 @@
     "dev": "concurrently -k -n api,web \"tsx watch server/index.ts\" \"vite\"",
     "dev:web": "vite",
     "prebuild": "node scripts/copy-ocr-assets.mjs",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run build:server",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist-server/index.js",
     "build:demo": "tsc --noEmit && vite build --mode demo && node scripts/build-artifact.mjs",
-    "start": "NODE_ENV=production tsx server/index.ts",
+    "start": "node dist-server/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",
@@ -29,7 +30,6 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tesseract.js": "^7.0.0",
-    "tsx": "^4.23.15",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -39,7 +39,9 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.6",
+    "esbuild": "^0.28.2",
     "jsdom": "^29.1.1",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.3"

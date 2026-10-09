@@ -6,3 +6,4 @@ dist
 public/ocr
 data
 dist-demo
+dist-server

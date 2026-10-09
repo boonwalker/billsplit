@@ -11,7 +11,7 @@ services:
     # Live-Updates und Rechnungen liegen auf genau einer Instanz – nicht hochskalieren.
     numInstances: 1
     buildCommand: npm ci --include=dev && npm run build
-    startCommand: npm start
+    startCommand: node dist-server/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
