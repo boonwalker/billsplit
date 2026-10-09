@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
+import { isSettled } from "../components/OwnerPanel";
 import { api } from "../lib/api";
 import { ApiError } from "../lib/apiError";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
@@ -22,10 +23,16 @@ export default function Home() {
       api
         .getBill(b.id)
         .then((snap) => {
-          if (snap.isOwner || !snap.me) return;
-          const markedPaid = Boolean(snap.myPayment?.markedPaidAt);
-          if (markedPaid === Boolean(b.markedPaid)) return;
-          updateRecent(b.id, { markedPaid });
+          if (snap.isOwner) {
+            const settled = isSettled(snap);
+            if (settled === Boolean(b.settled)) return;
+            updateRecent(b.id, { settled });
+          } else {
+            if (!snap.me) return;
+            const markedPaid = Boolean(snap.myPayment?.markedPaidAt);
+            if (markedPaid === Boolean(b.markedPaid)) return;
+            updateRecent(b.id, { markedPaid });
+          }
           if (!cancelled) setRecent(loadRecent());
         })
         .catch((e: unknown) => {
@@ -177,7 +184,11 @@ export default function Home() {
                   <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
                     <span className="list-title">{b.title || "Rechnung"}</span>
                     <span className="muted small">
-                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? "du leihst" : b.markedPaid ? <span className="list-paid">✓ als bezahlt markiert</span> : "du schuldest"}
+                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? (
+                        <>
+                          du leihst{b.settled && <span className="list-paid"> · ausgeglichen</span>}
+                        </>
+                      ) : b.markedPaid ? <span className="list-paid">✓ als bezahlt markiert</span> : "du schuldest"}
                     </span>
                   </button>
                   <button

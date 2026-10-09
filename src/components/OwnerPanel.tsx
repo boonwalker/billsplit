@@ -85,6 +85,11 @@ function time(iso: string): string {
   return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 }
 
+/** The payer got everything back: friends joined and "Dir fehlen noch" is 0,00 €. */
+export function isSettled(snapshot: BillSnapshot): boolean {
+  return (snapshot.debtors ?? []).length > 0 && ownerSummary(snapshot).missing === 0;
+}
+
 export function ownerSummary(snapshot: BillSnapshot) {
   const total = billTotal(snapshot.data);
   const own = snapshot.me ? participantShare(snapshot.data, snapshot.participants, snapshot.me).total : 0;

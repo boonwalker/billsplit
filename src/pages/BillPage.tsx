@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import DemoBar from "../components/DemoBar";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
-import OwnerPanel, { EqualSplitToggle, ownerSummary, TipSplit } from "../components/OwnerPanel";
+import OwnerPanel, { EqualSplitToggle, isSettled, ownerSummary, TipSplit } from "../components/OwnerPanel";
 import PayBar from "../components/PayBar";
 import QrCode from "../components/QrCode";
 import Receipt from "../components/Receipt";
@@ -80,6 +80,11 @@ export default function BillPage({ id }: { id: string }) {
   useEffect(() => {
     if (markedPaid !== null) updateRecent(id, { markedPaid });
   }, [markedPaid, id]);
+  // … and for the payer whether everything has come back.
+  const settled = snapshot?.isOwner ? isSettled(snapshot) : null;
+  useEffect(() => {
+    if (settled !== null) updateRecent(id, { settled });
+  }, [settled, id]);
 
   // An invalid bill does not stay in the list of bills.
   useEffect(() => {

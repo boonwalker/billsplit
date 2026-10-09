@@ -105,6 +105,8 @@ export interface RecentBill {
   createdAt: string;
   /** Guest only: they marked their share as paid. */
   markedPaid?: boolean;
+  /** Payer only: friends joined and nothing is missing any more. */
+  settled?: boolean;
 }
 
 export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, []);
