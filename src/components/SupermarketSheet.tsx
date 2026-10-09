@@ -53,7 +53,6 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
   /** First the question, then either straight on ("all") or the receipt to mark ("some"). */
   const [step, setStep] = useState<"ask" | "all" | "some">("ask");
   const [marks, setMarks] = useState<Record<string, Mark>>({});
-  const [equal, setEqual] = useState(true);
   const [persons, setPersons] = useState<number | undefined>(undefined);
   const [notice, setNotice] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
@@ -141,8 +140,8 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    // Marking lines always splits the rest equally: everything not crossed out is shared by x people.
-    if (anyBilled) onDone(billed, step === "some" || equal, persons, step === "some");
+    // A shopping trip is always split equally: everything not crossed out is shared by x people.
+    if (anyBilled) onDone(billed, true, persons, step === "some");
   };
 
   const personsStepper = (
@@ -336,26 +335,16 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
           </>
         ) : (
           <>
-            <label className="shop-equal">
-              <input type="checkbox" checked={equal} onChange={(e) => setEqual(e.target.checked)} />
-              <span>
-                <b>Gleichmäßig auf alle verteilen</b>
-                <small>Niemand muss abhaken. Lässt sich auf der Rechnung jederzeit umschalten.</small>
-              </span>
-            </label>
-            {equal && (
-              <div className="row between shop-persons">
-                <span>Wie viele teilen sich den Einkauf?</span>
-                {personsStepper}
-              </div>
-            )}
-            {equal && (
-              <p className="muted small">
-                {persons
-                  ? `${formatMoney(Math.round(billedSum / persons), currency)} pro Person, inklusive dir.`
-                  : "Ohne Angabe wird gezählt, wer per QR-Code beitritt, plus du."}
-              </p>
-            )}
+            {/* Split equally by default; the payer can still switch it off on the bill. */}
+            <div className="row between shop-persons">
+              <span>Wie viele teilen sich den Einkauf?</span>
+              {personsStepper}
+            </div>
+            <p className="muted small">
+              {persons
+                ? `${formatMoney(Math.round(billedSum / persons), currency)} pro Person, inklusive dir.`
+                : "Ohne Angabe wird gezählt, wer per QR-Code beitritt, plus du."}
+            </p>
 
             <p className="shop-sum">
               Abgerechnet werden <b>{formatMoney(billedSum, currency)}</b>

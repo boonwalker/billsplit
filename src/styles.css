@@ -2557,32 +2557,6 @@ input[aria-invalid="true"] {
 
 
 
-.shop-equal {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  background: var(--mint-soft);
-}
-
-.shop-equal input {
-  width: 20px;
-  height: 20px;
-  margin-top: 2px;
-  accent-color: var(--claim);
-}
-
-.shop-equal span {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.shop-equal small {
-  color: var(--muted);
-}
-
 .shop-persons {
   gap: 12px;
   font-weight: 600;
