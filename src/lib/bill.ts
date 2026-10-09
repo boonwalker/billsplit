@@ -86,6 +86,8 @@ export interface Debtor {
   payAmount?: Cents;
   /** The payer confirmed the money arrived on PayPal. */
   received: boolean;
+  /** The friend marked their share as paid. */
+  markedPaidAt?: string;
 }
 
 export interface BillSnapshot {
@@ -99,8 +101,8 @@ export interface BillSnapshot {
   isOwner: boolean;
   /** Payment status of the friends – only included for the payer. */
   debtors?: Debtor[];
-  /** Pay click of the requesting participant. */
-  myPayment?: { at: string; amount: Cents };
+  /** Pay click of the requesting participant; markedPaidAt once they marked it as paid. */
+  myPayment?: { at: string; amount: Cents; markedPaidAt?: string };
   /** The photo or screenshot the bill was read from is stored and can be viewed. */
   hasReceiptImage?: boolean;
 }

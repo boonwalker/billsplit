@@ -58,6 +58,19 @@ describe("BillStore", () => {
     expect(debtor.payClickedAt).toBeTruthy();
   });
 
+  it("lets a friend mark their share as paid, visible to the payer", () => {
+    const { store, owner, anna, id } = setup();
+    store.join(id, anna, "Anna");
+    store.setClaims(id, anna, { pizza: [0] });
+    store.recordPayClick(id, anna);
+    store.setMarkedPaid(id, anna, true);
+    expect(store.snapshot(id, anna).myPayment?.markedPaidAt).toBeTruthy();
+    expect(store.snapshot(id, owner).debtors![0].markedPaidAt).toBeTruthy();
+    store.setMarkedPaid(id, anna, false);
+    expect(store.snapshot(id, owner).debtors![0].markedPaidAt).toBeUndefined();
+    expect(() => store.setMarkedPaid(id, owner, true)).toThrow(StoreError);
+  });
+
   it("only allows the payer to confirm receipts and edit the bill", () => {
     const { store, owner, anna, id } = setup();
     store.join(id, anna, "Anna");

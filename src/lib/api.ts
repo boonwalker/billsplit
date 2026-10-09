@@ -19,6 +19,8 @@ export interface Api {
   receiptImageUrl(id: string): Promise<string | null>;
   pay(id: string): Promise<{ amount: number }>;
   setReceived(id: string, participantId: string, received: boolean): Promise<BillSnapshot>;
+  /** A friend marks their own share as paid. */
+  markPaid(id: string, paid: boolean): Promise<BillSnapshot>;
   /** Live updates of one bill; returns an unsubscribe function. */
   subscribe(id: string, onSnapshot: (s: BillSnapshot) => void, onLive: (live: boolean) => void): () => void;
 }
@@ -76,6 +78,7 @@ const serverApi: Api = {
   // keepalive lets the request finish while the browser switches to PayPal.
   pay: (id) => request("POST", `${bill(id)}/pay`, {}, { keepalive: true }),
   setReceived: (id, participantId, received) => request("POST", `${bill(id)}/received`, { participantId, received }),
+  markPaid: (id, paid) => request("POST", `${bill(id)}/paid`, { paid }),
   subscribe(id, onSnapshot, onLive) {
     // EventSource cannot send headers, so the device key goes into the query.
     const source = new EventSource(`${bill(id)}/events?key=${encodeURIComponent(deviceKey())}`);

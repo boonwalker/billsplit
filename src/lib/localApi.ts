@@ -115,6 +115,7 @@ export const localApi: Api = {
   },
   pay: (id) => call(() => ({ amount: localStore().recordPayClick(id, me()) })),
   setReceived: (id, participantId, received) => call(() => (localStore().setReceived(id, me(), participantId, received), view(id))),
+  markPaid: (id, paid) => call(() => (localStore().setMarkedPaid(id, me(), paid), view(id))),
   subscribe(id, onSnapshot, onLive) {
     const push = () => {
       if (localStore().has(id)) onSnapshot(view(id));

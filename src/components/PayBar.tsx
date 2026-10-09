@@ -8,10 +8,12 @@ interface Props {
   snapshot: BillSnapshot;
   /** Records the pay click on the server (fire and forget). */
   onPay: () => void;
+  /** Marks the friend's share as paid (or takes that back). */
+  onMarkPaid: (paid: boolean) => void;
 }
 
 /** Sticky bottom bar for friends: their individual sum and the pay button. */
-export default function PayBar({ snapshot, onPay }: Props) {
+export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
   const [copied, setCopied] = useState(false);
   /** Amount copied in the first tap; the second tap then opens PayPal. */
   const [prepared, setPrepared] = useState<{ amount: string; copied: boolean } | null>(null);
@@ -80,6 +82,19 @@ export default function PayBar({ snapshot, onPay }: Props) {
           >
             PayPal erneut öffnen
           </a>
+        )}
+        {myPayment && nothing && (
+          <button
+            type="button"
+            className={`btn btn-large ${myPayment.markedPaidAt ? "btn-done btn-marked" : "btn-mark"}`}
+            aria-pressed={Boolean(myPayment.markedPaidAt)}
+            onClick={() => onMarkPaid(!myPayment.markedPaidAt)}
+          >
+            {myPayment.markedPaidAt ? "✓ Als bezahlt markiert" : "Als bezahlt markieren"}
+          </button>
+        )}
+        {myPayment?.markedPaidAt && nothing && (
+          <p className="paybar-note">{ownerName || "Der Rechnungssteller"} sieht das jetzt. Nochmal tippen macht es rückgängig.</p>
         )}
 
         {action.kind === "paypalMe" && !(myPayment && nothing) && !ready && (

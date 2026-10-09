@@ -122,6 +122,13 @@ export default function BillPage({ id }: { id: string }) {
     api.pay(id).catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
   }
 
+  function markPaid(paid: boolean) {
+    api
+      .markPaid(id, paid)
+      .then(replace)
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
+  }
+
   async function share() {
     try {
       if (navigator.share) await navigator.share({ title: `billsplit · ${snap.data.title}`, url });
@@ -223,7 +230,7 @@ export default function BillPage({ id }: { id: string }) {
         </div>
       )}
 
-      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} />}
+      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} />}
 
       {askName && (
         <NamePrompt

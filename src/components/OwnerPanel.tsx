@@ -124,7 +124,9 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
                   <span className="debtor-status">
                     {d.received
                       ? "Zahlungseingang bestätigt"
-                      : d.payClickedAt
+                      : d.markedPaidAt
+                        ? `hat um ${time(d.markedPaidAt)} als bezahlt markiert`
+                        : d.payClickedAt
                         ? `hat um ${time(d.payClickedAt)} auf Bezahlen getippt`
                         : snapshot.data.equalSplit
                           ? "ist beigetreten"

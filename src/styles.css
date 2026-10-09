@@ -402,6 +402,15 @@ a {
   cursor: default;
 }
 
+.btn-mark {
+  background: var(--mint);
+  color: var(--brand);
+}
+
+.btn-done.btn-marked {
+  cursor: pointer;
+}
+
 .link {
   border: none;
   background: none;

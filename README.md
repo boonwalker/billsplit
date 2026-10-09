@@ -203,6 +203,7 @@ claude.ai-Artifact gedacht:
 | `POST` | `/api/bills/:id/join` | Beitreten (QR-Code gescannt) |
 | `PUT` | `/api/bills/:id/claims` | eigene Positionen setzen |
 | `POST` | `/api/bills/:id/pay` | Tipp auf „Bezahlen“ inkl. Betrag vermerken |
+| `POST` | `/api/bills/:id/paid` | Freund markiert seinen Anteil als bezahlt (oder nimmt es zurück) |
 | `PUT` | `/api/bills/:id/receipt-image` | Belegfoto (JPEG) speichern – nur Rechnungssteller |
 | `GET` | `/api/bills/:id/receipt-image` | Belegfoto abrufen |
 | `POST` | `/api/bills/:id/received` | Zahlungseingang bestätigen (nur Rechnungssteller) |

@@ -34,6 +34,8 @@ export interface StoredParticipant {
   payClickedAt?: string;
   payAmount?: number;
   received?: boolean;
+  /** The friend marked their share as paid. */
+  markedPaidAt?: string;
 }
 
 export interface StoredBill {
@@ -120,6 +122,15 @@ export class BillCore {
     return amount;
   }
 
+  /** A friend marks their own share as paid (or takes it back). */
+  setMarkedPaid(billId: string, participantId: string, paid: boolean): void {
+    const bill = this.get(billId);
+    if (participantId === bill.ownerId) throw new BillError("Du hast die Rechnung selbst bezahlt.", 400);
+    const p = this.participant(bill, participantId);
+    p.markedPaidAt = paid ? new Date().toISOString() : undefined;
+    this.changed(billId);
+  }
+
   setReceived(billId: string, requesterId: string, debtorId: string, received: boolean): void {
     const bill = this.get(billId);
     if (requesterId !== bill.ownerId) throw new BillError("Nur wer die Rechnung bezahlt hat, kann Zahlungseingänge abhaken.", 403);
@@ -185,7 +196,9 @@ export class BillCore {
     };
     if (me && !isOwner) {
       const p = bill.participants[me];
-      if (p.payClickedAt && p.payAmount !== undefined) snap.myPayment = { at: p.payClickedAt, amount: p.payAmount };
+      if (p.payClickedAt && p.payAmount !== undefined) {
+        snap.myPayment = { at: p.payClickedAt, amount: p.payAmount, markedPaidAt: p.markedPaidAt };
+      }
     }
     if (isOwner) {
       snap.debtors = Object.entries(bill.participants)
@@ -199,6 +212,7 @@ export class BillCore {
             payClickedAt: p.payClickedAt,
             payAmount: p.payAmount,
             received: Boolean(p.received),
+            markedPaidAt: p.markedPaidAt,
           }),
         );
     }

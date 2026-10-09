@@ -229,6 +229,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         const amount = store.recordPayClick(billId, viewer);
         return sendJson(res, 200, { amount });
       }
+      if (action === "paid" && method === "POST") {
+        const body = parse(z.object({ paid: z.boolean() }), await readJson(req, MAX_JSON_BODY));
+        store.setMarkedPaid(billId, viewer, body.paid);
+        return sendJson(res, 200, store.snapshot(billId, viewer));
+      }
       if (action === "received" && method === "POST") {
         const body = parse(z.object({ participantId: z.string().max(32), received: z.boolean() }), await readJson(req, MAX_JSON_BODY));
         store.setReceived(billId, viewer, body.participantId, body.received);
