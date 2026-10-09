@@ -19,8 +19,9 @@ async function recognizeWithAi(image: PreparedImage, onProgress: ProgressFn): Pr
   } catch {
     throw new AiUnavailableError("Server nicht erreichbar");
   }
-  // 404: static hosting without API, 503: API key not configured.
-  if (res.status === 404 || res.status === 503 || res.status === 405) {
+  // 404: static hosting without API, 503: API key not configured, 429: limit reached.
+  // In all these cases the photo is read on the device instead.
+  if (res.status === 404 || res.status === 503 || res.status === 405 || res.status === 429) {
     throw new AiUnavailableError(`HTTP ${res.status}`);
   }
   const body = (await res.json().catch(() => null)) as (ParsedReceipt & { error?: string }) | null;

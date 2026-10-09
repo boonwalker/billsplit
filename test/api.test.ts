@@ -2,6 +2,7 @@ import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../server/app";
+import { RateLimiter } from "../server/rateLimit";
 import { BillStore } from "../server/store";
 import type { BillData, BillSnapshot } from "../src/lib/bill";
 
@@ -24,7 +25,16 @@ let server: Server;
 let base: string;
 
 beforeAll(async () => {
-  server = createServer(createApp(new BillStore(null), "/nonexistent"));
+  const hour = 60 * 60 * 1000;
+  server = createServer(
+    createApp(new BillStore(null), "/nonexistent", {
+      limits: {
+        receiptPerClient: new RateLimiter(10, hour),
+        receiptTotal: new RateLimiter(100, hour),
+        billsPerClient: new RateLimiter(4, hour),
+      },
+    }),
+  );
   await new Promise<void>((resolve) => server.listen(0, resolve));
   base = `http://localhost:${(server.address() as AddressInfo).port}`;
 });
@@ -113,5 +123,23 @@ describe("bills API", () => {
     expect((await call(OWNER, "POST", "/api/bills", { data: { ...data, items: [] }, name: "N" })).status).toBe(400);
     expect((await call(OWNER, "GET", "/api/bills/doesnotexist")).status).toBe(404);
     expect((await call("", "POST", "/api/bills", { data, name: "N" })).status).toBe(401);
+  });
+
+  it("limits how many bills one client creates", async () => {
+    // The limit in this setup is 4 bills per hour and client.
+    const statuses: number[] = [];
+    let retryAfter = 0;
+    for (let i = 0; i < 6; i++) {
+      const res = await fetch(`${base}/api/bills`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-billsplit-key": OWNER },
+        body: JSON.stringify({ data, name: "Niklas" }),
+      });
+      statuses.push(res.status);
+      if (res.status === 429) retryAfter = Number(res.headers.get("retry-after"));
+    }
+    expect(statuses.at(-1)).toBe(429);
+    expect(statuses.filter((st) => st === 201).length).toBeLessThanOrEqual(4);
+    expect(retryAfter).toBeGreaterThan(0);
   });
 });

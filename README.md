@@ -88,6 +88,26 @@ liegen nach `npm run dev`/`npm run build` unter `public/ocr` und werden selbst a
 
 Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder `localhost`).
 
+### Live stellen (Render)
+
+Das Repo enthält eine fertige `render.yaml`:
+
+1. Auf [render.com](https://render.com) ein Konto anlegen und GitHub verbinden.
+2. Im Dashboard **New → Blueprint** wählen und dieses Repo auswählen. Render liest `render.yaml` und legt den
+   Web Service samt 1-GB-Speicher (`/var/data`) in Frankfurt an.
+3. Wenn Render nach `ANTHROPIC_API_KEY` fragt: Schlüssel eintragen, um die KI-Belegerkennung zu nutzen, oder
+   leer lassen. Dann erkennt das Handy den Beleg selbst.
+4. Nach dem ersten Build ist die App unter `https://<name>.onrender.com` erreichbar. Die QR-Codes zeigen
+   automatisch auf diese Adresse. Jeder Push auf `main` wird automatisch neu ausgerollt.
+
+Hinweise:
+- Persistenter Speicher erfordert einen bezahlten Tarif (`plan: starter`). Ohne Speicher gehen die Rechnungen bei
+  jedem Neustart verloren.
+- Es darf nur **eine** Instanz laufen. Live-Updates und Rechnungen liegen im Speicher dieses Servers.
+- Missbrauchsschutz: Belegfotos sind pro Gerät/IP und Stunde (`RECEIPT_LIMIT_PER_HOUR`) und insgesamt pro Tag
+  (`RECEIPT_LIMIT_PER_DAY`) begrenzt. Ist das Limit erreicht, liest das Handy den Beleg selbst. Neue Rechnungen
+  sind pro Gerät/IP und Stunde begrenzt (`BILL_LIMIT_PER_HOUR`).
+
 ### Demo ohne Server
 
 ```bash
@@ -110,6 +130,10 @@ claude.ai-Artifact gedacht:
 | `BILLSPLIT_MODEL` | anderes Claude-Modell (Standard: `claude-opus-5-5`) |
 | `PORT` | Port des Servers (Standard 8787) |
 | `DATA_DIR` | Ordner für `bills.json` (Standard `data`) |
+| `TRUST_PROXY` | `1` hinter einem Reverse-Proxy: Client-Adresse aus `X-Forwarded-For` lesen |
+| `RECEIPT_LIMIT_PER_HOUR` | Belegfotos pro Gerät/IP und Stunde (Standard 10) |
+| `RECEIPT_LIMIT_PER_DAY` | Belegfotos insgesamt pro Tag (Standard 300) |
+| `BILL_LIMIT_PER_HOUR` | Neue Rechnungen pro Gerät/IP und Stunde (Standard 30) |
 
 ## API
 

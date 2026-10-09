@@ -3,6 +3,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { isAiConfigured, isSupportedMediaType, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
+import { limitsFromEnv, type Limits, type RateLimiter } from "./rateLimit.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
 
 /** Base64 of a downscaled receipt photo is well below this. */
@@ -28,9 +29,31 @@ class HttpError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly retryAfterSec?: number,
   ) {
     super(message);
   }
+}
+
+export interface AppOptions {
+  limits?: Limits;
+  /** Behind a reverse proxy (Render, Fly, …) the client address is in X-Forwarded-For. */
+  trustProxy?: boolean;
+}
+
+function clientAddress(req: IncomingMessage, trustProxy: boolean): string {
+  if (trustProxy) {
+    const forwarded = req.headers["x-forwarded-for"];
+    const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return req.socket.remoteAddress ?? "unknown";
+}
+
+/** Throws 429 when the limiter is exhausted for this key. */
+function enforce(limiter: RateLimiter, key: string, message: string): void {
+  const result = limiter.take(key);
+  if (!result.ok) throw new HttpError(message, 429, result.retryAfterSec);
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -76,7 +99,9 @@ interface Subscriber {
   viewer: string | null;
 }
 
-export function createApp(store: BillStore, distDir: string) {
+export function createApp(store: BillStore, distDir: string, options: AppOptions = {}) {
+  const limits = options.limits ?? limitsFromEnv();
+  const trustProxy = options.trustProxy ?? false;
   const subscribers = new Map<string, Set<Subscriber>>();
 
   store.onChange((billId) => {
@@ -117,6 +142,9 @@ export function createApp(store: BillStore, distDir: string) {
       sendJson(res, 503, { error: "KI-Belegerkennung ist auf dem Server nicht eingerichtet." });
       return;
     }
+    // Every photo costs API usage: limit per client and in total per day.
+    enforce(limits.receiptPerClient, clientAddress(req, trustProxy), "Zu viele Belegfotos in kurzer Zeit. Versuch es später noch einmal.");
+    enforce(limits.receiptTotal, "all", "Die KI-Belegerkennung hat ihr Tageslimit erreicht. Trag die Positionen bitte selbst ein.");
     const body = (await readJson(req, MAX_IMAGE_BODY)) as { image?: unknown; mediaType?: unknown };
     if (typeof body.image !== "string" || typeof body.mediaType !== "string" || !isSupportedMediaType(body.mediaType)) {
       throw new HttpError("Ungültige Anfrage: Bild fehlt oder Format wird nicht unterstützt.", 400);
@@ -137,6 +165,7 @@ export function createApp(store: BillStore, distDir: string) {
 
     if (parts[1] === "bills" && parts.length === 2 && method === "POST") {
       const viewer = requireViewer(req, url);
+      enforce(limits.billsPerClient, clientAddress(req, trustProxy), "Zu viele neue Rechnungen in kurzer Zeit. Versuch es später noch einmal.");
       const body = parse(z.object({ data: BillDataSchema, name: ParticipantNameSchema }), await readJson(req, MAX_JSON_BODY));
       const id = store.createBill(body.data, viewer, body.name);
       return sendJson(res, 201, store.snapshot(id, viewer));
@@ -228,6 +257,7 @@ export function createApp(store: BillStore, distDir: string) {
       }
     } catch (error) {
       if (error instanceof HttpError || error instanceof StoreError || error instanceof ReceiptParseError) {
+        if (error instanceof HttpError && error.retryAfterSec) res.setHeader("retry-after", String(error.retryAfterSec));
         sendJson(res, error.status, { error: error.message });
       } else {
         console.error(`${req.method} ${url.pathname} failed`, error);
