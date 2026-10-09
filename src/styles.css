@@ -1745,43 +1745,10 @@ input[aria-invalid="true"] {
   line-height: 1.2;
 }
 
-.scribble-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 1.3rem;
-}
-
-.scribble-row.ask {
-  border-radius: 12px;
-  animation: ask-persons 0.8s ease-in-out 2;
-}
-
-.scribble-check {
-  justify-content: flex-start;
-  cursor: pointer;
-}
-
 .scribble-check input {
   width: 22px;
   height: 22px;
   accent-color: var(--pencil);
-}
-
-.scribble .stepper-mini {
-  background: none;
-  border: 2px solid var(--pencil);
-  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-}
-
-.scribble .stepper-mini button,
-.scribble .stepper-mini span {
-  background: none;
-  color: var(--pencil);
-  font-family: "Caveat", cursive;
-  font-size: 1.5rem;
-  font-weight: 600;
 }
 
 .scribble-sum {
@@ -1793,6 +1760,121 @@ input[aria-invalid="true"] {
 
 .scribble-sum small {
   font-size: 1.1rem;
+}
+
+/* The divisor for taps: a big pencilled "/" and a large number with arrows. */
+.scribble-controls {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+}
+
+.divide-by {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 18px;
+}
+
+.divide-by.ask {
+  animation: ask-persons 0.8s ease-in-out 2;
+}
+
+.divide-by-label,
+.divide-by-hint {
+  font-size: 1.1rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.divide-by-hint {
+  font-size: 0.95rem;
+  opacity: 0.75;
+}
+
+.divide-by-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.divide-by-slash {
+  width: 34px;
+  height: 78px;
+  overflow: visible;
+  filter: url(#pencil-grain);
+}
+
+.divide-by-slash path,
+.divide-by-number svg path {
+  fill: none;
+  stroke: var(--pencil);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.divide-by-slash .divide-by-slash-thin {
+  stroke-width: 1.6;
+  opacity: 0.45;
+}
+
+.divide-by-number {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+}
+
+.divide-by-number span {
+  font-size: 3.6rem;
+  line-height: 0.95;
+}
+
+.divide-by-number button {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 30px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.divide-by-number button svg {
+  width: 34px;
+  height: 17px;
+  overflow: visible;
+  filter: url(#pencil-grain);
+}
+
+.divide-by-number button svg path {
+  stroke-width: 3;
+}
+
+.scribble-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  text-align: right;
+}
+
+.scribble-side .scribble-sum small {
+  display: block;
+}
+
+.scribble-side .scribble-check {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  cursor: pointer;
 }
 
 /* A sketched button: wobbly border, handwriting. */

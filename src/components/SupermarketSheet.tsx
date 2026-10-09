@@ -234,18 +234,44 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
               {notice}
             </p>
           )}
-          <div className={`scribble-row${askPersons ? " ask" : ""}`}>
-            <span className="pencil">Wie viele teilen?</span>
-            {personsStepper}
+          <div className="scribble-controls">
+            {/* What a tap on a line divides by – also the head count for the equal split. */}
+            <div className={`divide-by${askPersons ? " ask" : ""}`} role="group" aria-label="Antippen teilt durch">
+              <span className="pencil divide-by-label">Antippen teilt durch</span>
+              <div className="divide-by-control">
+                <svg className="divide-by-slash" viewBox="0 0 40 90" aria-hidden="true">
+                  <path d="M33 5 C 28 28, 19 55, 7 86" />
+                  <path d="M35 9 C 29 33, 21 58, 10 84" className="divide-by-slash-thin" />
+                </svg>
+                <div className="divide-by-number">
+                  <button type="button" onClick={() => setPersons((n) => Math.min(100, (n ?? 1) + 1))} aria-label="Eine Person mehr">
+                    <svg viewBox="0 0 40 20" aria-hidden="true">
+                      <path d="M4 16 C 12 10, 16 6, 20 3 C 25 7, 30 11, 36 16" />
+                    </svg>
+                  </button>
+                  <span className="pencil" aria-live="polite">
+                    {persons ?? "?"}
+                  </span>
+                  <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
+                    <svg viewBox="0 0 40 20" aria-hidden="true">
+                      <path d="M4 4 C 12 10, 16 14, 20 17 C 25 13, 30 9, 36 4" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <span className="pencil divide-by-hint">{persons ? "Personen, inkl. dir" : "Personenzahl wählen"}</span>
+            </div>
+            <div className="scribble-side">
+              <p className="pencil scribble-sum">
+                = {formatMoney(billedSum, currency)}
+                {billedSum !== fullSum && <small>statt {formatMoney(fullSum, currency)}</small>}
+              </p>
+              <label className="scribble-check">
+                <input type="checkbox" checked={equal} onChange={(e) => setEqual(e.target.checked)} />
+                <span className="pencil">gleichmäßig auf alle verteilen</span>
+              </label>
+            </div>
           </div>
-          <label className="scribble-row scribble-check">
-            <input type="checkbox" checked={equal} onChange={(e) => setEqual(e.target.checked)} />
-            <span className="pencil">gleichmäßig auf alle verteilen</span>
-          </label>
-          <p className="pencil scribble-sum">
-            = {formatMoney(billedSum, currency)}
-            {billedSum !== fullSum && <small> statt {formatMoney(fullSum, currency)}</small>}
-          </p>
           <button className="scribble-submit" disabled={billed.length === 0}>
             Rechnung erstellen
           </button>
