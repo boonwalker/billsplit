@@ -177,7 +177,7 @@ export default function Home() {
                   <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
                     <span className="list-title">{b.title || "Rechnung"}</span>
                     <span className="muted small">
-                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? "du hast bezahlt" : b.markedPaid ? <span className="list-paid">✓ als bezahlt markiert</span> : "du schuldest"}
+                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? "du leihst" : b.markedPaid ? <span className="list-paid">✓ als bezahlt markiert</span> : "du schuldest"}
                     </span>
                   </button>
                   <button
