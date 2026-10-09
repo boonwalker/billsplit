@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import TipControl, { tipCents, tipPersons, type TipValue } from "../components/TipControl";
 import { api } from "../lib/api";
-import { newItemId, subtotal, type BillData, type BillFee, type BillItem } from "../lib/bill";
+import { feesTotal, newItemId, subtotal, type BillData, type BillFee, type BillItem } from "../lib/bill";
 import { prepareImage } from "../lib/image";
 import { centsToInput, formatMoney, parseMoney } from "../lib/money";
-import type { ParsedReceipt, ReceiptItem } from "../lib/receipt";
+import { receiptSum, type ParsedReceipt, type ReceiptItem } from "../lib/receipt";
 import { recognizeReceipt } from "../lib/recognize";
 import { navigate } from "../lib/router";
 import { clearDraft, loadDraft, loadProfile, profileReady, rememberBill, saveDraft } from "../lib/storage";
@@ -71,7 +71,7 @@ function emptyDraft(): Draft {
     title: "",
     date: new Date().toISOString().slice(0, 10),
     currency: "EUR",
-    tip: { mode: "percent", percent: "0", amount: "", persons: "" },
+    tip: { mode: "percent", percent: "0", total: "", persons: "" },
     tipOnReceipt: false,
     rows: [newRow()],
     fees: [],
@@ -88,8 +88,8 @@ function draftFromData(data: BillData): Draft {
     currency: data.currency,
     tip: {
       ...(data.tipAmount
-        ? { mode: "amount" as const, percent: "0", amount: centsToInput(data.tipAmount) }
-        : { mode: "percent" as const, percent: String(data.tipPercent), amount: "" }),
+        ? { mode: "total" as const, percent: "0", total: centsToInput(subtotal(data.items) + feesTotal(data) + data.tipAmount) }
+        : { mode: "percent" as const, percent: String(data.tipPercent), total: "" }),
       persons: data.tipSplitCount ? String(data.tipSplitCount) : "",
     },
     tipOnReceipt: false,
@@ -123,8 +123,8 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     tipSplitCount: tipPersons(draft.tip),
     fees: draftFees(draft).length ? draftFees(draft) : undefined,
   };
-  if (draft.tip.mode === "amount") {
-    const amount = tipCents(draft.tip, subtotal(items));
+  if (draft.tip.mode === "total") {
+    const amount = tipCents(draft.tip, subtotal(items), (base.fees ?? []).reduce((s, f) => s + f.amount, 0));
     return { ...base, tipPercent: 0, tipAmount: amount > 0 ? amount : undefined };
   }
   return { ...base, tipPercent: Math.min(100, Math.max(0, Number(draft.tip.percent.replace(",", ".")) || 0)) };
@@ -138,7 +138,8 @@ function restoreDraft(): Draft {
   return {
     ...empty,
     ...saved,
-    tip: { ...empty.tip, ...saved.tip },
+    // Drafts from older versions may carry a tip mode that no longer exists.
+    tip: saved.tip?.mode === "percent" || saved.tip?.mode === "total" ? { ...empty.tip, ...saved.tip } : empty.tip,
     tipOnReceipt: saved.tipOnReceipt ?? false,
     fees: saved.fees ?? [],
     delivery: saved.delivery ?? false,
@@ -207,7 +208,7 @@ export default function Editor({ billId }: { billId?: string }) {
         currency: receipt.currency || draft.currency,
         receiptTotal: receipt.total,
         engine: receipt.engine,
-        tip: receipt.tip ? { ...draft.tip, mode: "amount", amount: centsToInput(receipt.tip) } : draft.tip,
+        tip: receipt.tip ? { ...draft.tip, mode: "total", total: centsToInput(receiptSum(receipt) + receipt.tip) } : draft.tip,
         tipOnReceipt: receipt.tip != null && receipt.tip > 0,
         rows: receipt.items.length ? receipt.items.map((i) => newRow(i)) : draft.rows,
         fees: receipt.fees.map((f) => newFeeRow(f)),
@@ -487,7 +488,7 @@ export default function Editor({ billId }: { billId?: string }) {
                 </div>
                 {persons && feeSum !== 0 && (
                   <p className="muted small center-text">
-                    {formatMoney(Math.round((feeSum + (draft.tipOnReceipt ? tipCents(draft.tip, subtotal(askTip)) : 0)) / persons), draft.currency)} pro
+                    {formatMoney(Math.round((feeSum + (draft.tipOnReceipt ? tipCents(draft.tip, subtotal(askTip), feeSum) : 0)) / persons), draft.currency)} pro
                     Person{draft.tipOnReceipt ? " (Gebühren & Trinkgeld)" : " an Gebühren"}
                   </p>
                 )}
@@ -519,7 +520,7 @@ export default function Editor({ billId }: { billId?: string }) {
                 className="btn btn-ghost"
                 onClick={() => {
                   const items = askTip;
-                  const noTip: Draft = { ...draft, tip: { ...draft.tip, mode: "percent", percent: "0", amount: "" } };
+                  const noTip: Draft = { ...draft, tip: { ...draft.tip, mode: "percent", percent: "0", total: "" } };
                   setDraft(noTip);
                   setAskTip(null);
                   void publish(toBillData(noTip, items));

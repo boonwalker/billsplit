@@ -1,14 +1,15 @@
 import { useId } from "react";
 import { formatMoney, parseMoney, type Cents } from "../lib/money";
 
-export type TipMode = "percent" | "amount";
+/** "total" = the payer enters what they paid in the end; the tip is the difference to the bill. */
+export type TipMode = "percent" | "total";
 
 export interface TipValue {
   mode: TipMode;
   /** Raw input, e.g. "10" or "7,5". */
   percent: string;
-  /** Raw input, e.g. "5,00". */
-  amount: string;
+  /** Raw input of the final amount paid incl. tip, e.g. "50,00". */
+  total: string;
   /** Expected number of people incl. the payer; empty = count who scans the QR code. */
   persons: string;
 }
@@ -21,9 +22,9 @@ export function tipPersons(tip: TipValue): number | undefined {
 
 const PERCENT_PRESETS = ["5", "10", "15"];
 
-/** Tip in cents that the given input adds to a bill with this subtotal. */
-export function tipCents(tip: TipValue, sub: Cents): Cents {
-  if (tip.mode === "amount") return Math.max(0, parseMoney(tip.amount) ?? 0);
+/** Tip in cents that the given input adds to a bill with this subtotal and these fees. */
+export function tipCents(tip: TipValue, sub: Cents, fees: Cents = 0): Cents {
+  if (tip.mode === "total") return Math.max(0, (parseMoney(tip.total) ?? 0) - sub - fees);
   const pct = Math.min(100, Math.max(0, Number(tip.percent.replace(",", ".")) || 0));
   return Math.round((sub * pct) / 100);
 }
@@ -42,7 +43,9 @@ interface Props {
 /** Tip input as percentage or fixed amount, optional head count, and a live preview. */
 export default function TipControl({ value, onChange, subtotal, currency, fees = 0, showPersons = true }: Props) {
   const uid = useId();
-  const tip = tipCents(value, subtotal);
+  const tip = tipCents(value, subtotal, fees);
+  const billAmount = subtotal + fees;
+  const enteredTotal = value.mode === "total" ? parseMoney(value.total) : null;
   const persons = tipPersons(value);
   const set = (patch: Partial<TipValue>) => onChange({ ...value, ...patch });
 
@@ -52,8 +55,8 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
         <button type="button" role="radio" aria-checked={value.mode === "percent"} className={value.mode === "percent" ? "on" : ""} onClick={() => set({ mode: "percent" })}>
           in Prozent
         </button>
-        <button type="button" role="radio" aria-checked={value.mode === "amount"} className={value.mode === "amount" ? "on" : ""} onClick={() => set({ mode: "amount" })}>
-          als Betrag
+        <button type="button" role="radio" aria-checked={value.mode === "total"} className={value.mode === "total" ? "on" : ""} onClick={() => set({ mode: "total" })}>
+          als Endbetrag
         </button>
       </div>
 
@@ -77,17 +80,22 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
           </label>
         </div>
       ) : (
-        <label className="tip-field wide">
-          <input
-            id={`${uid}-amount`}
-            inputMode="decimal"
-            aria-label="Trinkgeld als Betrag"
-            value={value.amount}
-            placeholder="0,00"
-            onChange={(e) => set({ amount: e.target.value.replace(/[^\d.,]/g, "") })}
-          />
-          <span>{currency === "EUR" ? "€" : currency}</span>
-        </label>
+        <>
+          <label className="tip-field wide">
+            <input
+              id={`${uid}-total`}
+              inputMode="decimal"
+              aria-label="Endbetrag inklusive Trinkgeld"
+              value={value.total}
+              placeholder={formatMoney(billAmount, currency).replace(/\s?[^\d.,-]+$/, "")}
+              onChange={(e) => set({ total: e.target.value.replace(/[^\d.,]/g, "") })}
+            />
+            <span>{currency === "EUR" ? "€" : currency}</span>
+          </label>
+          {enteredTotal !== null && enteredTotal < billAmount && (
+            <p className="tip-hint">Der Endbetrag liegt unter dem Rechnungsbetrag von {formatMoney(billAmount, currency)}.</p>
+          )}
+        </>
       )}
 
       {showPersons && (

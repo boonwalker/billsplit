@@ -44,7 +44,8 @@ seinen individuellen Link: den Empfänger aus der Rechnung plus den gerade berec
 
 ### Trinkgeld
 
-Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen. Sonst fragt billsplit vor dem Erstellen des
+QR-Codes nach: in Prozent oder als Endbetrag, also was du insgesamt bezahlt hast. Das Trinkgeld ist dann die
+Differenz zum Rechnungsbetrag.
 QR-Codes nach: in Prozent oder als fester Betrag.
 
 Das Trinkgeld wird gleichmäßig pro Person verteilt. Gezählt wird automatisch, wer der Rechnung per QR-Code
