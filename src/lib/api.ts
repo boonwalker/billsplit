@@ -13,6 +13,10 @@ export interface Api {
   updateBill(id: string, data: BillData): Promise<BillSnapshot>;
   join(id: string, name: string): Promise<BillSnapshot>;
   setClaims(id: string, claims: ItemClaims, splits: ItemClaims): Promise<BillSnapshot>;
+  /** Stores the photo or screenshot the bill was read from (payer only). */
+  uploadReceiptImage(id: string, jpeg: Blob): Promise<BillSnapshot>;
+  /** Address of the stored receipt photo, or null if there is none. */
+  receiptImageUrl(id: string): Promise<string | null>;
   pay(id: string): Promise<{ amount: number }>;
   setReceived(id: string, participantId: string, received: boolean): Promise<BillSnapshot>;
   /** Live updates of one bill; returns an unsubscribe function. */
@@ -58,6 +62,17 @@ const serverApi: Api = {
   updateBill: (id, data) => request("PUT", bill(id), { data }),
   join: (id, name) => request("POST", `${bill(id)}/join`, { name }),
   setClaims: (id, claims, splits) => request("PUT", `${bill(id)}/claims`, { claims, splits }),
+  async uploadReceiptImage(id, jpeg) {
+    const res = await fetch(`${bill(id)}/receipt-image`, {
+      method: "PUT",
+      headers: { "content-type": "image/jpeg", "x-billsplit-key": deviceKey() },
+      body: jpeg,
+    });
+    const json = (await res.json().catch(() => null)) as (BillSnapshot & { error?: string }) | null;
+    if (!res.ok || !json) throw new ApiError(json?.error ?? `Fehler (HTTP ${res.status}).`, res.status);
+    return json;
+  },
+  receiptImageUrl: async (id) => `${bill(id)}/receipt-image`,
   // keepalive lets the request finish while the browser switches to PayPal.
   pay: (id) => request("POST", `${bill(id)}/pay`, {}, { keepalive: true }),
   setReceived: (id, participantId, received) => request("POST", `${bill(id)}/received`, { participantId, received }),

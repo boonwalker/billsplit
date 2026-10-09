@@ -31,7 +31,7 @@ beforeAll(async () => {
       limits: {
         receiptPerClient: new RateLimiter(10, hour),
         receiptTotal: new RateLimiter(100, hour),
-        billsPerClient: new RateLimiter(4, hour),
+        billsPerClient: new RateLimiter(5, hour),
       },
     }),
   );
@@ -83,6 +83,24 @@ async function waitForSnapshot(key: string, billId: string, match: (s: BillSnaps
 }
 
 describe("bills API", () => {
+  it("stores the receipt photo for everyone to look at, uploaded only by the payer", async () => {
+    const created = await call<BillSnapshot>(OWNER, "POST", "/api/bills", { data, name: "Niklas" });
+    const id = created.json.id;
+    expect(created.json.hasReceiptImage).toBe(false);
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 0xff, 0xd9]);
+    const upload = (key: string, body: Buffer) =>
+      fetch(`${base}/api/bills/${id}/receipt-image`, { method: "PUT", headers: { "content-type": "image/jpeg", "x-billsplit-key": key }, body: new Uint8Array(body) });
+    expect((await upload(ANNA, jpeg)).status).toBe(403);
+    expect((await upload(OWNER, Buffer.from("<svg/>"))).status).toBe(400);
+    const res = await upload(OWNER, jpeg);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as BillSnapshot).hasReceiptImage).toBe(true);
+    // Anyone with the link can view it.
+    const image = await fetch(`${base}/api/bills/${id}/receipt-image`);
+    expect(image.headers.get("content-type")).toBe("image/jpeg");
+    expect(Buffer.from(await image.arrayBuffer())).toEqual(jpeg);
+  });
+
   it("syncs friends, claims and pay clicks live to the payer", async () => {
     const created = await call<BillSnapshot>(OWNER, "POST", "/api/bills", { data, name: "Niklas" });
     expect(created.status).toBe(201);
@@ -135,7 +153,7 @@ describe("bills API", () => {
   });
 
   it("limits how many bills one client creates", async () => {
-    // The limit in this setup is 4 bills per hour and client.
+    // The limit in this setup is 5 bills per hour and client.
     const statuses: number[] = [];
     let retryAfter = 0;
     for (let i = 0; i < 6; i++) {
@@ -148,7 +166,7 @@ describe("bills API", () => {
       if (res.status === 429) retryAfter = Number(res.headers.get("retry-after"));
     }
     expect(statuses.at(-1)).toBe(429);
-    expect(statuses.filter((st) => st === 201).length).toBeLessThanOrEqual(4);
+    expect(statuses.filter((st) => st === 201).length).toBeLessThanOrEqual(5);
     expect(retryAfter).toBeGreaterThan(0);
   });
 });

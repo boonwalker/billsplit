@@ -22,6 +22,8 @@ interface Props {
   snapshot: BillSnapshot;
   /** Called with the units ("slots") the viewer takes of an item and those offered for sharing; undefined = read-only. */
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
+  /** Opens the stored photo the bill was read from; undefined when there is none. */
+  onShowOriginal?: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -259,7 +261,7 @@ function FeeLine({ name, amount, currency }: { name: string; amount: number; cur
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots }: Props) {
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props) {
   const { data, participants, me, ownerName } = snapshot;
   const sub = subtotal(data.items);
   const total = billTotal(data);
@@ -329,6 +331,11 @@ export default function Receipt({ snapshot, onSetSlots }: Props) {
         </p>
         <div className="receipt-barcode" aria-hidden="true" />
         <p className="receipt-thanks">Danke &amp; bis zum nächsten Mal!</p>
+        {onShowOriginal && (
+          <button type="button" className="receipt-original" onClick={onShowOriginal}>
+            Zum Originalbeleg
+          </button>
+        )}
       </div>
     </article>
   );

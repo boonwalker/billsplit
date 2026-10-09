@@ -9,6 +9,8 @@ import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey,
 /** Base64 of a downscaled receipt photo is well below this. */
 const MAX_IMAGE_BODY = 12 * 1024 * 1024;
 const MAX_JSON_BODY = 256 * 1024;
+/** Stored receipt photos are downscaled JPEGs of a few hundred KB. */
+const MAX_RECEIPT_IMAGE = 6 * 1024 * 1024;
 const HEARTBEAT_MS = 25_000;
 
 const MIME_TYPES: Record<string, string> = {
@@ -61,7 +63,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-async function readJson(req: IncomingMessage, limit: number): Promise<unknown> {
+async function readBody(req: IncomingMessage, limit: number): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of req) {
@@ -69,8 +71,13 @@ async function readJson(req: IncomingMessage, limit: number): Promise<unknown> {
     if (size > limit) throw new HttpError("Anfrage ist zu groß.", 413);
     chunks.push(chunk as Buffer);
   }
+  return Buffer.concat(chunks);
+}
+
+async function readJson(req: IncomingMessage, limit: number): Promise<unknown> {
+  const body = await readBody(req, limit);
   try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+    return JSON.parse(body.toString("utf8") || "{}");
   } catch {
     throw new HttpError("Ungültige Anfrage.", 400);
   }
@@ -184,6 +191,13 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       if (action === "events" && method === "GET") {
         return subscribe(req, res, billId, viewerId(req, url));
       }
+      if (action === "receipt-image" && method === "GET") {
+        const image = await store.receiptImage(billId);
+        if (!image) throw new HttpError("Kein Originalbeleg gespeichert.", 404);
+        res.writeHead(200, { "content-type": "image/jpeg", "cache-control": "private, max-age=86400" });
+        res.end(image);
+        return;
+      }
 
       const viewer = requireViewer(req, url);
       if (action === "join" && method === "POST") {
@@ -200,6 +214,15 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
           await readJson(req, MAX_JSON_BODY),
         );
         store.setClaims(billId, viewer, body.claims, body.splits);
+        return sendJson(res, 200, store.snapshot(billId, viewer));
+      }
+      if (action === "receipt-image" && method === "PUT") {
+        const jpeg = await readBody(req, MAX_RECEIPT_IMAGE);
+        // Only JPEG (as produced by the app), recognised by its signature.
+        if (jpeg.length < 4 || jpeg[0] !== 0xff || jpeg[1] !== 0xd8 || jpeg[2] !== 0xff) {
+          throw new HttpError("Der Originalbeleg muss ein JPEG-Bild sein.", 400);
+        }
+        await store.setReceiptImage(billId, viewer, jpeg);
         return sendJson(res, 200, store.snapshot(billId, viewer));
       }
       if (action === "pay" && method === "POST") {

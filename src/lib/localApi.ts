@@ -64,6 +64,19 @@ export function newBillId(): string {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_");
 }
 
+/** Receipt photos of the demo: in localStorage while it has room, otherwise only in memory. */
+const RECEIPT_IMAGE_KEY = (id: string) => `billsplit.demo.receipt.${id}`;
+const receiptImages = new Map<string, string>();
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 /** Runs a store operation like a request: async, with the same error type as the server API. */
 function call<T>(fn: () => T): Promise<T> {
   try {
@@ -82,6 +95,24 @@ export const localApi: Api = {
   updateBill: (id, data) => call(() => (localStore().updateData(id, me(), data), view(id))),
   join: (id, name) => call(() => (localStore().join(id, me(), name), view(id))),
   setClaims: (id, claims, splits) => call(() => (localStore().setClaims(id, me(), claims, splits), view(id))),
+  async uploadReceiptImage(id, jpeg) {
+    localStore().assertOwner(id, me());
+    const dataUrl = await blobToDataUrl(jpeg);
+    receiptImages.set(id, dataUrl);
+    try {
+      localStorage.setItem(RECEIPT_IMAGE_KEY(id), dataUrl);
+    } catch {
+      // storage full – the photo stays available until the page is reloaded
+    }
+    return call(() => (localStore().markReceiptImage(id, me()), view(id)));
+  },
+  async receiptImageUrl(id) {
+    try {
+      return receiptImages.get(id) ?? localStorage.getItem(RECEIPT_IMAGE_KEY(id));
+    } catch {
+      return receiptImages.get(id) ?? null;
+    }
+  },
   pay: (id) => call(() => ({ amount: localStore().recordPayClick(id, me()) })),
   setReceived: (id, participantId, received) => call(() => (localStore().setReceived(id, me(), participantId, received), view(id))),
   subscribe(id, onSnapshot, onLive) {

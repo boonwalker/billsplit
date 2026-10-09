@@ -3,6 +3,7 @@ import { useRoute } from "./lib/router";
 import BillPage from "./pages/BillPage";
 import Editor from "./pages/Editor";
 import Home from "./pages/Home";
+import OriginalReceipt from "./pages/OriginalReceipt";
 import Profile from "./pages/Profile";
 
 // The scanner pulls in the QR decoder; only load it when needed.
@@ -25,6 +26,8 @@ export default function App() {
       );
     case "bill":
       return <BillPage key={route.id} id={route.id} />;
+    case "original":
+      return <OriginalReceipt id={route.id} />;
     default:
       return <Home />;
   }

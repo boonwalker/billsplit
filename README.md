@@ -63,6 +63,11 @@ von den Positionen. Sie werden wie das Trinkgeld gleichmäßig pro Person vertei
 oder Abholbestellung (Gebühren auf dem Beleg oder typische Liefer-App), fragt es vor dem QR-Code:
 „Wie viele haben mitbestellt?“. Gebühren lassen sich im Editor ergänzen oder korrigieren.
 
+### Originalbeleg
+
+Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten
+auf der digitalen Rechnung führt „Zum Originalbeleg“ dorthin – für alle, die an der Rechnung teilnehmen.
+
 ### Geteilte Positionen
 
 Hakt mehr als eine Person dieselbe Position ab (z. B. eine Vorspeisenplatte), wird sie automatisch anteilig
@@ -87,7 +92,7 @@ sie mit einem Tipp auf den Namen.
 | Belegerkennung | Claude (Vision + Structured Outputs) auf dem Server. Fallback: Tesseract.js lokal im Browser |
 | Live-Sync | Node-Server mit Server-Sent Events. Jede Änderung wird sofort an alle Teilnehmer gepusht |
 | Identität | Jedes Gerät hat einen zufälligen geheimen Schlüssel. Andere sehen nur dessen Hash als Teilnehmer-ID |
-| Daten | `data/bills.json` auf dem Server. Rechnungen werden nach 60 Tagen gelöscht |
+| Daten | `data/bills.json` auf dem Server, Belegfotos in `data/receipts/`. Rechnungen werden nach 60 Tagen gelöscht |
 | QR-Code | `qrcode`, Scanner in der App mit `jsQR` |
 | Schriften | Space Grotesk & JetBrains Mono, selbst gehostet (keine Google-Fonts-Anfragen) |
 
@@ -171,7 +176,7 @@ claude.ai-Artifact gedacht:
 | `ANTHROPIC_API_KEY` | aktiviert die KI-Belegerkennung |
 | `BILLSPLIT_MODEL` | anderes Claude-Modell (Standard: `claude-opus-5-5`) |
 | `PORT` | Port des Servers (Standard 8787) |
-| `DATA_DIR` | Ordner für `bills.json` (Standard `data`) |
+| `DATA_DIR` | Ordner für `bills.json` und die Belegfotos (Standard `data`) |
 | `TRUST_PROXY` | `1` hinter einem Reverse-Proxy: Client-Adresse aus `X-Forwarded-For` lesen |
 | `RECEIPT_LIMIT_PER_HOUR` | Belegfotos pro Gerät/IP und Stunde (Standard 10) |
 | `RECEIPT_LIMIT_PER_DAY` | Belegfotos insgesamt pro Tag (Standard 300) |
@@ -189,6 +194,8 @@ claude.ai-Artifact gedacht:
 | `POST` | `/api/bills/:id/join` | Beitreten (QR-Code gescannt) |
 | `PUT` | `/api/bills/:id/claims` | eigene Positionen setzen |
 | `POST` | `/api/bills/:id/pay` | Tipp auf „Bezahlen“ inkl. Betrag vermerken |
+| `PUT` | `/api/bills/:id/receipt-image` | Belegfoto (JPEG) speichern – nur Rechnungssteller |
+| `GET` | `/api/bills/:id/receipt-image` | Belegfoto abrufen |
 | `POST` | `/api/bills/:id/received` | Zahlungseingang bestätigen (nur Rechnungssteller) |
 
 Geräte authentifizieren sich mit dem Header `x-billsplit-key`. Beim Event-Stream wird er als Query-Parameter `key`

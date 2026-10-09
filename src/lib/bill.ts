@@ -96,6 +96,8 @@ export interface BillSnapshot {
   debtors?: Debtor[];
   /** Pay click of the requesting participant. */
   myPayment?: { at: string; amount: Cents };
+  /** The photo or screenshot the bill was read from is stored and can be viewed. */
+  hasReceiptImage?: boolean;
 }
 
 export interface ShareSummary {

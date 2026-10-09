@@ -163,6 +163,8 @@ export default function Editor({ billId }: { billId?: string }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const started = useRef(false);
+  /** The prepared photo or screenshot of the last scan; stored with the bill. */
+  const photo = useRef<Blob | null>(null);
 
   useEffect(() => {
     if (!billId) return;
@@ -185,6 +187,8 @@ export default function Editor({ billId }: { billId?: string }) {
     setBusy({ message: "QR-Code wird erstellt …" });
     try {
       const snap = await api.createBill(data, loadProfile().name.trim() || "Ich");
+      // Keep the photo the bill was read from, so everyone can check it later.
+      if (photo.current) await api.uploadReceiptImage(snap.id, photo.current).catch(() => null);
       rememberBill({ id: snap.id, title: data.title, role: "owner", createdAt: snap.createdAt });
       clearDraft();
       navigate(`/b/${snap.id}`, { replace: true });
@@ -199,6 +203,7 @@ export default function Editor({ billId }: { billId?: string }) {
     setBusy({ message: "Bild wird vorbereitet …" });
     try {
       const image = await prepareImage(file);
+      photo.current = image.blob;
       setPreview(image.previewUrl);
       const receipt = await recognizeReceipt(image, (message, progress) => setBusy({ message, progress }));
       const next: Draft = {

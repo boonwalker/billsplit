@@ -41,6 +41,8 @@ export interface StoredBill {
   createdAt: string;
   ownerId: string;
   data: BillData;
+  /** True once the photo or screenshot of the receipt was stored. */
+  receiptImage?: boolean;
   /** Insertion order is join order. */
   participants: Record<string, StoredParticipant>;
 }
@@ -125,9 +127,21 @@ export class BillCore {
     this.changed(billId);
   }
 
+  /** Throws unless the requester is the payer of the bill. */
+  assertOwner(billId: string, requesterId: string): void {
+    if (requesterId !== this.get(billId).ownerId) throw new BillError("Nur wer die Rechnung bezahlt hat, kann sie bearbeiten.", 403);
+  }
+
+  /** Records that the receipt photo was stored (the bytes are kept by the subclass). */
+  markReceiptImage(billId: string, requesterId: string): void {
+    this.assertOwner(billId, requesterId);
+    this.get(billId).receiptImage = true;
+    this.changed(billId);
+  }
+
   updateData(billId: string, requesterId: string, data: BillData): void {
     const bill = this.get(billId);
-    if (requesterId !== bill.ownerId) throw new BillError("Nur wer die Rechnung bezahlt hat, kann sie bearbeiten.", 403);
+    this.assertOwner(billId, requesterId);
     bill.data = data;
     // When a quantity was lowered, the units taken first are kept.
     const participants = Object.values(bill.participants);
@@ -167,6 +181,7 @@ export class BillCore {
       participants,
       me,
       isOwner,
+      hasReceiptImage: Boolean(bill.receiptImage),
     };
     if (me && !isOwner) {
       const p = bill.participants[me];

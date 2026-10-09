@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import type { BillData } from "../src/lib/bill.ts";
@@ -73,6 +73,7 @@ export class BillStore extends BillCore {
       for (const bill of raw) {
         if (Date.parse(bill.createdAt) > cutoff) this.bills.set(bill.id, bill);
       }
+      await this.removeOrphanImages();
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
@@ -102,6 +103,42 @@ export class BillStore extends BillCore {
     const tmp = `${this.file}.tmp`;
     await writeFile(tmp, JSON.stringify([...this.bills.values()]));
     await rename(tmp, this.file);
+  }
+
+  /** Receipt photos live next to the bills file; without a file (tests) in memory. */
+  private images = new Map<string, Buffer>();
+
+  private imagePath(billId: string): string | null {
+    return this.file ? path.join(path.dirname(this.file), "receipts", `${billId}.jpg`) : null;
+  }
+
+  async setReceiptImage(billId: string, requesterId: string, jpeg: Buffer): Promise<void> {
+    this.assertOwner(billId, requesterId);
+    const file = this.imagePath(billId);
+    if (file) {
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, jpeg);
+    } else {
+      this.images.set(billId, jpeg);
+    }
+    this.markReceiptImage(billId, requesterId);
+  }
+
+  async receiptImage(billId: string): Promise<Buffer | null> {
+    if (!this.has(billId)) return null;
+    const file = this.imagePath(billId);
+    if (!file) return this.images.get(billId) ?? null;
+    return readFile(file).catch(() => null);
+  }
+
+  /** Deletes photos of bills that expired or no longer exist. */
+  private async removeOrphanImages(): Promise<void> {
+    if (!this.file) return;
+    const dir = path.join(path.dirname(this.file), "receipts");
+    const names = await readdir(dir).catch(() => [] as string[]);
+    for (const name of names) {
+      if (!this.has(name.replace(/\.jpg$/, ""))) await unlink(path.join(dir, name)).catch(() => {});
+    }
   }
 
   createBill(data: BillData, ownerId: string, ownerName: string): string {

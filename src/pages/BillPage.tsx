@@ -194,7 +194,11 @@ export default function BillPage({ id }: { id: string }) {
         <div id="receipt" className="receipt-anchor">
           {snap.isOwner && sharedTotal(snap.data) !== 0 && <TipSplit snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
-          <Receipt snapshot={snap} onSetSlots={snap.me ? setSlots : undefined} />
+          <Receipt
+            snapshot={snap}
+            onSetSlots={snap.me ? setSlots : undefined}
+            onShowOriginal={snap.hasReceiptImage ? () => navigate(`/b/${id}/beleg`) : undefined}
+          />
         </div>
 
         {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} />}
