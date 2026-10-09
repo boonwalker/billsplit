@@ -193,7 +193,9 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       }
       if (action === "claims" && method === "PUT") {
         const body = parse(
-          z.object({ claims: z.record(z.string().max(24), z.number().int().min(0).max(999)) }),
+          z.object({
+            claims: z.record(z.string().max(24), z.union([z.number().int().min(0).max(999), z.array(z.number().int().min(0).max(998)).max(999)])),
+          }),
           await readJson(req, MAX_JSON_BODY),
         );
         store.setClaims(billId, viewer, body.claims);

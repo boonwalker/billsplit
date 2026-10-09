@@ -99,7 +99,7 @@ describe("bills API", () => {
     const afterClaim = await waitForSnapshot(OWNER, id, (s) => s.debtors?.[0].amount === 1850, () =>
       call(ANNA, "PUT", `/api/bills/${id}/claims`, { claims: { pizza: 1, bier: 2 } }),
     );
-    expect(afterClaim.participants.find((p) => p.name === "Anna")?.claims).toEqual({ pizza: 1, bier: 2 });
+    expect(afterClaim.participants.find((p) => p.name === "Anna")?.claims).toEqual({ pizza: [0], bier: [0, 1] });
 
     const pay = await call<{ amount: number }>(ANNA, "POST", `/api/bills/${id}/pay`);
     expect(pay.json.amount).toBe(1850);

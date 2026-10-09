@@ -47,8 +47,14 @@ export interface BillData {
   payment: PaymentInfo;
 }
 
-/** Units a participant took, per item id. */
-export type ItemClaims = Record<string, number>;
+/**
+ * Units a participant took, per item id: the indices of the item's units ("slots", 0 … qty-1)
+ * in the order they were taken. People holding the same slot share that unit.
+ */
+export type ItemClaims = Record<string, number[]>;
+
+/** Claims as sent by a client or found in older stored bills, where a claim was a plain unit count. */
+export type ClaimsInput = Record<string, number | number[]>;
 
 /** What every participant sees about the others: who took what. */
 export interface PublicParticipant {
@@ -135,64 +141,99 @@ export function hasTip(data: BillData): boolean {
   return (data.tipAmount ?? 0) > 0 || data.tipPercent > 0;
 }
 
-/** Units of an item claimed by all participants together. */
-export function claimedUnits(itemId: string, participants: PublicParticipant[]): number {
-  return participants.reduce((sum, p) => sum + (p.claims[itemId] ?? 0), 0);
+/** Slot index → ids of everyone holding that unit of the item. */
+export function slotHolders(itemId: string, participants: PublicParticipant[]): Map<number, string[]> {
+  const holders = new Map<number, string[]>();
+  for (const p of participants) {
+    for (const slot of p.claims[itemId] ?? []) holders.set(slot, [...(holders.get(slot) ?? []), p.id]);
+  }
+  return holders;
 }
 
-/** An item is fully assigned once at least as many units as on the receipt are claimed. */
+/** Number of different units of an item that someone has taken. */
+export function assignedUnits(item: BillItem, participants: PublicParticipant[]): number {
+  return [...slotHolders(item.id, participants).keys()].filter((slot) => slot < item.qty).length;
+}
+
+/** An item is fully assigned once every unit has at least one taker. */
 export function isFullyAssigned(item: BillItem, participants: PublicParticipant[]): boolean {
-  return claimedUnits(item.id, participants) >= item.qty;
+  return assignedUnits(item, participants) >= item.qty;
 }
 
-/**
- * Price of the units one participant claimed. If more units are claimed than the
- * line has (several people tick the same pizza), the line is shared: everyone pays
- * proportionally, so the line is never charged more than once in total.
- */
-export function claimCost(item: BillItem, units: number, totalUnits: number): Cents {
+/** Units of an item one participant pays for; a unit shared by n people counts 1/n for each. */
+export function unitShare(item: BillItem, participants: PublicParticipant[], participantId: string): number {
+  const me = participants.find((p) => p.id === participantId);
+  const holders = slotHolders(item.id, participants);
+  return (me?.claims[item.id] ?? []).reduce((sum, slot) => sum + 1 / (holders.get(slot)?.length ?? 1), 0);
+}
+
+/** Price of a (possibly fractional) number of units of an item. */
+export function claimCost(item: BillItem, units: number): Cents {
   if (units <= 0) return 0;
-  return Math.round((item.total * units) / Math.max(item.qty, totalUnits));
+  return Math.round((item.total * units) / item.qty);
 }
 
 export function participantShare(data: BillData, participants: PublicParticipant[], participantId: string): ShareSummary {
-  const me = participants.find((p) => p.id === participantId);
-  if (!me) return { subtotal: 0, shared: 0, total: 0 };
-  const sub = data.items.reduce(
-    (sum, item) => sum + claimCost(item, me.claims[item.id] ?? 0, claimedUnits(item.id, participants)),
-    0,
-  );
+  if (!participants.some((p) => p.id === participantId)) return { subtotal: 0, shared: 0, total: 0 };
+  const sub = data.items.reduce((sum, item) => sum + claimCost(item, unitShare(item, participants, participantId)), 0);
   const shared = sharedPerPerson(data, participants);
   return { subtotal: sub, shared, total: sub + shared };
 }
 
 /** Value of all units nobody has claimed yet, plus the tip and fee parts of people who have not joined yet. */
 export function unassignedAmount(data: BillData, participants: PublicParticipant[]): Cents {
-  const sub = data.items.reduce((sum, item) => {
-    const open = Math.max(0, item.qty - claimedUnits(item.id, participants));
-    return sum + Math.round((item.total * open) / item.qty);
-  }, 0);
+  const sub = data.items.reduce((sum, item) => sum + claimCost(item, item.qty - assignedUnits(item, participants)), 0);
   const missingPeople = splitHeadCount(data, participants) - participants.length;
   return sub + missingPeople * sharedPerPerson(data, participants);
 }
 
-/** Drops claims for removed items and clamps units to the item quantity. */
 /**
- * Most units one person may take of an item. A single item can be shared by several
- * people; of a multi-quantity item only what the others have left is available.
+ * Turns one item claim into valid slots. A list of slots is kept as sent (that is how
+ * someone joins a unit another person holds). A plain count (older clients and stored
+ * bills) keeps the participant's previous slots and adds free ones; a single item that
+ * is already taken is shared. Nobody gets more units of an item than it has.
  */
-export function unitLimit(item: BillItem, othersClaims: ItemClaims[]): number {
-  if (item.qty <= 1) return 1;
-  const taken = othersClaims.reduce((sum, c) => sum + (c[item.id] ?? 0), 0);
-  return Math.max(0, item.qty - taken);
+export function claimSlots(value: number | number[] | undefined, item: BillItem, previous: number[] = [], taken: Set<number> = new Set()): number[] {
+  const valid = (slot: number) => Number.isInteger(slot) && slot >= 0 && slot < item.qty;
+  if (Array.isArray(value)) return [...new Set(value.filter(valid))];
+  const count = Math.min(Math.max(0, Math.floor(Number(value ?? 0))), item.qty);
+  const slots = [...new Set(previous.filter(valid))].slice(0, count);
+  for (let slot = 0; slot < item.qty && slots.length < count; slot++) {
+    if (!taken.has(slot) && !slots.includes(slot)) slots.push(slot);
+  }
+  if (slots.length === 0 && count > 0 && item.qty === 1) slots.push(0);
+  return slots;
 }
 
-/** Units of one participant, limited to the bill's items and to what the others have left. */
-export function sanitizeClaims(claims: ItemClaims, items: BillItem[], othersClaims: ItemClaims[] = []): ItemClaims {
+/** Claims of one participant, limited to the bill's items and their units. */
+export function sanitizeClaims(
+  claims: ClaimsInput,
+  items: BillItem[],
+  previous: ItemClaims = {},
+  othersClaims: ItemClaims[] = [],
+): ItemClaims {
   const out: ItemClaims = {};
   for (const item of items) {
-    const units = Math.min(Math.floor(Number(claims[item.id] ?? 0)), unitLimit(item, othersClaims));
-    if (units > 0) out[item.id] = units;
+    const taken = new Set(othersClaims.flatMap((c) => c[item.id] ?? []));
+    const slots = claimSlots(claims[item.id], item, previous[item.id], taken);
+    if (slots.length) out[item.id] = slots;
+  }
+  return out;
+}
+
+/**
+ * After the payer changed an item's quantity: renumbers the taken units without gaps,
+ * in the order they are numbered now, and drops those that no longer exist.
+ */
+export function compactClaims(allClaims: ItemClaims[], items: BillItem[]): ItemClaims[] {
+  const out = allClaims.map((): ItemClaims => ({}));
+  for (const item of items) {
+    const used = [...new Set(allClaims.flatMap((c) => c[item.id] ?? []))].sort((a, b) => a - b);
+    const renumber = new Map(used.map((slot, i) => [slot, i]));
+    allClaims.forEach((claims, i) => {
+      const slots = (claims[item.id] ?? []).map((slot) => renumber.get(slot)!).filter((slot) => slot < item.qty);
+      if (slots.length) out[i][item.id] = slots;
+    });
   }
   return out;
 }

@@ -9,6 +9,7 @@ import {
   feesTotal,
   sanitizeClaims,
   sharedTotal,
+  unitShare,
   splitHeadCount,
   sharedPerPerson,
   tipTotal,
@@ -30,22 +31,30 @@ const data: BillData = {
   ],
 };
 
-const p = (id: string, claims: Record<string, number>, isOwner = false): PublicParticipant => ({ id, name: id, isOwner, claims });
+const p = (id: string, claims: Record<string, number[]>, isOwner = false): PublicParticipant => ({ id, name: id, isOwner, claims });
 
 describe("claims", () => {
   it("charges per claimed unit of multi-quantity lines", () => {
-    expect(claimCost(data.items[1], 1, 1)).toBe(450);
-    expect(claimCost(data.items[1], 2, 3)).toBe(900);
-    expect(claimCost(data.items[1], 0, 3)).toBe(0);
+    expect(claimCost(data.items[1], 1)).toBe(450);
+    expect(claimCost(data.items[1], 2)).toBe(900);
+    expect(claimCost(data.items[1], 0)).toBe(0);
   });
 
-  it("splits a line when more units are claimed than exist", () => {
+  it("splits a unit among everyone holding it", () => {
     // Two people tick the same pizza -> each pays half.
-    expect(claimCost(data.items[0], 1, 2)).toBe(475);
+    const pizza = [p("a", { pizza: [0] }), p("b", { pizza: [0] })];
+    expect(unitShare(data.items[0], pizza, "a")).toBe(0.5);
+    expect(claimCost(data.items[0], 0.5)).toBe(475);
+    // 3 beers: Anna has one, Ben and Clara share another – only that one is split.
+    const beers = [p("anna", { bier: [0] }), p("ben", { bier: [1] }), p("clara", { bier: [1] })];
+    expect(unitShare(data.items[1], beers, "anna")).toBe(1);
+    expect(unitShare(data.items[1], beers, "ben")).toBe(0.5);
+    expect(participantShare({ ...data, tipPercent: 0 }, beers, "clara").subtotal).toBe(225);
+    expect(isFullyAssigned(data.items[1], beers)).toBe(false);
   });
 
   it("detects fully assigned lines", () => {
-    const ps = [p("a", { bier: 2 }), p("b", { bier: 1, pizza: 1 })];
+    const ps = [p("a", { bier: [0, 1] }), p("b", { bier: [2], pizza: [0] })];
     expect(isFullyAssigned(data.items[1], ps)).toBe(true);
     expect(isFullyAssigned(data.items[0], ps)).toBe(true);
     expect(isFullyAssigned(data.items[2], ps)).toBe(false);
@@ -53,7 +62,7 @@ describe("claims", () => {
 
   it("splits the tip equally among everyone who joined", () => {
     // 10 % of 33,00 € = 3,30 € tip, 2 people -> 1,65 € each
-    const ps = [p("owner", { pizza: 1 }, true), p("anna", { bier: 2, tira: 1 })];
+    const ps = [p("owner", { pizza: [0] }, true), p("anna", { bier: [0, 1], tira: [0] })];
     expect(billTotal(data)).toBe(3630);
     expect(splitHeadCount(data, ps)).toBe(2);
     expect(participantShare(data, ps, "anna")).toEqual({ subtotal: 1400, shared: 165, total: 1565 });
@@ -65,7 +74,7 @@ describe("claims", () => {
 
   it("uses the payer's expected head count while people are missing", () => {
     const fixed: BillData = { ...data, tipPercent: 0, tipAmount: 400, tipSplitCount: 4 };
-    const ps = [p("owner", {}, true), p("anna", { bier: 1 })];
+    const ps = [p("owner", {}, true), p("anna", { bier: [0] })];
     expect(splitHeadCount(fixed, ps)).toBe(4);
     expect(participantShare(fixed, ps, "anna")).toEqual({ subtotal: 450, shared: 100, total: 550 });
     // all items except one beer are open, plus the tip parts of the 2 missing people
@@ -87,7 +96,7 @@ describe("claims", () => {
         { id: "f2", name: "Servicegebühr", amount: 101 },
       ],
     };
-    const ps = [p("owner", { pizza: 1 }, true), p("anna", { bier: 2 })];
+    const ps = [p("owner", { pizza: [0] }, true), p("anna", { bier: [0, 1] })];
     expect(feesTotal(delivery)).toBe(400);
     expect(sharedTotal(delivery)).toBe(600);
     expect(billTotal(delivery)).toBe(3300 + 600);
@@ -103,7 +112,11 @@ describe("claims", () => {
   });
 
   it("drops unknown items and clamps units", () => {
-    expect(sanitizeClaims({ bier: 7, gone: 1, pizza: 0, tira: 1.7 }, data.items)).toEqual({ bier: 3, tira: 1 });
+    // Plain counts from older clients become free units.
+    expect(sanitizeClaims({ bier: 7, gone: 1, pizza: 0, tira: 1.7 }, data.items)).toEqual({ bier: [0, 1, 2], tira: [0] });
+    expect(sanitizeClaims({ bier: 2 }, data.items, {}, [{ bier: [0] }])).toEqual({ bier: [1, 2] });
+    // Lists of units are kept, without duplicates or units the item does not have.
+    expect(sanitizeClaims({ bier: [2, 2, 5, -1, 1], gone: [0] }, data.items)).toEqual({ bier: [2, 1] });
   });
 });
 

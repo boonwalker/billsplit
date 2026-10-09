@@ -2,14 +2,15 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   billTotal,
   claimCost,
-  claimedUnits,
   hasTip,
+  isFullyAssigned,
   sharedPerPerson,
   sharedTotal,
   splitHeadCount,
   subtotal,
+  slotHolders,
   tipTotal,
-  unitLimit,
+  unitShare,
   type BillItem,
   type BillSnapshot,
   type PublicParticipant,
@@ -18,8 +19,8 @@ import { formatMoney } from "../lib/money";
 
 interface Props {
   snapshot: BillSnapshot;
-  /** Called with the new number of units the viewer takes of an item; undefined = read-only. */
-  onSetUnits?: (itemId: string, units: number) => void;
+  /** Called with the units ("slots") the viewer takes of an item; undefined = read-only. */
+  onSetSlots?: (itemId: string, slots: number[]) => void;
 }
 
 function formatDate(iso: string): string {
@@ -40,42 +41,69 @@ function useFlash(key: string): boolean {
   return flash;
 }
 
+/** 1.5 → "1½", 0.333 → "⅓"; other fractions with one decimal. */
+function formatUnits(units: number): string {
+  const whole = Math.floor(units + 1e-9);
+  const rest = units - whole;
+  if (rest < 1e-6) return String(whole);
+  const glyph = [
+    [1 / 2, "½"],
+    [1 / 3, "⅓"],
+    [2 / 3, "⅔"],
+    [1 / 4, "¼"],
+    [3 / 4, "¾"],
+    [1 / 5, "⅕"],
+  ].find(([value]) => Math.abs((value as number) - rest) < 1e-6)?.[1];
+  if (glyph) return `${whole || ""}${glyph}`;
+  return units.toFixed(1).replace(".", ",");
+}
+
 function ReceiptLine({
   item,
   index,
   participants,
   me,
   currency,
-  onSetUnits,
+  onSetSlots,
 }: {
   item: BillItem;
   index: number;
   participants: PublicParticipant[];
   me: string | null;
   currency: string;
-  onSetUnits?: (itemId: string, units: number) => void;
+  onSetSlots?: (itemId: string, slots: number[]) => void;
 }) {
-  const totalUnits = claimedUnits(item.id, participants);
-  const myUnits = me ? (participants.find((p) => p.id === me)?.claims[item.id] ?? 0) : 0;
-  const claimants = participants.filter((p) => (p.claims[item.id] ?? 0) > 0);
-  const done = totalUnits >= item.qty;
-  const shared = totalUnits > item.qty;
+  const holders = slotHolders(item.id, participants);
+  const mySlots = me ? (participants.find((p) => p.id === me)?.claims[item.id] ?? []) : [];
+  const myUnits = mySlots.length;
+  const claimants = participants.filter((p) => (p.claims[item.id] ?? []).length > 0);
+  const done = isFullyAssigned(item, participants);
+  const shared = [...holders.values()].some((ids) => ids.length > 1);
+  const freeSlots = Array.from({ length: item.qty }, (_, slot) => slot).filter((slot) => !holders.has(slot));
   const others = claimants
     .filter((p) => p.id !== me)
-    .map((p) => `${p.id}:${p.claims[item.id]}`)
+    .map((p) => `${p.id}:${p.claims[item.id].join("+")}`)
     .join(",");
   const flash = useFlash(others);
-  // Of a multi-quantity item nobody can take more than the others have left.
-  const maxUnits = unitLimit(
-    item,
-    participants.filter((p) => p.id !== me).map((p) => p.claims),
-  );
-  const interactive = Boolean(onSetUnits && me) && (myUnits > 0 || maxUnits > 0);
+  const canEdit = Boolean(onSetSlots && me);
+  // A single item that is taken can still be shared by ticking it; a unit of a
+  // multi-quantity item is shared by tapping the name of whoever has it.
+  const interactive = canEdit && (myUnits > 0 || freeSlots.length > 0 || item.qty === 1);
 
   function toggle() {
-    if (!onSetUnits) return;
+    if (!onSetSlots) return;
     // Ticking takes one unit; more can be added with the stepper.
-    onSetUnits(item.id, myUnits > 0 ? 0 : 1);
+    if (myUnits > 0) onSetSlots(item.id, []);
+    else onSetSlots(item.id, [freeSlots[0] ?? 0]);
+  }
+
+  /** Shares a unit with someone who has it, or stops sharing with them. */
+  function toggleShare(otherId: string) {
+    if (!onSetSlots) return;
+    const theirs = participants.find((p) => p.id === otherId)?.claims[item.id] ?? [];
+    const together = mySlots.filter((slot) => theirs.includes(slot));
+    if (together.length) onSetSlots(item.id, mySlots.filter((slot) => !together.includes(slot)));
+    else if (theirs.length) onSetSlots(item.id, [...mySlots, theirs[0]]);
   }
 
   const fill = Math.min(1, myUnits / item.qty);
@@ -114,15 +142,20 @@ function ReceiptLine({
         <span className="rline-price">{formatMoney(item.total, currency)}</span>
       </button>
 
-      {interactive && item.qty > 1 && myUnits > 0 && (
+      {canEdit && item.qty > 1 && myUnits > 0 && (
         <div className="rline-stepper">
-          <button type="button" onClick={() => onSetUnits!(item.id, myUnits - 1)} aria-label="Eins weniger">
+          <button type="button" onClick={() => onSetSlots!(item.id, mySlots.slice(0, -1))} aria-label="Eins weniger">
             −
           </button>
           <span>
-            {myUnits} von {item.qty} für dich
+            {formatUnits(me ? unitShare(item, participants, me) : 0)} von {item.qty} für dich
           </span>
-          <button type="button" onClick={() => onSetUnits!(item.id, myUnits + 1)} disabled={myUnits >= maxUnits} aria-label="Eins mehr">
+          <button
+            type="button"
+            onClick={() => onSetSlots!(item.id, [...mySlots, freeSlots[0]])}
+            disabled={freeSlots.length === 0}
+            aria-label="Eins mehr"
+          >
             +
           </button>
         </div>
@@ -131,19 +164,40 @@ function ReceiptLine({
       {claimants.length > 0 && (
         <ul className="rline-claims">
           {claimants.map((p) => {
-            const units = p.claims[item.id];
+            const units = unitShare(item, participants, p.id);
             const isMe = p.id === me;
-            return (
-              <li key={p.id} className={isMe ? "me" : undefined}>
+            const sharing = !isMe && (p.claims[item.id] ?? []).some((slot) => mySlots.includes(slot));
+            const label = (
+              <>
                 <span className="claim-dot" aria-hidden="true">✓</span>
                 {isMe ? "Du" : p.name}
-                {item.qty > 1 && <> ×{units}</>}
-                <span className="claim-cost">{formatMoney(claimCost(item, units, totalUnits), currency)}</span>
+                {(item.qty > 1 || units < 1) && <> ×{formatUnits(units)}</>}
+                <span className="claim-cost">{formatMoney(claimCost(item, units), currency)}</span>
+              </>
+            );
+            return (
+              <li key={p.id} className={isMe ? "me" : undefined}>
+                {canEdit && !isMe ? (
+                  <button
+                    type="button"
+                    className={`claim-btn${sharing ? " sharing" : ""}`}
+                    onClick={() => toggleShare(p.id)}
+                    aria-pressed={sharing}
+                    aria-label={sharing ? `Nicht mehr mit ${p.name} teilen` : `Ein Stück mit ${p.name} teilen`}
+                  >
+                    {label}
+                  </button>
+                ) : (
+                  label
+                )}
               </li>
             );
           })}
           {shared && <li className="shared-note">geteilt</li>}
         </ul>
+      )}
+      {canEdit && item.qty > 1 && done && myUnits === 0 && (
+        <p className="rline-hint">Alle Stück sind vergeben. Tippe auf einen Namen, um dessen Stück mit ihm zu teilen.</p>
       )}
     </li>
   );
@@ -159,11 +213,11 @@ function FeeLine({ name, amount, currency }: { name: string; amount: number; cur
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetUnits }: Props) {
+export default function Receipt({ snapshot, onSetSlots }: Props) {
   const { data, participants, me, ownerName } = snapshot;
   const sub = subtotal(data.items);
   const total = billTotal(data);
-  const assigned = data.items.filter((i) => claimedUnits(i.id, participants) >= i.qty).length;
+  const assigned = data.items.filter((i) => isFullyAssigned(i, participants)).length;
 
   return (
     <article className="receipt" aria-label="Digitale Rechnung">
@@ -192,7 +246,7 @@ export default function Receipt({ snapshot, onSetUnits }: Props) {
               participants={participants}
               me={me}
               currency={data.currency}
-              onSetUnits={onSetUnits}
+              onSetSlots={onSetSlots}
             />
           ))}
         </ul>

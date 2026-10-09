@@ -1,3 +1,6 @@
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BillStore, participantIdFromKey, StoreError } from "../server/store";
 import type { BillData } from "../src/lib/bill";
@@ -40,7 +43,7 @@ describe("BillStore", () => {
     const annaView = store.snapshot(id, anna);
     expect(annaView.isOwner).toBe(false);
     expect(annaView.debtors).toBeUndefined();
-    expect(annaView.participants.find((p) => p.id === anna)?.claims).toEqual({ bier: 2 });
+    expect(annaView.participants.find((p) => p.id === anna)?.claims).toEqual({ bier: [0, 1] });
     expect(store.snapshot(id, owner).debtors?.[0].amount).toBe(800);
   });
 
@@ -69,7 +72,7 @@ describe("BillStore", () => {
     store.join(id, anna, "Anna");
     store.setClaims(id, anna, { bier: 3, pizza: 1 });
     store.updateData(id, owner, { ...data, items: [{ id: "bier", name: "Bier", qty: 2, total: 800 }] });
-    expect(store.snapshot(id, anna).participants.find((p) => p.id === anna)?.claims).toEqual({ bier: 2 });
+    expect(store.snapshot(id, anna).participants.find((p) => p.id === anna)?.claims).toEqual({ bier: [0, 1] });
   });
 
   it("never hands out more units of a multi-quantity item than the bill has", () => {
@@ -80,12 +83,12 @@ describe("BillStore", () => {
     store.setClaims(id, anna, { bier: 1 });
     store.setClaims(id, ben, { bier: 3 });
     const claims = (pid: string) => store.snapshot(id, owner).participants.find((p) => p.id === pid)?.claims;
-    expect(claims(ben)).toEqual({ bier: 2 });
+    expect(claims(ben)).toEqual({ bier: [1, 2] });
     // Nothing left for the payer; a single item can still be shared.
     store.setClaims(id, owner, { bier: 1, pizza: 1 });
     store.setClaims(id, anna, { bier: 1, pizza: 1 });
-    expect(claims(owner)).toEqual({ pizza: 1 });
-    expect(claims(anna)).toEqual({ bier: 1, pizza: 1 });
+    expect(claims(owner)).toEqual({ pizza: [0] });
+    expect(claims(anna)).toEqual({ bier: [0], pizza: [0] });
   });
 
   it("keeps earlier claims when the payer lowers a quantity", () => {
@@ -97,8 +100,52 @@ describe("BillStore", () => {
     store.setClaims(id, ben, { bier: 1 });
     store.updateData(id, owner, { ...data, items: [{ id: "bier", name: "Bier", qty: 2, total: 800 }] });
     const view = store.snapshot(id, owner);
-    expect(view.participants.find((p) => p.id === anna)?.claims).toEqual({ bier: 2 });
+    expect(view.participants.find((p) => p.id === anna)?.claims).toEqual({ bier: [0, 1] });
     expect(view.participants.find((p) => p.id === ben)?.claims).toEqual({});
+  });
+
+  it("shares exactly the unit someone joins and leaves the others alone", () => {
+    const { store, owner, anna, id } = setup();
+    const ben = participantIdFromKey("ben-key-0123456789");
+    store.join(id, anna, "Anna");
+    store.join(id, ben, "Ben");
+    store.setClaims(id, owner, { bier: [0] });
+    store.setClaims(id, anna, { bier: [1] });
+    store.setClaims(id, ben, { bier: [2] });
+    // Anna also shares Ben's beer.
+    store.setClaims(id, anna, { bier: [1, 2] });
+    const debtors = store.snapshot(id, owner).debtors!;
+    expect(debtors.find((d) => d.id === anna)?.amount).toBe(400 + 200);
+    expect(debtors.find((d) => d.id === ben)?.amount).toBe(200);
+  });
+
+  it("upgrades bills stored with plain unit counts", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "billsplit-"));
+    const file = join(dir, "bills.json");
+    const owner = participantIdFromKey("owner-key-0123456789");
+    const anna = participantIdFromKey("anna-key-0123456789");
+    const now = new Date().toISOString();
+    await writeFile(
+      file,
+      JSON.stringify([
+        {
+          id: "legacy123",
+          createdAt: now,
+          ownerId: owner,
+          data,
+          participants: {
+            [owner]: { name: "Niklas", joinedAt: now, claims: { bier: 1, pizza: 1 } },
+            [anna]: { name: "Anna", joinedAt: now, claims: { bier: 2, pizza: 1 } },
+          },
+        },
+      ]),
+    );
+    const store = new BillStore(file);
+    await store.load();
+    const view = store.snapshot("legacy123", owner);
+    expect(view.participants.find((p) => p.id === owner)?.claims).toEqual({ bier: [0], pizza: [0] });
+    expect(view.participants.find((p) => p.id === anna)?.claims).toEqual({ bier: [1, 2], pizza: [0] });
+    expect(view.debtors![0].amount).toBe(800 + 500);
   });
 
   it("rejects claims from devices that did not join", () => {

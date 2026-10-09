@@ -66,8 +66,11 @@ Hakt mehr als eine Person dieselbe Position ab (z. B. eine Vorspeisenplatte), wi
 geteilt. Insgesamt wird sie nie mehr als einmal berechnet.
 
 Bei Positionen mit mehreren Stück (z. B. 3x Bier) kann jeder höchstens so viele Stück übernehmen, wie noch frei
-sind. Hat Anna schon 1 von 3 abgehakt, kann Ben maximal die restlichen 2 nehmen. Der Server prüft das ebenfalls,
-falls zwei Personen gleichzeitig tippen.
+sind. Hat Anna schon 1 von 3 abgehakt, kann Ben maximal die restlichen 2 nehmen.
+
+Einzelne Stücke lassen sich gezielt teilen: Ein Tipp auf einen Namen unter der Position (z. B. „Ben ×1“) teilt
+eines von Bens Stücken mit dir – Ben und du zahlen dann je die Hälfte davon, alle anderen Stücke bleiben
+unverändert. Ein zweiter Tipp hebt das Teilen wieder auf.
 
 ## Technik
 

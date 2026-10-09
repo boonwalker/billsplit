@@ -1,7 +1,9 @@
 import {
+  compactClaims,
   participantShare,
   sanitizeClaims,
   type BillData,
+  type ClaimsInput,
   type BillSnapshot,
   type Debtor,
   type ItemClaims,
@@ -49,6 +51,7 @@ export class BillCore {
   protected get(billId: string): StoredBill {
     const bill = this.bills.get(billId);
     if (!bill) throw new BillError("Diese Rechnung gibt es nicht (mehr).", 404);
+    upgradeClaims(bill);
     return bill;
   }
 
@@ -88,13 +91,13 @@ export class BillCore {
     this.changed(billId);
   }
 
-  setClaims(billId: string, participantId: string, claims: ItemClaims): void {
+  setClaims(billId: string, participantId: string, claims: ClaimsInput): void {
     const bill = this.get(billId);
     const p = this.participant(bill, participantId);
     const others = Object.entries(bill.participants)
       .filter(([id]) => id !== participantId)
       .map(([, other]) => other.claims);
-    p.claims = sanitizeClaims(claims, bill.data.items, others);
+    p.claims = sanitizeClaims(claims, bill.data.items, p.claims, others);
     this.changed(billId);
   }
 
@@ -121,12 +124,13 @@ export class BillCore {
     const bill = this.get(billId);
     if (requesterId !== bill.ownerId) throw new BillError("Nur wer die Rechnung bezahlt hat, kann sie bearbeiten.", 403);
     bill.data = data;
-    // Earlier claims win when a reduced quantity no longer covers everyone.
-    const kept: ItemClaims[] = [];
-    for (const p of Object.values(bill.participants)) {
-      p.claims = sanitizeClaims(p.claims, data.items, kept);
-      kept.push(p.claims);
-    }
+    // When a quantity was lowered, the units taken first are kept.
+    const participants = Object.values(bill.participants);
+    const compacted = compactClaims(
+      participants.map((p) => p.claims),
+      data.items,
+    );
+    participants.forEach((p, i) => (p.claims = compacted[i]));
     this.changed(billId);
   }
 
@@ -174,5 +178,17 @@ export class BillCore {
         );
     }
     return snap;
+  }
+}
+
+/** Bills stored before units were tracked individually hold plain unit counts; turn them into slots. */
+function upgradeClaims(bill: StoredBill): void {
+  const participants = Object.values(bill.participants);
+  const legacy = (c: Record<string, unknown>) => Object.values(c).some((v) => !Array.isArray(v));
+  if (!participants.some((p) => legacy(p.claims))) return;
+  const done: ItemClaims[] = [];
+  for (const p of participants) {
+    p.claims = sanitizeClaims(p.claims as ClaimsInput, bill.data.items, {}, done);
+    done.push(p.claims);
   }
 }

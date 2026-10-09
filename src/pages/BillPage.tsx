@@ -91,9 +91,9 @@ export default function BillPage({ id }: { id: string }) {
   const url = billUrl(id, window.location.href, snap.data.payment);
   const myClaims = snap.participants.find((p) => p.id === snap.me)?.claims ?? {};
 
-  function setUnits(itemId: string, units: number) {
+  function setSlots(itemId: string, slots: number[]) {
     const next = { ...myClaims };
-    if (units > 0) next[itemId] = units;
+    if (slots.length > 0) next[itemId] = slots;
     else delete next[itemId];
     setMyClaims(next);
   }
@@ -189,7 +189,7 @@ export default function BillPage({ id }: { id: string }) {
         <div id="receipt" className="receipt-anchor">
           {snap.isOwner && sharedTotal(snap.data) !== 0 && <TipSplit snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
-          <Receipt snapshot={snap} onSetUnits={snap.me ? setUnits : undefined} />
+          <Receipt snapshot={snap} onSetSlots={snap.me ? setSlots : undefined} />
         </div>
 
         {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} />}
