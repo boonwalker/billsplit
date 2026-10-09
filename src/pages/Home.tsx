@@ -84,7 +84,7 @@ export default function Home() {
 
           {/* Digital receipts (app, e-mail, delivery service): pick a screenshot instead of taking a photo. */}
           {ready ? (
-            <label className="action-card">
+            <label className="action-card secondary">
               <span className="action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
                   <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
@@ -99,7 +99,7 @@ export default function Home() {
               <input type="file" accept="image/*" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
             </label>
           ) : (
-            <button className="action-card" onClick={() => navigate("/profile?next=new")}>
+            <button className="action-card secondary" onClick={() => navigate("/profile?next=new")}>
               <span className="action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
                   <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />

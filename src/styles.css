@@ -575,6 +575,16 @@ input[aria-invalid="true"] {
   color: var(--brand);
 }
 
+/* Middle step between the dark primary card and the plain one. */
+.action-card.secondary {
+  background: color-mix(in srgb, var(--mint) 22%, var(--surface));
+  border-color: color-mix(in srgb, var(--mint) 55%, var(--surface));
+}
+
+.secondary .action-icon {
+  background: var(--surface);
+}
+
 .action-icon svg {
   width: 28px;
   height: 28px;
