@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { RECEIPT_INSTRUCTIONS, type ParsedReceipt } from "../src/lib/receipt.ts";
+import { readWithSumCheck, RECEIPT_INSTRUCTIONS, type ParsedReceipt } from "../src/lib/receipt.ts";
 
 const DEFAULT_MODEL = "claude-opus-5-5";
 
@@ -110,8 +110,12 @@ export function toParsedReceipt(out: ReceiptOutput): ParsedReceipt {
   };
 }
 
-/** Reads a receipt photo with Claude and returns its line items. */
+/** Reads a receipt photo with Claude; a second reading fixes results that do not add up. */
 export async function parseReceiptImage(base64: string, mediaType: ReceiptMediaType): Promise<ParsedReceipt> {
+  return readWithSumCheck((hint) => readOnce(base64, mediaType, hint));
+}
+
+async function readOnce(base64: string, mediaType: ReceiptMediaType, hint?: string): Promise<ParsedReceipt> {
   sdk ??= await import("@anthropic-ai/sdk");
   const { default: AnthropicClient } = sdk;
   client ??= new AnthropicClient();
@@ -132,7 +136,7 @@ export async function parseReceiptImage(base64: string, mediaType: ReceiptMediaT
           role: "user",
           content: [
             { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-            { type: "text", text: RECEIPT_INSTRUCTIONS },
+            { type: "text", text: hint ? `${RECEIPT_INSTRUCTIONS}\n\n${hint}` : RECEIPT_INSTRUCTIONS },
           ],
         },
       ],

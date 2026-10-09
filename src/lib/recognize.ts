@@ -1,7 +1,7 @@
-import { getSample, type SampleError } from "./claudeRuntime";
+import { getSample, type SampleError, type SampleFn } from "./claudeRuntime";
 import { DEMO } from "./demo";
 import type { PreparedImage } from "./image";
-import { parseReceiptText, RECEIPT_INSTRUCTIONS, type ParsedReceipt } from "./receipt";
+import { parseReceiptText, readWithSumCheck, RECEIPT_INSTRUCTIONS, type ParsedReceipt } from "./receipt";
 
 export type ProgressFn = (message: string, progress?: number) => void;
 
@@ -87,11 +87,18 @@ async function recognizeWithSample(image: PreparedImage, onProgress: ProgressFn)
   const sample = await getSample();
   if (!sample) throw new Error("Die KI-Erkennung ist nur in der claude.ai-Ansicht verfügbar. Trag die Positionen unten selbst ein.");
   onProgress("Claude liest den Beleg …");
+  return readWithSumCheck((hint) => {
+    if (hint) onProgress("Claude rechnet nach …");
+    return sampleOnce(sample, image, hint);
+  });
+}
+
+async function sampleOnce(sample: SampleFn, image: PreparedImage, hint?: string): Promise<ParsedReceipt> {
   let out: SampleReceipt;
   try {
     out = await sample.json<SampleReceipt>(
       `${RECEIPT_INSTRUCTIONS}
-
+${hint ? `\n${hint}\n` : ""}
 Reply with only one JSON object of this shape:
 {"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable), "tip": number (0 if none), "fees": [{"name": string, "amount": number}], "delivery": boolean}`,
       { images: [image.blob], modelTier: "default" },
