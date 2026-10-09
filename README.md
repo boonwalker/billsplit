@@ -15,7 +15,7 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
    mehrfacher Anzahl („3x Bier“).
 3. Das Ergebnis ist ein großer QR-Code. Er enthält den Link zur Rechnung und deine PayPal-Daten.
 4. Weiter unten liegt die digitale Rechnung im Beleg-Design. Dort hakst du deine eigenen Positionen ab.
-5. Unter der Rechnung siehst du deine Freunde, sobald sie gescannt haben. Hat jemand auf „Bezahlen“ getippt,
+5. Unter der Rechnung siehst du deine Freunde, sobald sie beigetreten sind. Hat jemand auf „Bezahlen“ getippt,
    erscheint der Betrag hinter seinem Namen. Diese Angaben gleichst du mit den PayPal-Eingängen ab und hakst
    „erhalten“ an. Unten steht immer, wie viel dir noch fehlt.
 
@@ -50,7 +50,7 @@ Differenz zum Rechnungsbetrag.
 
 Das Trinkgeld wird gleichmäßig pro Person verteilt. Gezählt wird automatisch, wer der Rechnung per QR-Code
 beigetreten ist, plus der Rechnungssteller. Optional gibt der Rechnungssteller eine erwartete Personenzahl an,
-vorab im Trinkgeld-Schritt oder später direkt unter der Rechnung. Sie gilt, solange noch nicht alle gescannt haben,
+vorab im Trinkgeld-Schritt oder später direkt unter der Rechnung. Sie gilt, solange noch nicht alle beigetreten sind,
 etwa wenn jemand erst am nächsten Tag scannt. Treten mehr Personen bei als erwartet, zählen alle.
 
 ### Liefer- und Servicegebühren

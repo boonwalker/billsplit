@@ -53,7 +53,7 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
         {formatMoney(sharedPerPerson(data, participants), data.currency)} pro Person ·{" "}
         {missing > 0
           ? `${joined} beigetreten (inkl. dir), ${missing} ${missing === 1 ? "kommt" : "kommen"} noch dazu`
-          : `gezählt: alle, die gescannt haben, plus du`}
+          : `gezählt: alle, die beigetreten sind, plus du`}
       </p>
     </div>
   );
@@ -81,12 +81,12 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
     <section className="owner-panel" aria-labelledby="owner-title">
       <div className="panel-head">
         <h3 id="owner-title">Deine Freunde</h3>
-        <span className="pill">{debtors.length} gescannt</span>
+        <span className="pill">{debtors.length} beigetreten</span>
       </div>
 
       {debtors.length === 0 ? (
         <p className="muted empty">
-          Noch hat niemand den QR-Code gescannt. Sobald jemand scannt, taucht er hier mit seinem Namen auf.
+          Noch ist niemand deiner Abrechnung beigetreten. Sobald jemand beitritt, taucht er hier mit seinem Namen auf.
         </p>
       ) : (
         <ul className="debtors">
@@ -104,7 +104,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
                       ? "Zahlungseingang bestätigt"
                       : d.payClickedAt
                         ? `hat um ${time(d.payClickedAt)} auf Bezahlen getippt`
-                        : "hat gescannt · wählt noch aus …"}
+                        : "ist beigetreten · wählt noch aus …"}
                     {changed && <> · Auswahl jetzt {formatMoney(d.amount, currency)}</>}
                   </span>
                 </span>
@@ -136,7 +136,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
           {formatMoney(unassigned, currency)} sind noch keiner Person zugeordnet – hast du deine eigenen Positionen schon
           abgehakt?
           {splitHeadCount(snapshot.data, snapshot.participants) > snapshot.participants.length &&
-            " Darin enthalten sind auch Anteile an Trinkgeld und Gebühren von Personen, die noch nicht gescannt haben."}
+            " Darin enthalten sind auch Anteile an Trinkgeld und Gebühren von Personen, die noch nicht beigetreten sind."}
         </p>
       )}
       {debtors.length > 0 && (
