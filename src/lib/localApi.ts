@@ -81,7 +81,7 @@ export const localApi: Api = {
   getBill: (id) => call(() => view(id)),
   updateBill: (id, data) => call(() => (localStore().updateData(id, me(), data), view(id))),
   join: (id, name) => call(() => (localStore().join(id, me(), name), view(id))),
-  setClaims: (id, claims) => call(() => (localStore().setClaims(id, me(), claims), view(id))),
+  setClaims: (id, claims, splits) => call(() => (localStore().setClaims(id, me(), claims, splits), view(id))),
   pay: (id) => call(() => ({ amount: localStore().recordPayClick(id, me()) })),
   setReceived: (id, participantId, received) => call(() => (localStore().setReceived(id, me(), participantId, received), view(id))),
   subscribe(id, onSnapshot, onLive) {

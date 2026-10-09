@@ -72,6 +72,10 @@ Einzelne Stücke lassen sich gezielt teilen: Ein Tipp auf einen Namen unter der 
 eines von Bens Stücken mit dir – Ben und du zahlen dann je die Hälfte davon, alle anderen Stücke bleiben
 unverändert. Ein zweiter Tipp hebt das Teilen wieder auf.
 
+Wer zuerst abhakt, muss nicht warten: Ein Tipp auf den eigenen Eintrag („Du ×1“) gibt das Stück zum Teilen frei.
+Man zahlt sofort nur die Hälfte, die andere Hälfte bleibt offen. Die anderen sehen den Hinweis und übernehmen
+sie mit einem Tipp auf den Namen.
+
 ## Technik
 
 | Teil | Umsetzung |

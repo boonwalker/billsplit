@@ -9,6 +9,7 @@ import {
   splitHeadCount,
   subtotal,
   slotHolders,
+  slotParts,
   tipTotal,
   unitShare,
   type BillItem,
@@ -19,8 +20,8 @@ import { formatMoney } from "../lib/money";
 
 interface Props {
   snapshot: BillSnapshot;
-  /** Called with the units ("slots") the viewer takes of an item; undefined = read-only. */
-  onSetSlots?: (itemId: string, slots: number[]) => void;
+  /** Called with the units ("slots") the viewer takes of an item and those offered for sharing; undefined = read-only. */
+  onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
 }
 
 function formatDate(iso: string): string {
@@ -71,14 +72,18 @@ function ReceiptLine({
   participants: PublicParticipant[];
   me: string | null;
   currency: string;
-  onSetSlots?: (itemId: string, slots: number[]) => void;
+  onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
 }) {
   const holders = slotHolders(item.id, participants);
-  const mySlots = me ? (participants.find((p) => p.id === me)?.claims[item.id] ?? []) : [];
+  const mine = me ? participants.find((p) => p.id === me) : undefined;
+  const mySlots = mine?.claims[item.id] ?? [];
+  const mySplits = mine?.splits?.[item.id] ?? [];
+  /** Offered units nobody has joined yet: the other half is still open. */
+  const waiting = (p: PublicParticipant) => (p.splits?.[item.id] ?? []).filter((slot) => holders.get(slot)?.length === 1);
   const myUnits = mySlots.length;
   const claimants = participants.filter((p) => (p.claims[item.id] ?? []).length > 0);
   const done = isFullyAssigned(item, participants);
-  const shared = [...holders.values()].some((ids) => ids.length > 1);
+  const shared = [...holders.keys()].some((slot) => slotParts(item.id, slot, participants, holders) > 1);
   const freeSlots = Array.from({ length: item.qty }, (_, slot) => slot).filter((slot) => !holders.has(slot));
   const others = claimants
     .filter((p) => p.id !== me)
@@ -93,18 +98,37 @@ function ReceiptLine({
   function toggle() {
     if (!onSetSlots) return;
     // Ticking takes one unit; more can be added with the stepper.
-    if (myUnits > 0) onSetSlots(item.id, []);
-    else onSetSlots(item.id, [freeSlots[0] ?? 0]);
+    if (myUnits > 0) onSetSlots(item.id, [], []);
+    else onSetSlots(item.id, [freeSlots[0] ?? 0], []);
   }
 
-  /** Shares a unit with someone who has it, or stops sharing with them. */
+  /** Shares a unit with someone who has it (preferably one they offered), or stops sharing with them. */
   function toggleShare(otherId: string) {
     if (!onSetSlots) return;
-    const theirs = participants.find((p) => p.id === otherId)?.claims[item.id] ?? [];
+    const other = participants.find((p) => p.id === otherId);
+    const theirs = other?.claims[item.id] ?? [];
     const together = mySlots.filter((slot) => theirs.includes(slot));
-    if (together.length) onSetSlots(item.id, mySlots.filter((slot) => !together.includes(slot)));
-    else if (theirs.length) onSetSlots(item.id, [...mySlots, theirs[0]]);
+    if (together.length) {
+      onSetSlots(item.id, mySlots.filter((slot) => !together.includes(slot)), mySplits);
+      return;
+    }
+    const offered = other ? waiting(other) : [];
+    const slot = offered[0] ?? theirs[0];
+    if (slot !== undefined) onSetSlots(item.id, [...mySlots, slot], mySplits);
   }
+
+  // One of my own units that only I have – it can be offered for sharing.
+  const soloSlot = mySlots.find((slot) => holders.get(slot)?.length === 1);
+
+  /** Pays only half of an own unit right away; the other half waits for someone to join. */
+  function toggleOffer() {
+    if (!onSetSlots) return;
+    if (mySplits.length) onSetSlots(item.id, mySlots, []);
+    else if (soloSlot !== undefined) onSetSlots(item.id, mySlots, [soloSlot]);
+  }
+
+  const myWaiting = mine ? waiting(mine).length > 0 : false;
+  const othersWaiting = participants.filter((p) => p.id !== me && waiting(p).length > 0);
 
   const fill = Math.min(1, myUnits / item.qty);
 
@@ -144,7 +168,7 @@ function ReceiptLine({
 
       {canEdit && item.qty > 1 && myUnits > 0 && (
         <div className="rline-stepper">
-          <button type="button" onClick={() => onSetSlots!(item.id, mySlots.slice(0, -1))} aria-label="Eins weniger">
+          <button type="button" onClick={() => onSetSlots!(item.id, mySlots.slice(0, -1), mySplits)} aria-label="Eins weniger">
             −
           </button>
           <span>
@@ -152,7 +176,7 @@ function ReceiptLine({
           </span>
           <button
             type="button"
-            onClick={() => onSetSlots!(item.id, [...mySlots, freeSlots[0]])}
+            onClick={() => onSetSlots!(item.id, [...mySlots, freeSlots[0]], mySplits)}
             disabled={freeSlots.length === 0}
             aria-label="Eins mehr"
           >
@@ -166,7 +190,8 @@ function ReceiptLine({
           {claimants.map((p) => {
             const units = unitShare(item, participants, p.id);
             const isMe = p.id === me;
-            const sharing = !isMe && (p.claims[item.id] ?? []).some((slot) => mySlots.includes(slot));
+            const sharing = isMe ? mySplits.length > 0 : (p.claims[item.id] ?? []).some((slot) => mySlots.includes(slot));
+            const offering = !isMe && waiting(p).length > 0;
             const label = (
               <>
                 <span className="claim-dot" aria-hidden="true">✓</span>
@@ -175,15 +200,24 @@ function ReceiptLine({
                 <span className="claim-cost">{formatMoney(claimCost(item, units), currency)}</span>
               </>
             );
+            const clickable = canEdit && (!isMe || mySplits.length > 0 || soloSlot !== undefined);
             return (
               <li key={p.id} className={isMe ? "me" : undefined}>
-                {canEdit && !isMe ? (
+                {clickable ? (
                   <button
                     type="button"
-                    className={`claim-btn${sharing ? " sharing" : ""}`}
-                    onClick={() => toggleShare(p.id)}
+                    className={`claim-btn${sharing ? " sharing" : ""}${offering ? " offer" : ""}`}
+                    onClick={() => (isMe ? toggleOffer() : toggleShare(p.id))}
                     aria-pressed={sharing}
-                    aria-label={sharing ? `Nicht mehr mit ${p.name} teilen` : `Ein Stück mit ${p.name} teilen`}
+                    aria-label={
+                      isMe
+                        ? sharing
+                          ? "Doch nicht teilen"
+                          : "Zum Teilen freigeben und nur die Hälfte zahlen"
+                        : sharing
+                          ? `Nicht mehr mit ${p.name} teilen`
+                          : `Ein Stück mit ${p.name} teilen`
+                    }
                   >
                     {label}
                   </button>
@@ -196,8 +230,20 @@ function ReceiptLine({
           {shared && <li className="shared-note">geteilt</li>}
         </ul>
       )}
+      {canEdit && myWaiting && (
+        <p className="rline-hint">
+          Du zahlst {item.qty > 1 ? "von einem Stück nur " : ""}die Hälfte. Die andere Hälfte bleibt offen, bis jemand auf deinen
+          Namen tippt.
+        </p>
+      )}
+      {canEdit &&
+        othersWaiting.map((p) => (
+          <p key={p.id} className="rline-hint offer">
+            {p.name} möchte teilen – tippe auf den Namen, um die andere Hälfte zu übernehmen.
+          </p>
+        ))}
       {canEdit && item.qty > 1 && done && myUnits === 0 && (
-        <p className="rline-hint">Alle Stück sind vergeben. Tippe auf einen Namen, um dessen Stück mit ihm zu teilen.</p>
+        <p className="rline-hint">Alle Stück sind vergeben. Tippe auf einen Namen, um ein Stück zu teilen.</p>
       )}
     </li>
   );

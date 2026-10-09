@@ -119,6 +119,20 @@ describe("BillStore", () => {
     expect(debtors.find((d) => d.id === ben)?.amount).toBe(200);
   });
 
+  it("keeps offers to share only for units the participant holds", () => {
+    const { store, owner, anna, id } = setup();
+    store.join(id, anna, "Anna");
+    store.setClaims(id, owner, { bier: [0] }, { bier: [0, 1], pizza: [0] });
+    const ownerOf = () => store.snapshot(id, owner).participants.find((p) => p.id === owner)!;
+    expect(ownerOf().splits).toEqual({ bier: [0] });
+    expect(store.snapshot(id, owner).debtors![0].amount).toBe(0);
+    // Anna takes the other half; omitting splits keeps the offer.
+    store.setClaims(id, anna, { bier: [0] });
+    expect(store.snapshot(id, owner).debtors![0].amount).toBe(200);
+    store.setClaims(id, owner, {});
+    expect(ownerOf().splits).toEqual({});
+  });
+
   it("upgrades bills stored with plain unit counts", async () => {
     const dir = await mkdtemp(join(tmpdir(), "billsplit-"));
     const file = join(dir, "bills.json");

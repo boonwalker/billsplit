@@ -12,7 +12,7 @@ export interface Api {
   getBill(id: string): Promise<BillSnapshot>;
   updateBill(id: string, data: BillData): Promise<BillSnapshot>;
   join(id: string, name: string): Promise<BillSnapshot>;
-  setClaims(id: string, claims: ItemClaims): Promise<BillSnapshot>;
+  setClaims(id: string, claims: ItemClaims, splits: ItemClaims): Promise<BillSnapshot>;
   pay(id: string): Promise<{ amount: number }>;
   setReceived(id: string, participantId: string, received: boolean): Promise<BillSnapshot>;
   /** Live updates of one bill; returns an unsubscribe function. */
@@ -57,7 +57,7 @@ const serverApi: Api = {
   getBill: (id) => request("GET", bill(id)),
   updateBill: (id, data) => request("PUT", bill(id), { data }),
   join: (id, name) => request("POST", `${bill(id)}/join`, { name }),
-  setClaims: (id, claims) => request("PUT", `${bill(id)}/claims`, { claims }),
+  setClaims: (id, claims, splits) => request("PUT", `${bill(id)}/claims`, { claims, splits }),
   // keepalive lets the request finish while the browser switches to PayPal.
   pay: (id) => request("POST", `${bill(id)}/pay`, {}, { keepalive: true }),
   setReceived: (id, participantId, received) => request("POST", `${bill(id)}/received`, { participantId, received }),

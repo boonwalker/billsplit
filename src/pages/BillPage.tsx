@@ -89,13 +89,18 @@ export default function BillPage({ id }: { id: string }) {
 
   const snap = snapshot;
   const url = billUrl(id, window.location.href, snap.data.payment);
-  const myClaims = snap.participants.find((p) => p.id === snap.me)?.claims ?? {};
+  const mine = snap.participants.find((p) => p.id === snap.me);
 
-  function setSlots(itemId: string, slots: number[]) {
-    const next = { ...myClaims };
-    if (slots.length > 0) next[itemId] = slots;
-    else delete next[itemId];
-    setMyClaims(next);
+  /** Sets the units the viewer takes of an item and which of them they offer for sharing. */
+  function setSlots(itemId: string, slots: number[], splits: number[]) {
+    const claims = { ...mine?.claims };
+    const offered = { ...mine?.splits };
+    if (slots.length > 0) claims[itemId] = slots;
+    else delete claims[itemId];
+    const keep = splits.filter((slot) => slots.includes(slot));
+    if (keep.length > 0) offered[itemId] = keep;
+    else delete offered[itemId];
+    setMyClaims(claims, offered);
   }
 
   function toggleReceived(d: Debtor, received: boolean) {

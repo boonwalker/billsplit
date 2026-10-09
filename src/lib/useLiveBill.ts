@@ -10,7 +10,7 @@ export interface LiveBill {
   notFound: boolean;
   /** False while the live connection is (re)connecting. */
   live: boolean;
-  setMyClaims: (claims: ItemClaims) => void;
+  setMyClaims: (claims: ItemClaims, splits: ItemClaims) => void;
   replace: (snapshot: BillSnapshot) => void;
 }
 
@@ -22,7 +22,7 @@ export interface LiveBill {
  */
 export function useLiveBill(id: string): LiveBill {
   const [serverSnap, setServerSnap] = useState<BillSnapshot | null>(null);
-  const [localClaims, setLocalClaims] = useState<ItemClaims | null>(null);
+  const [localClaims, setLocalClaims] = useState<{ claims: ItemClaims; splits: ItemClaims } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [live, setLive] = useState(false);
@@ -55,15 +55,15 @@ export function useLiveBill(id: string): LiveBill {
   }, [id]);
 
   const setMyClaims = useCallback(
-    (claims: ItemClaims) => {
-      setLocalClaims(claims);
+    (claims: ItemClaims, splits: ItemClaims) => {
+      setLocalClaims({ claims, splits });
       const p = pending.current;
       if (p.timer) window.clearTimeout(p.timer);
       p.timer = window.setTimeout(() => {
         p.timer = null;
         p.inFlight++;
         api
-          .setClaims(id, claims)
+          .setClaims(id, claims, splits)
           .then((snap) => setServerSnap(snap))
           .catch((e: unknown) => setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."))
           .finally(() => {
@@ -81,7 +81,7 @@ export function useLiveBill(id: string): LiveBill {
   if (snapshot && localClaims && snapshot.me) {
     snapshot = {
       ...snapshot,
-      participants: snapshot.participants.map((p) => (p.id === snapshot!.me ? { ...p, claims: localClaims } : p)),
+      participants: snapshot.participants.map((p) => (p.id === snapshot!.me ? { ...p, ...localClaims } : p)),
     };
   }
 

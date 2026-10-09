@@ -62,6 +62,11 @@ export interface PublicParticipant {
   name: string;
   isOwner: boolean;
   claims: ItemClaims;
+  /**
+   * Units (of those in claims) the participant wants to share: they count as split in
+   * two even while nobody else has joined yet; the other half stays open until then.
+   */
+  splits?: ItemClaims;
 }
 
 /** What only the payer sees about a friend. */
@@ -150,21 +155,37 @@ export function slotHolders(itemId: string, participants: PublicParticipant[]): 
   return holders;
 }
 
-/** Number of different units of an item that someone has taken. */
+/** True when one of the unit's holders offered it for sharing. */
+export function isSplitOffered(itemId: string, slot: number, participants: PublicParticipant[]): boolean {
+  return participants.some((p) => (p.claims[itemId] ?? []).includes(slot) && (p.splits?.[itemId] ?? []).includes(slot));
+}
+
+/** Into how many parts a unit is split: one per holder, but at least two once it was offered for sharing. */
+export function slotParts(itemId: string, slot: number, participants: PublicParticipant[], holders = slotHolders(itemId, participants)): number {
+  const count = holders.get(slot)?.length ?? 0;
+  return Math.max(count, isSplitOffered(itemId, slot, participants) ? 2 : 1);
+}
+
+/** Units of an item that are paid for by someone (a unit waiting for a second sharer counts half). */
 export function assignedUnits(item: BillItem, participants: PublicParticipant[]): number {
-  return [...slotHolders(item.id, participants).keys()].filter((slot) => slot < item.qty).length;
+  const holders = slotHolders(item.id, participants);
+  let sum = 0;
+  for (const [slot, ids] of holders) {
+    if (slot < item.qty) sum += ids.length / slotParts(item.id, slot, participants, holders);
+  }
+  return sum;
 }
 
-/** An item is fully assigned once every unit has at least one taker. */
+/** An item is fully assigned once every unit is completely paid for. */
 export function isFullyAssigned(item: BillItem, participants: PublicParticipant[]): boolean {
-  return assignedUnits(item, participants) >= item.qty;
+  return assignedUnits(item, participants) >= item.qty - 1e-9;
 }
 
-/** Units of an item one participant pays for; a unit shared by n people counts 1/n for each. */
+/** Units of an item one participant pays for; a unit split in n parts counts 1/n. */
 export function unitShare(item: BillItem, participants: PublicParticipant[], participantId: string): number {
   const me = participants.find((p) => p.id === participantId);
   const holders = slotHolders(item.id, participants);
-  return (me?.claims[item.id] ?? []).reduce((sum, slot) => sum + 1 / (holders.get(slot)?.length ?? 1), 0);
+  return (me?.claims[item.id] ?? []).reduce((sum, slot) => sum + 1 / slotParts(item.id, slot, participants, holders), 0);
 }
 
 /** Price of a (possibly fractional) number of units of an item. */
@@ -225,15 +246,31 @@ export function sanitizeClaims(
  * After the payer changed an item's quantity: renumbers the taken units without gaps,
  * in the order they are numbered now, and drops those that no longer exist.
  */
-export function compactClaims(allClaims: ItemClaims[], items: BillItem[]): ItemClaims[] {
-  const out = allClaims.map((): ItemClaims => ({}));
+export function compactClaims(allClaims: ItemClaims[], items: BillItem[], allSplits: ItemClaims[] = []): { claims: ItemClaims[]; splits: ItemClaims[] } {
+  const claims = allClaims.map((): ItemClaims => ({}));
+  const splits = allClaims.map((): ItemClaims => ({}));
   for (const item of items) {
     const used = [...new Set(allClaims.flatMap((c) => c[item.id] ?? []))].sort((a, b) => a - b);
     const renumber = new Map(used.map((slot, i) => [slot, i]));
-    allClaims.forEach((claims, i) => {
-      const slots = (claims[item.id] ?? []).map((slot) => renumber.get(slot)!).filter((slot) => slot < item.qty);
-      if (slots.length) out[i][item.id] = slots;
+    const remap = (slots: number[] = []) =>
+      slots.filter((slot) => renumber.has(slot)).map((slot) => renumber.get(slot)!).filter((slot) => slot < item.qty);
+    allClaims.forEach((c, i) => {
+      const mine = remap(c[item.id]);
+      if (mine.length) claims[i][item.id] = mine;
+      const split = remap(allSplits[i]?.[item.id]).filter((slot) => mine.includes(slot));
+      if (split.length) splits[i][item.id] = split;
     });
+  }
+  return { claims, splits };
+}
+
+/** Units offered for sharing, limited to units the participant actually holds. */
+export function sanitizeSplits(splits: ClaimsInput, claims: ItemClaims): ItemClaims {
+  const out: ItemClaims = {};
+  for (const [itemId, slots] of Object.entries(claims)) {
+    const value = splits[itemId];
+    const offered = Array.isArray(value) ? [...new Set(value)].filter((slot) => slots.includes(slot)) : [];
+    if (offered.length) out[itemId] = offered;
   }
   return out;
 }

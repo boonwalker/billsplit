@@ -195,10 +195,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         const body = parse(
           z.object({
             claims: z.record(z.string().max(24), z.union([z.number().int().min(0).max(999), z.array(z.number().int().min(0).max(998)).max(999)])),
+            splits: z.record(z.string().max(24), z.array(z.number().int().min(0).max(998)).max(999)).optional(),
           }),
           await readJson(req, MAX_JSON_BODY),
         );
-        store.setClaims(billId, viewer, body.claims);
+        store.setClaims(billId, viewer, body.claims, body.splits);
         return sendJson(res, 200, store.snapshot(billId, viewer));
       }
       if (action === "pay" && method === "POST") {

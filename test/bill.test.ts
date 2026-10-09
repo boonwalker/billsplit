@@ -53,6 +53,18 @@ describe("claims", () => {
     expect(isFullyAssigned(data.items[1], beers)).toBe(false);
   });
 
+  it("lets someone pay half of a unit before the other sharer joins", () => {
+    const offered = [p("anna", { pizza: [0] }), p("ben", {})];
+    offered[0].splits = { pizza: [0] };
+    expect(unitShare(data.items[0], offered, "anna")).toBe(0.5);
+    expect(isFullyAssigned(data.items[0], offered)).toBe(false);
+    expect(unassignedAmount({ ...data, tipPercent: 0, items: [data.items[0]] }, offered)).toBe(475);
+    // Ben joins the offered half.
+    offered[1].claims = { pizza: [0] };
+    expect(unitShare(data.items[0], offered, "ben")).toBe(0.5);
+    expect(isFullyAssigned(data.items[0], offered)).toBe(true);
+  });
+
   it("detects fully assigned lines", () => {
     const ps = [p("a", { bier: [0, 1] }), p("b", { bier: [2], pizza: [0] })];
     expect(isFullyAssigned(data.items[1], ps)).toBe(true);

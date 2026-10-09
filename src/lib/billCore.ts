@@ -2,6 +2,7 @@ import {
   compactClaims,
   participantShare,
   sanitizeClaims,
+  sanitizeSplits,
   type BillData,
   type ClaimsInput,
   type BillSnapshot,
@@ -28,6 +29,8 @@ export interface StoredParticipant {
   name: string;
   joinedAt: string;
   claims: ItemClaims;
+  /** Held units offered for sharing (see PublicParticipant.splits). */
+  splits?: ItemClaims;
   payClickedAt?: string;
   payAmount?: number;
   received?: boolean;
@@ -91,13 +94,15 @@ export class BillCore {
     this.changed(billId);
   }
 
-  setClaims(billId: string, participantId: string, claims: ClaimsInput): void {
+  /** Sets the units a participant takes; splits are those of them offered for sharing (kept when omitted). */
+  setClaims(billId: string, participantId: string, claims: ClaimsInput, splits?: ClaimsInput): void {
     const bill = this.get(billId);
     const p = this.participant(bill, participantId);
     const others = Object.entries(bill.participants)
       .filter(([id]) => id !== participantId)
       .map(([, other]) => other.claims);
     p.claims = sanitizeClaims(claims, bill.data.items, p.claims, others);
+    p.splits = sanitizeSplits(splits ?? p.splits ?? {}, p.claims);
     this.changed(billId);
   }
 
@@ -129,8 +134,12 @@ export class BillCore {
     const compacted = compactClaims(
       participants.map((p) => p.claims),
       data.items,
+      participants.map((p) => p.splits ?? {}),
     );
-    participants.forEach((p, i) => (p.claims = compacted[i]));
+    participants.forEach((p, i) => {
+      p.claims = compacted.claims[i];
+      p.splits = compacted.splits[i];
+    });
     this.changed(billId);
   }
 
@@ -140,6 +149,7 @@ export class BillCore {
       name: p.name,
       isOwner: id === bill.ownerId,
       claims: p.claims,
+      splits: p.splits ?? {},
     }));
   }
 
