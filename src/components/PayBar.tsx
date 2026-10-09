@@ -115,7 +115,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
                 : `Trag in PayPal ${formatMoney(due, data.currency)} ein.`}
             </p>
             <a className="btn btn-paypal btn-large" href={action.url} target="_blank" rel="noreferrer" onClick={onPay}>
-              Weiter zu PayPal
+              Mit PayPal bezahlen · {formatMoney(due, data.currency)}
             </a>
           </>
         )}

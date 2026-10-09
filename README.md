@@ -38,7 +38,7 @@ seinen individuellen Link: den Empfänger aus der Rechnung plus den gerade berec
 `https://www.paypal.com/paypalme/niklas/18.50EUR`.
 
 Die PayPal-App übernimmt aus diesem Link in der Praxis oft nur den Empfänger. Deshalb kopiert der erste Tipp auf
-„Anteil begleichen“ den Betrag in die Zwischenablage, der zweite („Weiter zu PayPal“) öffnet PayPal. Dort muss
+„Anteil begleichen“ den Betrag in die Zwischenablage, der zweite („Mit PayPal bezahlen · Betrag“) öffnet PayPal. Dort muss
 der Betrag nur noch eingefügt werden. Zwei Tipps, weil iOS das Kopieren verwirft, wenn derselbe Tipp die App verlässt.
 
 > **Wichtig: PayPal.Me vs. E-Mail.** PayPal bietet nur über **PayPal.Me** einen dokumentierten Link, der Empfänger
