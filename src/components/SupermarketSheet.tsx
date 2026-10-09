@@ -147,7 +147,8 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (billed.length) onDone(billed, equal, persons, step === "some");
+    // Marking lines always splits the rest equally: everything not crossed out is shared by x people.
+    if (billed.length) onDone(billed, step === "some" || equal, persons, step === "some");
   };
 
   const personsStepper = (
@@ -218,6 +219,8 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
                             {divided !== null && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
                             {formatMoney(divided ?? item.total, currency)}
                           </span>
+                          {/* Every line that is not crossed out is shared by everyone. */}
+                          {!mark.struck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
                         </div>
                       </li>
                     );
@@ -266,10 +269,9 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
                 = {formatMoney(billedSum, currency)}
                 {billedSum !== fullSum && <small>statt {formatMoney(fullSum, currency)}</small>}
               </p>
-              <label className="scribble-check">
-                <input type="checkbox" checked={equal} onChange={(e) => setEqual(e.target.checked)} />
-                <span className="pencil">gleichmäßig auf alle verteilen</span>
-              </label>
+              <p className="pencil scribble-each">
+                {persons ? `je ${formatMoney(Math.round(billedSum / persons), currency)} pro Person` : "÷ x Personen"}
+              </p>
             </div>
           </div>
           <button className="scribble-submit" disabled={billed.length === 0}>
