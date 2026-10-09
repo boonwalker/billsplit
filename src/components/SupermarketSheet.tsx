@@ -340,11 +340,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
               <span>Wie viele teilen sich den Einkauf?</span>
               {personsStepper}
             </div>
-            <p className="muted small">
-              {persons
-                ? `${formatMoney(Math.round(billedSum / persons), currency)} pro Person, inklusive dir.`
-                : "Ohne Angabe wird gezählt, wer per QR-Code beitritt, plus du."}
-            </p>
+            <p className="muted small">inkl. Dir</p>
 
             <p className="shop-sum">
               Abgerechnet werden <b>{formatMoney(billedSum, currency)}</b>
