@@ -202,7 +202,7 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
             </p>
 
             <button className="btn btn-primary btn-large" disabled={billed.length === 0}>
-              QR-Code erstellen
+              Rechnung erstellen
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setStep("ask")}>
               Zurück
