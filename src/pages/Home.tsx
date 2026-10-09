@@ -5,7 +5,7 @@ import { ApiError } from "../lib/apiError";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
-import { clearDraft, forgetBill, loadOwnProfile, loadRecent, type RecentBill } from "../lib/storage";
+import { clearDraft, forgetBill, loadOwnProfile, loadRecent, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
@@ -14,15 +14,25 @@ export default function Home() {
   useEffect(() => {
     if (DEMO && getPersona() !== "me") setPersona("me");
   }, []);
-  // Bills the server no longer knows (expired, deleted, broken link) leave the list.
+  // Bills the server no longer knows (expired, deleted, broken link) leave the list;
+  // for the others the paid status is brought up to date.
   useEffect(() => {
     let cancelled = false;
     for (const b of loadRecent()) {
-      api.getBill(b.id).catch((e: unknown) => {
-        if (!(e instanceof ApiError && e.status === 404)) return; // offline etc.: keep it
-        forgetBill(b.id);
-        if (!cancelled) setRecent(loadRecent());
-      });
+      api
+        .getBill(b.id)
+        .then((snap) => {
+          if (snap.isOwner || !snap.me) return;
+          const markedPaid = Boolean(snap.myPayment?.markedPaidAt);
+          if (markedPaid === Boolean(b.markedPaid)) return;
+          updateRecent(b.id, { markedPaid });
+          if (!cancelled) setRecent(loadRecent());
+        })
+        .catch((e: unknown) => {
+          if (!(e instanceof ApiError && e.status === 404)) return; // offline etc.: keep it
+          forgetBill(b.id);
+          if (!cancelled) setRecent(loadRecent());
+        });
     }
     return () => {
       cancelled = true;
@@ -167,7 +177,7 @@ export default function Home() {
                   <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
                     <span className="list-title">{b.title || "Rechnung"}</span>
                     <span className="muted small">
-                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? "du hast bezahlt" : "du schuldest"}
+                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? "du hast bezahlt" : b.markedPaid ? <span className="list-paid">✓ als bezahlt markiert</span> : "du schuldest"}
                     </span>
                   </button>
                   <button

@@ -103,6 +103,8 @@ export interface RecentBill {
   title: string;
   role: "owner" | "guest";
   createdAt: string;
+  /** Guest only: they marked their share as paid. */
+  markedPaid?: boolean;
 }
 
 export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, []);
@@ -110,6 +112,11 @@ export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, [])
 export function rememberBill(entry: RecentBill): void {
   const others = loadRecent().filter((b) => b.id !== entry.id);
   write(RECENT_KEY, [entry, ...others].slice(0, 30));
+}
+
+/** Updates a remembered bill in place (keeps its position in the list). */
+export function updateRecent(id: string, patch: Partial<RecentBill>): void {
+  write(RECENT_KEY, loadRecent().map((b) => (b.id === id ? { ...b, ...patch } : b)));
 }
 
 export function forgetBill(id: string): void {

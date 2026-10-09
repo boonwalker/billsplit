@@ -651,6 +651,11 @@ input[aria-invalid="true"] {
   cursor: pointer;
 }
 
+.list-paid {
+  color: var(--claim);
+  font-weight: 600;
+}
+
 .list-title {
   font-weight: 650;
 }
