@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMarks, isStrikeThrough, markDivisor, orderForMarking } from "../src/components/SupermarketSheet";
+import { applyMarks, markDivisor, orderForMarking } from "../src/components/SupermarketSheet";
 import { looksPersonal } from "../src/lib/personal";
 import { parseReceiptText } from "../src/lib/receipt";
 
@@ -23,13 +23,6 @@ describe("supermarket receipts", () => {
     // Without a head count the price stays as it is until one is set.
     expect(applyMarks(items, { dusch: { perPerson: true } })[2]).toEqual(items[2]);
     expect(markDivisor({ struck: true }, 2)).toBe(1);
-  });
-
-  it("tells a crossing-out stroke from other strokes", () => {
-    const flat = [{ x: 10, y: 50 }, { x: 150, y: 56 }, { x: 290, y: 48 }];
-    expect(isStrikeThrough([flat], 300)).toBe(true);
-    expect(isStrikeThrough([[{ x: 10, y: 80 }, { x: 40, y: 20 }]], 300)).toBe(false);
-    expect(isStrikeThrough([flat, flat], 300)).toBe(false);
   });
 
   it("lists items that are probably not shared first", () => {

@@ -30,14 +30,6 @@ export function applyMarks(items: BillItem[], marks: Record<string, Mark>, perso
   });
 }
 
-/** A long, flat stroke across a line: crossing it out. */
-export function isStrikeThrough(strokes: Stroke[], areaWidth: number): boolean {
-  if (strokes.length !== 1) return false;
-  const b = boundsOf(strokes[0]);
-  const width = b.maxX - b.minX;
-  return width > Math.max(60, areaWidth * 0.3) && b.maxY - b.minY < width * 0.35;
-}
-
 interface Props {
   items: BillItem[];
   currency: string;
@@ -146,19 +138,25 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
     }
   }
 
+  /** Every stroke crosses out the line it was drawn on – in whatever direction or angle. */
   function readInk(strokes: Stroke[]) {
-    const usable = strokes.filter((st) => st.length > 1);
-    if (!usable.length) return;
-    if (!isStrikeThrough(usable, list.current?.getBoundingClientRect().width ?? 300)) {
-      setNotice("Streich eine Zeile quer durch – oder tipp sie an, um sie durch die Personenzahl zu teilen.");
-      return;
+    const ids = new Set<string>();
+    for (const stroke of strokes.filter((st) => st.length > 1)) {
+      const b = boundsOf(stroke);
+      const id = lineAt((b.minY + b.maxY) / 2);
+      if (id) ids.add(id);
     }
-    const b = boundsOf(usable[0]);
-    const item = items.find((i) => i.id === lineAt((b.minY + b.maxY) / 2));
-    if (!item) return;
-    const struck = !marks[item.id]?.struck;
-    setMarks((m) => ({ ...m, [item.id]: { struck } }));
-    setNotice(struck ? `${item.name} wird nicht abgerechnet.` : `${item.name} wird wieder abgerechnet.`);
+    const hit = items.filter((i) => ids.has(i.id));
+    if (!hit.length) return;
+    const next = { ...marks };
+    for (const item of hit) next[item.id] = { struck: !marks[item.id]?.struck };
+    setMarks(next);
+    const names = hit.map((i) => i.name).join(", ");
+    setNotice(
+      hit.every((i) => next[i.id].struck)
+        ? `${names} ${hit.length > 1 ? "werden" : "wird"} nicht abgerechnet.`
+        : `${names} ${hit.length > 1 ? "werden" : "wird"} wieder abgerechnet.`,
+    );
   }
 
   const submit = (e: FormEvent) => {
@@ -198,7 +196,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
           </div>
         </header>
         <p className="scribble-help">
-          <b>Durchstreichen</b> = nicht abrechnen · <b>Antippen</b> = durch die Personenzahl teilen · nochmal antippen =
+          <b>Durchstreichen</b> (in jede Richtung) = nicht abrechnen · <b>Antippen</b> = durch die Personenzahl teilen · nochmal antippen =
           zurück · mit zwei Fingern scrollen
         </p>
 
