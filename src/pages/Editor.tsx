@@ -323,12 +323,17 @@ export default function Editor({ billId }: { billId?: string }) {
     return (
       <div className="page">
         <Header back="/" />
-        <main className="content center-v">
+        <main className={`content center-v${preview ? " scan-content" : ""}`}>
           <div className="scanning" role="status">
             {preview && (
+              // Nearly full screen whatever the photo's size and shape: the whole receipt fits in,
+              // the rest is filled with a blurred copy, so the payer can already look it over.
               <div className="scan-photo">
-                <img src={preview} alt="Dein Beleg" />
-                <div className="scan-beam" aria-hidden="true" />
+                <img className="scan-photo-bg" src={preview} alt="" aria-hidden="true" decoding="async" />
+                <img className="scan-photo-img" src={preview} alt="Dein Beleg" decoding="async" />
+                <div className="scan-beam" aria-hidden="true">
+                  <i />
+                </div>
               </div>
             )}
             <p className="scan-msg">{busy.message}</p>
