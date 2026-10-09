@@ -3,7 +3,7 @@ import type { BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
 import InkLayer from "./InkLayer";
-import { PencilFilter } from "./Receipt";
+import { formatDate, PencilFilter } from "./Receipt";
 
 /** What the payer marked on a line: struck through (not billed) or – by tapping it – divided by the number of people below. */
 export interface Mark {
@@ -48,6 +48,10 @@ interface Props {
   onDone: (items: BillItem[], equalSplit: boolean, persons: number | undefined, partial: boolean) => void;
   /** Items that are probably not a shared expense; they are listed first, ready to be crossed out. */
   isPersonal?: (item: BillItem) => boolean;
+  /** Shown in the head of the receipt, like on the finished bill. */
+  title?: string;
+  date?: string;
+  ownerName?: string;
 }
 
 /** Likely personal items first, otherwise in receipt order. */
@@ -68,7 +72,7 @@ interface DemoSpots {
  * billed – e.g. a litre of milk bought, but only 250 ml used for the shared recipe?
  * With "Manches nicht" the payer crosses lines out or writes "/2", "/3" … on them.
  */
-export default function SupermarketSheet({ items, currency, onDone, isPersonal = () => false }: Props) {
+export default function SupermarketSheet({ items, currency, onDone, isPersonal = () => false, title, date, ownerName }: Props) {
   /** First the question, then either straight on ("all") or the receipt to mark ("some"). */
   const [step, setStep] = useState<"ask" | "all" | "some">("ask");
   const [marks, setMarks] = useState<Record<string, Mark>>({});
@@ -201,6 +205,19 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
         <div className="scribble-scroll ink-scroll">
           <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
             <div className="receipt-paper">
+              <header className="receipt-head">
+                <div className="receipt-logo" aria-hidden="true">
+                  ✦
+                </div>
+                <h2>{title || "Einkauf"}</h2>
+                <p>{formatDate(date ?? "")}</p>
+                {ownerName && <p className="receipt-paidby">bezahlt von {ownerName}</p>}
+              </header>
+              <div className="receipt-rule" aria-hidden="true" />
+              <div className="receipt-cols" aria-hidden="true">
+                <span>Artikel</span>
+                <span>{currency}</span>
+              </div>
               <div className="receipt-lines-wrap">
                 <InkLayer onInk={readInk} onTap={tap} onStart={() => setTouched(true)} />
                 {demo && !touched && (
@@ -245,6 +262,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                                 </span>
                                 {mark.perPerson && <span className="pencil rline-divisor">/{label}</span>}
                               </span>
+                              {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
                             </span>
                             <span className="rline-dots" aria-hidden="true" />
                             <span className="rline-price">
@@ -260,6 +278,20 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                   })}
                 </ul>
               </div>
+              <div className="receipt-rule" aria-hidden="true" />
+              <dl className="receipt-sums">
+                {billedSum !== fullSum && (
+                  <>
+                    <dt>Auf dem Beleg</dt>
+                    <dd>{formatMoney(fullSum, currency)}</dd>
+                  </>
+                )}
+                <dt className="grand">SUMME</dt>
+                <dd className="grand">{formatMoney(billedSum, currency)}</dd>
+              </dl>
+              <div className="receipt-rule double" aria-hidden="true" />
+              <div className="receipt-barcode" aria-hidden="true" />
+              <p className="receipt-thanks">Danke &amp; bis zum nächsten Mal!</p>
             </div>
           </article>
         </div>

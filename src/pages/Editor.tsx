@@ -487,6 +487,9 @@ export default function Editor({ billId }: { billId?: string }) {
           items={askShop}
           currency={draft.currency}
           isPersonal={(item) => personalNames.has(item.name) || looksPersonal(item.name)}
+          title={draft.title}
+          date={draft.date}
+          ownerName={loadProfile().name.trim()}
           onDone={(items, equalSplit, persons, partial) => {
             setAskShop(null);
             const tip = { ...draft.tip, persons: persons ? String(persons) : "" };

@@ -27,7 +27,7 @@ interface Props {
   onShowOriginal?: () => void;
 }
 
-function formatDate(iso: string): string {
+export function formatDate(iso: string): string {
   return iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
 }
 
