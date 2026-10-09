@@ -1824,7 +1824,7 @@ input[aria-invalid="true"] {
   gap: 12px;
 }
 
-/* ": 4" with small arrows – what everything not crossed out is divided by. */
+/* "/ 4" with small arrows – what everything not crossed out is divided by. */
 .divide-by {
   display: flex;
   align-items: center;
@@ -1833,17 +1833,22 @@ input[aria-invalid="true"] {
 
 .divide-by-sign {
   color: var(--pencil);
-  width: 16px;
-  height: 38px;
+  width: 20px;
+  height: 44px;
   overflow: visible;
   filter: url(#pencil-grain);
 }
 
 .divide-by-sign path {
-  fill: currentColor;
+  fill: none;
   stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-linejoin: round;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.divide-by-sign .divide-by-sign-thin {
+  stroke-width: 3;
+  opacity: 0.45;
 }
 
 .divide-by-value {

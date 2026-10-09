@@ -248,12 +248,12 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
             </p>
           )}
           <div className="scribble-controls">
-            {/* What everything not crossed out is divided by: the head count for the equal split. */}
+            {/* "/ 4": what everything not crossed out is divided by – the head count for the equal split. */}
             <div className="divide-by" role="group" aria-label="Alles geteilt durch">
-              {/* A pencilled ":" – two slightly uneven dots. */}
+              {/* A pencilled "/" – a firm stroke with a fainter second pass. */}
               <svg className="divide-by-sign" viewBox="0 0 40 90" aria-hidden="true">
-                <path d="M20 16 C 28 15, 31 22, 29 28 C 27 35, 16 36, 12 31 C 8 25, 12 16, 20 16 Z" />
-                <path d="M19 54 C 28 53, 32 60, 29 67 C 26 74, 15 74, 11 68 C 7 61, 11 54, 19 54 Z" />
+                <path d="M33 5 C 28 28, 19 55, 7 86" />
+                <path d="M35 9 C 29 33, 21 58, 10 84" className="divide-by-sign-thin" />
               </svg>
               <span className="divide-by-value" aria-live="polite">
                 {persons ?? "?"}
