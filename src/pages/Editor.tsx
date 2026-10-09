@@ -482,7 +482,6 @@ export default function Editor({ billId }: { billId?: string }) {
         <SupermarketSheet
           items={askShop}
           currency={draft.currency}
-          onReview={() => setAskShop(null)}
           onDone={(items, equalSplit, persons, partial) => {
             setAskShop(null);
             const tip = { ...draft.tip, persons: persons ? String(persons) : "" };

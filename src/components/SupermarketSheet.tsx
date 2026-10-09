@@ -50,7 +50,6 @@ interface Props {
    * partial: the payer said some items are not or only partly billed.
    */
   onDone: (items: BillItem[], equalSplit: boolean, persons: number | undefined, partial: boolean) => void;
-  onReview: () => void;
 }
 
 /** Where the demo animations run: across the first line, and on the price of the second. */
@@ -69,7 +68,7 @@ interface DemoSpots {
  * billed – e.g. a litre of milk bought, but only 250 ml used for the shared recipe?
  * With "Manches nicht" the payer crosses lines out or writes "/2", "/3" … on them.
  */
-export default function SupermarketSheet({ items, currency, onDone, onReview }: Props) {
+export default function SupermarketSheet({ items, currency, onDone }: Props) {
   /** First the question, then either straight on ("all") or the receipt to mark ("some"). */
   const [step, setStep] = useState<"ask" | "all" | "some">("ask");
   const [marks, setMarks] = useState<Record<string, Mark>>({});
@@ -308,9 +307,6 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
             </button>
             <button type="button" className="btn btn-secondary btn-large" onClick={() => setStep("some")}>
               Manches nicht
-            </button>
-            <button type="button" className="btn btn-ghost" onClick={onReview}>
-              Positionen nochmal prüfen
             </button>
           </>
         ) : (
