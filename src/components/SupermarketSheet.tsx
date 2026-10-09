@@ -5,29 +5,14 @@ import { formatMoney } from "../lib/money";
 import InkLayer from "./InkLayer";
 import { formatDate, PencilFilter } from "./Receipt";
 
-/** What the payer marked on a line: struck through (not billed) or – by tapping it – divided by the number of people below. */
+/** What the payer marked on a line: struck through (by a stroke or a tap) means not billed. */
 export interface Mark {
   struck?: boolean;
-  perPerson?: boolean;
 }
 
-/** The divisor a mark stands for; persons is the head count set below the receipt. */
-export function markDivisor(mark: Mark | undefined, persons: number | undefined): number {
-  if (!mark || mark.struck) return 1;
-  return mark.perPerson ? (persons ?? 1) : 1;
-}
-
-const isMarked = (mark: Mark | undefined) => Boolean(mark?.struck || mark?.perPerson);
-
-/** The items as billed: struck lines left out, divided lines reduced to their part. */
-export function applyMarks(items: BillItem[], marks: Record<string, Mark>, persons?: number): BillItem[] {
-  return items.flatMap((item) => {
-    const mark = marks[item.id];
-    if (mark?.struck) return [];
-    const divisor = markDivisor(mark, persons);
-    if (divisor <= 1) return [item];
-    return [{ ...item, fullTotal: item.total, divisor, total: Math.round(item.total / divisor) }];
-  });
+/** The items as billed: struck lines left out. */
+export function applyMarks(items: BillItem[], marks: Record<string, Mark>): BillItem[] {
+  return items.filter((item) => !marks[item.id]?.struck);
 }
 
 interface Props {
@@ -51,11 +36,11 @@ export function orderForMarking(items: BillItem[], isPersonal: (item: BillItem) 
   return [...items.filter(isPersonal), ...items.filter((i) => !isPersonal(i))];
 }
 
-/** Where the demo animations run: a stroke across the first line, a tap on the price of the second. */
+/** Where the demo animations run: a stroke across the first line, taps on two more lines. */
 interface DemoSpots {
   strikeY: number;
-  /** Two lines the tap demo alternates between: where the finger taps and where "/2" appears. */
-  taps: { x: number; y: number; textX: number }[];
+  /** Lines the tap demo alternates between: where the finger taps, then the line gets crossed out. */
+  taps: { x: number; y: number }[];
   width: number;
 }
 
@@ -78,10 +63,9 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
   const personalCount = ordered.filter(isPersonal).length;
   const [demo, setDemo] = useState<DemoSpots | null>(null);
   /** Briefly highlights the head count when a tap on a price needs it. */
-  const [askPersons, setAskPersons] = useState(false);
   const list = useRef<HTMLUListElement>(null);
 
-  const billed = step === "some" ? applyMarks(items, marks, persons) : items;
+  const billed = step === "some" ? applyMarks(items, marks) : items;
   const billedSum = billed.reduce((s, i) => s + i.total, 0);
   const fullSum = items.reduce((s, i) => s + i.total, 0);
 
@@ -93,18 +77,15 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
     const wrap = list.current.parentElement;
     if (!lines.length || !wrap) return;
     const centre = (el: HTMLElement) => el.offsetTop + el.offsetHeight / 2;
-    // Tap demos on shared items (after the likely personal ones), the strike on the first line.
+    // The strike demo on the first line, tap demos on the next two (likely personal ones come first).
     const all = [...lines];
-    const shared = all.slice(Math.min(personalCount, Math.max(0, all.length - 2)));
-    const tapLines = (shared.length > 1 ? shared : all).slice(0, 2);
+    const tapLines = all.length > 2 ? all.slice(1, 3) : all.slice(0, 2);
     const taps = tapLines.map((line) => {
       const name = line.querySelector<HTMLElement>(".rline-strike");
-      const nameLeft = line.offsetLeft + (name?.offsetLeft ?? 0);
-      const nameWidth = name?.offsetWidth ?? 80;
-      return { x: nameLeft + Math.min(nameWidth / 2, 70), y: centre(line), textX: nameLeft + nameWidth + 8 };
+      return { x: line.offsetLeft + (name?.offsetLeft ?? 0) + Math.min((name?.offsetWidth ?? 80) / 2, 70), y: centre(line) };
     });
     setDemo({ strikeY: centre(lines[0]), taps, width: wrap.offsetWidth });
-  }, [step, items, personalCount]);
+  }, [step, items]);
 
   /** The line under a vertical position (the nearest one when written between lines). */
   function lineAt(y: number): string | null {
@@ -117,31 +98,30 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
     return lines.reduce((best, el) => (distance(el) < distance(best) ? el : best)).dataset.item ?? null;
   }
 
-  /** Tapping a marked line removes the mark; tapping any other line (name or price) divides it by the number of people. */
+  /** Crosses lines out, or brings them back when they are crossed out already. */
+  function toggle(hit: BillItem[]) {
+    if (!hit.length) return;
+    const next = { ...marks };
+    for (const item of hit) next[item.id] = { struck: !marks[item.id]?.struck };
+    setMarks(next);
+    const names = hit.map((i) => i.name).join(", ");
+    const verb = hit.length > 1 ? "werden" : "wird";
+    setNotice(hit.every((i) => next[i.id].struck) ? `${names} ${verb} nicht abgerechnet.` : `${names} ${verb} wieder abgerechnet.`);
+  }
+
+  /** A tap crosses the line out (or back in); it is pressed in and pops back up. */
   function tap(point: InkPoint) {
     const line = [...(list.current?.querySelectorAll<HTMLElement>("li[data-item]") ?? [])].find((el) => {
       const r = el.getBoundingClientRect();
       return point.y >= r.top - 6 && point.y <= r.bottom + 6;
     });
     const item = line && items.find((i) => i.id === line.dataset.item);
-    if (!line || !item) return;
+    if (!item) return;
     setPressed((p) => ({ id: item.id, n: (p?.n ?? 0) + 1 }));
-    if (isMarked(marks[item.id])) {
-      setMarks((m) => ({ ...m, [item.id]: {} }));
-      setNotice(`${item.name}: Markierung entfernt.`);
-      return;
-    }
-    setMarks((m) => ({ ...m, [item.id]: { perPerson: true } }));
-    if (persons) {
-      setNotice(`${item.name} ÷ ${persons}: ${formatMoney(Math.round(item.total / persons), currency)} statt ${formatMoney(item.total, currency)}`);
-    } else {
-      setNotice(`${item.name} wird durch die Personenzahl geteilt – stell unten ein, wie viele es sind.`);
-      setAskPersons(true);
-      window.setTimeout(() => setAskPersons(false), 1600);
-    }
+    toggle([item]);
   }
 
-  /** Every stroke crosses out the line it was drawn on – in whatever direction or angle. */
+  /** Every stroke crosses out the line it was drawn on (up/down swipes scroll instead). */
   function readInk(strokes: Stroke[]) {
     const ids = new Set<string>();
     for (const stroke of strokes.filter((st) => st.length > 1)) {
@@ -149,17 +129,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
       const id = lineAt((b.minY + b.maxY) / 2);
       if (id) ids.add(id);
     }
-    const hit = items.filter((i) => ids.has(i.id));
-    if (!hit.length) return;
-    const next = { ...marks };
-    for (const item of hit) next[item.id] = { struck: !marks[item.id]?.struck };
-    setMarks(next);
-    const names = hit.map((i) => i.name).join(", ");
-    setNotice(
-      hit.every((i) => next[i.id].struck)
-        ? `${names} ${hit.length > 1 ? "werden" : "wird"} nicht abgerechnet.`
-        : `${names} ${hit.length > 1 ? "werden" : "wird"} wieder abgerechnet.`,
-    );
+    toggle(items.filter((i) => ids.has(i.id)));
   }
 
   const submit = (e: FormEvent) => {
@@ -199,8 +169,8 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
           </div>
         </header>
         <p className="scribble-help">
-          <b>Durchstreichen</b> (in jede Richtung) = nicht abrechnen · <b>Antippen</b> = durch die Personenzahl teilen · nochmal antippen =
-          zurück · mit zwei Fingern scrollen
+          <b>Durchstreichen oder antippen</b> = nicht abrechnen · nochmal = wieder rein · <b>hoch und runter wischen</b> =
+          scrollen
         </p>
 
         <div className="scribble-scroll ink-scroll">
@@ -231,12 +201,11 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                     {demo.taps.map((t, i) => (
                       <g key={i} className={`ink-demo-tap-group tap-${i + 1}`}>
                         <circle className="ink-demo-tap" cx={t.x} cy={t.y} r="16" />
-                        {/* "/2" written in pencil where the mark appears after a real tap. */}
-                        <path className="ink-demo-slash" pathLength={1} d={`M${t.textX} ${t.y + 13} L ${t.textX + 11} ${t.y - 14}`} />
+                        {/* After the tap the line gets crossed out in pencil. */}
                         <path
-                          className="ink-demo-two"
+                          className="ink-demo-tapstrike"
                           pathLength={1}
-                          d={`M${t.textX + 15} ${t.y - 7} C ${t.textX + 17} ${t.y - 16}, ${t.textX + 31} ${t.y - 15}, ${t.textX + 29} ${t.y - 6} C ${t.textX + 27} ${t.y + 2}, ${t.textX + 17} ${t.y + 8}, ${t.textX + 15} ${t.y + 13} L ${t.textX + 31} ${t.y + 12}`}
+                          d={`M6 ${t.y + 2} C ${demo.width * 0.3} ${t.y - 2}, ${demo.width * 0.6} ${t.y + 3}, ${demo.width - 8} ${t.y}`}
                         />
                       </g>
                     ))}
@@ -245,9 +214,6 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                 <ul className="receipt-lines" ref={list}>
                   {ordered.map((item, index) => {
                     const mark = marks[item.id] ?? {};
-                    const divisor = markDivisor(mark, persons);
-                    const divided = divisor > 1 ? Math.round(item.total / divisor) : null;
-                    const label = persons ?? "?";
                     const heading =
                       personalCount > 0 && personalCount < ordered.length && (index === 0 || index === personalCount) ? (
                         <li className="rline-group" aria-hidden="true">
@@ -269,14 +235,12 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                                   {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
                                   {item.name}
                                 </span>
-                                {mark.perPerson && <span className="pencil rline-divisor">/{label}</span>}
                               </span>
                               {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
                             </span>
                             <span className="rline-dots" aria-hidden="true" />
                             <span className="rline-price">
-                              {divided !== null && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
-                              {formatMoney(divided ?? item.total, currency)}
+                              {formatMoney(item.total, currency)}
                             </span>
                             {/* Every line that is not crossed out is shared by everyone. */}
                             {!mark.struck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
@@ -313,8 +277,8 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
           )}
           <div className="scribble-controls">
             {/* What a tap on a line divides by – also the head count for the equal split. */}
-            <div className={`divide-by${askPersons ? " ask" : ""}`} role="group" aria-label="Antippen teilt durch">
-              <span className="divide-by-label">Antippen teilt durch</span>
+            <div className="divide-by" role="group" aria-label="Alles geteilt durch">
+              <span className="divide-by-label">Alles geteilt durch</span>
               <div className="divide-by-control">
                 <svg className="divide-by-slash" viewBox="0 0 40 90" aria-hidden="true">
                   <path d="M33 5 C 28 28, 19 55, 7 86" />

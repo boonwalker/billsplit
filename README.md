@@ -76,13 +76,12 @@ jemand fehlt.
 
 Die Erkennung merkt anhand des Geschäftsnamens und der Produkte, ob es ein Supermarkt- oder Drogerie-Einkauf ist.
 Dann fragt billsplit vor dem QR-Code, ob etwas nicht oder nur teilweise abgerechnet werden soll: „Alles aufteilen“
-oder „Manches nicht“. Bei „Manches nicht“ wird der ganze Bildschirm zum Belegpapier: eine Zeile mit dem Finger
-**durchstreichen** (in jede Richtung, jeder Strich zählt) nimmt den Artikel aus der Rechnung, **antippen** (Name oder Preis) teilt ihn durch die unten
-eingestellte Personenzahl (z. B. 1 l Milch gekauft, aber nur ein Teil für alle), nochmal antippen hebt die Markierung
-auf. Die Fingerstriche sind sofort zu sehen und verblassen in den endgültigen Durchstreich-Strich, angetippte Zeilen
-werden kurz „eingedrückt“. Artikel, die wahrscheinlich keine Gemeinschaftsausgabe sind (Drogerie, Haushalt,
-Vorräte wie Milch oder Gewürze – von der KI beim Lesen markiert, ergänzt um eine Stichwortliste), stehen oben.
-Bleistift-Animationen führen beides vor; gescrollt wird dort mit zwei Fingern.
+oder „Manches nicht“. Bei „Manches nicht“ erscheint der Beleg groß im Stil der digitalen Rechnung: eine Zeile mit
+dem Finger **durchstreichen oder antippen** nimmt den Artikel aus der Rechnung, nochmal holt ihn zurück; hoch und
+runter wischen scrollt. Alles Übrige wird durch die unten eingestellte Personenzahl geteilt. Die Fingerstriche sind
+sofort zu sehen und verblassen in den Durchstreich-Strich, angetippte Zeilen werden kurz „eingedrückt“. Artikel, die
+wahrscheinlich keine Gemeinschaftsausgabe sind (Drogerie, Haushalt, Vorräte wie Milch oder Gewürze – von der KI beim
+Lesen markiert, ergänzt um eine Stichwortliste), stehen oben. Kurze Animationen führen das zu Beginn vor.
 
 ### Originalbeleg
 

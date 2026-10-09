@@ -24,9 +24,6 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
   const strokes = useRef<Stroke[]>([]);
   const drawing = useRef(false);
   const timer = useRef<number | null>(null);
-  /** Two fingers scroll instead of writing (the sheet stays scrollable over long receipts). */
-  const pointers = useRef(new Map<number, number>());
-  const scrolling = useRef(false);
   const fading = useRef<{ strokes: Stroke[]; start: number }[]>([]);
   const frame = useRef<number | null>(null);
 
@@ -92,16 +89,8 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
   }
 
   function down(e: ReactPointerEvent<HTMLCanvasElement>) {
+    if (drawing.current) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    pointers.current.set(e.pointerId, e.clientY);
-    if (pointers.current.size > 1) {
-      // Second finger: this is scrolling, drop the stroke the first finger began.
-      if (drawing.current) strokes.current.pop();
-      drawing.current = false;
-      scrolling.current = true;
-      redraw();
-      return;
-    }
     if (timer.current) window.clearTimeout(timer.current);
     drawing.current = true;
     onStart?.();
@@ -110,25 +99,12 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
   }
 
   function move(e: ReactPointerEvent<HTMLCanvasElement>) {
-    if (scrolling.current) {
-      const last = pointers.current.get(e.pointerId);
-      pointers.current.set(e.pointerId, e.clientY);
-      if (last === undefined) return;
-      const scroller = canvas.current?.closest(".ink-scroll, .sheet") ?? document.scrollingElement;
-      scroller?.scrollBy(0, (last - e.clientY) / Math.max(1, pointers.current.size));
-      return;
-    }
     if (!drawing.current) return;
     strokes.current[strokes.current.length - 1].push({ x: e.clientX, y: e.clientY });
     redraw();
   }
 
-  function up(e: ReactPointerEvent<HTMLCanvasElement>) {
-    pointers.current.delete(e.pointerId);
-    if (scrolling.current) {
-      if (pointers.current.size === 0) scrolling.current = false;
-      return;
-    }
+  function up() {
     if (!drawing.current) return;
     drawing.current = false;
     const stroke = strokes.current[strokes.current.length - 1];
@@ -149,6 +125,17 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
     }, IDLE_MS);
   }
 
+  /**
+   * The browser took the touch over for scrolling (an up/down swipe – the canvas only
+   * allows vertical panning): it was not a stroke, so drop it.
+   */
+  function cancel() {
+    if (!drawing.current) return;
+    drawing.current = false;
+    strokes.current.pop();
+    redraw();
+  }
+
   return (
     <canvas
       ref={canvas}
@@ -157,7 +144,7 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
-      onPointerCancel={up}
+      onPointerCancel={cancel}
     />
   );
 }
