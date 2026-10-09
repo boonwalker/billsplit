@@ -1,5 +1,5 @@
 import { Fragment, useLayoutEffect, useRef, useState, type FormEvent } from "react";
-import type { BillItem } from "../lib/bill";
+import { billedItems, type BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
 import InkLayer from "./InkLayer";
@@ -10,9 +10,9 @@ export interface Mark {
   struck?: boolean;
 }
 
-/** The items as billed: struck lines left out. */
+/** The items for the bill: struck lines stay visible but are excluded from billing. */
 export function applyMarks(items: BillItem[], marks: Record<string, Mark>): BillItem[] {
-  return items.filter((item) => !marks[item.id]?.struck);
+  return items.map((item) => (marks[item.id]?.struck ? { ...item, excluded: true } : item));
 }
 
 interface Props {
@@ -66,7 +66,8 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
   const list = useRef<HTMLUListElement>(null);
 
   const billed = step === "some" ? applyMarks(items, marks) : items;
-  const billedSum = billed.reduce((s, i) => s + i.total, 0);
+  const billedSum = billedItems({ items: billed }).reduce((s, i) => s + i.total, 0);
+  const anyBilled = billed.some((i) => !i.excluded);
   const fullSum = items.reduce((s, i) => s + i.total, 0);
 
   // Place the demo strokes on the first lines once the paper is laid out. Layout offsets
@@ -135,7 +136,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
   const submit = (e: FormEvent) => {
     e.preventDefault();
     // Marking lines always splits the rest equally: everything not crossed out is shared by x people.
-    if (billed.length) onDone(billed, step === "some" || equal, persons, step === "some");
+    if (anyBilled) onDone(billed, step === "some" || equal, persons, step === "some");
   };
 
   const personsStepper = (
@@ -311,7 +312,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
               </p>
             </div>
           </div>
-          <button className="btn btn-primary btn-large" disabled={billed.length === 0}>
+          <button className="btn btn-primary btn-large" disabled={!anyBilled}>
             Rechnung erstellen
           </button>
         </footer>
@@ -367,7 +368,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
               Abgerechnet werden <b>{formatMoney(billedSum, currency)}</b>
             </p>
 
-            <button className="btn btn-primary btn-large" disabled={billed.length === 0}>
+            <button className="btn btn-primary btn-large" disabled={!anyBilled}>
               Rechnung erstellen
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setStep("ask")}>

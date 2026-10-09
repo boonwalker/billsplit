@@ -118,6 +118,22 @@ export default function BillPage({ id }: { id: string }) {
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."));
   }
 
+  /** Equal split: the payer crosses a forgotten line out (or brings it back); it is then not billed. */
+  function toggleExcluded(itemId: string) {
+    const items = snap.data.items.map((item) => {
+      if (item.id !== itemId) return item;
+      if (item.excluded) {
+        const rest = { ...item };
+        delete rest.excluded;
+        return rest;
+      }
+      return { ...item, excluded: true };
+    });
+    // Show the stroke right away; the server's answer follows.
+    replace({ ...snap, data: { ...snap.data, items } });
+    updateData({ ...snap.data, items });
+  }
+
   function pay() {
     api.pay(id).catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
   }
@@ -206,10 +222,14 @@ export default function BillPage({ id }: { id: string }) {
           {snap.isOwner && <EqualSplitToggle snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && (sharedTotal(snap.data) !== 0 || equal) && <TipSplit snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && !equal && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
+          {snap.isOwner && equal && (
+            <p className="receipt-instruction">Etwas war nicht für alle? Tippe es an, um es zu streichen – nochmal tippen holt es zurück.</p>
+          )}
           <Receipt
             snapshot={snap}
             onSetSlots={snap.me && !equal ? setSlots : undefined}
             onShowOriginal={snap.hasReceiptImage ? () => navigate(`/b/${id}/beleg`) : undefined}
+            onToggleExcluded={snap.isOwner && equal ? toggleExcluded : undefined}
           />
         </div>
 

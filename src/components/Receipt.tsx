@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
+  billedItems,
   billTotal,
   claimCost,
   equalShare,
@@ -25,6 +26,8 @@ interface Props {
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
   /** Opens the stored photo the bill was read from; undefined when there is none. */
   onShowOriginal?: () => void;
+  /** Payer in equal split: crosses a line out (or brings it back) so it is not billed. */
+  onToggleExcluded?: (itemId: string) => void;
 }
 
 export function formatDate(iso: string): string {
@@ -69,6 +72,7 @@ function ReceiptLine({
   me,
   currency,
   onSetSlots,
+  onToggleExcluded,
   each,
   people = 1,
 }: {
@@ -82,6 +86,7 @@ function ReceiptLine({
   /** Equal split: number of people the line is divided by. */
   people?: number;
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
+  onToggleExcluded?: (itemId: string) => void;
 }) {
   const holders = slotHolders(item.id, participants);
   const mine = me ? participants.find((p) => p.id === me) : undefined;
@@ -91,7 +96,10 @@ function ReceiptLine({
   const waiting = (p: PublicParticipant) => (p.splits?.[item.id] ?? []).filter((slot) => holders.get(slot)?.length === 1);
   const myUnits = mySlots.length;
   const claimants = participants.filter((p) => (p.claims[item.id] ?? []).length > 0);
-  const done = isFullyAssigned(item, participants);
+  const excluded = Boolean(item.excluded);
+  const done = excluded || isFullyAssigned(item, participants);
+  // Pressed in while the finger rests on the line, pops back up on release.
+  const [holding, setHolding] = useState(false);
   const shared = [...holders.keys()].some((slot) => slotParts(item.id, slot, participants, holders) > 1);
   const freeSlots = Array.from({ length: item.qty }, (_, slot) => slot).filter((slot) => !holders.has(slot));
   const others = claimants
@@ -99,12 +107,16 @@ function ReceiptLine({
     .map((p) => `${p.id}:${p.claims[item.id].join("+")}`)
     .join(",");
   const flash = useFlash(others);
-  const canEdit = Boolean(onSetSlots && me) && each === undefined;
+  const canEdit = Boolean(onSetSlots && me) && each === undefined && !excluded;
   // A single item that is taken can still be shared by ticking it; a unit of a
   // multi-quantity item is shared by tapping the name of whoever has it.
-  const interactive = canEdit && (myUnits > 0 || freeSlots.length > 0 || item.qty === 1);
+  const interactive = onToggleExcluded ? true : canEdit && (myUnits > 0 || freeSlots.length > 0 || item.qty === 1);
 
   function toggle() {
+    if (onToggleExcluded) {
+      onToggleExcluded(item.id);
+      return;
+    }
     if (!onSetSlots) return;
     // Ticking takes one unit; more can be added with the stepper.
     if (myUnits > 0) onSetSlots(item.id, [], []);
@@ -144,16 +156,24 @@ function ReceiptLine({
   return (
     <li
       data-item={item.id}
-      className={`rline${done ? " done" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${each !== undefined ? " equal" : ""}`}
+      className={`rline${done ? " done" : ""}${excluded ? " excluded" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${
+        each !== undefined || excluded ? " equal" : ""
+      }${onToggleExcluded ? " strikable" : ""}${holding ? " holding" : ""}`}
       style={{ animationDelay: `${180 + index * 70}ms` }}
     >
       <button
         type="button"
         className="rline-main"
         onClick={toggle}
+        onPointerDown={onToggleExcluded ? () => setHolding(true) : undefined}
+        onPointerUp={onToggleExcluded ? () => setHolding(false) : undefined}
+        onPointerLeave={onToggleExcluded ? () => setHolding(false) : undefined}
+        onPointerCancel={onToggleExcluded ? () => setHolding(false) : undefined}
         disabled={!interactive}
-        aria-pressed={myUnits > 0}
-        aria-label={`${item.qty > 1 ? `${item.qty} × ` : ""}${item.name}, ${formatMoney(item.total, currency)}`}
+        aria-pressed={onToggleExcluded ? excluded : myUnits > 0}
+        aria-label={`${item.qty > 1 ? `${item.qty} × ` : ""}${item.name}, ${formatMoney(item.total, currency)}${
+          onToggleExcluded ? (excluded ? " – gestrichen, antippen zum Wiederaufnehmen" : " – antippen zum Streichen") : ""
+        }`}
       >
         <span className="tick" aria-hidden="true" style={{ "--fill": fill } as CSSProperties}>
           <svg viewBox="0 0 24 24">
@@ -174,7 +194,7 @@ function ReceiptLine({
           {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
         </span>
         <span className="rline-dots" aria-hidden="true" />
-        {each !== undefined && (
+        {each !== undefined && !excluded && (
           <span className="pencil rline-each" title="Anteil pro Person">
             {formatMoney(each, currency)}
           </span>
@@ -183,7 +203,7 @@ function ReceiptLine({
           {item.fullTotal !== undefined && <s className="rline-full">{formatMoney(item.fullTotal, currency)}</s>}
           {formatMoney(item.total, currency)}
         </span>
-        {each !== undefined && <span className="pencil rline-div">/{people}</span>}
+        {each !== undefined && !excluded && <span className="pencil rline-div">/{people}</span>}
       </button>
 
       {canEdit && item.qty > 1 && myUnits > 0 && (
@@ -318,11 +338,12 @@ function EqualFraction({ total, people, share, currency }: { total: number; peop
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props) {
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded }: Props) {
   const { data, participants, me, ownerName } = snapshot;
-  const sub = subtotal(data.items);
+  const billed = billedItems(data);
+  const sub = subtotal(billed);
   const total = billTotal(data);
-  const assigned = data.items.filter((i) => isFullyAssigned(i, participants)).length;
+  const assigned = billed.filter((i) => isFullyAssigned(i, participants)).length;
   const equal = Boolean(data.equalSplit);
   const people = splitHeadCount(data, participants);
   const perPerson = (amount: number) => (equal ? Math.round(amount / people) : undefined);
@@ -357,6 +378,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
                 me={me}
                 currency={data.currency}
                 onSetSlots={onSetSlots}
+                onToggleExcluded={onToggleExcluded}
                 each={perPerson(item.total)}
                 people={people}
               />
@@ -408,7 +430,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
         </dl>
         <div className="receipt-rule double" aria-hidden="true" />
         <p className="receipt-progress">
-          {equal ? `Gleichmäßig auf ${people} Personen verteilt` : `${assigned} von ${data.items.length} Positionen vollständig zugeordnet`}
+          {equal ? `Gleichmäßig auf ${people} Personen verteilt` : `${assigned} von ${billed.length} Positionen vollständig zugeordnet`}
         </p>
         <div className="receipt-barcode" aria-hidden="true" />
         <p className="receipt-thanks">Danke &amp; bis zum nächsten Mal!</p>

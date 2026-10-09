@@ -12,6 +12,8 @@ export interface BillItem {
   fullTotal?: Cents;
   /** … and the divisor; only total / divisor is billed. */
   divisor?: number;
+  /** Crossed out by the payer: stays visible on the receipt, but is not billed. */
+  excluded?: boolean;
 }
 
 /** A fee on the bill (delivery, service, …). Fees are shared equally per person, like the tip. */
@@ -123,6 +125,11 @@ export interface ShareSummary {
   total: Cents;
 }
 
+/** The lines that are actually billed (crossed-out ones are left out). */
+export function billedItems(data: Pick<BillData, "items">): BillItem[] {
+  return data.items.filter((item) => !item.excluded);
+}
+
 export function subtotal(items: BillItem[]): Cents {
   return items.reduce((sum, it) => sum + it.total, 0);
 }
@@ -130,7 +137,7 @@ export function subtotal(items: BillItem[]): Cents {
 /** The whole tip in cents. */
 export function tipTotal(data: BillData): Cents {
   if (data.tipAmount !== undefined && data.tipAmount > 0) return data.tipAmount;
-  return Math.round((subtotal(data.items) * data.tipPercent) / 100);
+  return Math.round((subtotal(billedItems(data)) * data.tipPercent) / 100);
 }
 
 export function feesTotal(data: BillData): Cents {
@@ -143,7 +150,7 @@ export function sharedTotal(data: BillData): Cents {
 }
 
 export function billTotal(data: BillData): Cents {
-  return subtotal(data.items) + sharedTotal(data);
+  return subtotal(billedItems(data)) + sharedTotal(data);
 }
 
 /**
@@ -223,7 +230,7 @@ export function participantShare(data: BillData, participants: PublicParticipant
     const shared = sharedPerPerson(data, participants);
     return { subtotal: total - shared, shared, total };
   }
-  const sub = data.items.reduce((sum, item) => sum + claimCost(item, unitShare(item, participants, participantId)), 0);
+  const sub = billedItems(data).reduce((sum, item) => sum + claimCost(item, unitShare(item, participants, participantId)), 0);
   const shared = sharedPerPerson(data, participants);
   return { subtotal: sub, shared, total: sub + shared };
 }
@@ -232,7 +239,7 @@ export function participantShare(data: BillData, participants: PublicParticipant
 export function unassignedAmount(data: BillData, participants: PublicParticipant[]): Cents {
   // Equal split: only the parts of people who have not joined yet are open.
   if (data.equalSplit) return (splitHeadCount(data, participants) - participants.length) * equalShare(data, participants);
-  const sub = data.items.reduce((sum, item) => sum + claimCost(item, item.qty - assignedUnits(item, participants)), 0);
+  const sub = billedItems(data).reduce((sum, item) => sum + claimCost(item, item.qty - assignedUnits(item, participants)), 0);
   const missingPeople = splitHeadCount(data, participants) - participants.length;
   return sub + missingPeople * sharedPerPerson(data, participants);
 }

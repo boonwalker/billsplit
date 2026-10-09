@@ -10,8 +10,10 @@ const items = [
 ];
 
 describe("supermarket receipts", () => {
-  it("leaves crossed-out lines out", () => {
-    expect(applyMarks(items, { dusch: { struck: true }, milch: { struck: false } }).map((i) => i.id)).toEqual(["milch", "nudeln"]);
+  it("keeps crossed-out lines on the receipt but out of the bill", () => {
+    const billed = applyMarks(items, { dusch: { struck: true }, milch: { struck: false } });
+    expect(billed.filter((i) => !i.excluded).map((i) => i.id)).toEqual(["milch", "nudeln"]);
+    expect(billed[2]).toEqual({ ...items[2], excluded: true });
     expect(applyMarks(items, {})).toEqual(items);
   });
 

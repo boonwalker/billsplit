@@ -23,6 +23,8 @@ interface Row {
   name: string;
   qty: string;
   total: string;
+  /** Kept from the bill: crossed out by the payer. */
+  excluded?: boolean;
 }
 
 interface FeeRow {
@@ -72,6 +74,7 @@ const newRow = (item?: ReceiptItem & { id?: string }): Row => ({
   name: item?.name ?? "",
   qty: String(item?.qty ?? 1),
   total: item ? centsToInput(item.total) : "",
+  excluded: item?.excluded,
 });
 
 function emptyDraft(): Draft {
@@ -116,7 +119,7 @@ function rowToItem(row: Row): BillItem | null {
   const total = parseMoney(row.total);
   const qty = parseInt(row.qty, 10);
   if (!row.name.trim() || total === null || !(qty >= 1)) return null;
-  return { id: row.id, name: row.name.trim(), qty, total };
+  return { id: row.id, name: row.name.trim(), qty, total, ...(row.excluded ? { excluded: true } : {}) };
 }
 
 function paymentFromProfile(): BillData["payment"] {
