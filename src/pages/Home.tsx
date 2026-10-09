@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
+import { api } from "../lib/api";
+import { ApiError } from "../lib/apiError";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
@@ -11,6 +13,20 @@ export default function Home() {
   // The home screen always belongs to the device owner, also in the demo.
   useEffect(() => {
     if (DEMO && getPersona() !== "me") setPersona("me");
+  }, []);
+  // Bills the server no longer knows (expired, deleted, broken link) leave the list.
+  useEffect(() => {
+    let cancelled = false;
+    for (const b of loadRecent()) {
+      api.getBill(b.id).catch((e: unknown) => {
+        if (!(e instanceof ApiError && e.status === 404)) return; // offline etc.: keep it
+        forgetBill(b.id);
+        if (!cancelled) setRecent(loadRecent());
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
   }, []);
   const profile = loadOwnProfile();
   const ready = Boolean(profile.name.trim() && (profile.paypalMe.trim() || profile.paypalEmail.trim()));

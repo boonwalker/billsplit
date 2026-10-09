@@ -12,7 +12,7 @@ import { DEMO } from "../lib/demo";
 import { confirmScan, knock } from "../lib/haptics";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
-import { loadOwnProfile, loadProfile, rememberBill, saveProfile } from "../lib/storage";
+import { forgetBill, loadOwnProfile, loadProfile, rememberBill, saveProfile } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
 
 export default function BillPage({ id }: { id: string }) {
@@ -74,6 +74,11 @@ export default function BillPage({ id }: { id: string }) {
       rememberBill({ id, title: snapshot.data.title, role: snapshot.isOwner ? "owner" : "guest", createdAt: snapshot.createdAt });
     }
   }, [snapshot?.me, snapshot?.isOwner, snapshot?.data.title, snapshot?.createdAt, id]);
+
+  // An invalid bill does not stay in the list of bills.
+  useEffect(() => {
+    if (notFound) forgetBill(id);
+  }, [notFound, id]);
 
   if (notFound) {
     return (
