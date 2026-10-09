@@ -14,14 +14,13 @@ import { formatMoney } from "../lib/money";
 interface Props {
   snapshot: BillSnapshot;
   onToggleReceived: (debtor: Debtor, received: boolean) => void;
-  onUpdateData: (data: BillData) => void;
 }
 
 /**
- * How many people share the tip. Defaults to everyone who joined; the payer can
+ * Shown above the bill for the payer: how many people share the tip. Defaults to everyone who joined; the payer can
  * raise it when someone will only scan later (e.g. the next day).
  */
-function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; onUpdateData: (data: BillData) => void }) {
+export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; onUpdateData: (data: BillData) => void }) {
   const { data, participants } = snapshot;
   const joined = participants.length;
   const count = tipHeadCount(data, participants);
@@ -67,7 +66,7 @@ export function ownerSummary(snapshot: BillSnapshot) {
 }
 
 /** What only the payer sees below the bill: who scanned, who tapped pay, what is still missing. */
-export default function OwnerPanel({ snapshot, onToggleReceived, onUpdateData }: Props) {
+export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
   const currency = snapshot.data.currency;
   const debtors = snapshot.debtors ?? [];
   const { total, own, received, missing, unassigned } = ownerSummary(snapshot);
@@ -116,8 +115,6 @@ export default function OwnerPanel({ snapshot, onToggleReceived, onUpdateData }:
         </ul>
       )}
 
-      {tipTotal(snapshot.data) > 0 && <TipSplit snapshot={snapshot} onUpdateData={onUpdateData} />}
-
       <dl className="owner-sums">
         <dt>Rechnung gesamt</dt>
         <dd>{formatMoney(total, currency)}</dd>
@@ -136,9 +133,11 @@ export default function OwnerPanel({ snapshot, onToggleReceived, onUpdateData }:
             " Darin enthalten sind auch Trinkgeld-Anteile von Personen, die noch nicht gescannt haben."}
         </p>
       )}
-      <p className="hint muted">
-        Gleiche die Beträge mit den Eingängen in deiner PayPal-App ab und hake „erhalten“ an, sobald das Geld da ist.
-      </p>
+      {debtors.length > 0 && (
+        <p className="hint muted">
+          Gleiche die Beträge mit den Eingängen in deiner PayPal-App ab und hake „erhalten“ an, sobald das Geld da ist.
+        </p>
+      )}
     </section>
   );
 }
