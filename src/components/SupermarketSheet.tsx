@@ -3,6 +3,7 @@ import { billedItems, type BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
 import InkLayer from "./InkLayer";
+import PhotoViewer from "./PhotoViewer";
 import { formatDate, PencilFilter } from "./Receipt";
 
 /** What the payer marked on a line: struck through (by a stroke or a tap) means not billed. */
@@ -29,6 +30,8 @@ interface Props {
   title?: string;
   date?: string;
   ownerName?: string;
+  /** The photo the receipt was read from, linked at the bottom like on the finished bill. */
+  photoUrl?: string;
 }
 
 /** Likely personal items first, otherwise in receipt order. */
@@ -49,13 +52,14 @@ interface DemoSpots {
  * billed – e.g. a litre of milk bought, but only 250 ml used for the shared recipe?
  * With "Manches nicht" the payer crosses lines out (or taps them); the rest is split equally.
  */
-export default function SupermarketSheet({ items, currency, onDone, isPersonal = () => false, title, date, ownerName }: Props) {
+export default function SupermarketSheet({ items, currency, onDone, isPersonal = () => false, title, date, ownerName, photoUrl }: Props) {
   /** First the question, then either straight on ("all") or the receipt to mark ("some"). */
   const [step, setStep] = useState<"ask" | "all" | "some">("ask");
   const [marks, setMarks] = useState<Record<string, Mark>>({});
   const [persons, setPersons] = useState<number | undefined>(undefined);
   const [notice, setNotice] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [showPhoto, setShowPhoto] = useState(false);
   /** The line that was just tapped: it is pressed in and pops back up. */
   const [pressed, setPressed] = useState<{ id: string; n: number } | null>(null);
   const ordered = orderForMarking(items, isPersonal);
@@ -253,9 +257,15 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
               <div className="receipt-rule double" aria-hidden="true" />
               <div className="receipt-barcode" aria-hidden="true" />
               <p className="receipt-thanks">Danke &amp; bis zum nächsten Mal!</p>
+              {photoUrl && (
+                <button type="button" className="receipt-original" onClick={() => setShowPhoto(true)}>
+                  Zum Originalbeleg
+                </button>
+              )}
             </div>
           </article>
         </div>
+        {showPhoto && photoUrl && <PhotoViewer src={photoUrl} alt="Originalbeleg" onClose={() => setShowPhoto(false)} />}
 
         <footer className="scribble-foot">
           {notice && (

@@ -499,6 +499,7 @@ export default function Editor({ billId }: { billId?: string }) {
           title={draft.title}
           date={draft.date}
           ownerName={loadProfile().name.trim()}
+          photoUrl={preview ?? undefined}
           onDone={(items, equalSplit, persons, partial) => {
             setAskShop(null);
             const tip = { ...draft.tip, persons: persons ? String(persons) : "" };
