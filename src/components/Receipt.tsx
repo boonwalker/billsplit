@@ -96,8 +96,11 @@ function ReceiptLine({
         </span>
         <span className="rline-text">
           <span className="rline-name">
-            {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
-            {item.name}
+            {/* Inline so the strike-through runs through every wrapped line, not between them. */}
+            <span className="rline-strike">
+              {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
+              {item.name}
+            </span>
           </span>
           {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
         </span>
