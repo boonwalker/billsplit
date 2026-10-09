@@ -74,7 +74,7 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
       <p className="muted small">
         {formatMoney(equal ? equalShare(data, participants) : sharedPerPerson(data, participants), data.currency)} pro Person ·{" "}
         {missing > 0
-          ? `${joined} beigetreten (inkl. dir), ${missing} ${missing === 1 ? "kommt" : "kommen"} noch dazu`
+          ? `${joined} beigetreten (inkl. Dir), ${missing} ${missing === 1 ? "kommt" : "kommen"} noch dazu`
           : `gezählt: alle, die beigetreten sind, plus du`}
       </p>
     </div>

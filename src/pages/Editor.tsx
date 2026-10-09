@@ -527,7 +527,7 @@ export default function Editor({ billId }: { billId?: string }) {
                 <h2>Wie viele haben mitbestellt?</h2>
                 <p className="muted">
                   {feeSum !== 0 ? `Gebühren (${formatMoney(feeSum, draft.currency)})` : "Gebühren"}
-                  {draft.tipOnReceipt ? " und Trinkgeld" : ""} werden gleichmäßig auf alle verteilt – inklusive dir. Wer den
+                  {draft.tipOnReceipt ? " und Trinkgeld" : ""} werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den
                   QR-Code scannt, wird automatisch mitgezählt.
                 </p>
                 <div className="persons-question" role="group" aria-label="Personen, die mitbestellt haben">

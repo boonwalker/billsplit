@@ -118,7 +118,7 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
       {showPersons && (
         <p className="tip-hint">
           {persons
-            ? `Inklusive dir. Wer später scannt, wird mitgezählt – es werden aber mindestens ${persons} Personen angenommen.`
+            ? `Inklusive Dir. Wer später scannt, wird mitgezählt – es werden aber mindestens ${persons} Personen angenommen.`
             : "Leer lassen: Gezählt wird automatisch, wer den QR-Code scannt, plus du."}
         </p>
       )}
