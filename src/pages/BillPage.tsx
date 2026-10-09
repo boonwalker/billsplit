@@ -11,7 +11,7 @@ import { billUrl, sharedTotal, type BillData, type Debtor } from "../lib/bill";
 import { DEMO } from "../lib/demo";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
-import { loadProfile, rememberBill, saveProfile } from "../lib/storage";
+import { loadOwnProfile, loadProfile, rememberBill, saveProfile } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
 
 export default function BillPage({ id }: { id: string }) {
@@ -35,6 +35,23 @@ export default function BillPage({ id }: { id: string }) {
       .then(replace)
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Beitreten fehlgeschlagen."))
       .finally(() => (joining.current = false));
+  }, [snapshot, id, replace]);
+
+  // The payment details are copied from the profile when the bill is created. If the payer
+  // has changed them since (e.g. added PayPal.Me), bring their open bill up to date.
+  const syncedPayment = useRef(false);
+  useEffect(() => {
+    if (!snapshot?.isOwner || syncedPayment.current) return;
+    syncedPayment.current = true;
+    const profile = loadOwnProfile();
+    const payment = { paypalMe: profile.paypalMe || undefined, paypalEmail: profile.paypalEmail || undefined };
+    if (!payment.paypalMe && !payment.paypalEmail) return;
+    const current = snapshot.data.payment;
+    if (current.paypalMe === payment.paypalMe && current.paypalEmail === payment.paypalEmail) return;
+    api
+      .updateBill(id, { ...snapshot.data, payment })
+      .then(replace)
+      .catch(() => {});
   }, [snapshot, id, replace]);
 
   useEffect(() => {
