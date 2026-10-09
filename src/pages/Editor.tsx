@@ -48,6 +48,8 @@ interface Draft {
   equalSplit?: boolean;
   /** A supermarket receipt: ask which items are not or only partly billed. */
   supermarket?: boolean;
+  /** Kept from the bill when it is edited: the payer bills some items not or only partly. */
+  partial?: boolean;
 }
 
 const newFeeRow = (fee?: { id?: string; name: string; amount: number }): FeeRow => ({
@@ -100,6 +102,7 @@ function draftFromData(data: BillData): Draft {
     tipOnReceipt: false,
     equalSplit: data.equalSplit,
     supermarket: data.supermarket,
+    partial: data.partial,
     rows: data.items.map(newRow),
     fees: (data.fees ?? []).map(newFeeRow),
     delivery: (data.fees ?? []).length > 0,
@@ -130,6 +133,7 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     tipSplitCount: tipPersons(draft.tip),
     equalSplit: draft.equalSplit || undefined,
     supermarket: draft.supermarket || undefined,
+    partial: draft.partial || undefined,
     fees: draftFees(draft).length ? draftFees(draft) : undefined,
   };
   if (draft.tip.mode === "total") {
@@ -479,10 +483,10 @@ export default function Editor({ billId }: { billId?: string }) {
           items={askShop}
           currency={draft.currency}
           onReview={() => setAskShop(null)}
-          onDone={(items, equalSplit, persons) => {
+          onDone={(items, equalSplit, persons, partial) => {
             setAskShop(null);
             const tip = { ...draft.tip, persons: persons ? String(persons) : "" };
-            void publish(toBillData({ ...draft, equalSplit, tip }, items));
+            void publish({ ...toBillData({ ...draft, equalSplit, tip }, items), partial: partial || undefined });
           }}
         />
       )}

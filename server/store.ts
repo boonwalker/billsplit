@@ -19,6 +19,7 @@ export const BillDataSchema = z.object({
   tipSplitCount: z.number().int().min(1).max(100).optional(),
   equalSplit: z.boolean().optional(),
   supermarket: z.boolean().optional(),
+  partial: z.boolean().optional(),
   fees: z
     .array(
       z.object({

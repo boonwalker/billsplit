@@ -47,8 +47,10 @@ export interface BillData {
   tipSplitCount?: number;
   /** Delivery, service and similar fees – split equally per person. */
   fees?: BillFee[];
-  /** Recognised as a supermarket purchase (enables writing "/3" on lines). */
+  /** Recognised as a supermarket purchase. */
   supermarket?: boolean;
+  /** The payer answered "Manches nicht": some items are billed not or only partly (enables writing "/3" on lines). */
+  partial?: boolean;
   /**
    * Equal split (e.g. a supermarket receipt): nobody ticks items, everyone pays the
    * same part of the whole bill, counted like tip and fees (splitHeadCount).

@@ -235,7 +235,7 @@ export default function BillPage({ id }: { id: string }) {
         <div id="receipt" className="receipt-anchor">
           {snap.isOwner && <EqualSplitToggle snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && (sharedTotal(snap.data) !== 0 || equal) && <TipSplit snapshot={snap} onUpdateData={updateData} />}
-          {snap.isOwner && snap.data.supermarket && (
+          {snap.isOwner && snap.data.partial && (
             <div className={`write-bar${writing ? " on" : ""}`}>
               <p>
                 {writing ? (
