@@ -66,8 +66,8 @@ function ReceiptLine({
 
   function toggle() {
     if (!onSetUnits) return;
-    if (myUnits > 0) onSetUnits(item.id, 0);
-    else onSetUnits(item.id, item.qty === 1 ? 1 : Math.max(1, Math.min(item.qty, item.qty - totalUnits)));
+    // Ticking takes one unit; more can be added with the stepper.
+    onSetUnits(item.id, myUnits > 0 ? 0 : 1);
   }
 
   const fill = Math.min(1, myUnits / item.qty);
