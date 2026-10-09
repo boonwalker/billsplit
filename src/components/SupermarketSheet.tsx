@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
@@ -46,6 +46,13 @@ interface Props {
    * partial: the payer said some items are not or only partly billed.
    */
   onDone: (items: BillItem[], equalSplit: boolean, persons: number | undefined, partial: boolean) => void;
+  /** Items that are probably not a shared expense; they are listed first, ready to be crossed out. */
+  isPersonal?: (item: BillItem) => boolean;
+}
+
+/** Likely personal items first, otherwise in receipt order. */
+export function orderForMarking(items: BillItem[], isPersonal: (item: BillItem) => boolean): BillItem[] {
+  return [...items.filter(isPersonal), ...items.filter((i) => !isPersonal(i))];
 }
 
 /** Where the demo animations run: a stroke across the first line, a tap on the price of the second. */
@@ -61,7 +68,7 @@ interface DemoSpots {
  * billed – e.g. a litre of milk bought, but only 250 ml used for the shared recipe?
  * With "Manches nicht" the payer crosses lines out or writes "/2", "/3" … on them.
  */
-export default function SupermarketSheet({ items, currency, onDone }: Props) {
+export default function SupermarketSheet({ items, currency, onDone, isPersonal = () => false }: Props) {
   /** First the question, then either straight on ("all") or the receipt to mark ("some"). */
   const [step, setStep] = useState<"ask" | "all" | "some">("ask");
   const [marks, setMarks] = useState<Record<string, Mark>>({});
@@ -69,6 +76,10 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
   const [persons, setPersons] = useState<number | undefined>(undefined);
   const [notice, setNotice] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  /** The line that was just tapped: it is pressed in and pops back up. */
+  const [pressed, setPressed] = useState<{ id: string; n: number } | null>(null);
+  const ordered = orderForMarking(items, isPersonal);
+  const personalCount = ordered.filter(isPersonal).length;
   const [demo, setDemo] = useState<DemoSpots | null>(null);
   /** Briefly highlights the head count when a tap on a price needs it. */
   const [askPersons, setAskPersons] = useState(false);
@@ -82,7 +93,7 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
   // (relative to the wrapper, which is positioned) are not affected by the paper's print-in animation.
   useLayoutEffect(() => {
     if (step !== "some" || !list.current) return;
-    const lines = list.current.querySelectorAll<HTMLElement>("li");
+    const lines = list.current.querySelectorAll<HTMLElement>("li[data-item]");
     const wrap = list.current.parentElement;
     if (!lines.length || !wrap) return;
     const centre = (el: HTMLElement) => el.offsetTop + el.offsetHeight / 2;
@@ -115,6 +126,7 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
     });
     const item = line && items.find((i) => i.id === line.dataset.item);
     if (!line || !item) return;
+    setPressed((p) => ({ id: item.id, n: (p?.n ?? 0) + 1 }));
     if (isMarked(marks[item.id])) {
       setMarks((m) => ({ ...m, [item.id]: {} }));
       setNotice(`${item.name}: Markierung entfernt.`);
@@ -205,32 +217,45 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
                   </svg>
                 )}
                 <ul className="receipt-lines" ref={list}>
-                  {items.map((item) => {
+                  {ordered.map((item, index) => {
                     const mark = marks[item.id] ?? {};
                     const divisor = markDivisor(mark, persons);
                     const divided = divisor > 1 ? Math.round(item.total / divisor) : null;
                     const label = persons ?? "?";
+                    const heading =
+                      personalCount > 0 && personalCount < ordered.length && (index === 0 || index === personalCount) ? (
+                        <li className="rline-group" aria-hidden="true">
+                          {index === 0 ? "Wahrscheinlich nicht für alle" : "Für alle"}
+                        </li>
+                      ) : null;
                     return (
-                      <li key={item.id} data-item={item.id} className={`rline${mark.struck ? " done" : ""}`}>
-                        <div className="rline-main">
-                          <span className="rline-text">
-                            <span className="rline-name">
-                              <span className="rline-strike">
-                                {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
-                                {item.name}
+                      <Fragment key={item.id}>
+                        {heading}
+                        <li
+                          data-item={item.id}
+                          className={`rline${mark.struck ? " done" : ""}${pressed?.id === item.id ? " pressed" : ""}`}
+                        >
+                          {/* Re-keyed on every tap so the press animation starts again. */}
+                          <div className="rline-main" key={pressed?.id === item.id ? pressed.n : 0}>
+                            <span className="rline-text">
+                              <span className="rline-name">
+                                <span className="rline-strike">
+                                  {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
+                                  {item.name}
+                                </span>
+                                {mark.perPerson && <span className="pencil rline-divisor">/{label}</span>}
                               </span>
-                              {mark.perPerson && <span className="pencil rline-divisor">/{label}</span>}
                             </span>
-                          </span>
-                          <span className="rline-dots" aria-hidden="true" />
-                          <span className="rline-price">
-                            {divided !== null && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
-                            {formatMoney(divided ?? item.total, currency)}
-                          </span>
-                          {/* Every line that is not crossed out is shared by everyone. */}
-                          {!mark.struck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
-                        </div>
-                      </li>
+                            <span className="rline-dots" aria-hidden="true" />
+                            <span className="rline-price">
+                              {divided !== null && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
+                              {formatMoney(divided ?? item.total, currency)}
+                            </span>
+                            {/* Every line that is not crossed out is shared by everyone. */}
+                            {!mark.struck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
+                          </div>
+                        </li>
+                      </Fragment>
                     );
                   })}
                 </ul>

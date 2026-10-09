@@ -20,6 +20,7 @@ const ReceiptSchema = z.object({
       name: z.string(),
       quantity: z.number().int(),
       line_total: z.number(),
+      personal: z.boolean(),
     }),
   ),
   receipt_total: z.number(),
@@ -45,11 +46,12 @@ const RECEIPT_JSON_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "quantity", "line_total"],
+        required: ["name", "quantity", "line_total", "personal"],
         properties: {
           name: { type: "string", description: "Item name as printed, without quantity or price." },
           quantity: { type: "integer", description: "Number of units on this line (at least 1)." },
           line_total: { type: "number", description: "Price of the whole line (quantity × unit price), negative for discounts." },
+          personal: { type: "boolean", description: "Most likely not a shared expense (household, hygiene, pantry staple)." },
         },
       },
     },
@@ -101,7 +103,7 @@ export function toParsedReceipt(out: ReceiptOutput): ParsedReceipt {
     currency: /^[A-Z]{3}$/.test(out.currency) ? out.currency : "EUR",
     items: out.items
       .filter((it) => it.name.trim() && Number.isFinite(it.line_total))
-      .map((it) => ({ name: it.name.trim(), qty: Math.max(1, it.quantity), total: toCents(it.line_total) })),
+      .map((it) => ({ name: it.name.trim(), qty: Math.max(1, it.quantity), total: toCents(it.line_total), personal: it.personal || undefined })),
     total: out.receipt_total > 0 ? toCents(out.receipt_total) : null,
     tip: out.tip > 0 ? toCents(out.tip) : null,
     fees: out.fees

@@ -66,7 +66,7 @@ interface SampleReceipt {
   merchant?: unknown;
   date?: unknown;
   currency?: unknown;
-  items?: { name?: unknown; quantity?: unknown; line_total?: unknown }[];
+  items?: { name?: unknown; quantity?: unknown; line_total?: unknown; personal?: unknown }[];
   receipt_total?: unknown;
   tip?: unknown;
   fees?: { name?: unknown; amount?: unknown }[];
@@ -102,7 +102,7 @@ async function sampleOnce(sample: SampleFn, image: PreparedImage, hint?: string)
       `${RECEIPT_INSTRUCTIONS}
 ${hint ? `\n${hint}\n` : ""}
 Reply with only one JSON object of this shape:
-{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable), "tip": number (0 if none), "fees": [{"name": string, "amount": number}], "delivery": boolean, "supermarket": boolean}`,
+{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number, "personal": boolean}], "receipt_total": number (0 if not readable), "tip": number (0 if none), "fees": [{"name": string, "amount": number}], "delivery": boolean, "supermarket": boolean}`,
       { images: [image.blob], modelTier: "default" },
     );
   } catch (e) {
@@ -112,7 +112,12 @@ Reply with only one JSON object of this shape:
   const cents = (v: unknown) => Math.round(Number(v) * 100);
   const items = (Array.isArray(out.items) ? out.items : [])
     .filter((it) => typeof it?.name === "string" && it.name.trim() && Number.isFinite(Number(it.line_total)))
-    .map((it) => ({ name: String(it.name).trim(), qty: Math.max(1, Math.floor(Number(it.quantity)) || 1), total: cents(it.line_total) }));
+    .map((it) => ({
+      name: String(it.name).trim(),
+      qty: Math.max(1, Math.floor(Number(it.quantity)) || 1),
+      total: cents(it.line_total),
+      personal: it.personal === true || undefined,
+    }));
   const total = Number(out.receipt_total);
   const tip = Number(out.tip);
   return {

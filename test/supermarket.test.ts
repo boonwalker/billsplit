@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { applyMarks, isStrikeThrough, markDivisor } from "../src/components/SupermarketSheet";
+import { applyMarks, isStrikeThrough, markDivisor, orderForMarking } from "../src/components/SupermarketSheet";
+import { looksPersonal } from "../src/lib/personal";
 import { parseReceiptText } from "../src/lib/receipt";
 
 const items = [
@@ -29,6 +30,12 @@ describe("supermarket receipts", () => {
     expect(isStrikeThrough([flat], 300)).toBe(true);
     expect(isStrikeThrough([[{ x: 10, y: 80 }, { x: 40, y: 20 }]], 300)).toBe(false);
     expect(isStrikeThrough([flat, flat], 300)).toBe(false);
+  });
+
+  it("lists items that are probably not shared first", () => {
+    expect(orderForMarking(items, (i) => looksPersonal(i.name)).map((i) => i.id)).toEqual(["milch", "dusch", "nudeln"]);
+    for (const name of ["Balea Duschgel", "Zewa Küchenrolle", "Jodsalz", "Gewürzmischung", "Vollmilch 3,5%"]) expect(looksPersonal(name)).toBe(true);
+    for (const name of ["Spaghetti", "Gewürzgurken", "Salzstangen", "Milchschokolade", "Kokosmilch", "Tortilla Chips"]) expect(looksPersonal(name)).toBe(false);
   });
 
   it("recognises a supermarket in the OCR fallback", () => {

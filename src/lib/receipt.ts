@@ -1,8 +1,12 @@
 import type { BillItem } from "./bill";
 import { parseMoney, type Cents } from "./money";
 
-/** A recognized receipt line; ids are assigned when the bill is created. */
-export type ReceiptItem = Omit<BillItem, "id">;
+/**
+ * A recognized receipt line; ids are assigned when the bill is created. personal: probably
+ * not a shared expense (household, hygiene, pantry staples) – such lines are offered first
+ * for crossing out on supermarket receipts.
+ */
+export type ReceiptItem = Omit<BillItem, "id"> & { personal?: boolean };
 
 /** Result of reading a receipt photo, independent of the recognition engine. */
 export interface ParsedReceipt {
@@ -46,6 +50,7 @@ export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop rec
   - a card or cash payment that is higher than the total without change given back, e.g. "Summe 36,50" and "Kartenzahlung 40,00" or "EC 40,00" means a tip of 3,50 (if "Rückgeld"/"Change" is printed, that difference is change, not tip).
   Use 0 only if none of these is present.
 - receipt_total is the printed total including fees but before any tip (if the printed total already contains a tip, subtract it), or 0 if not readable.
+- For each item, personal is true if it is most likely NOT part of a shared purchase (e.g. food for a meal or party together) but something one person keeps for their household: hygiene and drugstore products (shower gel, soap, shampoo, toothpaste, deodorant), household goods (toilet paper, kitchen roll, detergent, dish soap, bin bags, batteries) and pantry staples that last longer than one occasion (milk, spices, salt, pepper, oil, vinegar, flour, sugar, coffee, tea). Use brand names to decide (e.g. Balea, Nivea, Zewa, Hakle, Persil). False for everything else.
 - supermarket is true for a purchase in a supermarket, discounter, grocery store, organic market, drugstore or similar shop (e.g. REWE, EDEKA, Aldi, Lidl, Penny, Netto, Kaufland, Norma, Globus, Real, Tegut, Alnatura, denn's, dm, Rossmann, Müller, Spar, Billa, Migros, Coop, Tesco, Carrefour, or a grocery delivery service). Judge by the shop name and by the products (groceries, household goods, deposit "Pfand" lines, prices per kg). It is false for restaurants, cafés, bars, food delivery and other shops.
 - delivery is true for a food delivery or takeaway order (delivery app or website such as Lieferando, Wolt or Uber Eats, delivery address, delivery fee), false for a bill from a visit to a restaurant or shop.
 - Use a dot as decimal separator in numbers, regardless of how the receipt prints them.

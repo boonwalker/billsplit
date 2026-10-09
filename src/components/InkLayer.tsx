@@ -15,6 +15,8 @@ const TAP_SLOP = 8;
 
 /** Pause after the last stroke before it is read. */
 const IDLE_MS = 800;
+/** Read strokes stay visible this long and fade while the line takes on its new look. */
+const FADE_MS = 900;
 
 /** A transparent sheet over the receipt lines to write on with a finger, drawn like pencil. */
 export default function InkLayer({ onInk, onStart, onTap }: Props) {
@@ -25,6 +27,8 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
   /** Two fingers scroll instead of writing (the sheet stays scrollable over long receipts). */
   const pointers = useRef(new Map<number, number>());
   const scrolling = useRef(false);
+  const fading = useRef<{ strokes: Stroke[]; start: number }[]>([]);
+  const frame = useRef<number | null>(null);
 
   // Match the canvas to its size on screen (sharp lines on retina displays).
   useEffect(() => {
@@ -41,8 +45,26 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
     return () => {
       observer.disconnect();
       if (timer.current) window.clearTimeout(timer.current);
+      if (frame.current) cancelAnimationFrame(frame.current);
     };
   }, []);
+
+  /** Pencil-like line: a firm stroke with a lighter, slightly offset second pass. */
+  function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke, rect: DOMRect, alpha: number) {
+    const path = (dx: number, dy: number) => {
+      ctx.beginPath();
+      stroke.forEach((p, i) =>
+        i ? ctx.lineTo(p.x - rect.left + dx, p.y - rect.top + dy) : ctx.moveTo(p.x - rect.left + dx, p.y - rect.top + dy),
+      );
+      ctx.stroke();
+    };
+    ctx.globalAlpha = 0.85 * alpha;
+    ctx.lineWidth = 2.8;
+    path(0, 0);
+    ctx.globalAlpha = 0.3 * alpha;
+    ctx.lineWidth = 1.4;
+    path(0.8, 0.9);
+  }
 
   function redraw() {
     const el = canvas.current;
@@ -54,13 +76,19 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
     ctx.strokeStyle = getComputedStyle(el).color;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 2.6;
-    ctx.globalAlpha = 0.85;
-    for (const stroke of strokes.current) {
-      ctx.beginPath();
-      stroke.forEach((p, i) => (i ? ctx.lineTo(p.x - rect.left, p.y - rect.top) : ctx.moveTo(p.x - rect.left, p.y - rect.top)));
-      ctx.stroke();
+    const now = performance.now();
+    fading.current = fading.current.filter((f) => now - f.start < FADE_MS);
+    for (const f of fading.current) {
+      const left = 1 - (now - f.start) / FADE_MS;
+      for (const stroke of f.strokes) drawStroke(ctx, stroke, rect, left * left);
     }
+    for (const stroke of strokes.current) drawStroke(ctx, stroke, rect, 1);
+  }
+
+  /** Keeps repainting while read strokes are fading out. */
+  function animateFade() {
+    redraw();
+    frame.current = fading.current.length ? requestAnimationFrame(animateFade) : null;
   }
 
   function down(e: ReactPointerEvent<HTMLCanvasElement>) {
@@ -115,7 +143,8 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
     timer.current = window.setTimeout(() => {
       const written = strokes.current;
       strokes.current = [];
-      redraw();
+      fading.current.push({ strokes: written, start: performance.now() });
+      if (!frame.current) animateFade();
       onInk(written);
     }, IDLE_MS);
   }

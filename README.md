@@ -79,7 +79,10 @@ Dann fragt billsplit vor dem QR-Code, ob etwas nicht oder nur teilweise abgerech
 oder „Manches nicht“. Bei „Manches nicht“ wird der ganze Bildschirm zum Belegpapier: eine Zeile mit dem Finger
 **durchstreichen** nimmt den Artikel aus der Rechnung, **antippen** (Name oder Preis) teilt ihn durch die unten
 eingestellte Personenzahl (z. B. 1 l Milch gekauft, aber nur ein Teil für alle), nochmal antippen hebt die Markierung
-auf. Bleistift-Animationen führen beides vor; gescrollt wird dort mit zwei Fingern.
+auf. Die Fingerstriche sind sofort zu sehen und verblassen in den endgültigen Durchstreich-Strich, angetippte Zeilen
+werden kurz „eingedrückt“. Artikel, die wahrscheinlich keine Gemeinschaftsausgabe sind (Drogerie, Haushalt,
+Vorräte wie Milch oder Gewürze – von der KI beim Lesen markiert, ergänzt um eine Stichwortliste), stehen oben.
+Bleistift-Animationen führen beides vor; gescrollt wird dort mit zwei Fingern.
 
 ### Originalbeleg
 

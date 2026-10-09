@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import SupermarketSheet from "../components/SupermarketSheet";
+import { looksPersonal } from "../lib/personal";
 import TipControl, { tipCents, tipPersons, type TipValue } from "../components/TipControl";
 import { api } from "../lib/api";
 import { feesTotal, newItemId, subtotal, type BillData, type BillFee, type BillItem } from "../lib/bill";
@@ -170,6 +171,8 @@ export default function Editor({ billId }: { billId?: string }) {
   const [draft, setDraft] = useState<Draft>(() => (editing ? emptyDraft() : restoreDraft()));
   /** Items of a supermarket receipt waiting for "anything not or only partly billed?". */
   const [askShop, setAskShop] = useState<BillItem[] | null>(null);
+  /** Names of lines the AI considers not a shared expense (listed first on supermarket receipts). */
+  const [personalNames, setPersonalNames] = useState<Set<string>>(new Set());
   /** Items waiting for the tip / head count questions before the QR code is created. */
   const [askTip, setAskTip] = useState<BillItem[] | null>(null);
   const [loaded, setLoaded] = useState(!editing);
@@ -221,6 +224,7 @@ export default function Editor({ billId }: { billId?: string }) {
       photo.current = image.blob;
       setPreview(image.previewUrl);
       const receipt = await recognizeReceipt(image, (message, progress) => setBusy({ message, progress }));
+      setPersonalNames(new Set(receipt.items.filter((i) => i.personal).map((i) => i.name)));
       const next: Draft = {
         ...draft,
         title: receipt.merchant || draft.title,
@@ -482,6 +486,7 @@ export default function Editor({ billId }: { billId?: string }) {
         <SupermarketSheet
           items={askShop}
           currency={draft.currency}
+          isPersonal={(item) => personalNames.has(item.name) || looksPersonal(item.name)}
           onDone={(items, equalSplit, persons, partial) => {
             setAskShop(null);
             const tip = { ...draft.tip, persons: persons ? String(persons) : "" };

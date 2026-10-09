@@ -1619,7 +1619,6 @@ input[aria-invalid="true"] {
   touch-action: none;
   cursor: crosshair;
   color: var(--pencil);
-  filter: url(#pencil-grain);
 }
 
 .rline-divisor {
@@ -1702,6 +1701,43 @@ input[aria-invalid="true"] {
 .scribble .rline-div {
   font-size: 1.35rem;
   margin-left: 6px;
+}
+
+/* Groups on the marking receipt: likely personal items first. */
+.scribble .rline-group {
+  padding: 12px 4px 2px;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Crossing out takes a moment, while the finger's stroke fades into it. */
+.scribble .rline-strike,
+.scribble .rline-price {
+  transition: background-size 0.7s ease 0.15s, color 0.4s ease;
+}
+
+/* A tapped line is pressed in and pops back up. */
+.scribble .rline.pressed .rline-main {
+  animation: press-pop 0.45s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes press-pop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.94, 0.88);
+  }
+  65% {
+    transform: scale(1.04, 1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .scribble-foot {
