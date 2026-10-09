@@ -2,6 +2,7 @@ import jsQR from "jsqr";
 import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import { billIdFromUrl } from "../lib/bill";
+import { confirmScan } from "../lib/haptics";
 import { navigate } from "../lib/router";
 
 /** In-app QR scanner for friends: opens the scanned bill directly in billsplit. */
@@ -33,7 +34,7 @@ export default function Scan() {
           const id = billIdFromUrl(code.data);
           if (id) {
             stopped = true;
-            navigator.vibrate?.(40);
+            confirmScan();
             navigate(`/b/${id}`, { replace: true });
             return;
           }

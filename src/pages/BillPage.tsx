@@ -9,6 +9,7 @@ import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
 import { billUrl, sharedTotal, type BillData, type Debtor } from "../lib/bill";
 import { DEMO } from "../lib/demo";
+import { confirmScan } from "../lib/haptics";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
 import { loadOwnProfile, loadProfile, rememberBill, saveProfile } from "../lib/storage";
@@ -32,7 +33,11 @@ export default function BillPage({ id }: { id: string }) {
     joining.current = true;
     api
       .join(id, name)
-      .then(replace)
+      .then((snap) => {
+        // Opened by scanning the QR code (e.g. with the camera app): in the bill now.
+        if (!snap.isOwner) confirmScan();
+        replace(snap);
+      })
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Beitreten fehlgeschlagen."))
       .finally(() => (joining.current = false));
   }, [snapshot, id, replace]);
@@ -261,7 +266,10 @@ export default function BillPage({ id }: { id: string }) {
             joining.current = true;
             api
               .join(id, name)
-              .then(replace)
+              .then((snap) => {
+                if (!snap.isOwner) confirmScan();
+                replace(snap);
+              })
               .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Beitreten fehlgeschlagen."))
               .finally(() => (joining.current = false));
           }}
