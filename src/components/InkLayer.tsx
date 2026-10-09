@@ -86,7 +86,7 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
       const last = pointers.current.get(e.pointerId);
       pointers.current.set(e.pointerId, e.clientY);
       if (last === undefined) return;
-      const scroller = canvas.current?.closest(".sheet") ?? document.scrollingElement;
+      const scroller = canvas.current?.closest(".ink-scroll, .sheet") ?? document.scrollingElement;
       scroller?.scrollBy(0, (last - e.clientY) / Math.max(1, pointers.current.size));
       return;
     }

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { BillItem } from "../lib/bill";
 import { boundsOf, recognizeDivisor, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
@@ -169,15 +169,129 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
     );
   }
 
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (billed.length) onDone(billed, equal, persons, step === "some");
+  };
+
+  const personsStepper = (
+    <div className="stepper-mini" role="group" aria-label="Personen, die sich den Einkauf teilen">
+      <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
+        −
+      </button>
+      <span>{persons ?? "?"}</span>
+      <button type="button" onClick={() => setPersons((n) => Math.min(100, (n ?? 1) + 1))} aria-label="Eine Person mehr">
+        +
+      </button>
+    </div>
+  );
+
+  // "Manches nicht": the whole screen becomes the receipt paper to scribble on.
+  if (step === "some") {
+    return (
+      <form className="scribble" onSubmit={submit}>
+        <PencilFilter />
+        <header className="scribble-head">
+          <button type="button" className="scribble-link" onClick={() => setStep("ask")}>
+            ← zurück
+          </button>
+          <h2 className="pencil">Was soll nicht mit?</h2>
+          <p className="pencil scribble-help">
+            durchstreichen = raus · /2 /3 … schreiben = teilen · Preis antippen = ÷ Personen · Kritzel antippen = weg ·
+            zwei Finger = scrollen
+          </p>
+        </header>
+
+        <div className="scribble-scroll ink-scroll">
+          <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
+            <div className="receipt-paper">
+              <div className="receipt-lines-wrap writing">
+                <InkLayer onInk={readInk} onTap={tap} onStart={() => setTouched(true)} />
+                {demo && !touched && (
+                  <svg className="ink-demo" width={demo.width} height="100%" aria-hidden="true">
+                    <path
+                      className="ink-demo-strike"
+                      pathLength={1}
+                      d={`M6 ${demo.strikeY + 2} C ${demo.width * 0.3} ${demo.strikeY - 3}, ${demo.width * 0.6} ${demo.strikeY + 4}, ${demo.width - 8} ${demo.strikeY - 1}`}
+                    />
+                    <path
+                      className="ink-demo-slash"
+                      pathLength={1}
+                      d={`M${demo.writeX} ${demo.writeY + 15} L ${demo.writeX + 13} ${demo.writeY - 15}`}
+                    />
+                    <path
+                      className="ink-demo-digit"
+                      pathLength={1}
+                      d={`M${demo.writeX + 17} ${demo.writeY - 7} C ${demo.writeX + 19} ${demo.writeY - 17}, ${demo.writeX + 34} ${demo.writeY - 16}, ${demo.writeX + 32} ${demo.writeY - 6} C ${demo.writeX + 30} ${demo.writeY + 2}, ${demo.writeX + 18} ${demo.writeY + 9}, ${demo.writeX + 16} ${demo.writeY + 15} L ${demo.writeX + 34} ${demo.writeY + 14}`}
+                    />
+                    <circle className="ink-demo-tap" cx={demo.tapX} cy={demo.tapY} r="16" />
+                    <text className="pencil ink-demo-tapped" x={demo.tapX - 72} y={demo.tapY + 8}>
+                      /{persons ?? 3}
+                    </text>
+                  </svg>
+                )}
+                <ul className="receipt-lines" ref={list}>
+                  {items.map((item) => {
+                    const mark = marks[item.id] ?? {};
+                    const divisor = markDivisor(mark, persons);
+                    const divided = divisor > 1 ? Math.round(item.total / divisor) : null;
+                    const label = mark.perPerson ? (persons ?? "?") : mark.divisor;
+                    return (
+                      <li key={item.id} data-item={item.id} className={`rline${mark.struck ? " done" : ""}`}>
+                        <div className="rline-main">
+                          <span className="rline-text">
+                            <span className="rline-name">
+                              <span className="rline-strike">
+                                {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
+                                {item.name}
+                              </span>
+                              {(divided !== null || mark.perPerson) && <span className="pencil rline-divisor">/{label}</span>}
+                            </span>
+                          </span>
+                          <span className="rline-dots" aria-hidden="true" />
+                          <span className="rline-price">
+                            {divided !== null && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
+                            {formatMoney(divided ?? item.total, currency)}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <footer className="scribble-foot">
+          {notice && (
+            <p className="pencil scribble-notice" role="status">
+              {notice}
+            </p>
+          )}
+          <div className={`scribble-row${askPersons ? " ask" : ""}`}>
+            <span className="pencil">Wie viele teilen?</span>
+            {personsStepper}
+          </div>
+          <label className="scribble-row scribble-check">
+            <input type="checkbox" checked={equal} onChange={(e) => setEqual(e.target.checked)} />
+            <span className="pencil">gleichmäßig auf alle verteilen</span>
+          </label>
+          <p className="pencil scribble-sum">
+            = {formatMoney(billedSum, currency)}
+            {billedSum !== fullSum && <small> statt {formatMoney(fullSum, currency)}</small>}
+          </p>
+          <button className="scribble-submit" disabled={billed.length === 0}>
+            Rechnung erstellen
+          </button>
+        </footer>
+      </form>
+    );
+  }
+
   return (
     <div className="sheet-backdrop">
-      <form
-        className="sheet"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (billed.length) onDone(billed, equal, persons, step === "some");
-        }}
-      >
+      <form className="sheet" onSubmit={submit}>
         <div className="sheet-emoji" aria-hidden="true">
           🛒
         </div>
@@ -201,80 +315,6 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
           </>
         ) : (
           <>
-            {step === "some" && (
-              <>
-                <p className="muted">
-                  <b>Durchstreichen</b>, was nicht abgerechnet wird. <b>/2, /3 …</b> auf den Preis schreiben oder den{" "}
-                  <b>Preis antippen</b>, um ihn durch die Personenzahl zu teilen. Antippen einer Markierung entfernt sie.
-                  Scrollen mit zwei Fingern.
-                </p>
-                <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
-                  <PencilFilter />
-                  <div className="receipt-paper">
-                    <div className="receipt-lines-wrap writing">
-                      <InkLayer onInk={readInk} onTap={tap} onStart={() => setTouched(true)} />
-                      {demo && !touched && (
-                        <svg className="ink-demo" width={demo.width} height="100%" aria-hidden="true">
-                          <path
-                            className="ink-demo-strike"
-                            pathLength={1}
-                            d={`M6 ${demo.strikeY + 2} C ${demo.width * 0.3} ${demo.strikeY - 3}, ${demo.width * 0.6} ${demo.strikeY + 4}, ${demo.width - 8} ${demo.strikeY - 1}`}
-                          />
-                          <path
-                            className="ink-demo-slash"
-                            pathLength={1}
-                            d={`M${demo.writeX} ${demo.writeY + 13} L ${demo.writeX + 11} ${demo.writeY - 13}`}
-                          />
-                          <path
-                            className="ink-demo-digit"
-                            pathLength={1}
-                            d={`M${demo.writeX + 15} ${demo.writeY - 6} C ${demo.writeX + 17} ${demo.writeY - 15}, ${demo.writeX + 30} ${demo.writeY - 14}, ${demo.writeX + 28} ${demo.writeY - 5} C ${demo.writeX + 26} ${demo.writeY + 2}, ${demo.writeX + 16} ${demo.writeY + 8}, ${demo.writeX + 14} ${demo.writeY + 13} L ${demo.writeX + 30} ${demo.writeY + 12}`}
-                          />
-                          <circle className="ink-demo-tap" cx={demo.tapX} cy={demo.tapY} r="14" />
-                          <text className="pencil ink-demo-tapped" x={demo.tapX - 62} y={demo.tapY + 7}>
-                            /{persons ?? 3}
-                          </text>
-                        </svg>
-                      )}
-                      <ul className="receipt-lines" ref={list}>
-                        {items.map((item) => {
-                          const mark = marks[item.id] ?? {};
-                          const divisor = markDivisor(mark, persons);
-                          const divided = divisor > 1 ? Math.round(item.total / divisor) : null;
-                          const label = mark.perPerson ? (persons ?? "?") : mark.divisor;
-                          return (
-                            <li key={item.id} data-item={item.id} className={`rline${mark.struck ? " done" : ""}`}>
-                              <div className="rline-main">
-                                <span className="rline-text">
-                                  <span className="rline-name">
-                                    <span className="rline-strike">
-                                      {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
-                                      {item.name}
-                                    </span>
-                                    {(divided !== null || mark.perPerson) && <span className="pencil rline-divisor">/{label}</span>}
-                                  </span>
-                                </span>
-                                <span className="rline-dots" aria-hidden="true" />
-                                <span className="rline-price">
-                                  {divided !== null && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
-                                  {formatMoney(divided ?? item.total, currency)}
-                                </span>
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  </div>
-                </article>
-                {notice && (
-                  <p className="shop-notice" role="status">
-                    {notice}
-                  </p>
-                )}
-              </>
-            )}
-
             <label className="shop-equal">
               <input type="checkbox" checked={equal} onChange={(e) => setEqual(e.target.checked)} />
               <span>
@@ -282,33 +322,22 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
                 <small>Niemand muss abhaken. Lässt sich auf der Rechnung jederzeit umschalten.</small>
               </span>
             </label>
-            {(equal || step === "some") && (
-              <div className={`row between shop-persons${askPersons ? " ask" : ""}`}>
+            {equal && (
+              <div className="row between shop-persons">
                 <span>Wie viele teilen sich den Einkauf?</span>
-                <div className="stepper-mini" role="group" aria-label="Personen, die sich den Einkauf teilen">
-                  <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
-                    −
-                  </button>
-                  <span>{persons ?? "?"}</span>
-                  <button type="button" onClick={() => setPersons((n) => Math.min(100, (n ?? 1) + 1))} aria-label="Eine Person mehr">
-                    +
-                  </button>
-                </div>
+                {personsStepper}
               </div>
             )}
-            {(equal || step === "some") && (
+            {equal && (
               <p className="muted small">
                 {persons
-                  ? equal
-                    ? `${formatMoney(Math.round(billedSum / persons), currency)} pro Person, inklusive dir.`
-                    : "Inklusive dir. Ein Tipp auf einen Preis teilt ihn durch diese Zahl."
+                  ? `${formatMoney(Math.round(billedSum / persons), currency)} pro Person, inklusive dir.`
                   : "Ohne Angabe wird gezählt, wer per QR-Code beitritt, plus du."}
               </p>
             )}
 
             <p className="shop-sum">
               Abgerechnet werden <b>{formatMoney(billedSum, currency)}</b>
-              {billedSum !== fullSum && <> von {formatMoney(fullSum, currency)}</>}
             </p>
 
             <button className="btn btn-primary btn-large" disabled={billed.length === 0}>

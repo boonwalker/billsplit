@@ -1670,19 +1670,184 @@ input[aria-invalid="true"] {
   padding: 6px 14px;
 }
 
-/* Supermarket sheet: the receipt to cross out and write on, with looping demo strokes. */
-.shop-paper {
-  margin: 0 -8px;
+/* "Manches nicht": the whole screen is the receipt paper, scribbled on with a pencil. */
+.scribble {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.32 0 0 0 0 0.25 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(0deg, transparent 0 27px, rgb(0 0 0 / 0.018) 27px 28px);
+  animation: scribble-in 0.3s ease both;
 }
 
-.shop-paper .receipt-paper {
-  padding: 22px 14px 26px;
+@keyframes scribble-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
 }
 
-.shop-paper .rline.done .rline-strike,
-.shop-paper .rline.done .rline-price {
+.scribble-head {
+  padding: calc(env(safe-area-inset-top) + 10px) 18px 4px;
+}
+
+.scribble-head h2 {
+  margin: 2px 0 0;
+  font-size: 2.1rem;
+  line-height: 1.1;
+}
+
+.scribble-help {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  opacity: 0.85;
+}
+
+.scribble-link {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-family: "Caveat", cursive;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--pencil);
+  cursor: pointer;
+}
+
+.scribble-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 6px;
+}
+
+/* The receipt lines sit directly on the screen-wide paper, bigger for fingers. */
+.scribble .receipt {
+  filter: none;
+  padding: 0;
+}
+
+.scribble .receipt-paper {
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+  padding: 6px 10px 24px;
+  font-size: 1.05rem;
+  animation: none;
+}
+
+.scribble .receipt-lines-wrap.writing .receipt-lines {
+  outline: none;
+}
+
+.scribble .rline {
+  border-bottom: 1px dashed rgb(0 0 0 / 0.08);
+}
+
+.scribble .rline-main {
+  min-height: 60px;
+  align-items: center;
+  padding: 14px 4px;
+}
+
+.scribble .rline.done .rline-strike,
+.scribble .rline.done .rline-price {
   background-image: linear-gradient(var(--pencil), var(--pencil));
-  background-size: 100% 2px;
+  background-size: 100% 2.5px;
+}
+
+.scribble .rline-divisor {
+  font-size: 1.6rem;
+}
+
+.scribble-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 18px calc(env(safe-area-inset-bottom) + 12px);
+  /* A hand-drawn rule above the controls. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 8' preserveAspectRatio='none'%3E%3Cpath d='M2 5 C 80 2, 160 7, 240 4 S 360 3, 398 5' fill='none' stroke='%234a4c4a' stroke-width='1.6' stroke-linecap='round' opacity='0.55'/%3E%3C/svg%3E")
+    top / 100% 8px no-repeat;
+}
+
+.scribble-notice {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.scribble-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 1.3rem;
+}
+
+.scribble-row.ask {
+  border-radius: 12px;
+  animation: ask-persons 0.8s ease-in-out 2;
+}
+
+.scribble-check {
+  justify-content: flex-start;
+  cursor: pointer;
+}
+
+.scribble-check input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--pencil);
+}
+
+.scribble .stepper-mini {
+  background: none;
+  border: 2px solid var(--pencil);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+}
+
+.scribble .stepper-mini button,
+.scribble .stepper-mini span {
+  background: none;
+  color: var(--pencil);
+  font-family: "Caveat", cursive;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.scribble-sum {
+  margin: 0;
+  text-align: right;
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.scribble-sum small {
+  font-size: 1.1rem;
+}
+
+/* A sketched button: wobbly border, handwriting. */
+.scribble-submit {
+  min-height: 56px;
+  border: 2.5px solid var(--pencil);
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  background: color-mix(in srgb, var(--mint) 30%, transparent);
+  color: var(--ink);
+  font-family: "Caveat", cursive;
+  font-size: 1.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scribble-submit:disabled {
+  opacity: 0.4;
 }
 
 .ink-demo {
@@ -1831,25 +1996,11 @@ input[aria-invalid="true"] {
   }
 }
 
-.shop-persons.ask {
-  border-radius: 12px;
-  animation: ask-persons 0.8s ease-in-out 2;
-}
-
 @keyframes ask-persons {
   50% {
     background: color-mix(in srgb, var(--mint) 35%, transparent);
     box-shadow: 0 0 0 6px color-mix(in srgb, var(--mint) 35%, transparent);
   }
-}
-
-.shop-notice {
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--mint-soft);
-  font-size: 0.85rem;
-  text-align: center;
 }
 
 .toast {
