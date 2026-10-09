@@ -26,7 +26,7 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
 2. Eigene Positionen abhaken. Bei mehreren Stück wählt man die Anzahl. Wer eine Position übernimmt, steht mit
    Namen in Grün darunter. Ist eine Position vollständig vergeben, wird sie durchgestrichen. Das passiert live
    bei allen.
-3. Unten steht der eigene Anteil. „Mit PayPal bezahlen“ öffnet die PayPal-App bzw. -Website mit Empfänger und
+3. Unten steht der eigene Anteil. „Anteil begleichen“ öffnet die PayPal-App bzw. -Website mit Empfänger und
    Betrag. Nach dem Login muss man nur noch bestätigen.
 
 Freunde sehen die Schuldnerliste des Rechnungsstellers nicht. Wer was abgehakt hat, sehen sie dagegen schon.
@@ -38,7 +38,7 @@ seinen individuellen Link: den Empfänger aus der Rechnung plus den gerade berec
 `https://www.paypal.com/paypalme/niklas/18.50EUR`.
 
 Die PayPal-App übernimmt aus diesem Link in der Praxis oft nur den Empfänger. Deshalb kopiert der erste Tipp auf
-„Mit PayPal bezahlen“ den Betrag in die Zwischenablage, der zweite („Weiter zu PayPal“) öffnet PayPal. Dort muss
+„Anteil begleichen“ den Betrag in die Zwischenablage, der zweite („Weiter zu PayPal“) öffnet PayPal. Dort muss
 der Betrag nur noch eingefügt werden. Zwei Tipps, weil iOS das Kopieren verwirft, wenn derselbe Tipp die App verlässt.
 
 > **Wichtig: PayPal.Me vs. E-Mail.** PayPal bietet nur über **PayPal.Me** einen dokumentierten Link, der Empfänger

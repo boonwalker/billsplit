@@ -104,7 +104,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
             disabled={nothing}
             onClick={prepareAmount}
           >
-            {nothing ? "Hake deine Positionen ab" : <>Mit PayPal bezahlen · {formatMoney(due, data.currency)}</>}
+            {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
           </button>
         )}
         {action.kind === "paypalMe" && !(myPayment && nothing) && ready && (
