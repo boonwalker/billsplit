@@ -1636,18 +1636,15 @@ input[aria-invalid="true"] {
   color: var(--ink-soft);
 }
 
-/* "Manches nicht": the whole screen is the receipt paper, scribbled on with a pencil. */
+/* "Manches nicht": a full-screen step of the app with a large receipt to cross out and tap. */
 .scribble {
   position: fixed;
   inset: 0;
   z-index: 90;
   display: flex;
   flex-direction: column;
-  color: var(--ink);
-  background-color: var(--paper);
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.32 0 0 0 0 0.25 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(0deg, transparent 0 27px, rgb(0 0 0 / 0.018) 27px 28px);
+  background: var(--bg);
+  color: var(--text);
   animation: scribble-in 0.3s ease both;
 }
 
@@ -1658,64 +1655,38 @@ input[aria-invalid="true"] {
   }
 }
 
-.scribble-head {
-  padding: calc(env(safe-area-inset-top) + 10px) 18px 4px;
-}
-
-.scribble-head h2 {
-  margin: 2px 0 0;
-  font-size: 2.1rem;
-  line-height: 1.1;
+.scribble .topbar {
+  position: static;
 }
 
 .scribble-help {
-  margin: 4px 0 0;
-  font-size: 1.05rem;
-  line-height: 1.25;
-  opacity: 0.85;
-}
-
-.scribble-link {
-  padding: 4px 0;
-  border: 0;
-  background: none;
-  font-family: "Caveat", cursive;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--pencil);
-  cursor: pointer;
+  margin: 0;
+  padding: 8px 18px 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .scribble-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0 6px;
+  padding: 6px 8px 12px;
 }
 
-/* The receipt lines sit directly on the screen-wide paper, bigger for fingers. */
-.scribble .receipt {
-  filter: none;
-  padding: 0;
-}
-
+/* The receipt card as everywhere in the app, only larger lines for fingers. */
 .scribble .receipt-paper {
-  background: none;
-  -webkit-mask: none;
-  mask: none;
-  padding: 6px 10px 24px;
-  font-size: 1.05rem;
-  animation: none;
+  padding: 22px 14px 26px;
+  font-size: 1.02rem;
 }
 
 .scribble .rline {
-  border-bottom: 1px dashed rgb(0 0 0 / 0.08);
+  border-bottom: 1px dashed rgb(0 0 0 / 0.07);
 }
 
 .scribble .rline-main {
-  min-height: 60px;
+  min-height: 58px;
   align-items: center;
-  padding: 14px 4px;
+  padding: 12px 4px;
 }
 
 .scribble .rline.done .rline-strike,
@@ -1725,35 +1696,46 @@ input[aria-invalid="true"] {
 }
 
 .scribble .rline-divisor {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
+}
+
+.scribble .rline-div {
+  font-size: 1.35rem;
+  margin-left: 6px;
 }
 
 .scribble-foot {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 18px calc(env(safe-area-inset-bottom) + 12px);
-  /* A hand-drawn rule above the controls. */
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 8' preserveAspectRatio='none'%3E%3Cpath d='M2 5 C 80 2, 160 7, 240 4 S 360 3, 398 5' fill='none' stroke='%234a4c4a' stroke-width='1.6' stroke-linecap='round' opacity='0.55'/%3E%3C/svg%3E")
-    top / 100% 8px no-repeat;
+  gap: 10px;
+  padding: 14px 18px calc(env(safe-area-inset-bottom) + 14px);
+  border-radius: 24px 24px 0 0;
+  background: var(--surface);
+  box-shadow: 0 -8px 24px -12px rgb(0 0 0 / 0.25);
 }
 
 .scribble-notice {
   margin: 0;
-  font-size: 1.2rem;
-  line-height: 1.2;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--mint-soft);
+  font-size: 0.85rem;
 }
 
 .scribble-sum {
   margin: 0;
-  text-align: right;
-  font-size: 1.9rem;
-  line-height: 1;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 .scribble-sum small {
-  font-size: 1.1rem;
+  display: block;
+  font-family: var(--font-body, inherit);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted);
 }
 
 /* The divisor for taps: a big pencilled "/" and a large number with arrows. */
@@ -1778,14 +1760,15 @@ input[aria-invalid="true"] {
 
 .divide-by-label,
 .divide-by-hint {
-  font-size: 1.1rem;
-  line-height: 1.1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
 .divide-by-hint {
-  font-size: 0.95rem;
-  opacity: 0.75;
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .divide-by-control {
@@ -1795,6 +1778,7 @@ input[aria-invalid="true"] {
 }
 
 .divide-by-slash {
+  color: var(--pencil);
   width: 34px;
   height: 78px;
   overflow: visible;
@@ -1804,7 +1788,7 @@ input[aria-invalid="true"] {
 .divide-by-slash path,
 .divide-by-number svg path {
   fill: none;
-  stroke: var(--pencil);
+  stroke: currentColor;
   stroke-width: 4;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -1823,8 +1807,10 @@ input[aria-invalid="true"] {
 }
 
 .divide-by-number span {
-  font-size: 3.6rem;
-  line-height: 0.95;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .divide-by-number button {
@@ -1833,16 +1819,17 @@ input[aria-invalid="true"] {
   width: 64px;
   height: 30px;
   border: 0;
-  background: none;
+  border-radius: 10px;
+  background: var(--mint-soft);
+  color: var(--claim);
   cursor: pointer;
   touch-action: manipulation;
 }
 
 .divide-by-number button svg {
-  width: 34px;
-  height: 17px;
+  width: 26px;
+  height: 13px;
   overflow: visible;
-  filter: url(#pencil-grain);
 }
 
 .divide-by-number button svg path {
@@ -1863,30 +1850,14 @@ input[aria-invalid="true"] {
 
 .scribble-each {
   margin: 0;
-  font-size: 1.35rem;
-  line-height: 1.1;
+  font-size: 0.9rem;
+  color: var(--claim);
+  font-weight: 600;
 }
 
 .scribble .rline-div {
   font-size: 1.4rem;
   margin-left: 6px;
-}
-
-/* A sketched button: wobbly border, handwriting. */
-.scribble-submit {
-  min-height: 56px;
-  border: 2.5px solid var(--pencil);
-  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-  background: color-mix(in srgb, var(--mint) 30%, transparent);
-  color: var(--ink);
-  font-family: "Caveat", cursive;
-  font-size: 1.7rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.scribble-submit:disabled {
-  opacity: 0.4;
 }
 
 .ink-demo {

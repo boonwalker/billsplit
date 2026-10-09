@@ -168,15 +168,23 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
     return (
       <form className="scribble" onSubmit={submit}>
         <PencilFilter />
-        <header className="scribble-head">
-          <button type="button" className="scribble-link" onClick={() => setStep("ask")}>
-            ← zurück
-          </button>
-          <h2 className="pencil">Was soll nicht mit?</h2>
-          <p className="pencil scribble-help">
-            durchstreichen = raus · antippen = ÷ Personen · nochmal antippen = zurück · zwei Finger = scrollen
-          </p>
+        <header className="topbar">
+          <div className="topbar-left">
+            <button type="button" className="icon-btn" aria-label="Zurück" onClick={() => setStep("ask")}>
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+          <h1>Was soll nicht mit?</h1>
+          <div className="topbar-action">
+            <span className="pill">Letzter Schritt</span>
+          </div>
         </header>
+        <p className="scribble-help">
+          <b>Durchstreichen</b> = nicht abrechnen · <b>Antippen</b> = durch die Personenzahl teilen · nochmal antippen =
+          zurück · mit zwei Fingern scrollen
+        </p>
 
         <div className="scribble-scroll ink-scroll">
           <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
@@ -233,14 +241,14 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
 
         <footer className="scribble-foot">
           {notice && (
-            <p className="pencil scribble-notice" role="status">
+            <p className="scribble-notice" role="status">
               {notice}
             </p>
           )}
           <div className="scribble-controls">
             {/* What a tap on a line divides by – also the head count for the equal split. */}
             <div className={`divide-by${askPersons ? " ask" : ""}`} role="group" aria-label="Antippen teilt durch">
-              <span className="pencil divide-by-label">Antippen teilt durch</span>
+              <span className="divide-by-label">Antippen teilt durch</span>
               <div className="divide-by-control">
                 <svg className="divide-by-slash" viewBox="0 0 40 90" aria-hidden="true">
                   <path d="M33 5 C 28 28, 19 55, 7 86" />
@@ -252,9 +260,7 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
                       <path d="M4 16 C 12 10, 16 6, 20 3 C 25 7, 30 11, 36 16" />
                     </svg>
                   </button>
-                  <span className="pencil" aria-live="polite">
-                    {persons ?? "?"}
-                  </span>
+                  <span aria-live="polite">{persons ?? "?"}</span>
                   <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
                     <svg viewBox="0 0 40 20" aria-hidden="true">
                       <path d="M4 4 C 12 10, 16 14, 20 17 C 25 13, 30 9, 36 4" />
@@ -262,19 +268,19 @@ export default function SupermarketSheet({ items, currency, onDone }: Props) {
                   </button>
                 </div>
               </div>
-              <span className="pencil divide-by-hint">{persons ? "Personen, inkl. dir" : "Personenzahl wählen"}</span>
+              <span className="divide-by-hint">{persons ? "Personen, inkl. dir" : "Personenzahl wählen"}</span>
             </div>
             <div className="scribble-side">
-              <p className="pencil scribble-sum">
+              <p className="scribble-sum">
                 = {formatMoney(billedSum, currency)}
                 {billedSum !== fullSum && <small>statt {formatMoney(fullSum, currency)}</small>}
               </p>
-              <p className="pencil scribble-each">
+              <p className="scribble-each">
                 {persons ? `je ${formatMoney(Math.round(billedSum / persons), currency)} pro Person` : "÷ x Personen"}
               </p>
             </div>
           </div>
-          <button className="scribble-submit" disabled={billed.length === 0}>
+          <button className="btn btn-primary btn-large" disabled={billed.length === 0}>
             Rechnung erstellen
           </button>
         </footer>
