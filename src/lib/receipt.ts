@@ -1,8 +1,8 @@
 import type { BillItem } from "./bill";
+import { parseMoney, type Cents } from "./money";
 
 /** A recognized receipt line; ids are assigned when the bill is created. */
 export type ReceiptItem = Omit<BillItem, "id">;
-import { parseMoney, type Cents } from "./money";
 
 /** Result of reading a receipt photo, independent of the recognition engine. */
 export interface ParsedReceipt {
@@ -11,8 +11,10 @@ export interface ParsedReceipt {
   date: string;
   currency: string;
   items: ReceiptItem[];
-  /** Grand total printed on the receipt, if found; used to warn about missed lines. */
+  /** Total of the purchased items printed on the receipt (before tip), if found; used to warn about missed lines. */
   total: Cents | null;
+  /** Tip printed on the receipt, if any. */
+  tip: Cents | null;
   engine: "ai" | "ocr";
 }
 
@@ -23,7 +25,9 @@ export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop rec
 - quantity is the number of units on the line. Receipts show it in many ways: "3 Bier 13,50", "3x Bier", "Bier 3 x 4,50 13,50", or a separate line like "3 x 4,50" above or below the item. If no quantity is shown, use 1.
 - line_total is the price of the whole line (all units together). If only a unit price is printed, multiply it by the quantity.
 - Include discounts, vouchers and deposit refunds as items with a negative line_total. Include service charges that are part of the total.
-- Do not include subtotals, totals, taxes/VAT breakdowns, payment method lines, change given, tips written after payment, or table/waiter/date information.
+- Do not include subtotals, totals, taxes/VAT breakdowns, payment method lines, change given, or table/waiter/date information.
+- A tip ("Trinkgeld", "Tip", "Gratuity", also handwritten) is not an item: put its amount in tip, or 0 if the receipt shows no tip.
+- receipt_total is the printed total of the purchased items before any tip, or 0 if not readable.
 - Use a dot as decimal separator in numbers, regardless of how the receipt prints them.
 - If the image is not a receipt or is unreadable, return an empty items list.`;
 
@@ -39,13 +43,13 @@ const UNIT_PRICE = new RegExp(String.raw`(?:^|\s)(?:à|a|@|x|×|\*)\s*${PRICE}(?
 /** A price standing on its own (not part of e.g. "0,25l"). */
 const STANDALONE_PRICE = new RegExp(String.raw`(?<![\w.,])${PRICE}(?![\w.,])`, "g");
 
+const TIP_WORDS = /\b(trinkgeld|tip|tipp|gratuity)\b/i;
 const TOTAL_WORDS = /\b(summe|gesamt(?:betrag)?|total|zu zahlen|endbetrag|betrag)\b/i;
 const SKIP_WORDS = new RegExp(
   [
     "zwischensumme", "subtotal", "mwst", "mw\\.?-?st", "ust", "umsatzsteuer", "steuer", "netto", "brutto",
     "tax", "vat", "bar\\b", "gegeben", "rückgeld", "rueckgeld", "wechselgeld", "change", "ec[- ]?karte",
-    "kartenzahlung", "karte", "visa", "mastercard", "girocard", "maestro", "amex", "kredit", "trinkgeld",
-    "\\btip\\b", "saldo", "datum", "uhrzeit", "tisch", "bon[- ]?nr", "beleg", "kasse", "bediener",
+    "kartenzahlung", "karte", "visa", "mastercard", "girocard", "maestro", "amex", "kredit", "saldo", "datum", "uhrzeit", "tisch", "bon[- ]?nr", "beleg", "kasse", "bediener",
     "rechnung(?:s)?[- ]?nr", "st\\.?-?nr", "steuernummer", "terminal", "tse", "transaktion", "signatur",
   ].join("|"),
   "i",
@@ -83,6 +87,7 @@ export function parseReceiptText(text: string): ParsedReceipt {
 
   const items: ReceiptItem[] = [];
   let total: Cents | null = null;
+  let tip: Cents | null = null;
   let pendingQty: number | null = null;
   let merchant = "";
 
@@ -106,6 +111,12 @@ export function parseReceiptText(text: string): ParsedReceipt {
     if (lineTotal === null) continue;
     let rest = line.slice(0, priceMatch.index).trim();
 
+    if (TIP_WORDS.test(rest)) {
+      // "Gesamt inkl. Trinkgeld" is a grand total, not the tip itself.
+      if (!TOTAL_WORDS.test(rest) && lineTotal > 0) tip = (tip ?? 0) + lineTotal;
+      pendingQty = null;
+      continue;
+    }
     if (TOTAL_WORDS.test(rest) && !/zwischen/i.test(rest)) {
       if (total === null) total = lineTotal;
       pendingQty = null;
@@ -139,5 +150,5 @@ export function parseReceiptText(text: string): ParsedReceipt {
     items.push({ name, qty: Math.max(1, qty), total: lineTotal });
   }
 
-  return { merchant, date: findDate(text), currency: "EUR", items, total, engine: "ocr" };
+  return { merchant, date: findDate(text), currency: "EUR", items, total, tip, engine: "ocr" };
 }

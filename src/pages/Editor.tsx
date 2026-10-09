@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
+import TipControl, { tipCents, type TipValue } from "../components/TipControl";
 import { api } from "../lib/api";
-import { newItemId, type BillData, type BillItem } from "../lib/bill";
+import { newItemId, subtotal, type BillData, type BillItem } from "../lib/bill";
 import { prepareImage } from "../lib/image";
 import { centsToInput, formatMoney, parseMoney } from "../lib/money";
 import type { ParsedReceipt, ReceiptItem } from "../lib/receipt";
@@ -26,7 +27,9 @@ interface Draft {
   title: string;
   date: string;
   currency: string;
-  tipPercent: string;
+  tip: TipValue;
+  /** The tip was read from the receipt, so the payer is not asked again. */
+  tipOnReceipt: boolean;
   rows: Row[];
   receiptTotal: number | null;
   engine: "ai" | "ocr" | null;
@@ -44,7 +47,8 @@ function emptyDraft(): Draft {
     title: "",
     date: new Date().toISOString().slice(0, 10),
     currency: "EUR",
-    tipPercent: "0",
+    tip: { mode: "percent", percent: "0", amount: "" },
+    tipOnReceipt: false,
     rows: [newRow()],
     receiptTotal: null,
     engine: null,
@@ -56,7 +60,10 @@ function draftFromData(data: BillData): Draft {
     title: data.title,
     date: data.date,
     currency: data.currency,
-    tipPercent: String(data.tipPercent),
+    tip: data.tipAmount
+      ? { mode: "amount", percent: "0", amount: centsToInput(data.tipAmount) }
+      : { mode: "percent", percent: String(data.tipPercent), amount: "" },
+    tipOnReceipt: false,
     rows: data.items.map(newRow),
     receiptTotal: null,
     engine: null,
@@ -76,14 +83,26 @@ function paymentFromProfile(): BillData["payment"] {
 }
 
 function toBillData(draft: Draft, items: BillItem[]): BillData {
-  return {
+  const base = {
     title: draft.title.trim() || "Rechnung",
     date: draft.date,
     currency: draft.currency,
-    tipPercent: Math.min(100, Math.max(0, Number(draft.tipPercent.replace(",", ".")) || 0)),
     items,
     payment: paymentFromProfile(),
   };
+  if (draft.tip.mode === "amount") {
+    const amount = tipCents(draft.tip, subtotal(items));
+    return { ...base, tipPercent: 0, tipAmount: amount > 0 ? amount : undefined };
+  }
+  return { ...base, tipPercent: Math.min(100, Math.max(0, Number(draft.tip.percent.replace(",", ".")) || 0)) };
+}
+
+/** Restores a saved draft; drafts from older versions lack the tip fields. */
+function restoreDraft(): Draft {
+  const saved = loadDraft<Partial<Draft>>();
+  if (!saved?.rows) return emptyDraft();
+  const empty = emptyDraft();
+  return { ...empty, ...saved, tip: saved.tip ?? empty.tip, tipOnReceipt: saved.tipOnReceipt ?? false } as Draft;
 }
 
 /** Recognition is trusted enough to skip the review when the AI read it and the sum matches the printed total. */
@@ -94,7 +113,9 @@ function isConfident(r: ParsedReceipt): boolean {
 
 export default function Editor({ billId }: { billId?: string }) {
   const editing = Boolean(billId);
-  const [draft, setDraft] = useState<Draft>(() => (editing ? emptyDraft() : (loadDraft<Draft>() ?? emptyDraft())));
+  const [draft, setDraft] = useState<Draft>(() => (editing ? emptyDraft() : restoreDraft()));
+  /** Items waiting for the tip question before the QR code is created. */
+  const [askTip, setAskTip] = useState<BillItem[] | null>(null);
   const [loaded, setLoaded] = useState(!editing);
   const [busy, setBusy] = useState<{ message: string; progress?: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,6 +167,8 @@ export default function Editor({ billId }: { billId?: string }) {
         currency: receipt.currency || draft.currency,
         receiptTotal: receipt.total,
         engine: receipt.engine,
+        tip: receipt.tip ? { mode: "amount", percent: "0", amount: centsToInput(receipt.tip) } : draft.tip,
+        tipOnReceipt: receipt.tip !== null,
         rows: receipt.items.length ? receipt.items.map((i) => newRow(i)) : draft.rows,
       };
       setDraft(next);
@@ -153,8 +176,13 @@ export default function Editor({ billId }: { billId?: string }) {
         setError("Auf dem Foto wurden keine Positionen erkannt. Versuch es mit einem schärferen Foto oder trag sie unten ein.");
       } else if (isConfident(receipt)) {
         // Straight to the QR code – the payer can still correct lines from there.
-        await publish(toBillData(next, next.rows.map(rowToItem).filter((i): i is BillItem => i !== null)));
-        return;
+        // Without a tip on the receipt, ask for it first.
+        const recognized = next.rows.map(rowToItem).filter((i): i is BillItem => i !== null);
+        if (receipt.tip !== null) {
+          await publish(toBillData(next, recognized));
+          return;
+        }
+        setAskTip(recognized);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Die Erkennung ist fehlgeschlagen.");
@@ -187,8 +215,12 @@ export default function Editor({ billId }: { billId?: string }) {
   async function submit() {
     setShowErrors(true);
     if (items.some((i) => i === null) || validItems.length === 0) return;
+    if (!billId) {
+      if (draft.tipOnReceipt) return publish(toBillData(draft, validItems));
+      setAskTip(validItems);
+      return;
+    }
     const data = toBillData(draft, validItems);
-    if (!billId) return publish(data);
     setBusy({ message: "Wird gespeichert …" });
     try {
       await api.updateBill(billId, data);
@@ -308,16 +340,9 @@ export default function Editor({ billId }: { billId?: string }) {
                 </p>
               )}
               <div className="field">
-                <span>Trinkgeld – wird anteilig auf alle aufgeschlagen</span>
-                <div className="chips">
-                  {["0", "5", "10", "15"].map((p) => (
-                    <button key={p} type="button" className={`chip${draft.tipPercent === p ? " active" : ""}`} onClick={() => update({ tipPercent: p })}>
-                      {p} %
-                    </button>
-                  ))}
-                  <input className="tip-input" inputMode="decimal" aria-label="Trinkgeld in Prozent" value={draft.tipPercent} onChange={(e) => update({ tipPercent: e.target.value.replace(/[^\d.,]/g, "") })} />
-                  <span>%</span>
-                </div>
+                <span>Trinkgeld – wird anteilig auf alle verteilt</span>
+                {draft.tipOnReceipt && <small className="muted">Vom Beleg übernommen.</small>}
+                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} />
               </div>
             </div>
 
@@ -331,6 +356,47 @@ export default function Editor({ billId }: { billId?: string }) {
           </>
         )}
       </main>
+
+      {askTip && (
+        <div className="sheet-backdrop">
+          <form
+            className="sheet"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const items = askTip;
+              setAskTip(null);
+              void publish(toBillData(draft, items));
+            }}
+          >
+            <div className="sheet-emoji" aria-hidden="true">
+              🙌
+            </div>
+            <h2>Trinkgeld gegeben?</h2>
+            <p className="muted">
+              {draft.engine ? "Auf dem Beleg steht kein Trinkgeld. " : ""}Wenn du Trinkgeld gegeben hast, trag es hier ein – es
+              wird anteilig auf alle verteilt.
+            </p>
+            <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={subtotal(askTip)} currency={draft.currency} />
+            <button className="btn btn-primary btn-large">QR-Code erstellen</button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                const items = askTip;
+                const noTip: Draft = { ...draft, tip: { mode: "percent", percent: "0", amount: "" } };
+                setDraft(noTip);
+                setAskTip(null);
+                void publish(toBillData(noTip, items));
+              }}
+            >
+              Ohne Trinkgeld weiter
+            </button>
+            <button type="button" className="link sheet-back" onClick={() => setAskTip(null)}>
+              Positionen nochmal prüfen
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

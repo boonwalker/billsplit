@@ -35,7 +35,7 @@ export default function PayBar({ snapshot, onPay }: Props) {
         <div className="paybar-sum">
           <span className="paybar-label">
             Dein Anteil
-            {share.tip > 0 && <small> inkl. {data.tipPercent} % Trinkgeld</small>}
+            {share.tip > 0 && <small> inkl. {data.tipAmount ? `${formatMoney(share.tip, data.currency)}` : `${data.tipPercent} %`} Trinkgeld</small>}
           </span>
           <strong className="paybar-total" key={share.total}>
             {formatMoney(share.total, data.currency)}

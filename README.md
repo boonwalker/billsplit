@@ -42,10 +42,16 @@ seinen individuellen Link: den Empfänger aus der Rechnung plus den gerade berec
 > „Geld senden“ und kopiert die Adresse. Den Betrag muss der Freund dann selbst eintragen. Deshalb fragt das Profil
 > beides ab.
 
+### Trinkgeld
+
+Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen. Sonst fragt billsplit vor dem Erstellen des
+QR-Codes nach: in Prozent oder als fester Betrag. Ein fester Betrag wird im Verhältnis der Anteile verteilt
+(wer 40 % der Rechnung hatte, trägt 40 % des Trinkgelds).
+
 ### Geteilte Positionen
 
 Hakt mehr als eine Person dieselbe Position ab (z. B. eine Vorspeisenplatte), wird sie automatisch anteilig
-geteilt. Insgesamt wird sie nie mehr als einmal berechnet. Trinkgeld wird prozentual auf jeden Anteil aufgeschlagen.
+geteilt. Insgesamt wird sie nie mehr als einmal berechnet.
 
 ## Technik
 

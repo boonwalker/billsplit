@@ -15,6 +15,7 @@ export const BillDataSchema = z.object({
   date: z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/),
   currency: z.string().regex(/^[A-Z]{3}$/),
   tipPercent: z.number().min(0).max(100),
+  tipAmount: z.number().int().min(0).max(10_000_000).optional(),
   items: z
     .array(
       z.object({

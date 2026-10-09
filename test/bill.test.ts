@@ -56,6 +56,20 @@ describe("claims", () => {
     expect(billTotal(data)).toBe(3630);
   });
 
+  it("splits a fixed tip in proportion to the shares", () => {
+    const fixed: BillData = { ...data, tipPercent: 0, tipAmount: 330 }; // 3,30 € on 33,00 €
+    const ps = [p("owner", { pizza: 1 }, true), p("anna", { bier: 2, tira: 1 })];
+    expect(billTotal(fixed)).toBe(3630);
+    expect(participantShare(fixed, ps, "anna")).toEqual({ subtotal: 1400, tip: 140, total: 1540 });
+    expect(participantShare(fixed, ps, "owner")).toEqual({ subtotal: 950, tip: 95, total: 1045 });
+    expect(unassignedAmount(fixed, ps)).toBe(1045);
+  });
+
+  it("prefers the fixed tip over the percentage", () => {
+    expect(billTotal({ ...data, tipPercent: 10, tipAmount: 500 })).toBe(3800);
+    expect(billTotal({ ...data, tipPercent: 0, tipAmount: undefined })).toBe(3300);
+  });
+
   it("drops unknown items and clamps units", () => {
     expect(sanitizeClaims({ bier: 7, gone: 1, pizza: 0, tira: 1.7 }, data.items)).toEqual({ bier: 3, tira: 1 });
   });

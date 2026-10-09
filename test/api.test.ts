@@ -103,6 +103,12 @@ describe("bills API", () => {
     expect(annaView.json.myPayment?.amount).toBe(1850);
   });
 
+  it("accepts a fixed tip", async () => {
+    const res = await call<BillSnapshot>(OWNER, "POST", "/api/bills", { data: { ...data, tipAmount: 300 }, name: "Niklas" });
+    expect(res.status).toBe(201);
+    expect(res.json.data.tipAmount).toBe(300);
+  });
+
   it("rejects invalid input and unknown bills", async () => {
     expect((await call(OWNER, "POST", "/api/bills", { data: { ...data, items: [] }, name: "N" })).status).toBe(400);
     expect((await call(OWNER, "GET", "/api/bills/doesnotexist")).status).toBe(404);

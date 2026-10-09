@@ -33,6 +33,20 @@ describe("parseReceiptText", () => {
     expect(r.items.reduce((s, i) => s + i.total, 0)).toBe(r.total);
   });
 
+  it("reads a tip as tip, not as item", () => {
+    const r = parseReceiptText("Pizza 10,00\nBier 4,50\nSumme 14,50\nTrinkgeld 1,50\nGesamt inkl. Trinkgeld 16,00");
+    expect(r.items).toEqual([
+      { name: "Pizza", qty: 1, total: 1000 },
+      { name: "Bier", qty: 1, total: 450 },
+    ]);
+    expect(r.total).toBe(1450);
+    expect(r.tip).toBe(150);
+  });
+
+  it("reports no tip when none is printed", () => {
+    expect(parseReceiptText("Pizza 10,00\nSumme 10,00").tip).toBeNull();
+  });
+
   it("keeps discounts as negative lines", () => {
     const r = parseReceiptText("Pizza 10,00\nRabatt -2,00\nTotal 8,00");
     expect(r.items).toEqual([

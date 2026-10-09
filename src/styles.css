@@ -730,10 +730,98 @@ input[aria-invalid="true"] {
   border-color: var(--brand);
 }
 
-.tip-input {
-  width: 72px;
+.tip-control {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tip-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.tip-mode button {
+  min-height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tip-mode button.on {
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+}
+
+.tip-mode button:focus-visible {
+  outline: 2px solid var(--claim);
+  outline-offset: 2px;
+}
+
+.tip-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tip-field input {
+  width: 92px;
   min-height: 38px;
   text-align: right;
+}
+
+.tip-field.wide input {
+  width: 100%;
+  min-height: 52px;
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+}
+
+.tip-field.wide {
+  display: flex;
+}
+
+.tip-field span {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tip-preview {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 2px dashed var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tip-preview dt {
+  color: var(--muted);
+}
+
+.tip-preview dd {
+  margin: 0;
+  text-align: right;
+}
+
+.tip-preview .strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.sheet-back {
+  align-self: center;
+  font-size: 0.9rem;
 }
 
 .sticky-footer {
@@ -1583,6 +1671,8 @@ input[aria-invalid="true"] {
 .sheet {
   width: 100%;
   max-width: 520px;
+  max-height: 92dvh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;

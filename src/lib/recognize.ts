@@ -59,6 +59,7 @@ interface SampleReceipt {
   currency?: unknown;
   items?: { name?: unknown; quantity?: unknown; line_total?: unknown }[];
   receipt_total?: unknown;
+  tip?: unknown;
 }
 
 const SAMPLE_ERRORS: Record<string, string> = {
@@ -82,7 +83,7 @@ async function recognizeWithSample(image: PreparedImage, onProgress: ProgressFn)
       `${RECEIPT_INSTRUCTIONS}
 
 Reply with only one JSON object of this shape:
-{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable)}`,
+{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable), "tip": number (0 if none)}`,
       { images: [image.blob], modelTier: "default" },
     );
   } catch (e) {
@@ -94,12 +95,14 @@ Reply with only one JSON object of this shape:
     .filter((it) => typeof it?.name === "string" && it.name.trim() && Number.isFinite(Number(it.line_total)))
     .map((it) => ({ name: String(it.name).trim(), qty: Math.max(1, Math.floor(Number(it.quantity)) || 1), total: cents(it.line_total) }));
   const total = Number(out.receipt_total);
+  const tip = Number(out.tip);
   return {
     merchant: typeof out.merchant === "string" ? out.merchant.trim() : "",
     date: typeof out.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(out.date) ? out.date : "",
     currency: typeof out.currency === "string" && /^[A-Z]{3}$/.test(out.currency) ? out.currency : "EUR",
     items,
     total: Number.isFinite(total) && total > 0 ? cents(total) : null,
+    tip: Number.isFinite(tip) && tip > 0 ? cents(tip) : null,
     engine: "ai",
   };
 }

@@ -23,6 +23,7 @@ const ReceiptSchema = z.object({
     }),
   ),
   receipt_total: z.number(),
+  tip: z.number(),
 });
 
 type ReceiptOutput = z.infer<typeof ReceiptSchema>;
@@ -31,7 +32,7 @@ type ReceiptOutput = z.infer<typeof ReceiptSchema>;
 const RECEIPT_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["merchant", "date", "currency", "items", "receipt_total"],
+  required: ["merchant", "date", "currency", "items", "receipt_total", "tip"],
   properties: {
     merchant: { type: "string", description: "Name of the restaurant or shop, empty if not printed." },
     date: { type: "string", description: "Date of the receipt as YYYY-MM-DD, empty if not printed." },
@@ -49,7 +50,8 @@ const RECEIPT_JSON_SCHEMA = {
         },
       },
     },
-    receipt_total: { type: "number", description: "Grand total printed on the receipt, 0 if not readable." },
+    receipt_total: { type: "number", description: "Printed total of the purchased items before any tip, 0 if not readable." },
+    tip: { type: "number", description: "Tip shown on the receipt (printed or handwritten), 0 if none." },
   },
 } as const;
 
@@ -81,6 +83,7 @@ export function toParsedReceipt(out: ReceiptOutput): ParsedReceipt {
       .filter((it) => it.name.trim() && Number.isFinite(it.line_total))
       .map((it) => ({ name: it.name.trim(), qty: Math.max(1, it.quantity), total: toCents(it.line_total) })),
     total: out.receipt_total > 0 ? toCents(out.receipt_total) : null,
+    tip: out.tip > 0 ? toCents(out.tip) : null,
     engine: "ai",
   };
 }

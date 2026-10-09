@@ -3,6 +3,7 @@ import {
   billTotal,
   claimCost,
   claimedUnits,
+  hasTip,
   subtotal,
   type BillItem,
   type BillSnapshot,
@@ -176,11 +177,11 @@ export default function Receipt({ snapshot, onSetUnits }: Props) {
 
         <div className="receipt-rule" aria-hidden="true" />
         <dl className="receipt-sums">
-          {data.tipPercent > 0 && (
+          {hasTip(data) && (
             <>
               <dt>Zwischensumme</dt>
               <dd>{formatMoney(sub, data.currency)}</dd>
-              <dt>Trinkgeld {data.tipPercent} %</dt>
+              <dt>Trinkgeld{data.tipAmount ? "" : ` ${data.tipPercent} %`}</dt>
               <dd>{formatMoney(total - sub, data.currency)}</dd>
             </>
           )}
