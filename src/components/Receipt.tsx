@@ -289,7 +289,7 @@ function FeeLine({ name, amount, currency, each, people }: { name: string; amoun
 }
 
 /** Grain that makes handwriting and strokes look drawn with a pencil (referenced via CSS). */
-function PencilFilter() {
+export function PencilFilter() {
   return (
     <svg width="0" height="0" className="pencil-defs" aria-hidden="true" focusable="false">
       <filter id="pencil-grain" x="-10%" y="-30%" width="120%" height="160%">

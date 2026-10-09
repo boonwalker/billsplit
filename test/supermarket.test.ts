@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyChoices } from "../src/components/SupermarketSheet";
+import { applyMarks, isStrikeThrough } from "../src/components/SupermarketSheet";
 import { parseReceiptText } from "../src/lib/receipt";
 
 const items = [
@@ -9,16 +9,19 @@ const items = [
 ];
 
 describe("supermarket receipts", () => {
-  it("bills items fully, partly or not at all", () => {
-    const billed = applyChoices(items, {
-      milch: { mode: "part", percent: "25" },
-      dusch: { mode: "none", percent: "25" },
-    });
-    expect(billed).toEqual([
-      { id: "milch", name: "Vollmilch 1l (¼)", qty: 1, total: 30 },
+  it("leaves crossed-out lines out and bills divided lines in part", () => {
+    expect(applyMarks(items, { milch: { divisor: 4 }, dusch: { struck: true } })).toEqual([
+      { id: "milch", name: "Vollmilch 1l", qty: 1, total: 30, fullTotal: 119, divisor: 4 },
       { id: "nudeln", name: "Spaghetti", qty: 2, total: 258 },
     ]);
-    expect(applyChoices(items, { nudeln: { mode: "part", percent: "40" } })[1]).toMatchObject({ name: "Spaghetti (40 %)", total: 103 });
+    expect(applyMarks(items, { nudeln: { divisor: 1 } })).toEqual(items);
+  });
+
+  it("tells a crossing-out stroke from writing", () => {
+    const flat = [{ x: 10, y: 50 }, { x: 150, y: 56 }, { x: 290, y: 48 }];
+    expect(isStrikeThrough([flat], 300)).toBe(true);
+    expect(isStrikeThrough([[{ x: 10, y: 80 }, { x: 40, y: 20 }]], 300)).toBe(false);
+    expect(isStrikeThrough([flat, flat], 300)).toBe(false);
   });
 
   it("recognises a supermarket in the OCR fallback", () => {

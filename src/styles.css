@@ -1670,6 +1670,123 @@ input[aria-invalid="true"] {
   padding: 6px 14px;
 }
 
+/* Supermarket sheet: the receipt to cross out and write on, with looping demo strokes. */
+.shop-paper {
+  margin: 0 -8px;
+}
+
+.shop-paper .receipt-paper {
+  padding: 22px 14px 26px;
+}
+
+.shop-paper .rline.done .rline-strike,
+.shop-paper .rline.done .rline-price {
+  background-image: linear-gradient(var(--pencil), var(--pencil));
+  background-size: 100% 2px;
+}
+
+.ink-demo {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ink-demo path {
+  fill: none;
+  stroke: var(--pencil);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  filter: url(#pencil-grain);
+}
+
+.ink-demo-strike {
+  animation: demo-strike 7s ease-in-out 0.8s infinite;
+}
+
+.ink-demo-slash {
+  animation: demo-slash 7s ease-in-out 0.8s infinite;
+}
+
+.ink-demo-digit {
+  animation: demo-digit 7s ease-in-out 0.8s infinite;
+}
+
+@keyframes demo-strike {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  15%,
+  35% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  42%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes demo-slash {
+  0%,
+  45% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  46% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  52%,
+  82% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  90%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes demo-digit {
+  0%,
+  53% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  54% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  64%,
+  82% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  90%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+.shop-notice {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--mint-soft);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 .toast {
   position: fixed;
   left: 50%;
@@ -2113,75 +2230,14 @@ input[aria-invalid="true"] {
   animation: sheet-up 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 
-.shop-items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 
-.shop-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
 
-.shop-item.none .shop-item-name {
-  text-decoration: line-through;
-  color: var(--muted);
-}
 
-.shop-item-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  font-weight: 600;
-}
 
-.shop-item-price {
-  flex: none;
-  display: inline-flex;
-  gap: 6px;
-  font-variant-numeric: tabular-nums;
-}
 
-.shop-item-price s {
-  color: var(--muted);
-  font-weight: 400;
-}
 
-.shop-modes {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding: 3px;
-  border-radius: 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-}
 
-.shop-modes button {
-  min-height: 34px;
-  border: none;
-  border-radius: 9px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
 
-.shop-modes button.on {
-  background: var(--primary-bg);
-  color: var(--primary-fg);
-}
 
 .shop-equal {
   display: flex;

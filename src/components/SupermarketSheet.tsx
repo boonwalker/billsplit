@@ -1,37 +1,32 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { BillItem } from "../lib/bill";
+import { boundsOf, recognizeDivisor, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
+import InkLayer from "./InkLayer";
+import { PencilFilter } from "./Receipt";
 
-type Mode = "full" | "part" | "none";
-
-interface Choice {
-  mode: Mode;
-  /** Share that is billed, in percent (only for "part"). */
-  percent: string;
+/** What the payer marked on a line: struck through (not billed) or divided ("/3"). */
+export interface Mark {
+  struck?: boolean;
+  divisor?: number;
 }
 
-/** Common shares, e.g. 250 ml of a litre of milk. */
-const PRESETS: [string, string][] = [
-  ["25", "¼"],
-  ["50", "½"],
-  ["75", "¾"],
-];
-
-const percentOf = (choice: Choice) => Math.min(100, Math.max(0, Number(choice.percent.replace(",", ".")) || 0));
-const shareLabel = (percent: number) => PRESETS.find(([p]) => Number(p) === percent)?.[1] ?? `${percent} %`;
-
-/** The items as billed: left out, or reduced to the chosen share. */
-export function applyChoices(items: BillItem[], choices: Record<string, Choice>): BillItem[] {
+/** The items as billed: struck lines left out, divided lines reduced to their part (like divideItem). */
+export function applyMarks(items: BillItem[], marks: Record<string, Mark>): BillItem[] {
   return items.flatMap((item) => {
-    const choice = choices[item.id];
-    if (!choice || choice.mode === "full") return [item];
-    if (choice.mode === "none") return [];
-    const percent = percentOf(choice);
-    const total = Math.round((item.total * percent) / 100);
-    if (percent <= 0 || total === 0) return [];
-    if (percent >= 100) return [item];
-    return [{ ...item, name: `${item.name} (${shareLabel(percent)})`, total }];
+    const mark = marks[item.id];
+    if (mark?.struck) return [];
+    if (!mark?.divisor || mark.divisor <= 1) return [item];
+    return [{ ...item, fullTotal: item.total, divisor: mark.divisor, total: Math.round(item.total / mark.divisor) }];
   });
+}
+
+/** A long, flat stroke across a line: crossing it out. */
+export function isStrikeThrough(strokes: Stroke[], areaWidth: number): boolean {
+  if (strokes.length !== 1) return false;
+  const b = boundsOf(strokes);
+  const width = b.maxX - b.minX;
+  return width > Math.max(60, areaWidth * 0.3) && b.maxY - b.minY < width * 0.35;
 }
 
 interface Props {
@@ -45,22 +40,87 @@ interface Props {
   onReview: () => void;
 }
 
+/** Where the demo animations run: across the first line, and on the price of the second. */
+interface DemoSpots {
+  strikeY: number;
+  writeY: number;
+  writeX: number;
+  width: number;
+}
+
 /**
- * Asked after a supermarket receipt was recognised: which items are not (or only partly)
- * billed – e.g. a litre of milk bought, but only 250 ml used for the shared recipe.
+ * Asked after a supermarket receipt was recognised: is anything not (or only partly)
+ * billed – e.g. a litre of milk bought, but only 250 ml used for the shared recipe?
+ * With "Manches nicht" the payer crosses lines out or writes "/2", "/3" … on them.
  */
 export default function SupermarketSheet({ items, currency, onDone, onReview }: Props) {
-  /** First the question, then either straight on ("all") or the item list ("some"). */
+  /** First the question, then either straight on ("all") or the receipt to mark ("some"). */
   const [step, setStep] = useState<"ask" | "all" | "some">("ask");
-  const [choices, setChoices] = useState<Record<string, Choice>>({});
+  const [marks, setMarks] = useState<Record<string, Mark>>({});
   const [equal, setEqual] = useState(true);
   const [persons, setPersons] = useState<number | undefined>(undefined);
-  const choiceOf = (id: string): Choice => choices[id] ?? { mode: "full", percent: "25" };
-  const set = (id: string, patch: Partial<Choice>) => setChoices((c) => ({ ...c, [id]: { ...choiceOf(id), ...patch } }));
+  const [notice, setNotice] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
+  const [demo, setDemo] = useState<DemoSpots | null>(null);
+  const list = useRef<HTMLUListElement>(null);
 
-  const billed = step === "some" ? applyChoices(items, choices) : items;
+  const billed = step === "some" ? applyMarks(items, marks) : items;
   const billedSum = billed.reduce((s, i) => s + i.total, 0);
   const fullSum = items.reduce((s, i) => s + i.total, 0);
+
+  // Place the demo strokes on the first lines once the paper is laid out. Layout offsets
+  // (relative to the wrapper, which is positioned) are not affected by the paper's print-in animation.
+  useLayoutEffect(() => {
+    if (step !== "some" || !list.current) return;
+    const lines = list.current.querySelectorAll<HTMLElement>("li");
+    const wrap = list.current.parentElement;
+    if (!lines.length || !wrap) return;
+    const centre = (el: HTMLElement) => el.offsetTop + el.offsetHeight / 2;
+    const second = lines[1] ?? lines[0];
+    const price = second.querySelector<HTMLElement>(".rline-price");
+    setDemo({
+      strikeY: centre(lines[0]),
+      writeY: centre(second),
+      writeX: price ? second.offsetLeft + price.offsetLeft - 34 : wrap.offsetWidth - 110,
+      width: wrap.offsetWidth,
+    });
+  }, [step, items]);
+
+  /** The line under a vertical position (the nearest one when written between lines). */
+  function lineAt(y: number): string | null {
+    const lines = [...(list.current?.querySelectorAll<HTMLElement>("li[data-item]") ?? [])];
+    if (!lines.length) return null;
+    const distance = (el: HTMLElement) => {
+      const r = el.getBoundingClientRect();
+      return y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+    };
+    return lines.reduce((best, el) => (distance(el) < distance(best) ? el : best)).dataset.item ?? null;
+  }
+
+  function readInk(strokes: Stroke[]) {
+    const usable = strokes.filter((s) => s.length > 1);
+    if (!usable.length) return;
+    const b = boundsOf(usable);
+    const item = items.find((i) => i.id === lineAt((b.minY + b.maxY) / 2));
+    if (!item) return;
+    if (isStrikeThrough(usable, list.current?.getBoundingClientRect().width ?? 300)) {
+      const struck = !marks[item.id]?.struck;
+      setMarks((m) => ({ ...m, [item.id]: { struck } }));
+      setNotice(struck ? `${item.name} wird nicht abgerechnet.` : `${item.name} wird wieder abgerechnet.`);
+      return;
+    }
+    const read = recognizeDivisor(usable);
+    if (!read) {
+      setNotice("Nicht erkannt – streich eine Zeile durch oder schreib z. B. /2 auf den Preis.");
+      return;
+    }
+    setMarks((m) => ({ ...m, [item.id]: read.divisor > 1 ? { divisor: read.divisor } : {} }));
+    setNotice(
+      read.divisor > 1
+        ? `${item.name} ÷ ${read.divisor}: ${formatMoney(Math.round(item.total / read.divisor), currency)} statt ${formatMoney(item.total, currency)}`
+        : `${item.name}: wieder voller Preis`,
+    );
+  }
 
   return (
     <div className="sheet-backdrop">
@@ -95,76 +155,70 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
         ) : (
           <>
             {step === "some" && (
-              <p className="muted">
-                Wähle pro Artikel: voll, teilweise oder gar nicht abrechnen. Auf der Rechnung kannst du später auch mit dem
-                Finger z. B. „/3“ auf eine Zeile schreiben.
-              </p>
-            )}
-
-            {step === "some" && (
-              <ul className="shop-items">
-                {items.map((item) => {
-                  const choice = choiceOf(item.id);
-                  const after = billed.find((b) => b.id === item.id);
-                  return (
-                    <li key={item.id} className={`shop-item ${choice.mode}`}>
-                      <div className="shop-item-head">
-                        <span className="shop-item-name">
-                          {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
-                          {item.name}
-                        </span>
-                        <span className="shop-item-price">
-                          {choice.mode !== "full" && <s>{formatMoney(item.total, currency)}</s>}
-                          {formatMoney(after?.total ?? 0, currency)}
-                        </span>
-                      </div>
-                      <div className="shop-modes" role="radiogroup" aria-label={`${item.name} abrechnen`}>
-                        {(
-                          [
-                            ["full", "Voll"],
-                            ["part", "Teilweise"],
-                            ["none", "Nicht"],
-                          ] as [Mode, string][]
-                        ).map(([mode, label]) => (
-                          <button
-                            key={mode}
-                            type="button"
-                            role="radio"
-                            aria-checked={choice.mode === mode}
-                            className={choice.mode === mode ? "on" : ""}
-                            onClick={() => set(item.id, { mode })}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                      {choice.mode === "part" && (
-                        <div className="chips">
-                          {PRESETS.map(([percent, label]) => (
-                            <button
-                              key={percent}
-                              type="button"
-                              className={`chip${choice.percent === percent ? " active" : ""}`}
-                              onClick={() => set(item.id, { percent })}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                          <label className="tip-field">
-                            <input
-                              inputMode="decimal"
-                              aria-label={`Anteil von ${item.name} in Prozent`}
-                              value={choice.percent}
-                              onChange={(e) => set(item.id, { percent: e.target.value.replace(/[^\d.,]/g, "").slice(0, 5) })}
-                            />
-                            <span>%</span>
-                          </label>
-                        </div>
+              <>
+                <p className="muted">
+                  <b>Durchstreichen</b>, was nicht abgerechnet wird. <b>/2, /3 …</b> auf den Preis schreiben, um nur einen
+                  Teil abzurechnen. Scrollen mit zwei Fingern.
+                </p>
+                <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
+                  <PencilFilter />
+                  <div className="receipt-paper">
+                    <div className="receipt-lines-wrap writing">
+                      <InkLayer onInk={readInk} onStart={() => setTouched(true)} />
+                      {demo && !touched && (
+                        <svg className="ink-demo" width={demo.width} height="100%" aria-hidden="true">
+                          <path
+                            className="ink-demo-strike"
+                            pathLength={1}
+                            d={`M6 ${demo.strikeY + 2} C ${demo.width * 0.3} ${demo.strikeY - 3}, ${demo.width * 0.6} ${demo.strikeY + 4}, ${demo.width - 8} ${demo.strikeY - 1}`}
+                          />
+                          <path
+                            className="ink-demo-slash"
+                            pathLength={1}
+                            d={`M${demo.writeX} ${demo.writeY + 13} L ${demo.writeX + 11} ${demo.writeY - 13}`}
+                          />
+                          <path
+                            className="ink-demo-digit"
+                            pathLength={1}
+                            d={`M${demo.writeX + 15} ${demo.writeY - 6} C ${demo.writeX + 17} ${demo.writeY - 15}, ${demo.writeX + 30} ${demo.writeY - 14}, ${demo.writeX + 28} ${demo.writeY - 5} C ${demo.writeX + 26} ${demo.writeY + 2}, ${demo.writeX + 16} ${demo.writeY + 8}, ${demo.writeX + 14} ${demo.writeY + 13} L ${demo.writeX + 30} ${demo.writeY + 12}`}
+                          />
+                        </svg>
                       )}
-                    </li>
-                  );
-                })}
-              </ul>
+                      <ul className="receipt-lines" ref={list}>
+                        {items.map((item) => {
+                          const mark = marks[item.id] ?? {};
+                          const divided = mark.divisor && mark.divisor > 1 ? Math.round(item.total / mark.divisor) : null;
+                          return (
+                            <li key={item.id} data-item={item.id} className={`rline${mark.struck ? " done" : ""}`}>
+                              <div className="rline-main">
+                                <span className="rline-text">
+                                  <span className="rline-name">
+                                    <span className="rline-strike">
+                                      {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
+                                      {item.name}
+                                    </span>
+                                    {divided !== null && <span className="pencil rline-divisor">/{mark.divisor}</span>}
+                                  </span>
+                                </span>
+                                <span className="rline-dots" aria-hidden="true" />
+                                <span className="rline-price">
+                                  {divided !== null && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
+                                  {formatMoney(divided ?? item.total, currency)}
+                                </span>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                </article>
+                {notice && (
+                  <p className="shop-notice" role="status">
+                    {notice}
+                  </p>
+                )}
+              </>
             )}
 
             <label className="shop-equal">
