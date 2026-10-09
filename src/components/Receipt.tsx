@@ -5,6 +5,8 @@ import {
   claimedUnits,
   hasTip,
   subtotal,
+  tipHeadCount,
+  tipPerPerson,
   type BillItem,
   type BillSnapshot,
   type PublicParticipant,
@@ -183,6 +185,10 @@ export default function Receipt({ snapshot, onSetUnits }: Props) {
               <dd>{formatMoney(sub, data.currency)}</dd>
               <dt>Trinkgeld{data.tipAmount ? "" : ` ${data.tipPercent} %`}</dt>
               <dd>{formatMoney(total - sub, data.currency)}</dd>
+              <dt className="tip-split">
+                ÷ {tipHeadCount(data, participants)} Personen
+              </dt>
+              <dd className="tip-split">je {formatMoney(tipPerPerson(data, participants), data.currency)}</dd>
             </>
           )}
           <dt className="grand">SUMME</dt>

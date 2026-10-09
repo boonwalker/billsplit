@@ -1879,3 +1879,85 @@ input[aria-invalid="true"] {
   color: color-mix(in srgb, var(--paper) 85%, transparent);
   max-width: 38ch;
 }
+
+/* ───────────────────────── tip split ───────────────────────── */
+.tip-persons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tip-persons > span:first-child {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.tip-persons small {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.tip-persons input {
+  width: 72px;
+  min-height: 38px;
+  text-align: center;
+}
+
+.tip-persons > span:last-child {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.tip-hint {
+  margin-top: -4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.receipt-sums .tip-split {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.tip-split-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--bg);
+}
+
+.stepper-mini {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.stepper-mini button {
+  width: 36px;
+  height: 34px;
+  border: none;
+  background: var(--mint-soft);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stepper-mini button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.stepper-mini span {
+  min-width: 36px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}

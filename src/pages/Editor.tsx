@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
-import TipControl, { tipCents, type TipValue } from "../components/TipControl";
+import TipControl, { tipCents, tipPersons, type TipValue } from "../components/TipControl";
 import { api } from "../lib/api";
 import { newItemId, subtotal, type BillData, type BillItem } from "../lib/bill";
 import { prepareImage } from "../lib/image";
@@ -47,7 +47,7 @@ function emptyDraft(): Draft {
     title: "",
     date: new Date().toISOString().slice(0, 10),
     currency: "EUR",
-    tip: { mode: "percent", percent: "0", amount: "" },
+    tip: { mode: "percent", percent: "0", amount: "", persons: "" },
     tipOnReceipt: false,
     rows: [newRow()],
     receiptTotal: null,
@@ -60,9 +60,12 @@ function draftFromData(data: BillData): Draft {
     title: data.title,
     date: data.date,
     currency: data.currency,
-    tip: data.tipAmount
-      ? { mode: "amount", percent: "0", amount: centsToInput(data.tipAmount) }
-      : { mode: "percent", percent: String(data.tipPercent), amount: "" },
+    tip: {
+      ...(data.tipAmount
+        ? { mode: "amount" as const, percent: "0", amount: centsToInput(data.tipAmount) }
+        : { mode: "percent" as const, percent: String(data.tipPercent), amount: "" }),
+      persons: data.tipSplitCount ? String(data.tipSplitCount) : "",
+    },
     tipOnReceipt: false,
     rows: data.items.map(newRow),
     receiptTotal: null,
@@ -89,6 +92,7 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     currency: draft.currency,
     items,
     payment: paymentFromProfile(),
+    tipSplitCount: tipPersons(draft.tip),
   };
   if (draft.tip.mode === "amount") {
     const amount = tipCents(draft.tip, subtotal(items));
@@ -102,7 +106,7 @@ function restoreDraft(): Draft {
   const saved = loadDraft<Partial<Draft>>();
   if (!saved?.rows) return emptyDraft();
   const empty = emptyDraft();
-  return { ...empty, ...saved, tip: saved.tip ?? empty.tip, tipOnReceipt: saved.tipOnReceipt ?? false } as Draft;
+  return { ...empty, ...saved, tip: { ...empty.tip, ...saved.tip }, tipOnReceipt: saved.tipOnReceipt ?? false } as Draft;
 }
 
 /** Recognition is trusted enough to skip the review when the AI read it and the sum matches the printed total. */
@@ -167,7 +171,7 @@ export default function Editor({ billId }: { billId?: string }) {
         currency: receipt.currency || draft.currency,
         receiptTotal: receipt.total,
         engine: receipt.engine,
-        tip: receipt.tip ? { mode: "amount", percent: "0", amount: centsToInput(receipt.tip) } : draft.tip,
+        tip: receipt.tip ? { ...draft.tip, mode: "amount", amount: centsToInput(receipt.tip) } : draft.tip,
         tipOnReceipt: receipt.tip !== null,
         rows: receipt.items.length ? receipt.items.map((i) => newRow(i)) : draft.rows,
       };
@@ -340,7 +344,7 @@ export default function Editor({ billId }: { billId?: string }) {
                 </p>
               )}
               <div className="field">
-                <span>Trinkgeld – wird anteilig auf alle verteilt</span>
+                <span>Trinkgeld – wird gleichmäßig auf alle Personen verteilt</span>
                 {draft.tipOnReceipt && <small className="muted">Vom Beleg übernommen.</small>}
                 <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} />
               </div>
@@ -374,7 +378,7 @@ export default function Editor({ billId }: { billId?: string }) {
             <h2>Trinkgeld gegeben?</h2>
             <p className="muted">
               {draft.engine ? "Auf dem Beleg steht kein Trinkgeld. " : ""}Wenn du Trinkgeld gegeben hast, trag es hier ein – es
-              wird anteilig auf alle verteilt.
+              wird gleichmäßig auf alle Personen verteilt.
             </p>
             <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={subtotal(askTip)} currency={draft.currency} />
             <button className="btn btn-primary btn-large">QR-Code erstellen</button>
@@ -383,7 +387,7 @@ export default function Editor({ billId }: { billId?: string }) {
               className="btn btn-ghost"
               onClick={() => {
                 const items = askTip;
-                const noTip: Draft = { ...draft, tip: { mode: "percent", percent: "0", amount: "" } };
+                const noTip: Draft = { ...draft, tip: { mode: "percent", percent: "0", amount: "", persons: "" } };
                 setDraft(noTip);
                 setAskTip(null);
                 void publish(toBillData(noTip, items));

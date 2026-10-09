@@ -31,10 +31,10 @@ export function createSampleBill(): string {
   const ben = personaDeviceKey("ben");
   const id = store.create(newBillId(), data, owner, profile.name || "Du");
   store.join(id, anna, "Anna");
-  store.setClaims(id, anna, { [ids.pizza]: 1, [ids.bier]: 2 });
-  store.recordPayClick(id, anna);
   store.join(id, ben, "Ben");
+  store.setClaims(id, anna, { [ids.pizza]: 1, [ids.bier]: 2 });
   store.setClaims(id, ben, { [ids.bier]: 1, [ids.tira]: 1 });
+  store.recordPayClick(id, anna);
   rememberBill({ id, title: data.title, role: "owner", createdAt: new Date().toISOString() });
   return id;
 }

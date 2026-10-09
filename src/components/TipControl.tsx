@@ -9,6 +9,14 @@ export interface TipValue {
   percent: string;
   /** Raw input, e.g. "5,00". */
   amount: string;
+  /** Expected number of people incl. the payer; empty = count who scans the QR code. */
+  persons: string;
+}
+
+/** Expected head count from the input, or undefined for "count automatically". */
+export function tipPersons(tip: TipValue): number | undefined {
+  const n = parseInt(tip.persons, 10);
+  return n >= 1 ? Math.min(n, 100) : undefined;
 }
 
 const PERCENT_PRESETS = ["5", "10", "15"];
@@ -27,10 +35,11 @@ interface Props {
   currency: string;
 }
 
-/** Tip input as percentage or fixed amount, with a live preview of the new total. */
+/** Tip input as percentage or fixed amount, optional head count, and a live preview. */
 export default function TipControl({ value, onChange, subtotal, currency }: Props) {
   const uid = useId();
   const tip = tipCents(value, subtotal);
+  const persons = tipPersons(value);
   const set = (patch: Partial<TipValue>) => onChange({ ...value, ...patch });
 
   return (
@@ -77,11 +86,38 @@ export default function TipControl({ value, onChange, subtotal, currency }: Prop
         </label>
       )}
 
+      <label className="tip-persons">
+        <span>
+          Aufteilen auf
+          <small>optional</small>
+        </span>
+        <input
+          id={`${uid}-persons`}
+          inputMode="numeric"
+          aria-label="Trinkgeld aufteilen auf Personen"
+          value={value.persons}
+          placeholder="auto"
+          onChange={(e) => set({ persons: e.target.value.replace(/\D/g, "").slice(0, 3) })}
+        />
+        <span>Personen</span>
+      </label>
+      <p className="tip-hint">
+        {persons
+          ? `Inklusive dir. Wer später scannt, wird mitgezählt – es werden aber mindestens ${persons} Personen angenommen.`
+          : "Leer lassen: Gezählt wird automatisch, wer den QR-Code scannt, plus du."}
+      </p>
+
       <dl className="tip-preview">
         <dt>Rechnung</dt>
         <dd>{formatMoney(subtotal, currency)}</dd>
         <dt>+ Trinkgeld</dt>
         <dd>{formatMoney(tip, currency)}</dd>
+        {persons && tip > 0 && (
+          <>
+            <dt>Trinkgeld pro Person</dt>
+            <dd>{formatMoney(Math.round(tip / persons), currency)}</dd>
+          </>
+        )}
         <dt className="strong">Du hast bezahlt</dt>
         <dd className="strong">{formatMoney(subtotal + tip, currency)}</dd>
       </dl>

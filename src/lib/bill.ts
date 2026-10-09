@@ -24,10 +24,15 @@ export interface BillData {
   /** ISO date (YYYY-MM-DD) or empty. */
   date: string;
   currency: string;
-  /** Tip in percent that is added on top of every share. Ignored when `tipAmount` is set. */
+  /** Tip in percent of the bill. Ignored when `tipAmount` is set. */
   tipPercent: number;
-  /** Tip as a fixed amount (from the receipt or entered by the payer), split in proportion to the shares. */
+  /** Tip as a fixed amount (from the receipt or entered by the payer). */
   tipAmount?: Cents;
+  /**
+   * Number of people (payer included) the tip is split among, as expected by the payer.
+   * Without it, everyone who joined the bill counts; with it, people who scan late are covered.
+   */
+  tipSplitCount?: number;
   items: BillItem[];
   payment: PaymentInfo;
 }
@@ -82,21 +87,27 @@ export function subtotal(items: BillItem[]): Cents {
   return items.reduce((sum, it) => sum + it.total, 0);
 }
 
-/** Tip on a part of the bill: a fixed tip is split in proportion to the part's value. */
-export function tipOn(amount: Cents, data: Pick<BillData, "items" | "tipPercent" | "tipAmount">): Cents {
-  if (data.tipAmount !== undefined && data.tipAmount > 0) {
-    const sub = subtotal(data.items);
-    return sub > 0 ? Math.round((data.tipAmount * amount) / sub) : 0;
-  }
-  return Math.round((amount * data.tipPercent) / 100);
-}
-
-export function withTip(amount: Cents, data: Pick<BillData, "items" | "tipPercent" | "tipAmount">): Cents {
-  return amount + tipOn(amount, data);
+/** The whole tip in cents. */
+export function tipTotal(data: BillData): Cents {
+  if (data.tipAmount !== undefined && data.tipAmount > 0) return data.tipAmount;
+  return Math.round((subtotal(data.items) * data.tipPercent) / 100);
 }
 
 export function billTotal(data: BillData): Cents {
-  return withTip(subtotal(data.items), data);
+  return subtotal(data.items) + tipTotal(data);
+}
+
+/**
+ * People the tip is split among: everyone who joined (payer included), or the payer's
+ * expected head count while people are still missing.
+ */
+export function tipHeadCount(data: BillData, participants: PublicParticipant[]): number {
+  return Math.max(1, participants.length, data.tipSplitCount ?? 0);
+}
+
+/** Every person pays the same part of the tip. */
+export function tipPerPerson(data: BillData, participants: PublicParticipant[]): Cents {
+  return Math.round(tipTotal(data) / tipHeadCount(data, participants));
 }
 
 export function hasTip(data: BillData): boolean {
@@ -130,17 +141,18 @@ export function participantShare(data: BillData, participants: PublicParticipant
     (sum, item) => sum + claimCost(item, me.claims[item.id] ?? 0, claimedUnits(item.id, participants)),
     0,
   );
-  const total = withTip(sub, data);
-  return { subtotal: sub, tip: total - sub, total };
+  const tip = tipPerPerson(data, participants);
+  return { subtotal: sub, tip, total: sub + tip };
 }
 
-/** Value (incl. tip) of all units nobody has claimed yet. */
+/** Value of all units nobody has claimed yet, plus the tip parts of people who have not joined yet. */
 export function unassignedAmount(data: BillData, participants: PublicParticipant[]): Cents {
   const sub = data.items.reduce((sum, item) => {
     const open = Math.max(0, item.qty - claimedUnits(item.id, participants));
     return sum + Math.round((item.total * open) / item.qty);
   }, 0);
-  return withTip(sub, data);
+  const missingPeople = tipHeadCount(data, participants) - participants.length;
+  return sub + missingPeople * tipPerPerson(data, participants);
 }
 
 /** Drops claims for removed items and clamps units to the item quantity. */

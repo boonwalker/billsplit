@@ -45,8 +45,12 @@ seinen individuellen Link: den Empfänger aus der Rechnung plus den gerade berec
 ### Trinkgeld
 
 Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen. Sonst fragt billsplit vor dem Erstellen des
-QR-Codes nach: in Prozent oder als fester Betrag. Ein fester Betrag wird im Verhältnis der Anteile verteilt
-(wer 40 % der Rechnung hatte, trägt 40 % des Trinkgelds).
+QR-Codes nach: in Prozent oder als fester Betrag.
+
+Das Trinkgeld wird gleichmäßig pro Person verteilt. Gezählt wird automatisch, wer der Rechnung per QR-Code
+beigetreten ist, plus der Rechnungssteller. Optional gibt der Rechnungssteller eine erwartete Personenzahl an,
+vorab im Trinkgeld-Schritt oder später direkt unter der Rechnung. Sie gilt, solange noch nicht alle gescannt haben,
+etwa wenn jemand erst am nächsten Tag scannt. Treten mehr Personen bei als erwartet, zählen alle.
 
 ### Geteilte Positionen
 

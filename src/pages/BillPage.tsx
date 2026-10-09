@@ -7,7 +7,7 @@ import PayBar from "../components/PayBar";
 import QrCode from "../components/QrCode";
 import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
-import { billUrl, type Debtor } from "../lib/bill";
+import { billUrl, type BillData, type Debtor } from "../lib/bill";
 import { DEMO } from "../lib/demo";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
@@ -84,6 +84,13 @@ export default function BillPage({ id }: { id: string }) {
   function toggleReceived(d: Debtor, received: boolean) {
     api
       .setReceived(id, d.id, received)
+      .then(replace)
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."));
+  }
+
+  function updateData(data: BillData) {
+    api
+      .updateBill(id, data)
       .then(replace)
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."));
   }
@@ -167,7 +174,7 @@ export default function BillPage({ id }: { id: string }) {
           <Receipt snapshot={snap} onSetUnits={snap.me ? setUnits : undefined} />
         </div>
 
-        {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} />}
+        {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} onUpdateData={updateData} />}
       </main>
 
       {snap.isOwner && summary && (

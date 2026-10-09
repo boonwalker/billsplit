@@ -1,9 +1,57 @@
-import { billTotal, participantShare, unassignedAmount, type BillSnapshot, type Debtor } from "../lib/bill";
+import {
+  billTotal,
+  participantShare,
+  tipHeadCount,
+  tipPerPerson,
+  tipTotal,
+  unassignedAmount,
+  type BillData,
+  type BillSnapshot,
+  type Debtor,
+} from "../lib/bill";
 import { formatMoney } from "../lib/money";
 
 interface Props {
   snapshot: BillSnapshot;
   onToggleReceived: (debtor: Debtor, received: boolean) => void;
+  onUpdateData: (data: BillData) => void;
+}
+
+/**
+ * How many people share the tip. Defaults to everyone who joined; the payer can
+ * raise it when someone will only scan later (e.g. the next day).
+ */
+function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; onUpdateData: (data: BillData) => void }) {
+  const { data, participants } = snapshot;
+  const joined = participants.length;
+  const count = tipHeadCount(data, participants);
+  const missing = count - joined;
+  const setCount = (n: number) => onUpdateData({ ...data, tipSplitCount: n <= joined ? undefined : n });
+
+  return (
+    <div className="tip-split-panel">
+      <div className="row between">
+        <span>
+          <b>Trinkgeld {formatMoney(tipTotal(data), data.currency)}</b> aufteilen auf
+        </span>
+        <div className="stepper-mini" role="group" aria-label="Personen für das Trinkgeld">
+          <button type="button" onClick={() => setCount(count - 1)} disabled={count <= joined} aria-label="Eine Person weniger">
+            −
+          </button>
+          <span>{count}</span>
+          <button type="button" onClick={() => setCount(count + 1)} disabled={count >= 100} aria-label="Eine Person mehr">
+            +
+          </button>
+        </div>
+      </div>
+      <p className="muted small">
+        {formatMoney(tipPerPerson(data, participants), data.currency)} pro Person ·{" "}
+        {missing > 0
+          ? `${joined} beigetreten (inkl. dir), ${missing} ${missing === 1 ? "kommt" : "kommen"} noch dazu`
+          : `gezählt: alle, die gescannt haben, plus du`}
+      </p>
+    </div>
+  );
 }
 
 function time(iso: string): string {
@@ -19,7 +67,7 @@ export function ownerSummary(snapshot: BillSnapshot) {
 }
 
 /** What only the payer sees below the bill: who scanned, who tapped pay, what is still missing. */
-export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
+export default function OwnerPanel({ snapshot, onToggleReceived, onUpdateData }: Props) {
   const currency = snapshot.data.currency;
   const debtors = snapshot.debtors ?? [];
   const { total, own, received, missing, unassigned } = ownerSummary(snapshot);
@@ -68,6 +116,8 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
         </ul>
       )}
 
+      {tipTotal(snapshot.data) > 0 && <TipSplit snapshot={snapshot} onUpdateData={onUpdateData} />}
+
       <dl className="owner-sums">
         <dt>Rechnung gesamt</dt>
         <dd>{formatMoney(total, currency)}</dd>
@@ -82,6 +132,8 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
         <p className="hint">
           {formatMoney(unassigned, currency)} sind noch keiner Person zugeordnet – hast du deine eigenen Positionen schon
           abgehakt?
+          {tipHeadCount(snapshot.data, snapshot.participants) > snapshot.participants.length &&
+            " Darin enthalten sind auch Trinkgeld-Anteile von Personen, die noch nicht gescannt haben."}
         </p>
       )}
       <p className="hint muted">
