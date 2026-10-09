@@ -1,28 +1,53 @@
 import { DEMO, friendName, getPersona, personaDeviceKey } from "./demo";
 
-/** localStorage can throw (private mode, blocked storage); the app must keep working without it. */
+/**
+ * localStorage can throw (blocked storage) or be wiped when the tab closes (private
+ * mode). Values are also kept in memory, so the app works at least for this visit.
+ */
+const memory = new Map<string, string>();
+
 function read<T>(key: string, fallback: T): T {
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(key);
+    raw = localStorage.getItem(key);
+  } catch {
+    // storage blocked – use the in-memory copy
+  }
+  raw ??= memory.get(key) ?? null;
+  try {
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
   }
 }
 
-function write(key: string, value: unknown): void {
+/** Returns false when the browser refused to store the value permanently. */
+function write(key: string, value: unknown): boolean {
+  const raw = JSON.stringify(value);
+  memory.set(key, raw);
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(key, raw);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function remove(key: string): void {
+  memory.delete(key);
+  try {
+    localStorage.removeItem(key);
   } catch {
     // ignore
   }
 }
 
-function remove(key: string): void {
+/** Asks the browser not to evict this site's data under storage pressure (best effort). */
+function requestPersistence(): void {
   try {
-    localStorage.removeItem(key);
+    void navigator.storage?.persist?.().catch(() => undefined);
   } catch {
-    // ignore
+    // not supported
   }
 }
 
@@ -49,9 +74,11 @@ export function loadOwnProfile(): Profile {
   return { name: "", paypalMe: "", paypalEmail: "", ...read<Partial<Profile>>(PROFILE_KEY, {}) };
 }
 
-export function saveProfile(p: Profile): void {
-  if (DEMO && getPersona() !== "me") return;
-  write(PROFILE_KEY, p);
+/** Saves the profile; returns false when the browser does not allow storing it. */
+export function saveProfile(p: Profile): boolean {
+  if (DEMO && getPersona() !== "me") return true;
+  requestPersistence();
+  return write(PROFILE_KEY, p);
 }
 
 /** Creating a bill needs a name and a way to get paid. */

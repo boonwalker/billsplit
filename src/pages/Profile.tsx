@@ -11,6 +11,7 @@ export default function Profile({ next }: { next?: string }) {
   const [email, setEmail] = useState(initial.paypalEmail);
   const [paypalMe, setPaypalMe] = useState(initial.paypalMe);
   const [touched, setTouched] = useState(false);
+  const [notStored, setNotStored] = useState(false);
 
   const meName = normalizePaypalMe(paypalMe);
   const emailInvalid = email.trim() !== "" && !isValidEmail(email);
@@ -21,7 +22,16 @@ export default function Profile({ next }: { next?: string }) {
     e.preventDefault();
     setTouched(true);
     if (invalid) return;
-    saveProfile({ name: name.trim(), paypalEmail: email.trim(), paypalMe: meName });
+    const stored = saveProfile({ name: name.trim(), paypalEmail: email.trim(), paypalMe: meName });
+    if (!stored && !notStored) {
+      // Tell the user once; a second tap on the button continues anyway.
+      setNotStored(true);
+      return;
+    }
+    goNext();
+  }
+
+  function goNext() {
     if (next === "sample") navigate(`/b/${createSampleBill()}`);
     else navigate(next === "new" ? "/new" : "/");
   }
@@ -83,6 +93,15 @@ export default function Profile({ next }: { next?: string }) {
           </div>
 
           {touched && needsPaypal && <div className="alert">Bitte hinterlege eine PayPal-E-Mail-Adresse oder deinen PayPal.Me-Namen.</div>}
+
+          {notStored && (
+            <div className="alert">
+              Dein Browser lässt diese Seite gerade nichts dauerhaft speichern. Dein Profil gilt deshalb nur, bis du den Tab
+              schließt. Das passiert z. B. in einem privaten Tab, im eingebauten Browser anderer Apps oder wenn Cookies
+              blockiert sind. Öffne billsplit am besten direkt in Safari bzw. Chrome. Tippe erneut auf den Knopf, um
+              trotzdem fortzufahren.
+            </div>
+          )}
 
           <button className="btn btn-primary btn-large">{next === "new" ? "Weiter zur Kamera" : next === "sample" ? "Weiter zur Beispielrechnung" : "Speichern"}</button>
         </form>
