@@ -80,7 +80,9 @@ auf dem Beleg sichtbar, zählen aber nicht mehr zur Summe; nochmal antippen nimm
 
 Die Erkennung merkt anhand des Geschäftsnamens und der Produkte, ob es ein Supermarkt- oder Drogerie-Einkauf ist.
 Dann fragt billsplit vor dem QR-Code, ob etwas nicht oder nur teilweise abgerechnet werden soll: „Alles aufteilen“
-oder „Manches nicht“. Bei „Manches nicht“ erscheint der Beleg groß im Stil der digitalen Rechnung: eine Zeile mit
+oder „Manches nicht“. Bei „Manches nicht“ füllt der Beleg im Stil der digitalen Rechnung den Bildschirm bis zum
+oberen Rand (ohne Kopfzeile); unten bleibt nur eine schmale Leiste mit Personenzahl, Summe, Zurück und „Rechnung
+erstellen“. Eine Zeile mit
 dem Finger **durchstreichen oder antippen** nimmt den Artikel aus der Rechnung, nochmal holt ihn zurück; hoch und
 runter wischen scrollt. Alles Übrige wird durch die unten eingestellte Personenzahl geteilt. Die Fingerstriche sind
 sofort zu sehen und verblassen in den Durchstreich-Strich, angetippte Zeilen werden kurz „eingedrückt“. Artikel, die

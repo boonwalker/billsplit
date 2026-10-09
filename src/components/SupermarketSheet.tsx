@@ -1,9 +1,9 @@
-import { Fragment, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { billedItems, type BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
 import InkLayer from "./InkLayer";
-import { formatDate, PencilFilter } from "./Receipt";
+import { PencilFilter } from "./Receipt";
 
 /** What the payer marked on a line: struck through (by a stroke or a tap) means not billed. */
 export interface Mark {
@@ -25,10 +25,6 @@ interface Props {
   onDone: (items: BillItem[], equalSplit: boolean, persons: number | undefined, partial: boolean) => void;
   /** Items that are probably not a shared expense; they are listed first, ready to be crossed out. */
   isPersonal?: (item: BillItem) => boolean;
-  /** Shown in the head of the receipt, like on the finished bill. */
-  title?: string;
-  date?: string;
-  ownerName?: string;
 }
 
 /** Likely personal items first, otherwise in receipt order. */
@@ -47,9 +43,9 @@ interface DemoSpots {
 /**
  * Asked after a supermarket receipt was recognised: is anything not (or only partly)
  * billed – e.g. a litre of milk bought, but only 250 ml used for the shared recipe?
- * With "Manches nicht" the payer crosses lines out or writes "/2", "/3" … on them.
+ * With "Manches nicht" the payer crosses lines out (or taps them); the rest is split equally.
  */
-export default function SupermarketSheet({ items, currency, onDone, isPersonal = () => false, title, date, ownerName }: Props) {
+export default function SupermarketSheet({ items, currency, onDone, isPersonal = () => false }: Props) {
   /** First the question, then either straight on ("all") or the receipt to mark ("some"). */
   const [step, setStep] = useState<"ask" | "all" | "some">("ask");
   const [marks, setMarks] = useState<Record<string, Mark>>({});
@@ -62,8 +58,14 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
   const ordered = orderForMarking(items, isPersonal);
   const personalCount = ordered.filter(isPersonal).length;
   const [demo, setDemo] = useState<DemoSpots | null>(null);
-  /** Briefly highlights the head count when a tap on a price needs it. */
   const list = useRef<HTMLUListElement>(null);
+
+  // The notice floats over the receipt for a moment, then gets out of the way.
+  useEffect(() => {
+    if (!notice) return;
+    const t = window.setTimeout(() => setNotice(null), 2600);
+    return () => window.clearTimeout(t);
+  }, [notice]);
 
   const billed = step === "some" ? applyMarks(items, marks) : items;
   const billedSum = billedItems({ items: billed }).reduce((s, i) => s + i.total, 0);
@@ -156,40 +158,9 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
     return (
       <form className="scribble" onSubmit={submit}>
         <PencilFilter />
-        <header className="topbar">
-          <div className="topbar-left">
-            <button type="button" className="icon-btn" aria-label="Zurück" onClick={() => setStep("ask")}>
-              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
-          <h1>Was soll nicht mit?</h1>
-          <div className="topbar-action">
-            <span className="pill">Letzter Schritt</span>
-          </div>
-        </header>
-        <p className="scribble-help">
-          <b>Durchstreichen oder antippen</b> = nicht abrechnen · nochmal = wieder rein · <b>hoch und runter wischen</b> =
-          scrollen
-        </p>
-
         <div className="scribble-scroll ink-scroll">
           <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
             <div className="receipt-paper">
-              <header className="receipt-head">
-                <div className="receipt-logo" aria-hidden="true">
-                  ✦
-                </div>
-                <h2>{title || "Einkauf"}</h2>
-                <p>{formatDate(date ?? "")}</p>
-                {ownerName && <p className="receipt-paidby">bezahlt von {ownerName}</p>}
-              </header>
-              <div className="receipt-rule" aria-hidden="true" />
-              <div className="receipt-cols" aria-hidden="true">
-                <span>Artikel</span>
-                <span>{currency}</span>
-              </div>
               <div className="receipt-lines-wrap">
                 <InkLayer onInk={readInk} onTap={tap} onStart={() => setTouched(true)} />
                 {demo && !touched && (
@@ -272,35 +243,33 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
 
         <footer className="scribble-foot">
           {notice && (
-            <p className="scribble-notice" role="status">
+            <p className="scribble-notice" role="status" key={notice}>
               {notice}
             </p>
           )}
           <div className="scribble-controls">
-            {/* What a tap on a line divides by – also the head count for the equal split. */}
+            {/* What everything not crossed out is divided by: the head count for the equal split. */}
             <div className="divide-by" role="group" aria-label="Alles geteilt durch">
-              <span className="divide-by-label">Alles geteilt durch</span>
-              <div className="divide-by-control">
-                {/* A big pencilled ":" – two slightly uneven dots. */}
-                <svg className="divide-by-sign" viewBox="0 0 40 90" aria-hidden="true">
-                  <path d="M20 16 C 28 15, 31 22, 29 28 C 27 35, 16 36, 12 31 C 8 25, 12 16, 20 16 Z" />
-                  <path d="M19 54 C 28 53, 32 60, 29 67 C 26 74, 15 74, 11 68 C 7 61, 11 54, 19 54 Z" />
-                </svg>
-                <div className="divide-by-number">
-                  <button type="button" onClick={() => setPersons((n) => Math.min(100, (n ?? 1) + 1))} aria-label="Eine Person mehr">
-                    <svg viewBox="0 0 40 20" aria-hidden="true">
-                      <path d="M4 16 C 12 10, 16 6, 20 3 C 25 7, 30 11, 36 16" />
-                    </svg>
-                  </button>
-                  <span aria-live="polite">{persons ?? "?"}</span>
-                  <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
-                    <svg viewBox="0 0 40 20" aria-hidden="true">
-                      <path d="M4 4 C 12 10, 16 14, 20 17 C 25 13, 30 9, 36 4" />
-                    </svg>
-                  </button>
-                </div>
+              {/* A pencilled ":" – two slightly uneven dots. */}
+              <svg className="divide-by-sign" viewBox="0 0 40 90" aria-hidden="true">
+                <path d="M20 16 C 28 15, 31 22, 29 28 C 27 35, 16 36, 12 31 C 8 25, 12 16, 20 16 Z" />
+                <path d="M19 54 C 28 53, 32 60, 29 67 C 26 74, 15 74, 11 68 C 7 61, 11 54, 19 54 Z" />
+              </svg>
+              <span className="divide-by-value" aria-live="polite">
+                {persons ?? "?"}
+              </span>
+              <div className="divide-by-arrows">
+                <button type="button" onClick={() => setPersons((n) => Math.min(100, (n ?? 1) + 1))} aria-label="Eine Person mehr">
+                  <svg viewBox="0 0 40 20" aria-hidden="true">
+                    <path d="M4 16 C 12 10, 16 6, 20 3 C 25 7, 30 11, 36 16" />
+                  </svg>
+                </button>
+                <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
+                  <svg viewBox="0 0 40 20" aria-hidden="true">
+                    <path d="M4 4 C 12 10, 16 14, 20 17 C 25 13, 30 9, 36 4" />
+                  </svg>
+                </button>
               </div>
-              <span className="divide-by-hint">{persons ? "Personen, inkl. dir" : "Personenzahl wählen"}</span>
             </div>
             <div className="scribble-side">
               <p className="scribble-sum">
@@ -308,13 +277,20 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                 {billedSum !== fullSum && <small>statt {formatMoney(fullSum, currency)}</small>}
               </p>
               <p className="scribble-each">
-                {persons ? `je ${formatMoney(Math.round(billedSum / persons), currency)} pro Person` : "÷ x Personen"}
+                {persons ? `je ${formatMoney(Math.round(billedSum / persons), currency)} pro Person` : "Personenzahl wählen"}
               </p>
             </div>
           </div>
-          <button className="btn btn-primary btn-large" disabled={!anyBilled}>
-            Rechnung erstellen
-          </button>
+          <div className="scribble-actions">
+            <button type="button" className="icon-btn scribble-back" aria-label="Zurück" onClick={() => setStep("ask")}>
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button className="btn btn-primary btn-large" disabled={!anyBilled}>
+              Rechnung erstellen
+            </button>
+          </div>
         </footer>
       </form>
     );

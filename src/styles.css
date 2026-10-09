@@ -1690,22 +1690,28 @@ input[aria-invalid="true"] {
   }
 }
 
-.scribble .topbar {
-  position: static;
-}
-
-.scribble-help {
-  margin: 0;
-  padding: 8px 18px 4px;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
+/* The receipt fills the screen from the very top; the notch area is paper as well. */
 .scribble-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px 8px 12px;
+  padding: 0 6px 12px;
+}
+
+.scribble .receipt {
+  padding: 0;
+}
+
+.scribble .receipt-paper {
+  padding-top: calc(env(safe-area-inset-top) + 8px);
+  border-radius: 0 0 2px 2px;
+  /* Only the bottom edge is torn; the top runs off the screen. */
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth) + 1px) no-repeat;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth) + 1px) no-repeat;
 }
 
 /* The receipt card as everywhere in the app, only larger lines for fingers. */
@@ -1714,9 +1720,9 @@ input[aria-invalid="true"] {
 }
 
 .scribble .rline-main {
-  min-height: 54px;
+  min-height: 48px;
   align-items: center;
-  padding: 12px 4px;
+  padding: 9px 4px;
 }
 
 .scribble .rline.done .rline-strike,
@@ -1770,82 +1776,65 @@ input[aria-invalid="true"] {
 }
 
 .scribble-foot {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 18px calc(env(safe-area-inset-bottom) + 14px);
-  border-radius: 24px 24px 0 0;
+  gap: 8px;
+  padding: 8px 14px calc(env(safe-area-inset-bottom) + 8px);
+  border-radius: 20px 20px 0 0;
   background: var(--surface);
   box-shadow: 0 -8px 24px -12px rgb(0 0 0 / 0.25);
 }
 
+/* Short confirmation floating above the footer, over the receipt. */
 .scribble-notice {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc(100% + 8px);
   margin: 0;
   padding: 8px 12px;
   border-radius: 12px;
   background: var(--mint-soft);
+  box-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.3);
   font-size: 0.85rem;
+  pointer-events: none;
+  animation: notice-float 2.6s ease both;
 }
 
-.scribble-sum {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.1;
+@keyframes notice-float {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  10%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
-.scribble-sum small {
-  display: block;
-  font-family: var(--font-body, inherit);
-  font-size: 0.8rem;
-  font-weight: 400;
-  color: var(--muted);
-}
-
-/* The divisor for taps: a big pencilled "/" and a large number with arrows. */
 .scribble-controls {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
+/* ": 4" with small arrows – what everything not crossed out is divided by. */
 .divide-by {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 2px 10px;
-  border-radius: 18px;
-}
-
-.divide-by.ask {
-  animation: ask-persons 0.8s ease-in-out 2;
-}
-
-.divide-by-label,
-.divide-by-hint {
-  font-size: 0.8rem;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.divide-by-hint {
-  font-weight: 400;
-  color: var(--muted);
-}
-
-.divide-by-control {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
 .divide-by-sign {
   color: var(--pencil);
-  width: 36px;
-  height: 78px;
+  width: 16px;
+  height: 38px;
   overflow: visible;
   filter: url(#pencil-grain);
 }
@@ -1857,68 +1846,95 @@ input[aria-invalid="true"] {
   stroke-linejoin: round;
 }
 
-.divide-by-number svg path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.divide-by-number {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 64px;
-}
-
-.divide-by-number span {
+.divide-by-value {
+  min-width: 1.4ch;
   font-family: var(--font-display);
-  font-size: 3rem;
+  font-size: 2.3rem;
   font-weight: 700;
   line-height: 1;
+  text-align: center;
 }
 
-.divide-by-number button {
+.divide-by-arrows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.divide-by-arrows button {
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 30px;
+  width: 44px;
+  height: 24px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--mint-soft);
   color: var(--claim);
   cursor: pointer;
   touch-action: manipulation;
 }
 
-.divide-by-number button svg {
-  width: 26px;
-  height: 13px;
+.divide-by-arrows svg {
+  width: 20px;
+  height: 10px;
   overflow: visible;
 }
 
-.divide-by-number button svg path {
-  stroke-width: 3;
+.divide-by-arrows svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .scribble-side {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 2px;
   text-align: right;
 }
 
-.scribble-side .scribble-sum small {
+.scribble-sum {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.scribble-sum small {
   display: block;
+  font-family: var(--font-body, inherit);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .scribble-each {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--claim);
   font-weight: 600;
+}
+
+.scribble-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.scribble-actions .btn {
+  flex: 1;
+}
+
+.scribble-back {
+  flex: none;
+  width: 52px;
+  height: auto;
+  border-radius: 14px;
+  background: var(--mint-soft);
+  color: var(--claim);
 }
 
 .scribble .rline-div {
@@ -2027,13 +2043,6 @@ input[aria-invalid="true"] {
   }
   100% {
     opacity: 0;
-  }
-}
-
-@keyframes ask-persons {
-  50% {
-    background: color-mix(in srgb, var(--mint) 35%, transparent);
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--mint) 35%, transparent);
   }
 }
 
