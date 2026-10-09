@@ -174,7 +174,7 @@ export default function BillPage({ id }: { id: string }) {
         <div className="ownerbar">
           <div className="ownerbar-inner">
             <span>
-              Fehlt dir noch
+              Dir fehlen noch
               <small>
                 {snap.debtors?.filter((d) => d.payClickedAt).length ?? 0} von {snap.debtors?.length ?? 0} haben auf Bezahlen getippt
               </small>

@@ -75,7 +75,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
         <dd>− {formatMoney(own, currency)}</dd>
         <dt>Schon erhalten</dt>
         <dd>− {formatMoney(received, currency)}</dd>
-        <dt className="strong">Fehlt dir noch</dt>
+        <dt className="strong">Dir fehlen noch</dt>
         <dd className="strong">{formatMoney(missing, currency)}</dd>
       </dl>
       {unassigned > 0 && (
