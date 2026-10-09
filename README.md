@@ -23,7 +23,8 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
 
 1. QR-Code mit billsplit („QR-Code scannen“) oder mit der Handykamera scannen und den eigenen Namen eingeben. Der
    Übergang in die Rechnung wird mit einem kurzen Vibrationsmuster bestätigt (Android über die Vibration-API,
-   iPhone ab iOS 18 über die Taptic Engine des Schalter-Elements).
+   iPhone ab iOS 18 über die Taptic Engine des Schalter-Elements). „Anteil begleichen“ gibt beim Drücken und Loslassen je einen
+   kurzen Tick wie ein Mausklick; der Bezahler spürt einen Stoß, sobald jemand Neues der Rechnung beitritt.
    Damit tauchen sie beim Rechnungssteller als Schuldner auf.
 2. Eigene Positionen abhaken. Bei mehreren Stück wählt man die Anzahl. Wer eine Position übernimmt, steht mit
    Namen in Grün darunter. Ist eine Position vollständig vergeben, wird sie durchgestrichen. Das passiert live

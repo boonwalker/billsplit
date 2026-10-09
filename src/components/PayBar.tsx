@@ -2,6 +2,7 @@ import { useState } from "react";
 import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
 import { centsToInput, formatMoney } from "../lib/money";
 import { copyText } from "../lib/clipboard";
+import { clickPress, clickRelease } from "../lib/haptics";
 import { payAction } from "../lib/payment";
 
 interface Props {
@@ -102,7 +103,11 @@ export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
             type="button"
             className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
             disabled={nothing}
-            onClick={prepareAmount}
+            onPointerDown={nothing ? undefined : clickPress}
+            onClick={() => {
+              prepareAmount();
+              clickRelease();
+            }}
           >
             {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
           </button>

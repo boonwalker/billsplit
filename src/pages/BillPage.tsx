@@ -9,7 +9,7 @@ import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
 import { billUrl, sharedTotal, type BillData, type Debtor } from "../lib/bill";
 import { DEMO } from "../lib/demo";
-import { confirmScan } from "../lib/haptics";
+import { confirmScan, knock } from "../lib/haptics";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
 import { loadOwnProfile, loadProfile, rememberBill, saveProfile } from "../lib/storage";
@@ -58,6 +58,15 @@ export default function BillPage({ id }: { id: string }) {
       .then(replace)
       .catch(() => {});
   }, [snapshot, id, replace]);
+
+  // The payer feels it when someone new joins the bill.
+  const headCount = useRef<number | null>(null);
+  const participantCount = snapshot?.isOwner ? snapshot.participants.length : null;
+  useEffect(() => {
+    if (participantCount === null) return;
+    if (headCount.current !== null && participantCount > headCount.current) knock();
+    headCount.current = participantCount;
+  }, [participantCount]);
 
   useEffect(() => {
     // In the demo, friend personas must not turn the payer's bill into an invitation.

@@ -56,3 +56,20 @@ export function confirmScan(): void {
 }
 
 let lastConfirm = 0;
+
+/**
+ * A two-part "mouse click" on an important button: one tick when the finger presses,
+ * one when it lets go (both inside the touch, so iOS lets them through).
+ */
+export function clickPress(): void {
+  vibrate([8]);
+}
+
+export function clickRelease(): void {
+  vibrate([12]);
+}
+
+/** Someone new joined the bill: one firm knock for the payer. */
+export function knock(): void {
+  vibrate([45]);
+}
