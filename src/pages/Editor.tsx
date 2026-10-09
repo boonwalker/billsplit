@@ -99,6 +99,7 @@ function draftFromData(data: BillData): Draft {
     },
     tipOnReceipt: false,
     equalSplit: data.equalSplit,
+    supermarket: data.supermarket,
     rows: data.items.map(newRow),
     fees: (data.fees ?? []).map(newFeeRow),
     delivery: (data.fees ?? []).length > 0,
@@ -128,6 +129,7 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     payment: paymentFromProfile(),
     tipSplitCount: tipPersons(draft.tip),
     equalSplit: draft.equalSplit || undefined,
+    supermarket: draft.supermarket || undefined,
     fees: draftFees(draft).length ? draftFees(draft) : undefined,
   };
   if (draft.tip.mode === "total") {

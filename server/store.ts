@@ -18,6 +18,7 @@ export const BillDataSchema = z.object({
   tipAmount: z.number().int().min(0).max(10_000_000).optional(),
   tipSplitCount: z.number().int().min(1).max(100).optional(),
   equalSplit: z.boolean().optional(),
+  supermarket: z.boolean().optional(),
   fees: z
     .array(
       z.object({
@@ -35,6 +36,8 @@ export const BillDataSchema = z.object({
         name: z.string().trim().min(1).max(120),
         qty: z.number().int().min(1).max(999),
         total: z.number().int().min(-10_000_000).max(10_000_000),
+        fullTotal: z.number().int().min(-10_000_000).max(10_000_000).optional(),
+        divisor: z.number().int().min(2).max(99).optional(),
       }),
     )
     .min(1)

@@ -17,7 +17,9 @@ import {
   type BillSnapshot,
   type PublicParticipant,
 } from "../lib/bill";
+import { recognizeDivisor, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
+import InkLayer from "./InkLayer";
 
 interface Props {
   snapshot: BillSnapshot;
@@ -25,6 +27,10 @@ interface Props {
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
   /** Opens the stored photo the bill was read from; undefined when there is none. */
   onShowOriginal?: () => void;
+  /** Writing mode: the payer writes e.g. "/3" on a line with a finger. */
+  writing?: boolean;
+  /** Result of a handwritten divisor: the line it was written on, or null if unreadable. */
+  onDivide?: (result: { itemId: string; divisor: number } | null) => void;
 }
 
 function formatDate(iso: string): string {
@@ -143,6 +149,7 @@ function ReceiptLine({
 
   return (
     <li
+      data-item={item.id}
       className={`rline${done ? " done" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${each !== undefined ? " equal" : ""}`}
       style={{ animationDelay: `${180 + index * 70}ms` }}
     >
@@ -168,6 +175,7 @@ function ReceiptLine({
               {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
               {item.name}
             </span>
+            {item.divisor && <span className="pencil rline-divisor">/{item.divisor}</span>}
           </span>
           {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
         </span>
@@ -177,7 +185,10 @@ function ReceiptLine({
             {formatMoney(each, currency)}
           </span>
         )}
-        <span className="rline-price">{formatMoney(item.total, currency)}</span>
+        <span className="rline-price">
+          {item.fullTotal !== undefined && <s className="rline-full">{formatMoney(item.fullTotal, currency)}</s>}
+          {formatMoney(item.total, currency)}
+        </span>
         {each !== undefined && <span className="pencil rline-div">/{people}</span>}
       </button>
 
@@ -313,7 +324,21 @@ function EqualFraction({ total, people, share, currency }: { total: number; peop
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props) {
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal, writing, onDivide }: Props) {
+  /** Reads the handwriting and finds the line it was written on (by its vertical centre). */
+  function readInk(strokes: Stroke[]) {
+    const read = recognizeDivisor(strokes);
+    const lines = [...document.querySelectorAll<HTMLElement>(".receipt-lines > .rline[data-item]")];
+    if (!read || !lines.length) return onDivide?.(null);
+    const y = (read.bounds.minY + read.bounds.maxY) / 2;
+    const distance = (el: HTMLElement) => {
+      const r = el.getBoundingClientRect();
+      return y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+    };
+    const line = lines.reduce((best, el) => (distance(el) < distance(best) ? el : best));
+    onDivide?.({ itemId: line.dataset.item!, divisor: read.divisor });
+  }
+
   const { data, participants, me, ownerName } = snapshot;
   const sub = subtotal(data.items);
   const total = billTotal(data);
@@ -324,7 +349,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
 
   return (
     <article className="receipt" aria-label="Digitale Rechnung">
-      {equal && <PencilFilter />}
+      <PencilFilter />
       <div className="receipt-paper">
         <header className="receipt-head">
           <div className="receipt-logo" aria-hidden="true">
@@ -341,21 +366,24 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal }: Props)
           <span>{data.currency}</span>
         </div>
 
-        <ul className="receipt-lines">
-          {data.items.map((item, idx) => (
-            <ReceiptLine
-              key={item.id}
-              item={item}
-              index={idx}
-              participants={participants}
-              me={me}
-              currency={data.currency}
-              onSetSlots={onSetSlots}
-              each={perPerson(item.total)}
-              people={people}
-            />
-          ))}
-        </ul>
+        <div className={`receipt-lines-wrap${writing ? " writing" : ""}`}>
+          {writing && <InkLayer onInk={readInk} />}
+          <ul className="receipt-lines">
+            {data.items.map((item, idx) => (
+              <ReceiptLine
+                key={item.id}
+                item={item}
+                index={idx}
+                participants={participants}
+                me={me}
+                currency={data.currency}
+                onSetSlots={onSetSlots}
+                each={perPerson(item.total)}
+                people={people}
+              />
+            ))}
+          </ul>
+        </div>
 
         <div className="receipt-rule" aria-hidden="true" />
         <dl className="receipt-sums">

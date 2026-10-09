@@ -4,6 +4,7 @@ import {
   billTotal,
   billUrl,
   claimCost,
+  divideItem,
   isFullyAssigned,
   participantShare,
   feesTotal,
@@ -76,6 +77,14 @@ describe("claims", () => {
     const four: BillData = { ...equal, tipSplitCount: 4 };
     expect(participantShare(four, ps, "anna").total).toBe(908);
     expect(unassignedAmount(four, ps)).toBe(908);
+  });
+
+  it("bills only a part of a line after the payer wrote /n on it", () => {
+    const third = divideItem(data, "tira", 3);
+    expect(third.items[2]).toEqual({ id: "tira", name: "Tiramisu", qty: 2, total: 333, fullTotal: 1000, divisor: 3 });
+    // Writing again divides the original price, /1 restores it.
+    expect(divideItem(third, "tira", 2).items[2].total).toBe(500);
+    expect(divideItem(third, "tira", 1).items[2]).toEqual(data.items[2]);
   });
 
   it("detects fully assigned lines", () => {

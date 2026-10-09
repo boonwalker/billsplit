@@ -79,6 +79,11 @@ Dann fragt billsplit vor dem QR-Code, welche Artikel nicht oder nur teilweise ab
 Milch gekauft, aber nur 250 ml fürs Rezept gebraucht → ¼). Die Gleichverteilung ist dabei vorausgewählt, optional
 mit der Zahl der Personen, die sich den Einkauf teilen.
 
+**Testweise: auf die Rechnung schreiben.** Bei Supermarkt-Rechnungen kann der Rechnungssteller über „✏️ Schreiben“
+mit dem Finger z. B. `/3` auf eine Zeile schreiben – dann wird nur ein Drittel des Artikels abgerechnet (`/1` macht es
+rückgängig). Schrägstrich und Ziffern werden direkt auf dem Gerät erkannt ($P-Point-Cloud-Erkenner mit
+Ziffernvorlagen); nach jeder Erkennung lässt sie sich mit „Rückgängig“ zurücknehmen.
+
 ### Originalbeleg
 
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten

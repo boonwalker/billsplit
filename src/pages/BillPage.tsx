@@ -7,7 +7,7 @@ import PayBar from "../components/PayBar";
 import QrCode from "../components/QrCode";
 import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
-import { billUrl, sharedTotal, type BillData, type Debtor } from "../lib/bill";
+import { billUrl, divideItem, sharedTotal, type BillData, type Debtor } from "../lib/bill";
 import { DEMO } from "../lib/demo";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
@@ -19,6 +19,10 @@ export default function BillPage({ id }: { id: string }) {
   const [askName, setAskName] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  /** Writing mode of the payer on supermarket bills ("/3" on a line). */
+  const [writing, setWriting] = useState(false);
+  const [toast, setToast] = useState<{ text: string; undo?: BillData } | null>(null);
+  const toastTimer = useRef<number | null>(null);
   const joining = useRef(false);
 
   // Opening the bill (by scanning the QR code) joins it with the profile name.
@@ -118,6 +122,32 @@ export default function BillPage({ id }: { id: string }) {
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."));
   }
 
+  function showToast(next: { text: string; undo?: BillData }) {
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    setToast(next);
+    toastTimer.current = window.setTimeout(() => setToast(null), 6000);
+  }
+
+  /** Applies a handwritten "/n" to the line it was written on. */
+  function divide(result: { itemId: string; divisor: number } | null) {
+    const item = result && snap.data.items.find((i) => i.id === result.itemId);
+    if (!result || !item) {
+      showToast({ text: "Nicht erkannt – schreib z. B. /3 auf eine Zeile." });
+      return;
+    }
+    const before = snap.data;
+    const after = divideItem(before, result.itemId, result.divisor);
+    const changed = after.items.find((i) => i.id === result.itemId)!;
+    updateData(after);
+    showToast({
+      text:
+        result.divisor <= 1
+          ? `${item.name}: wieder voller Preis (${formatMoney(changed.total, before.currency)})`
+          : `${item.name} ÷ ${result.divisor}: ${formatMoney(changed.total, before.currency)} statt ${formatMoney(changed.fullTotal!, before.currency)}`,
+      undo: before,
+    });
+  }
+
   function pay() {
     api.pay(id).catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
   }
@@ -205,16 +235,52 @@ export default function BillPage({ id }: { id: string }) {
         <div id="receipt" className="receipt-anchor">
           {snap.isOwner && <EqualSplitToggle snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && (sharedTotal(snap.data) !== 0 || equal) && <TipSplit snapshot={snap} onUpdateData={updateData} />}
-          {snap.isOwner && !equal && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
+          {snap.isOwner && snap.data.supermarket && (
+            <div className={`write-bar${writing ? " on" : ""}`}>
+              <p>
+                {writing ? (
+                  <>
+                    Schreib mit dem Finger z. B. <b>/3</b> auf eine Zeile – sie wird dann durch 3 geteilt. <b>/1</b> macht es
+                    rückgängig.
+                  </>
+                ) : (
+                  "Nur einen Teil eines Artikels abrechnen? Schreib es einfach auf die Rechnung."
+                )}
+              </p>
+              <button type="button" className={`btn ${writing ? "btn-primary" : "btn-ghost"}`} onClick={() => setWriting((w) => !w)}>
+                {writing ? "Fertig" : "✏️ Schreiben"}
+              </button>
+            </div>
+          )}
+          {snap.isOwner && !equal && !writing && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
           <Receipt
             snapshot={snap}
             onSetSlots={snap.me && !equal ? setSlots : undefined}
             onShowOriginal={snap.hasReceiptImage ? () => navigate(`/b/${id}/beleg`) : undefined}
+            writing={writing}
+            onDivide={divide}
           />
         </div>
 
         {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} />}
       </main>
+
+      {toast && (
+        <div className="toast" role="status">
+          <span>{toast.text}</span>
+          {toast.undo && (
+            <button
+              type="button"
+              onClick={() => {
+                updateData(toast.undo!);
+                setToast(null);
+              }}
+            >
+              Rückgängig
+            </button>
+          )}
+        </div>
+      )}
 
       {snap.isOwner && summary && (
         <div className="ownerbar">
