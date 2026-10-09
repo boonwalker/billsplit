@@ -24,14 +24,20 @@
   --radius: 18px;
   --shadow-sm: 0 1px 2px rgb(13 59 42 / 0.06), 0 2px 8px rgb(13 59 42 / 0.05);
   --shadow-lg: 0 2px 4px rgb(13 59 42 / 0.06), 0 18px 40px -12px rgb(13 59 42 / 0.28);
+  --link: var(--claim);
+  --primary-bg: var(--brand);
+  --primary-fg: var(--paper);
+  --hl-bg: linear-gradient(transparent 62%, var(--mint) 62%, var(--mint) 92%, transparent 92%);
+  --hl-fg: currentColor;
   --font-display: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light;
 }
 
+/* Dark theme: follows the OS unless the host forces a theme via data-theme. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0b1511;
     --surface: #13201a;
     --text: #e6eee9;
@@ -42,8 +48,32 @@
     --mint-soft: #123a2a;
     --shadow-sm: none;
     --shadow-lg: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+    --link: var(--mint);
+    --primary-bg: var(--mint);
+    --primary-fg: var(--brand);
+    --hl-bg: none;
+    --hl-fg: var(--mint);
     color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1511;
+  --surface: #13201a;
+  --text: #e6eee9;
+  --muted: #93a39b;
+  --border: #23332b;
+  --danger: #f97066;
+  --warning: #f5c04e;
+  --mint-soft: #123a2a;
+  --shadow-sm: none;
+  --shadow-lg: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+  --link: var(--mint);
+  --primary-bg: var(--mint);
+  --primary-fg: var(--brand);
+  --hl-bg: none;
+  --hl-fg: var(--mint);
+  color-scheme: dark;
 }
 
 * {
@@ -83,13 +113,7 @@ p {
 }
 
 a {
-  color: var(--claim);
-}
-
-@media (prefers-color-scheme: dark) {
-  a {
-    color: var(--mint);
-  }
+  color: var(--link);
 }
 
 /* ───────────────────────── layout ───────────────────────── */
@@ -229,13 +253,7 @@ a {
 
 .wordmark b {
   font-weight: 700;
-  color: var(--claim);
-}
-
-@media (prefers-color-scheme: dark) {
-  .wordmark b {
-    color: var(--mint);
-  }
+  color: var(--link);
 }
 
 .logo-mark {
@@ -356,8 +374,8 @@ a {
 }
 
 .btn-primary {
-  background: var(--brand);
-  color: var(--paper);
+  background: var(--primary-bg);
+  color: var(--primary-fg);
 }
 
 .btn-secondary {
@@ -381,13 +399,6 @@ a {
   border-color: color-mix(in srgb, var(--mint) 45%, transparent);
   color: var(--mint);
   cursor: default;
-}
-
-@media (prefers-color-scheme: dark) {
-  .btn-primary {
-    background: var(--mint);
-    color: var(--brand);
-  }
 }
 
 .link {
@@ -511,15 +522,9 @@ input[aria-invalid="true"] {
 }
 
 .hl {
-  background: linear-gradient(transparent 62%, var(--mint) 62%, var(--mint) 92%, transparent 92%);
+  background: var(--hl-bg);
+  color: var(--hl-fg);
   padding: 0 2px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .hl {
-    background: none;
-    color: var(--mint);
-  }
 }
 
 .actions {
@@ -1699,4 +1704,88 @@ input[aria-invalid="true"] {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ───────────────────────── demo build ───────────────────────── */
+.demo-banner {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px dashed color-mix(in srgb, var(--claim) 45%, transparent);
+  background: var(--mint-soft);
+  font-size: 0.9rem;
+}
+
+.demo-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.demo-label {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.seg button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-height: 48px;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.seg button b {
+  font-family: var(--font-display);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seg button small {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.seg button.on {
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+}
+
+.seg button.on small {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.seg button:focus-visible {
+  outline: 2px solid var(--claim);
+  outline-offset: 2px;
+}
+
+.demo-note {
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--paper) 10%, transparent);
+  color: color-mix(in srgb, var(--paper) 85%, transparent);
+  max-width: 38ch;
 }

@@ -1,3 +1,5 @@
+import { DEMO, friendName, getPersona, personaDeviceKey } from "./demo";
+
 /** localStorage can throw (private mode, blocked storage); the app must keep working without it. */
 function read<T>(key: string, fallback: T): T {
   try {
@@ -35,8 +37,22 @@ const DEVICE_KEY = "billsplit.deviceKey";
 const RECENT_KEY = "billsplit.recent";
 const DRAFT_KEY = "billsplit.draft";
 
-export const loadProfile = (): Profile => ({ name: "", paypalMe: "", paypalEmail: "", ...read<Partial<Profile>>(PROFILE_KEY, {}) });
-export const saveProfile = (p: Profile) => write(PROFILE_KEY, p);
+export function loadProfile(): Profile {
+  // In the demo, friends are simulated personas with a fixed name.
+  const friend = DEMO ? friendName(getPersona()) : null;
+  if (friend) return { name: friend, paypalMe: "", paypalEmail: "" };
+  return { name: "", paypalMe: "", paypalEmail: "", ...read<Partial<Profile>>(PROFILE_KEY, {}) };
+}
+
+/** The device owner's own profile, regardless of the demo persona. */
+export function loadOwnProfile(): Profile {
+  return { name: "", paypalMe: "", paypalEmail: "", ...read<Partial<Profile>>(PROFILE_KEY, {}) };
+}
+
+export function saveProfile(p: Profile): void {
+  if (DEMO && getPersona() !== "me") return;
+  write(PROFILE_KEY, p);
+}
 
 /** Creating a bill needs a name and a way to get paid. */
 export function profileReady(): boolean {
@@ -47,6 +63,7 @@ export function profileReady(): boolean {
 let memoryKey: string | null = null;
 /** Random secret that identifies this device towards the server. */
 export function deviceKey(): string {
+  if (DEMO) return personaDeviceKey(getPersona());
   const stored = read<string | null>(DEVICE_KEY, null);
   if (stored) return stored;
   memoryKey ??= crypto.randomUUID() + crypto.randomUUID();

@@ -15,7 +15,8 @@ export interface LiveBill {
 }
 
 /**
- * Loads a bill and keeps it updated in real time via Server-Sent Events.
+ * Loads a bill and keeps it updated in real time (Server-Sent Events, or the
+ * in-browser store in the demo build).
  * Own claim changes are applied optimistically and sent debounced, so that
  * tapping several items quickly feels instant.
  */
@@ -29,7 +30,7 @@ export function useLiveBill(id: string): LiveBill {
 
   useEffect(() => {
     let cancelled = false;
-    let source: EventSource | null = null;
+    let unsubscribe: (() => void) | null = null;
     setServerSnap(null);
     setNotFound(false);
     setError(null);
@@ -39,12 +40,7 @@ export function useLiveBill(id: string): LiveBill {
       .then((snap) => {
         if (cancelled) return;
         setServerSnap(snap);
-        source = new EventSource(api.eventsUrl(id));
-        source.addEventListener("snapshot", (e) => {
-          setServerSnap(JSON.parse((e as MessageEvent<string>).data) as BillSnapshot);
-          setLive(true);
-        });
-        source.onerror = () => setLive(false);
+        unsubscribe = api.subscribe(id, setServerSnap, setLive);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -54,7 +50,7 @@ export function useLiveBill(id: string): LiveBill {
 
     return () => {
       cancelled = true;
-      source?.close();
+      unsubscribe?.();
     };
   }, [id]);
 

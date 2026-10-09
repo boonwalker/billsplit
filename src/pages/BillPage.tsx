@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import DemoBar from "../components/DemoBar";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
 import OwnerPanel, { ownerSummary } from "../components/OwnerPanel";
@@ -7,6 +8,7 @@ import QrCode from "../components/QrCode";
 import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
 import { billUrl, type Debtor } from "../lib/bill";
+import { DEMO } from "../lib/demo";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
 import { loadProfile, rememberBill, saveProfile } from "../lib/storage";
@@ -36,7 +38,8 @@ export default function BillPage({ id }: { id: string }) {
   }, [snapshot, id, replace]);
 
   useEffect(() => {
-    if (snapshot?.me) {
+    // In the demo, friend personas must not turn the payer's bill into an invitation.
+    if (snapshot?.me && (snapshot.isOwner || !DEMO)) {
       rememberBill({ id, title: snapshot.data.title, role: snapshot.isOwner ? "owner" : "guest", createdAt: snapshot.createdAt });
     }
   }, [snapshot?.me, snapshot?.isOwner, snapshot?.data.title, snapshot?.createdAt, id]);
@@ -117,6 +120,8 @@ export default function BillPage({ id }: { id: string }) {
       />
 
       <main className="content bill-content">
+        {DEMO && <DemoBar />}
+
         {snap.isOwner && (
           <section className="qr-hero" aria-label="QR-Code zum Teilen">
             <p className="eyebrow">Rechnung bereit</p>
@@ -126,6 +131,12 @@ export default function BillPage({ id }: { id: string }) {
               Enthält die Rechnung und deine PayPal-Daten
               {snap.data.payment.paypalMe ? ` (paypal.me/${snap.data.payment.paypalMe})` : snap.data.payment.paypalEmail ? ` (${snap.data.payment.paypalEmail})` : ""}.
             </p>
+            {DEMO && (
+              <p className="demo-note">
+                Demo ohne Server: Auf anderen Handys öffnet der Code noch keine Rechnung. Schalte oben auf Anna oder Ben, um
+                die Sicht deiner Freunde zu sehen.
+              </p>
+            )}
             <div className="row gap">
               <button className="btn btn-ghost grow" onClick={share}>
                 {copied ? "✓ Link kopiert" : "Link teilen"}

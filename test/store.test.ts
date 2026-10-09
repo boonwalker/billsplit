@@ -18,7 +18,7 @@ function setup() {
   const store = new BillStore(null);
   const owner = participantIdFromKey("owner-key-0123456789");
   const anna = participantIdFromKey("anna-key-0123456789");
-  const id = store.create(data, owner, "Niklas");
+  const id = store.createBill(data, owner, "Niklas");
   return { store, owner, anna, id };
 }
 

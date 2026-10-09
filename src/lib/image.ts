@@ -2,6 +2,7 @@ export interface PreparedImage {
   /** Base64 without data-URL prefix. */
   base64: string;
   mediaType: "image/jpeg";
+  blob: Blob;
   /** Object URL for previews; revoke when no longer needed. */
   previewUrl: string;
   canvas: HTMLCanvasElement;
@@ -33,5 +34,5 @@ export async function prepareImage(file: Blob): Promise<PreparedImage> {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
-  return { base64, mediaType: "image/jpeg", previewUrl: URL.createObjectURL(blob), canvas };
+  return { base64, mediaType: "image/jpeg", blob, previewUrl: URL.createObjectURL(blob), canvas };
 }

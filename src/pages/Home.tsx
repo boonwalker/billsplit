@@ -1,13 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "../components/Header";
+import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
-import { clearDraft, forgetBill, loadProfile, loadRecent, profileReady, type RecentBill } from "../lib/storage";
+import { createSampleBill } from "../lib/sampleBill";
+import { clearDraft, forgetBill, loadOwnProfile, loadRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
   const [recent, setRecent] = useState<RecentBill[]>(loadRecent);
-  const profile = loadProfile();
-  const ready = profileReady();
+  // The home screen always belongs to the device owner, also in the demo.
+  useEffect(() => {
+    if (DEMO && getPersona() !== "me") setPersona("me");
+  }, []);
+  const profile = loadOwnProfile();
+  const ready = Boolean(profile.name.trim() && (profile.paypalMe.trim() || profile.paypalEmail.trim()));
 
   function onPhoto(file: File | undefined) {
     if (!file) return;
@@ -39,6 +45,13 @@ export default function Home() {
           </p>
         </section>
 
+        {DEMO && (
+          <p className="demo-banner">
+            <b>Demo-Version.</b> Alles bleibt in diesem Browser. Auf der Rechnung kannst du oben zwischen dir und deinen
+            Freunden Anna und Ben umschalten und so beide Seiten ausprobieren.
+          </p>
+        )}
+
         <section className="actions">
           {ready ? (
             <label className="action-card primary">
@@ -69,6 +82,20 @@ export default function Home() {
             </button>
           )}
 
+          {DEMO ? (
+            <button className="action-card" onClick={() => (ready ? navigate(`/b/${createSampleBill()}`) : navigate("/profile?next=sample"))}>
+              <span className="action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 3.5h10v16l-1.7-1.3-1.6 1.3-1.7-1.3-1.7 1.3-1.6-1.3L7 19.5z" />
+                  <path d="M9.5 8h5M9.5 11h5M9.5 14h3" />
+                </svg>
+              </span>
+              <span className="action-text">
+                <b>Beispielrechnung ansehen</b>
+                <small>Mit Anna und Ben – schon teilweise abgehakt</small>
+              </span>
+            </button>
+          ) : (
           <button className="action-card" onClick={() => navigate("/scan")}>
             <span className="action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -80,6 +107,7 @@ export default function Home() {
               <small>Ein Freund hat bezahlt – du übernimmst deinen Teil</small>
             </span>
           </button>
+          )}
         </section>
 
         {recent.length > 0 && (

@@ -78,6 +78,20 @@ liegen nach `npm run dev`/`npm run build` unter `public/ocr` und werden selbst a
 
 Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder `localhost`).
 
+### Demo ohne Server
+
+```bash
+npm run build:demo        # schreibt dist-demo/ inkl. dist-demo/artifact.html
+```
+
+Die Demo-Variante (`VITE_DEMO=true`, siehe `.env.demo`) braucht keinen Server und ist für die Veröffentlichung als
+claude.ai-Artifact gedacht:
+- Rechnungen werden im Browser gespeichert (`localStorage`).
+- Über „Ansicht als“ wechselt man auf einem Gerät zwischen sich selbst (zahlt) und den Freunden Anna und Ben.
+- Die Belegerkennung fragt Claude über die claude.ai-Umgebung, mit dem Konto der Person, die die Seite ansieht.
+- Echtzeit-Sync zwischen verschiedenen Geräten gibt es in der Demo nicht. Der QR-Code öffnet auf anderen Handys
+  deshalb noch keine Rechnung.
+
 ### Konfiguration
 
 | Variable | Bedeutung |

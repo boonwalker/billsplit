@@ -1,13 +1,21 @@
+import { ApiError } from "./apiError";
 import type { BillData, BillSnapshot, ItemClaims } from "./bill";
+import { DEMO } from "./demo";
+import { localApi } from "./localApi";
 import { deviceKey } from "./storage";
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-  }
+export { ApiError };
+
+export interface Api {
+  createBill(data: BillData, name: string): Promise<BillSnapshot>;
+  getBill(id: string): Promise<BillSnapshot>;
+  updateBill(id: string, data: BillData): Promise<BillSnapshot>;
+  join(id: string, name: string): Promise<BillSnapshot>;
+  setClaims(id: string, claims: ItemClaims): Promise<BillSnapshot>;
+  pay(id: string): Promise<{ amount: number }>;
+  setReceived(id: string, participantId: string, received: boolean): Promise<BillSnapshot>;
+  /** Live updates of one bill; returns an unsubscribe function. */
+  subscribe(id: string, onSnapshot: (s: BillSnapshot) => void, onLive: (live: boolean) => void): () => void;
 }
 
 async function request<T>(method: string, path: string, body?: unknown, init?: RequestInit): Promise<T> {
@@ -29,15 +37,25 @@ async function request<T>(method: string, path: string, body?: unknown, init?: R
 
 const bill = (id: string) => `/api/bills/${encodeURIComponent(id)}`;
 
-export const api = {
-  createBill: (data: BillData, name: string) => request<BillSnapshot>("POST", "/api/bills", { data, name }),
-  getBill: (id: string) => request<BillSnapshot>("GET", bill(id)),
-  updateBill: (id: string, data: BillData) => request<BillSnapshot>("PUT", bill(id), { data }),
-  join: (id: string, name: string) => request<BillSnapshot>("POST", `${bill(id)}/join`, { name }),
-  setClaims: (id: string, claims: ItemClaims) => request<BillSnapshot>("PUT", `${bill(id)}/claims`, { claims }),
-  /** keepalive lets the request finish while the browser switches to PayPal. */
-  pay: (id: string) => request<{ amount: number }>("POST", `${bill(id)}/pay`, {}, { keepalive: true }),
-  setReceived: (id: string, participantId: string, received: boolean) =>
-    request<BillSnapshot>("POST", `${bill(id)}/received`, { participantId, received }),
-  eventsUrl: (id: string) => `${bill(id)}/events?key=${encodeURIComponent(deviceKey())}`,
+const serverApi: Api = {
+  createBill: (data, name) => request("POST", "/api/bills", { data, name }),
+  getBill: (id) => request("GET", bill(id)),
+  updateBill: (id, data) => request("PUT", bill(id), { data }),
+  join: (id, name) => request("POST", `${bill(id)}/join`, { name }),
+  setClaims: (id, claims) => request("PUT", `${bill(id)}/claims`, { claims }),
+  // keepalive lets the request finish while the browser switches to PayPal.
+  pay: (id) => request("POST", `${bill(id)}/pay`, {}, { keepalive: true }),
+  setReceived: (id, participantId, received) => request("POST", `${bill(id)}/received`, { participantId, received }),
+  subscribe(id, onSnapshot, onLive) {
+    // EventSource cannot send headers, so the device key goes into the query.
+    const source = new EventSource(`${bill(id)}/events?key=${encodeURIComponent(deviceKey())}`);
+    source.addEventListener("snapshot", (e) => {
+      onSnapshot(JSON.parse((e as MessageEvent<string>).data) as BillSnapshot);
+      onLive(true);
+    });
+    source.onerror = () => onLive(false);
+    return () => source.close();
+  },
 };
+
+export const api: Api = DEMO ? localApi : serverApi;

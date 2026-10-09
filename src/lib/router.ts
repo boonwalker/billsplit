@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { DEMO } from "./demo";
 
 export type Route =
   | { name: "home" }
@@ -27,8 +28,22 @@ export function parseHash(hash: string): Route {
   }
 }
 
+/**
+ * The demo is served inside a sandboxed frame where the URL hash cannot be
+ * relied on, so it keeps the current route in memory instead.
+ */
+let memoryPath = "/";
+const ROUTE_EVENT = "billsplit:route";
+
+function currentHash(): string {
+  return DEMO ? `#${memoryPath}` : window.location.hash;
+}
+
 export function navigate(path: string, { replace = false } = {}): void {
-  if (replace) {
+  if (DEMO) {
+    memoryPath = path;
+    window.dispatchEvent(new Event(ROUTE_EVENT));
+  } else if (replace) {
     history.replaceState(null, "", `#${path}`);
     window.dispatchEvent(new HashChangeEvent("hashchange"));
   } else {
@@ -38,11 +53,15 @@ export function navigate(path: string, { replace = false } = {}): void {
 }
 
 export function useRoute(): Route {
-  const [route, setRoute] = useState(() => parseHash(window.location.hash));
+  const [route, setRoute] = useState(() => parseHash(currentHash()));
   useEffect(() => {
-    const onChange = () => setRoute(parseHash(window.location.hash));
+    const onChange = () => setRoute(parseHash(currentHash()));
     window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
+    window.addEventListener(ROUTE_EVENT, onChange);
+    return () => {
+      window.removeEventListener("hashchange", onChange);
+      window.removeEventListener(ROUTE_EVENT, onChange);
+    };
   }, []);
   return route;
 }

@@ -16,6 +16,17 @@ export interface ParsedReceipt {
   engine: "ai" | "ocr";
 }
 
+/** What Claude is asked to do with a receipt photo (server and demo). */
+export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop receipt. Extract every purchased line item so that a group can split the bill.
+
+- One entry per receipt line. Keep the item name as printed, but remove quantity prefixes ("2x", "3 x") and unit-price annotations ("à 4,50", "@ 4.50") from the name.
+- quantity is the number of units on the line. Receipts show it in many ways: "3 Bier 13,50", "3x Bier", "Bier 3 x 4,50 13,50", or a separate line like "3 x 4,50" above or below the item. If no quantity is shown, use 1.
+- line_total is the price of the whole line (all units together). If only a unit price is printed, multiply it by the quantity.
+- Include discounts, vouchers and deposit refunds as items with a negative line_total. Include service charges that are part of the total.
+- Do not include subtotals, totals, taxes/VAT breakdowns, payment method lines, change given, tips written after payment, or table/waiter/date information.
+- Use a dot as decimal separator in numbers, regardless of how the receipt prints them.
+- If the image is not a receipt or is unreadable, return an empty items list.`;
+
 const PRICE = String.raw`-?\d{1,5}(?:[.,]\d{3})*[.,]\d{2}-?`;
 /** Price at the end of a line, optionally followed by a VAT class letter ("A", "B", "1", "*"). */
 const TRAILING_PRICE = new RegExp(String.raw`(${PRICE})\s*(?:€|EUR)?\s*(?:[A-D12*])?\s*$`, "i");

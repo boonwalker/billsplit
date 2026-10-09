@@ -138,7 +138,7 @@ export function createApp(store: BillStore, distDir: string) {
     if (parts[1] === "bills" && parts.length === 2 && method === "POST") {
       const viewer = requireViewer(req, url);
       const body = parse(z.object({ data: BillDataSchema, name: ParticipantNameSchema }), await readJson(req, MAX_JSON_BODY));
-      const id = store.create(body.data, viewer, body.name);
+      const id = store.createBill(body.data, viewer, body.name);
       return sendJson(res, 201, store.snapshot(id, viewer));
     }
 

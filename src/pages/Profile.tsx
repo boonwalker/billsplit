@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import Header from "../components/Header";
 import { isValidEmail, normalizePaypalMe } from "../lib/payment";
 import { navigate } from "../lib/router";
+import { createSampleBill } from "../lib/sampleBill";
 import { loadProfile, saveProfile } from "../lib/storage";
 
 export default function Profile({ next }: { next?: string }) {
@@ -13,7 +14,7 @@ export default function Profile({ next }: { next?: string }) {
 
   const meName = normalizePaypalMe(paypalMe);
   const emailInvalid = email.trim() !== "" && !isValidEmail(email);
-  const needsPaypal = next === "new" && !meName && !email.trim();
+  const needsPaypal = (next === "new" || next === "sample") && !meName && !email.trim();
   const invalid = !name.trim() || emailInvalid || needsPaypal;
 
   function save(e: FormEvent) {
@@ -21,7 +22,8 @@ export default function Profile({ next }: { next?: string }) {
     setTouched(true);
     if (invalid) return;
     saveProfile({ name: name.trim(), paypalEmail: email.trim(), paypalMe: meName });
-    navigate(next === "new" ? "/new" : "/");
+    if (next === "sample") navigate(`/b/${createSampleBill()}`);
+    else navigate(next === "new" ? "/new" : "/");
   }
 
   return (
@@ -82,7 +84,7 @@ export default function Profile({ next }: { next?: string }) {
 
           {touched && needsPaypal && <div className="alert">Bitte hinterlege eine PayPal-E-Mail-Adresse oder deinen PayPal.Me-Namen.</div>}
 
-          <button className="btn btn-primary btn-large">{next === "new" ? "Weiter zur Kamera" : "Speichern"}</button>
+          <button className="btn btn-primary btn-large">{next === "new" ? "Weiter zur Kamera" : next === "sample" ? "Weiter zur Beispielrechnung" : "Speichern"}</button>
         </form>
       </main>
     </div>

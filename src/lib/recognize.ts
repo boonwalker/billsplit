@@ -1,5 +1,7 @@
+import { getSample, type SampleError } from "./claudeRuntime";
+import { DEMO } from "./demo";
 import type { PreparedImage } from "./image";
-import { parseReceiptText, type ParsedReceipt } from "./receipt";
+import { parseReceiptText, RECEIPT_INSTRUCTIONS, type ParsedReceipt } from "./receipt";
 
 export type ProgressFn = (message: string, progress?: number) => void;
 
@@ -51,11 +53,63 @@ async function recognizeWithOcr(image: PreparedImage, onProgress: ProgressFn): P
   }
 }
 
+interface SampleReceipt {
+  merchant?: unknown;
+  date?: unknown;
+  currency?: unknown;
+  items?: { name?: unknown; quantity?: unknown; line_total?: unknown }[];
+  receipt_total?: unknown;
+}
+
+const SAMPLE_ERRORS: Record<string, string> = {
+  not_granted: "Du hast der Seite nicht erlaubt, Claude zu fragen. Trag die Positionen unten selbst ein.",
+  sampling_disabled: "Claude ist für dein Konto hier nicht verfügbar. Trag die Positionen unten selbst ein.",
+  images_unavailable: "In dieser Ansicht können keine Fotos an Claude gesendet werden. Trag die Positionen unten selbst ein.",
+  image_rejected: "Dieses Foto konnte nicht gelesen werden. Versuch ein anderes Bild (JPG oder PNG).",
+  rate_limited: "Gerade zu viele Anfragen. Versuch es in ein paar Minuten noch einmal.",
+  refused: "Claude konnte dieses Bild nicht auswerten. Trag die Positionen unten selbst ein.",
+  invalid_json: "Die Antwort war unvollständig. Versuch es noch einmal.",
+};
+
+/** Demo build: asks Claude through the claude.ai artifact runtime, on the viewer's own account. */
+async function recognizeWithSample(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
+  const sample = await getSample();
+  if (!sample) throw new Error("Die KI-Erkennung ist nur in der claude.ai-Ansicht verfügbar. Trag die Positionen unten selbst ein.");
+  onProgress("Claude liest den Beleg …");
+  let out: SampleReceipt;
+  try {
+    out = await sample.json<SampleReceipt>(
+      `${RECEIPT_INSTRUCTIONS}
+
+Reply with only one JSON object of this shape:
+{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable)}`,
+      { images: [image.blob], modelTier: "default" },
+    );
+  } catch (e) {
+    const code = (e as SampleError)?.code;
+    throw new Error(SAMPLE_ERRORS[code] ?? "Die Erkennung hat nicht geklappt. Versuch es noch einmal oder trag die Positionen selbst ein.");
+  }
+  const cents = (v: unknown) => Math.round(Number(v) * 100);
+  const items = (Array.isArray(out.items) ? out.items : [])
+    .filter((it) => typeof it?.name === "string" && it.name.trim() && Number.isFinite(Number(it.line_total)))
+    .map((it) => ({ name: String(it.name).trim(), qty: Math.max(1, Math.floor(Number(it.quantity)) || 1), total: cents(it.line_total) }));
+  const total = Number(out.receipt_total);
+  return {
+    merchant: typeof out.merchant === "string" ? out.merchant.trim() : "",
+    date: typeof out.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(out.date) ? out.date : "",
+    currency: typeof out.currency === "string" && /^[A-Z]{3}$/.test(out.currency) ? out.currency : "EUR",
+    items,
+    total: Number.isFinite(total) && total > 0 ? cents(total) : null,
+    engine: "ai",
+  };
+}
+
 /**
  * Reads a receipt photo. Uses the AI recognition on the server when it is
  * configured and falls back to on-device OCR otherwise.
  */
 export async function recognizeReceipt(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
+  if (DEMO) return recognizeWithSample(image, onProgress);
   try {
     return await recognizeWithAi(image, onProgress);
   } catch (error) {
