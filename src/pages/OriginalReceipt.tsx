@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
+import PhotoViewer from "../components/PhotoViewer";
 import { api } from "../lib/api";
-import { DEMO } from "../lib/demo";
 
 /** The photo or screenshot a bill was read from – reached via "Zum Originalbeleg". */
 export default function OriginalReceipt({ id }: { id: string }) {
   const [src, setSrc] = useState<string | null | undefined>(undefined);
   const [failed, setFailed] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
     api
@@ -31,12 +32,13 @@ export default function OriginalReceipt({ id }: { id: string }) {
         )}
         {src && !failed && (
           <>
-            <img className="original-photo" src={src} alt="Foto bzw. Screenshot der Rechnung" onError={() => setFailed(true)} />
-            {!DEMO && (
-              <a className="small muted original-full" href={src} target="_blank" rel="noreferrer">
-                In voller Größe öffnen
-              </a>
-            )}
+            <button type="button" className="original-open" onClick={() => setFullscreen(true)} aria-label="In voller Größe anzeigen">
+              <img className="original-photo" src={src} alt="Foto bzw. Screenshot der Rechnung" onError={() => setFailed(true)} />
+            </button>
+            <button type="button" className="original-full" onClick={() => setFullscreen(true)}>
+              In voller Größe anzeigen
+            </button>
+            {fullscreen && <PhotoViewer src={src} alt="Originalbeleg" onClose={() => setFullscreen(false)} />}
           </>
         )}
       </main>

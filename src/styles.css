@@ -1353,7 +1353,8 @@ input[aria-invalid="true"] {
   background: none;
   font: inherit;
   font-size: 0.75rem;
-  color: var(--ink-soft);
+  font-weight: 700;
+  color: var(--claim);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -1375,10 +1376,75 @@ input[aria-invalid="true"] {
   background: var(--surface);
 }
 
+.original-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
 .original-full {
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--muted);
   text-decoration: underline;
   text-underline-offset: 3px;
-  color: inherit;
+  cursor: pointer;
+}
+
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-viewer-stage {
+  flex: 1;
+  padding-top: calc(env(safe-area-inset-top) + 60px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.photo-viewer-stage img {
+  max-width: 100%;
+  max-height: calc(100dvh - 200px);
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.photo-viewer-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 10px);
+  right: 12px;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.18);
+  color: #fff;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.photo-viewer-hint {
+  margin: 0;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px);
+  text-align: center;
+  font-size: 0.8rem;
+  color: rgb(255 255 255 / 0.6);
 }
 
 .claim-btn {
