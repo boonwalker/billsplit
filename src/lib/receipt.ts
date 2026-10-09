@@ -19,7 +19,7 @@ export interface ParsedReceipt {
 }
 
 /** What Claude is asked to do with a receipt photo (server and demo). */
-export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop receipt. Extract every purchased line item so that a group can split the bill.
+export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop receipt, or a screenshot of a digital receipt or invoice (e.g. from an app, a delivery service or an e-mail). Extract every purchased line item so that a group can split the bill.
 
 - One entry per receipt line. Keep the item name as printed, but remove quantity prefixes ("2x", "3 x") and unit-price annotations ("à 4,50", "@ 4.50") from the name.
 - quantity is the number of units on the line. Receipts show it in many ways: "3 Bier 13,50", "3x Bier", "Bier 3 x 4,50 13,50", or a separate line like "3 x 4,50" above or below the item. If no quantity is shown, use 1.
@@ -33,6 +33,7 @@ export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop rec
   Use 0 only if none of these is present.
 - receipt_total is the printed total of the purchased items before any tip, or 0 if not readable.
 - Use a dot as decimal separator in numbers, regardless of how the receipt prints them.
+- In screenshots, ignore app interface elements such as buttons, navigation, ads and order status texts.
 - If the image is not a receipt or is unreadable, return an empty items list.`;
 
 const PRICE = String.raw`-?\d{1,5}(?:[.,]\d{3})*[.,]\d{2}-?`;

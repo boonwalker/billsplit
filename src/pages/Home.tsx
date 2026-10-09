@@ -82,6 +82,38 @@ export default function Home() {
             </button>
           )}
 
+          {/* Digital receipts (app, e-mail, delivery service): pick a screenshot instead of taking a photo. */}
+          {ready ? (
+            <label className="action-card">
+              <span className="action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+                  <path d="M9.5 7.5h5M9.5 10.5h5M9.5 13.5h3" />
+                  <path d="M10.5 18.5h3" />
+                </svg>
+              </span>
+              <span className="action-text">
+                <b>Screenshot hochladen</b>
+                <small>Für digitale Rechnungen aus App oder E-Mail</small>
+              </span>
+              <input type="file" accept="image/*" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
+            </label>
+          ) : (
+            <button className="action-card" onClick={() => navigate("/profile?next=new")}>
+              <span className="action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+                  <path d="M9.5 7.5h5M9.5 10.5h5M9.5 13.5h3" />
+                  <path d="M10.5 18.5h3" />
+                </svg>
+              </span>
+              <span className="action-text">
+                <b>Screenshot hochladen</b>
+                <small>Für digitale Rechnungen aus App oder E-Mail</small>
+              </span>
+            </button>
+          )}
+
           {DEMO ? (
             <button className="action-card" onClick={() => (ready ? navigate(`/b/${createSampleBill()}`) : navigate("/profile?next=sample"))}>
               <span className="action-icon" aria-hidden="true">
@@ -144,7 +176,7 @@ export default function Home() {
             <li>
               <span>1</span>
               <div>
-                <b>Foto machen.</b> Alle Positionen inkl. Mengen werden automatisch erkannt.
+                <b>Foto oder Screenshot.</b> Alle Positionen inkl. Mengen werden automatisch erkannt.
               </div>
             </li>
             <li>

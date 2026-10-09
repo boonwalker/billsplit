@@ -12,7 +12,7 @@ export interface PreparedImage {
 const MAX_EDGE = 2000;
 
 /**
- * Downscales and re-encodes a camera photo to JPEG. This keeps the upload small and
+ * Downscales and re-encodes a camera photo or screenshot to JPEG. This keeps the upload small and
  * normalizes formats like HEIC that some phones produce, and applies EXIF rotation.
  */
 export async function prepareImage(file: Blob): Promise<PreparedImage> {
@@ -23,6 +23,9 @@ export async function prepareImage(file: Blob): Promise<PreparedImage> {
   canvas.height = Math.round(bitmap.height * scale);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas wird nicht unterstützt.");
+  // Screenshots can be transparent PNGs; JPEG would turn transparency black.
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
   const blob = await new Promise<Blob>((resolve, reject) =>

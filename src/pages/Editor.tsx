@@ -266,7 +266,7 @@ export default function Editor({ billId }: { billId?: string }) {
               <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => e.target.files?.[0] && scan(e.target.files[0])} />
             </label>
             <label className="btn btn-ghost grow">
-              Aus Galerie
+              Screenshot / Bild
               <input type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && scan(e.target.files[0])} />
             </label>
           </div>
