@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Header from "../components/Header";
 import SupermarketSheet from "../components/SupermarketSheet";
 import { looksPersonal } from "../lib/personal";
@@ -182,6 +182,8 @@ export default function Editor({ billId }: { billId?: string }) {
   const [busy, setBusy] = useState<{ message: string; progress?: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  /** Width / height of the photo, so its preview can be as large as possible without bars. */
+  const [previewRatio, setPreviewRatio] = useState(3 / 4);
   const [showErrors, setShowErrors] = useState(false);
   const started = useRef(false);
   /** The prepared photo or screenshot of the last scan; stored with the bill. */
@@ -225,6 +227,7 @@ export default function Editor({ billId }: { billId?: string }) {
     try {
       const image = await prepareImage(file);
       photo.current = image.blob;
+      setPreviewRatio(image.canvas.width / image.canvas.height);
       setPreview(image.previewUrl);
       const receipt = await recognizeReceipt(image, (message, progress) => setBusy({ message, progress }));
       setPersonalNames(new Set(receipt.items.filter((i) => i.personal).map((i) => i.name)));
@@ -326,10 +329,8 @@ export default function Editor({ billId }: { billId?: string }) {
         <main className={`content center-v${preview ? " scan-content" : ""}`}>
           <div className="scanning" role="status">
             {preview && (
-              // Nearly full screen whatever the photo's size and shape: the whole receipt fits in,
-              // the rest is filled with a blurred copy, so the payer can already look it over.
-              <div className="scan-photo">
-                <img className="scan-photo-bg" src={preview} alt="" aria-hidden="true" decoding="async" />
+              // As large as the screen allows in the photo's own shape, so the payer can already look it over.
+              <div className="scan-photo" style={{ "--ar": previewRatio } as CSSProperties}>
                 <img className="scan-photo-img" src={preview} alt="Dein Beleg" decoding="async" />
                 <div className="scan-beam" aria-hidden="true">
                   <i />
@@ -495,6 +496,9 @@ export default function Editor({ billId }: { billId?: string }) {
           items={askShop}
           currency={draft.currency}
           isPersonal={(item) => personalNames.has(item.name) || looksPersonal(item.name)}
+          title={draft.title}
+          date={draft.date}
+          ownerName={loadProfile().name.trim()}
           onDone={(items, equalSplit, persons, partial) => {
             setAskShop(null);
             const tip = { ...draft.tip, persons: persons ? String(persons) : "" };
