@@ -323,8 +323,8 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
         {step === "ask" ? (
           <>
             <p className="muted">
-              Soll etwas <b>nicht</b> oder <b>nur teilweise</b> in Rechnung gestellt werden? Z. B. Gewürze,
-              Duschgel, Klopapier.
+              Soll etwas <b>nicht</b> oder <b>nur teilweise</b> in Rechnung gestellt werden, z.B. Gewürze,
+              Duschgel, Klopapier?
             </p>
             <button type="button" className="btn btn-primary btn-large" onClick={() => setStep("all")}>
               Alles aufteilen
