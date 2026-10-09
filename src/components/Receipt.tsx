@@ -339,6 +339,16 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, writing,
     onDivide?.({ itemId: line.dataset.item!, divisor: read.divisor });
   }
 
+  /** Tapping a divided line removes the handwritten divisor again. */
+  function tapLine(point: { x: number; y: number }) {
+    const line = [...document.querySelectorAll<HTMLElement>(".receipt-lines > .rline[data-item]")].find((el) => {
+      const r = el.getBoundingClientRect();
+      return point.y >= r.top && point.y <= r.bottom;
+    });
+    const item = line && data.items.find((i) => i.id === line.dataset.item);
+    if (item?.divisor) onDivide?.({ itemId: item.id, divisor: 1 });
+  }
+
   const { data, participants, me, ownerName } = snapshot;
   const sub = subtotal(data.items);
   const total = billTotal(data);
@@ -367,7 +377,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, writing,
         </div>
 
         <div className={`receipt-lines-wrap${writing ? " writing" : ""}`}>
-          {writing && <InkLayer onInk={readInk} />}
+          {writing && <InkLayer onInk={readInk} onTap={tapLine} />}
           <ul className="receipt-lines">
             {data.items.map((item, idx) => (
               <ReceiptLine

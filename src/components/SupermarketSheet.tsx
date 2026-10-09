@@ -1,23 +1,36 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { BillItem } from "../lib/bill";
-import { boundsOf, recognizeDivisor, type Stroke } from "../lib/ink";
+import { boundsOf, recognizeDivisor, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
 import InkLayer from "./InkLayer";
 import { PencilFilter } from "./Receipt";
 
-/** What the payer marked on a line: struck through (not billed) or divided ("/3"). */
+/**
+ * What the payer marked on a line: struck through (not billed), divided by a written
+ * number ("/3"), or – by tapping the price – divided by the number of people below.
+ */
 export interface Mark {
   struck?: boolean;
   divisor?: number;
+  perPerson?: boolean;
 }
 
+/** The divisor a mark stands for; persons is the head count set below the receipt. */
+export function markDivisor(mark: Mark | undefined, persons: number | undefined): number {
+  if (!mark || mark.struck) return 1;
+  return (mark.perPerson ? persons : mark.divisor) ?? 1;
+}
+
+const isMarked = (mark: Mark | undefined) => Boolean(mark && (mark.struck || mark.perPerson || (mark.divisor ?? 1) > 1));
+
 /** The items as billed: struck lines left out, divided lines reduced to their part (like divideItem). */
-export function applyMarks(items: BillItem[], marks: Record<string, Mark>): BillItem[] {
+export function applyMarks(items: BillItem[], marks: Record<string, Mark>, persons?: number): BillItem[] {
   return items.flatMap((item) => {
     const mark = marks[item.id];
     if (mark?.struck) return [];
-    if (!mark?.divisor || mark.divisor <= 1) return [item];
-    return [{ ...item, fullTotal: item.total, divisor: mark.divisor, total: Math.round(item.total / mark.divisor) }];
+    const divisor = markDivisor(mark, persons);
+    if (divisor <= 1) return [item];
+    return [{ ...item, fullTotal: item.total, divisor, total: Math.round(item.total / divisor) }];
   });
 }
 
@@ -45,6 +58,9 @@ interface DemoSpots {
   strikeY: number;
   writeY: number;
   writeX: number;
+  /** Centre of the price that is tapped in the third demo. */
+  tapX: number;
+  tapY: number;
   width: number;
 }
 
@@ -62,9 +78,11 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
   const [notice, setNotice] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   const [demo, setDemo] = useState<DemoSpots | null>(null);
+  /** Briefly highlights the head count when a tap on a price needs it. */
+  const [askPersons, setAskPersons] = useState(false);
   const list = useRef<HTMLUListElement>(null);
 
-  const billed = step === "some" ? applyMarks(items, marks) : items;
+  const billed = step === "some" ? applyMarks(items, marks, persons) : items;
   const billedSum = billed.reduce((s, i) => s + i.total, 0);
   const fullSum = items.reduce((s, i) => s + i.total, 0);
 
@@ -77,11 +95,15 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
     if (!lines.length || !wrap) return;
     const centre = (el: HTMLElement) => el.offsetTop + el.offsetHeight / 2;
     const second = lines[1] ?? lines[0];
+    const third = lines[2] ?? lines[lines.length - 1];
     const price = second.querySelector<HTMLElement>(".rline-price");
+    const tapped = third.querySelector<HTMLElement>(".rline-price");
     setDemo({
       strikeY: centre(lines[0]),
       writeY: centre(second),
       writeX: price ? second.offsetLeft + price.offsetLeft - 34 : wrap.offsetWidth - 110,
+      tapX: tapped ? third.offsetLeft + tapped.offsetLeft + tapped.offsetWidth / 2 : wrap.offsetWidth - 40,
+      tapY: centre(third),
       width: wrap.offsetWidth,
     });
   }, [step, items]);
@@ -95,6 +117,31 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
       return y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
     };
     return lines.reduce((best, el) => (distance(el) < distance(best) ? el : best)).dataset.item ?? null;
+  }
+
+  /** Tapping a drawing removes it; tapping a price divides it by the number of people. */
+  function tap(point: InkPoint) {
+    const line = [...(list.current?.querySelectorAll<HTMLElement>("li[data-item]") ?? [])].find((el) => {
+      const r = el.getBoundingClientRect();
+      return point.y >= r.top - 6 && point.y <= r.bottom + 6;
+    });
+    const item = line && items.find((i) => i.id === line.dataset.item);
+    if (!line || !item) return;
+    if (isMarked(marks[item.id])) {
+      setMarks((m) => ({ ...m, [item.id]: {} }));
+      setNotice(`${item.name}: Markierung entfernt.`);
+      return;
+    }
+    const price = line.querySelector(".rline-price")?.getBoundingClientRect();
+    if (!price || point.x < price.left - 16 || point.x > price.right + 16) return;
+    setMarks((m) => ({ ...m, [item.id]: { perPerson: true } }));
+    if (persons) {
+      setNotice(`${item.name} ÷ ${persons}: ${formatMoney(Math.round(item.total / persons), currency)} statt ${formatMoney(item.total, currency)}`);
+    } else {
+      setNotice(`${item.name} wird durch die Personenzahl geteilt – stell unten ein, wie viele es sind.`);
+      setAskPersons(true);
+      window.setTimeout(() => setAskPersons(false), 1600);
+    }
   }
 
   function readInk(strokes: Stroke[]) {
@@ -157,14 +204,15 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
             {step === "some" && (
               <>
                 <p className="muted">
-                  <b>Durchstreichen</b>, was nicht abgerechnet wird. <b>/2, /3 …</b> auf den Preis schreiben, um nur einen
-                  Teil abzurechnen. Scrollen mit zwei Fingern.
+                  <b>Durchstreichen</b>, was nicht abgerechnet wird. <b>/2, /3 …</b> auf den Preis schreiben oder den{" "}
+                  <b>Preis antippen</b>, um ihn durch die Personenzahl zu teilen. Antippen einer Markierung entfernt sie.
+                  Scrollen mit zwei Fingern.
                 </p>
                 <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
                   <PencilFilter />
                   <div className="receipt-paper">
                     <div className="receipt-lines-wrap writing">
-                      <InkLayer onInk={readInk} onStart={() => setTouched(true)} />
+                      <InkLayer onInk={readInk} onTap={tap} onStart={() => setTouched(true)} />
                       {demo && !touched && (
                         <svg className="ink-demo" width={demo.width} height="100%" aria-hidden="true">
                           <path
@@ -182,12 +230,18 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
                             pathLength={1}
                             d={`M${demo.writeX + 15} ${demo.writeY - 6} C ${demo.writeX + 17} ${demo.writeY - 15}, ${demo.writeX + 30} ${demo.writeY - 14}, ${demo.writeX + 28} ${demo.writeY - 5} C ${demo.writeX + 26} ${demo.writeY + 2}, ${demo.writeX + 16} ${demo.writeY + 8}, ${demo.writeX + 14} ${demo.writeY + 13} L ${demo.writeX + 30} ${demo.writeY + 12}`}
                           />
+                          <circle className="ink-demo-tap" cx={demo.tapX} cy={demo.tapY} r="14" />
+                          <text className="pencil ink-demo-tapped" x={demo.tapX - 62} y={demo.tapY + 7}>
+                            /{persons ?? 3}
+                          </text>
                         </svg>
                       )}
                       <ul className="receipt-lines" ref={list}>
                         {items.map((item) => {
                           const mark = marks[item.id] ?? {};
-                          const divided = mark.divisor && mark.divisor > 1 ? Math.round(item.total / mark.divisor) : null;
+                          const divisor = markDivisor(mark, persons);
+                          const divided = divisor > 1 ? Math.round(item.total / divisor) : null;
+                          const label = mark.perPerson ? (persons ?? "?") : mark.divisor;
                           return (
                             <li key={item.id} data-item={item.id} className={`rline${mark.struck ? " done" : ""}`}>
                               <div className="rline-main">
@@ -197,7 +251,7 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
                                       {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
                                       {item.name}
                                     </span>
-                                    {divided !== null && <span className="pencil rline-divisor">/{mark.divisor}</span>}
+                                    {(divided !== null || mark.perPerson) && <span className="pencil rline-divisor">/{label}</span>}
                                   </span>
                                 </span>
                                 <span className="rline-dots" aria-hidden="true" />
@@ -228,8 +282,8 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
                 <small>Niemand muss abhaken. Lässt sich auf der Rechnung jederzeit umschalten.</small>
               </span>
             </label>
-            {equal && (
-              <div className="row between shop-persons">
+            {(equal || step === "some") && (
+              <div className={`row between shop-persons${askPersons ? " ask" : ""}`}>
                 <span>Wie viele teilen sich den Einkauf?</span>
                 <div className="stepper-mini" role="group" aria-label="Personen, die sich den Einkauf teilen">
                   <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
@@ -242,10 +296,12 @@ export default function SupermarketSheet({ items, currency, onDone, onReview }: 
                 </div>
               </div>
             )}
-            {equal && (
+            {(equal || step === "some") && (
               <p className="muted small">
                 {persons
-                  ? `${formatMoney(Math.round(billedSum / persons), currency)} pro Person, inklusive dir.`
+                  ? equal
+                    ? `${formatMoney(Math.round(billedSum / persons), currency)} pro Person, inklusive dir.`
+                    : "Inklusive dir. Ein Tipp auf einen Preis teilt ihn durch diese Zahl."
                   : "Ohne Angabe wird gezählt, wer per QR-Code beitritt, plus du."}
               </p>
             )}

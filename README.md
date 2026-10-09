@@ -78,8 +78,9 @@ Die Erkennung merkt anhand des Geschäftsnamens und der Produkte, ob es ein Supe
 Dann fragt billsplit vor dem QR-Code, ob etwas nicht oder nur teilweise abgerechnet werden soll: „Alles aufteilen“
 oder „Manches nicht“. Bei „Manches nicht“ erscheint die Rechnung als Papierbeleg, auf dem Bleistift-Animationen
 vorführen, was geht: eine Zeile mit dem Finger **durchstreichen** (wird nicht abgerechnet) oder **/2, /3 …** auf den
-Preis schreiben (nur dieser Teil wird abgerechnet, z. B. 1 l Milch gekauft, aber nur 250 ml gebraucht → /4). Gescrollt
-wird dort mit zwei Fingern. Auf der fertigen Rechnung steht das Schreiben mit dem Finger weiterhin bereit. Die Gleichverteilung ist dabei vorausgewählt, optional
+Preis schreiben (nur dieser Teil wird abgerechnet, z. B. 1 l Milch gekauft, aber nur 250 ml gebraucht → /4). Ein
+**Tipp auf einen Preis** teilt ihn durch die darunter eingestellte Personenzahl, ein Tipp auf eine Markierung entfernt
+sie wieder. Gescrollt wird dort mit zwei Fingern. Auf der fertigen Rechnung steht das Schreiben mit dem Finger weiterhin bereit. Die Gleichverteilung ist dabei vorausgewählt, optional
 mit der Zahl der Personen, die sich den Einkauf teilen.
 
 **Testweise: auf die Rechnung schreiben.** Bei Supermarkt-Rechnungen mit „Manches nicht“ kann der Rechnungssteller über „✏️ Schreiben“

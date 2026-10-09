@@ -1,18 +1,23 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
-import type { Stroke } from "../lib/ink";
+import type { InkPoint, Stroke } from "../lib/ink";
 
 interface Props {
   /** Called with the strokes (in viewport coordinates) once the finger rested for a moment. */
   onInk: (strokes: Stroke[]) => void;
   /** Called when a stroke begins. */
   onStart?: () => void;
+  /** A tap (touch without drawing) at this viewport position, e.g. on a price or a drawing. */
+  onTap?: (point: InkPoint) => void;
 }
+
+/** Movement up to which a touch counts as a tap, not as a stroke. */
+const TAP_SLOP = 8;
 
 /** Pause after the last stroke before the writing is read, so "/" and "3" can be drawn separately. */
 const IDLE_MS = 800;
 
 /** A transparent sheet over the receipt lines to write on with a finger, drawn like pencil. */
-export default function InkLayer({ onInk, onStart }: Props) {
+export default function InkLayer({ onInk, onStart, onTap }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const strokes = useRef<Stroke[]>([]);
   const drawing = useRef(false);
@@ -98,6 +103,15 @@ export default function InkLayer({ onInk, onStart }: Props) {
     }
     if (!drawing.current) return;
     drawing.current = false;
+    const stroke = strokes.current[strokes.current.length - 1];
+    const moved = Math.max(...stroke.map((p) => Math.hypot(p.x - stroke[0].x, p.y - stroke[0].y)));
+    if (onTap && moved <= TAP_SLOP) {
+      // A tap, not writing: hand it over right away (any earlier strokes still get read).
+      strokes.current.pop();
+      redraw();
+      onTap(stroke[0]);
+      if (!strokes.current.length) return;
+    }
     timer.current = window.setTimeout(() => {
       const written = strokes.current;
       strokes.current = [];

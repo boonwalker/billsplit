@@ -1706,15 +1706,34 @@ input[aria-invalid="true"] {
 }
 
 .ink-demo-strike {
-  animation: demo-strike 7s ease-in-out 0.8s infinite;
+  animation: demo-strike 10.5s ease-in-out 0.8s infinite;
 }
 
 .ink-demo-slash {
-  animation: demo-slash 7s ease-in-out 0.8s infinite;
+  animation: demo-slash 10.5s ease-in-out 0.8s infinite;
 }
 
 .ink-demo-digit {
-  animation: demo-digit 7s ease-in-out 0.8s infinite;
+  animation: demo-digit 10.5s ease-in-out 0.8s infinite;
+}
+
+/* Third demo: a finger taps the price, then "/n" appears in pencil. */
+.ink-demo .ink-demo-tap {
+  fill: color-mix(in srgb, var(--mint) 45%, transparent);
+  stroke: var(--claim);
+  stroke-width: 2;
+  stroke-dasharray: none;
+  filter: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: demo-tap 10.5s ease-out 0.8s infinite;
+}
+
+.ink-demo-tapped {
+  font-size: 1.3rem;
+  fill: var(--pencil);
+  opacity: 0;
+  animation: demo-tapped 10.5s ease-out 0.8s infinite;
 }
 
 @keyframes demo-strike {
@@ -1722,12 +1741,12 @@ input[aria-invalid="true"] {
     stroke-dashoffset: 1;
     opacity: 0.9;
   }
-  15%,
-  35% {
+  10%,
+  24% {
     stroke-dashoffset: 0;
     opacity: 0.9;
   }
-  42%,
+  29%,
   100% {
     stroke-dashoffset: 0;
     opacity: 0;
@@ -1736,20 +1755,20 @@ input[aria-invalid="true"] {
 
 @keyframes demo-slash {
   0%,
-  45% {
+  31% {
     stroke-dashoffset: 1;
     opacity: 0;
   }
-  46% {
+  32% {
     stroke-dashoffset: 1;
     opacity: 0.9;
   }
-  52%,
-  82% {
+  36%,
+  56% {
     stroke-dashoffset: 0;
     opacity: 0.9;
   }
-  90%,
+  61%,
   100% {
     stroke-dashoffset: 0;
     opacity: 0;
@@ -1758,23 +1777,69 @@ input[aria-invalid="true"] {
 
 @keyframes demo-digit {
   0%,
-  53% {
+  37% {
     stroke-dashoffset: 1;
     opacity: 0;
   }
-  54% {
+  38% {
     stroke-dashoffset: 1;
     opacity: 0.9;
   }
-  64%,
-  82% {
+  44%,
+  56% {
     stroke-dashoffset: 0;
     opacity: 0.9;
   }
-  90%,
+  61%,
   100% {
     stroke-dashoffset: 0;
     opacity: 0;
+  }
+}
+
+@keyframes demo-tap {
+  0%,
+  65% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  67% {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  74% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes demo-tapped {
+  0%,
+  70% {
+    opacity: 0;
+  }
+  74%,
+  90% {
+    opacity: 0.9;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.shop-persons.ask {
+  border-radius: 12px;
+  animation: ask-persons 0.8s ease-in-out 2;
+}
+
+@keyframes ask-persons {
+  50% {
+    background: color-mix(in srgb, var(--mint) 35%, transparent);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--mint) 35%, transparent);
   }
 }
 

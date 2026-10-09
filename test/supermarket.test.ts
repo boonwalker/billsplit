@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMarks, isStrikeThrough } from "../src/components/SupermarketSheet";
+import { applyMarks, isStrikeThrough, markDivisor } from "../src/components/SupermarketSheet";
 import { parseReceiptText } from "../src/lib/receipt";
 
 const items = [
@@ -15,6 +15,13 @@ describe("supermarket receipts", () => {
       { id: "nudeln", name: "Spaghetti", qty: 2, total: 258 },
     ]);
     expect(applyMarks(items, { nudeln: { divisor: 1 } })).toEqual(items);
+  });
+
+  it("divides a tapped price by the number of people set below", () => {
+    expect(applyMarks(items, { dusch: { perPerson: true } }, 3)[2]).toMatchObject({ total: 65, fullTotal: 195, divisor: 3 });
+    // Without a head count the price stays as it is until one is set.
+    expect(applyMarks(items, { dusch: { perPerson: true } })[2]).toEqual(items[2]);
+    expect(markDivisor({ struck: true, divisor: 3 }, 2)).toBe(1);
   });
 
   it("tells a crossing-out stroke from writing", () => {
