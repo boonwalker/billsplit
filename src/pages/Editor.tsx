@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
+import SupermarketSheet from "../components/SupermarketSheet";
 import TipControl, { tipCents, tipPersons, type TipValue } from "../components/TipControl";
 import { api } from "../lib/api";
 import { feesTotal, newItemId, subtotal, type BillData, type BillFee, type BillItem } from "../lib/bill";
@@ -45,6 +46,8 @@ interface Draft {
   engine: "ai" | "ocr" | null;
   /** Kept from the bill when it is edited (set on the bill page). */
   equalSplit?: boolean;
+  /** A supermarket receipt: ask which items are not or only partly billed. */
+  supermarket?: boolean;
 }
 
 const newFeeRow = (fee?: { id?: string; name: string; amount: number }): FeeRow => ({
@@ -159,6 +162,8 @@ function isConfident(r: ParsedReceipt): boolean {
 export default function Editor({ billId }: { billId?: string }) {
   const editing = Boolean(billId);
   const [draft, setDraft] = useState<Draft>(() => (editing ? emptyDraft() : restoreDraft()));
+  /** Items of a supermarket receipt waiting for "anything not or only partly billed?". */
+  const [askShop, setAskShop] = useState<BillItem[] | null>(null);
   /** Items waiting for the tip / head count questions before the QR code is created. */
   const [askTip, setAskTip] = useState<BillItem[] | null>(null);
   const [loaded, setLoaded] = useState(!editing);
@@ -222,6 +227,7 @@ export default function Editor({ billId }: { billId?: string }) {
         rows: receipt.items.length ? receipt.items.map((i) => newRow(i)) : draft.rows,
         fees: receipt.fees.map((f) => newFeeRow(f)),
         delivery: receipt.delivery || receipt.fees.length > 0,
+        supermarket: receipt.supermarket,
       };
       setDraft(next);
       if (receipt.items.length === 0) {
@@ -230,6 +236,11 @@ export default function Editor({ billId }: { billId?: string }) {
         // Straight to the QR code – the payer can still correct lines from there.
         // Without a tip on the receipt, or for a delivery order, ask first.
         const recognized = next.rows.map(rowToItem).filter((i): i is BillItem => i !== null);
+        if (next.supermarket) {
+          setAskShop(recognized);
+          setBusy(null);
+          return;
+        }
         if (next.tipOnReceipt && !next.delivery) {
           await publish(toBillData(next, recognized));
           return;
@@ -275,6 +286,10 @@ export default function Editor({ billId }: { billId?: string }) {
     setShowErrors(true);
     if (items.some((i) => i === null) || validItems.length === 0) return;
     if (!billId) {
+      if (draft.supermarket) {
+        setAskShop(validItems);
+        return;
+      }
       // Nothing to ask: tip known and not an order shared by several people.
       if (draft.tipOnReceipt && !draft.delivery) return publish(toBillData(draft, validItems));
       setAskTip(validItems);
@@ -456,6 +471,19 @@ export default function Editor({ billId }: { billId?: string }) {
           </>
         )}
       </main>
+
+      {askShop && (
+        <SupermarketSheet
+          items={askShop}
+          currency={draft.currency}
+          onReview={() => setAskShop(null)}
+          onDone={(items, equalSplit, persons) => {
+            setAskShop(null);
+            const tip = { ...draft.tip, persons: persons ? String(persons) : "" };
+            void publish(toBillData({ ...draft, equalSplit, tip }, items));
+          }}
+        />
+      )}
 
       {askTip && (
         <div className="sheet-backdrop">

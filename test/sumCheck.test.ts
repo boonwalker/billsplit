@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { readWithSumCheck, reconcileHint, sumsMatch, type ParsedReceipt } from "../src/lib/receipt";
 
 // The Saitong Thai-Imbiss order: the "+2,00" ingredient line is already part of the 13,00.
-const base = { merchant: "Saitong Thai-Imbiss", date: "2026-09-27", currency: "EUR", tip: null, delivery: true, engine: "ai" as const };
+const base = { merchant: "Saitong Thai-Imbiss", date: "2026-09-27", currency: "EUR", tip: null, delivery: true, supermarket: false, engine: "ai" as const };
 const wrong: ParsedReceipt = {
   ...base,
   items: [

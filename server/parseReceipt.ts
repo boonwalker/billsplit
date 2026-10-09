@@ -26,6 +26,7 @@ const ReceiptSchema = z.object({
   tip: z.number(),
   fees: z.array(z.object({ name: z.string(), amount: z.number() })),
   delivery: z.boolean(),
+  supermarket: z.boolean(),
 });
 
 type ReceiptOutput = z.infer<typeof ReceiptSchema>;
@@ -34,7 +35,7 @@ type ReceiptOutput = z.infer<typeof ReceiptSchema>;
 const RECEIPT_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["merchant", "date", "currency", "items", "receipt_total", "tip", "fees", "delivery"],
+  required: ["merchant", "date", "currency", "items", "receipt_total", "tip", "fees", "delivery", "supermarket"],
   properties: {
     merchant: { type: "string", description: "Name of the restaurant or shop, empty if not printed." },
     date: { type: "string", description: "Date of the receipt as YYYY-MM-DD, empty if not printed." },
@@ -68,6 +69,7 @@ const RECEIPT_JSON_SCHEMA = {
       },
     },
     delivery: { type: "boolean", description: "True for a food delivery or takeaway order, false for a restaurant visit." },
+    supermarket: { type: "boolean", description: "True for a supermarket, grocery or drugstore purchase." },
   },
 } as const;
 
@@ -106,6 +108,7 @@ export function toParsedReceipt(out: ReceiptOutput): ParsedReceipt {
       .filter((f) => f.name.trim() && Number.isFinite(f.amount) && f.amount !== 0)
       .map((f) => ({ name: f.name.trim(), amount: toCents(f.amount) })),
     delivery: out.delivery,
+    supermarket: out.supermarket,
     engine: "ai",
   };
 }

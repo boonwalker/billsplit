@@ -35,6 +35,7 @@ async function recognizeWithAi(image: PreparedImage, onProgress: ProgressFn): Pr
     total: body.total ?? null,
     fees: Array.isArray(body.fees) ? body.fees : [],
     delivery: body.delivery === true,
+    supermarket: body.supermarket === true,
   };
 }
 
@@ -70,6 +71,7 @@ interface SampleReceipt {
   tip?: unknown;
   fees?: { name?: unknown; amount?: unknown }[];
   delivery?: unknown;
+  supermarket?: unknown;
 }
 
 const SAMPLE_ERRORS: Record<string, string> = {
@@ -100,7 +102,7 @@ async function sampleOnce(sample: SampleFn, image: PreparedImage, hint?: string)
       `${RECEIPT_INSTRUCTIONS}
 ${hint ? `\n${hint}\n` : ""}
 Reply with only one JSON object of this shape:
-{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable), "tip": number (0 if none), "fees": [{"name": string, "amount": number}], "delivery": boolean}`,
+{"merchant": string, "date": "YYYY-MM-DD" or "", "currency": "EUR", "items": [{"name": string, "quantity": integer, "line_total": number}], "receipt_total": number (0 if not readable), "tip": number (0 if none), "fees": [{"name": string, "amount": number}], "delivery": boolean, "supermarket": boolean}`,
       { images: [image.blob], modelTier: "default" },
     );
   } catch (e) {
@@ -124,6 +126,7 @@ Reply with only one JSON object of this shape:
       .filter((f) => typeof f?.name === "string" && f.name.trim() && Number.isFinite(Number(f.amount)) && Number(f.amount) !== 0)
       .map((f) => ({ name: String(f.name).trim(), amount: cents(f.amount) })),
     delivery: out.delivery === true,
+    supermarket: out.supermarket === true,
     engine: "ai",
   };
 }

@@ -19,6 +19,8 @@ export interface ParsedReceipt {
   fees: ReceiptFee[];
   /** A delivery or takeaway order (ordered together, not a restaurant visit). */
   delivery: boolean;
+  /** A supermarket, grocery or drugstore purchase (judged by shop name and products). */
+  supermarket: boolean;
   engine: "ai" | "ocr";
 }
 
@@ -44,6 +46,7 @@ export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop rec
   - a card or cash payment that is higher than the total without change given back, e.g. "Summe 36,50" and "Kartenzahlung 40,00" or "EC 40,00" means a tip of 3,50 (if "Rückgeld"/"Change" is printed, that difference is change, not tip).
   Use 0 only if none of these is present.
 - receipt_total is the printed total including fees but before any tip (if the printed total already contains a tip, subtract it), or 0 if not readable.
+- supermarket is true for a purchase in a supermarket, discounter, grocery store, organic market, drugstore or similar shop (e.g. REWE, EDEKA, Aldi, Lidl, Penny, Netto, Kaufland, Norma, Globus, Real, Tegut, Alnatura, denn's, dm, Rossmann, Müller, Spar, Billa, Migros, Coop, Tesco, Carrefour, or a grocery delivery service). Judge by the shop name and by the products (groceries, household goods, deposit "Pfand" lines, prices per kg). It is false for restaurants, cafés, bars, food delivery and other shops.
 - delivery is true for a food delivery or takeaway order (delivery app or website such as Lieferando, Wolt or Uber Eats, delivery address, delivery fee), false for a bill from a visit to a restaurant or shop.
 - Use a dot as decimal separator in numbers, regardless of how the receipt prints them.
 - Total check (do this before answering): add up all line_total values and all fee amounts. The result must equal receipt_total. If it does not, re-read the receipt and fix the cause – a sub-line price counted twice, a missed line, a discount, or a misread digit.
@@ -104,6 +107,10 @@ const LEADING_QTY = /^(\d{1,3})\s*(?:x|×|\*)?\s+(?=\D)/i;
 const UNIT_PRICE = new RegExp(String.raw`(?:^|\s)(?:à|a|@|x|×|\*)\s*${PRICE}(?![\w])`, "gi");
 /** A price standing on its own (not part of e.g. "0,25l"). */
 const STANDALONE_PRICE = new RegExp(String.raw`(?<![\w.,])${PRICE}(?![\w.,])`, "g");
+
+/** Supermarket chains and typical grocery receipt lines, for the OCR fallback. */
+const SUPERMARKET_WORDS =
+  /\b(rewe|edeka|aldi|lidl|penny|netto|kaufland|norma|globus|tegut|alnatura|denn'?s|rossmann|dm-?drogerie|drogerie|spar|billa|migros|coop|tesco|carrefour|supermarkt|pfand|leergut)\b/i;
 
 const FEE_WORDS = /(liefergeb|lieferkosten|lieferpauschale|liefer\w*zuschlag|servicegeb|service ?fee|delivery|bedienungszuschlag|bearbeitungsgeb|mindestbestell|kleinbestell|verpackung|tütengeb)/i;
 const TIP_WORDS = /\b(trinkgeld|tip|tipp|gratuity)\b/i;
@@ -220,5 +227,6 @@ export function parseReceiptText(text: string): ParsedReceipt {
   }
 
   const delivery = fees.length > 0 && /liefer|delivery|lieferando|wolt|uber ?eats/i.test(text);
-  return { merchant, date: findDate(text), currency: "EUR", items, total, tip, fees, delivery, engine: "ocr" };
+  const supermarket = SUPERMARKET_WORDS.test(text);
+  return { merchant, date: findDate(text), currency: "EUR", items, total, tip, fees, delivery, supermarket, engine: "ocr" };
 }

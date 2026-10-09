@@ -72,6 +72,13 @@ jedem Preis steht klein der Anteil pro Person, und unter der Summe wird sie durc
 wird wie beim Trinkgeld: alle Beigetretenen plus Rechnungssteller, oder die erwartete Personenzahl, solange noch
 jemand fehlt.
 
+### Supermarkt-Einkäufe
+
+Die Erkennung merkt anhand des Geschäftsnamens und der Produkte, ob es ein Supermarkt- oder Drogerie-Einkauf ist.
+Dann fragt billsplit vor dem QR-Code, welche Artikel nicht oder nur teilweise abgerechnet werden sollen (z. B. 1 l
+Milch gekauft, aber nur 250 ml fürs Rezept gebraucht → ¼). Die Gleichverteilung ist dabei vorausgewählt, optional
+mit der Zahl der Personen, die sich den Einkauf teilen.
+
 ### Originalbeleg
 
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten
