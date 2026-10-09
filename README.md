@@ -37,8 +37,9 @@ Wenn ein Freund scannt, steht sein Betrag noch nicht fest. Erst wenn er auf „B
 seinen individuellen Link: den Empfänger aus der Rechnung plus den gerade berechneten Anteil, z. B.
 `https://www.paypal.com/paypalme/niklas/18.50EUR`.
 
-Die PayPal-App übernimmt aus diesem Link in der Praxis oft nur den Empfänger. Deshalb kopiert der Bezahlen-Button
-den Betrag zusätzlich in die Zwischenablage, sodass er in PayPal nur noch eingefügt werden muss.
+Die PayPal-App übernimmt aus diesem Link in der Praxis oft nur den Empfänger. Deshalb kopiert der erste Tipp auf
+„Mit PayPal bezahlen“ den Betrag in die Zwischenablage, der zweite („Weiter zu PayPal“) öffnet PayPal. Dort muss
+der Betrag nur noch eingefügt werden. Zwei Tipps, weil iOS das Kopieren verwirft, wenn derselbe Tipp die App verlässt.
 
 > **Wichtig: PayPal.Me vs. E-Mail.** PayPal bietet nur über **PayPal.Me** einen dokumentierten Link, der Empfänger
 > *und* Betrag vorbelegt. Ist im Profil nur eine E-Mail-Adresse hinterlegt, öffnet billsplit die PayPal-Seite

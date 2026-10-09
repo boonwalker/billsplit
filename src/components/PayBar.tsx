@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
 import { centsToInput, formatMoney } from "../lib/money";
+import { copyText } from "../lib/clipboard";
 import { payAction } from "../lib/payment";
 
 interface Props {
@@ -12,7 +13,8 @@ interface Props {
 /** Sticky bottom bar for friends: their individual sum and the pay button. */
 export default function PayBar({ snapshot, onPay }: Props) {
   const [copied, setCopied] = useState(false);
-  const [amountCopied, setAmountCopied] = useState<string | null>(null);
+  /** Amount copied in the first tap; the second tap then opens PayPal. */
+  const [prepared, setPrepared] = useState<{ amount: string; copied: boolean } | null>(null);
   const { data, participants, me, myPayment, ownerName } = snapshot;
   const share = me ? participantShare(data, participants, me) : { subtotal: 0, shared: 0, total: 0 };
   const alreadyPaid = myPayment?.amount ?? 0;
@@ -22,18 +24,14 @@ export default function PayBar({ snapshot, onPay }: Props) {
 
   /**
    * PayPal often drops the amount from the PayPal.Me link (it opens with only the
-   * recipient preset), so the amount goes to the clipboard to paste it there.
-   * Called right in the tap, as Safari only allows clipboard writes during a gesture.
+   * recipient preset), so the amount goes to the clipboard to paste it there. This
+   * happens in a tap of its own: when the same tap also left for PayPal, iOS lost the
+   * clipboard write.
    */
-  function payByPaypalMe(amount: number) {
-    onPay();
-    const text = centsToInput(amount);
-    navigator.clipboard?.writeText(text).then(
-      () => setAmountCopied(text),
-      () => {
-        // clipboard not available – the amount is on the button anyway
-      },
-    );
+  const dueText = centsToInput(due);
+  const ready = prepared?.amount === dueText ? prepared : null;
+  function prepareAmount() {
+    setPrepared({ amount: dueText, copied: copyText(dueText) });
   }
 
   async function payByEmail(email: string) {
@@ -78,26 +76,33 @@ export default function PayBar({ snapshot, onPay }: Props) {
             href={action.url}
             target="_blank"
             rel="noreferrer"
-            onClick={() => action.kind === "paypalMe" && payByPaypalMe(myPayment.amount)}
+            onClick={() => action.kind === "paypalMe" && copyText(centsToInput(myPayment.amount))}
           >
             PayPal erneut öffnen
           </a>
         )}
 
-        {action.kind === "paypalMe" && !(myPayment && nothing) && (
-          <a
+        {action.kind === "paypalMe" && !(myPayment && nothing) && !ready && (
+          <button
+            type="button"
             className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
-            href={nothing ? undefined : action.url}
-            target="_blank"
-            rel="noreferrer"
-            aria-disabled={nothing}
-            onClick={(e) => (nothing ? e.preventDefault() : payByPaypalMe(due))}
+            disabled={nothing}
+            onClick={prepareAmount}
           >
             {nothing ? "Hake deine Positionen ab" : <>Mit PayPal bezahlen · {formatMoney(due, data.currency)}</>}
-          </a>
+          </button>
         )}
-        {action.kind === "paypalMe" && amountCopied && (
-          <p className="paybar-note">Betrag {amountCopied} kopiert – falls PayPal ihn nicht übernimmt, einfach einfügen.</p>
+        {action.kind === "paypalMe" && !(myPayment && nothing) && ready && (
+          <>
+            <p className="paybar-note paybar-copied">
+              {ready.copied
+                ? `✓ ${formatMoney(due, data.currency)} kopiert – in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.`
+                : `Trag in PayPal ${formatMoney(due, data.currency)} ein.`}
+            </p>
+            <a className="btn btn-paypal btn-large" href={action.url} target="_blank" rel="noreferrer" onClick={onPay}>
+              Weiter zu PayPal
+            </a>
+          </>
         )}
 
         {action.kind === "email" && !(myPayment && nothing) && (

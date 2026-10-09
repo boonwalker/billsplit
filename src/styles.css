@@ -1811,6 +1811,11 @@ input[aria-invalid="true"] {
   opacity: 0.85;
 }
 
+.paybar-copied {
+  font-weight: 700;
+  opacity: 1;
+}
+
 /* ───────────────────────── sheets ───────────────────────── */
 .sheet-backdrop {
   position: fixed;
