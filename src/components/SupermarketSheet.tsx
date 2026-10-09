@@ -54,8 +54,8 @@ export function orderForMarking(items: BillItem[], isPersonal: (item: BillItem) 
 /** Where the demo animations run: a stroke across the first line, a tap on the price of the second. */
 interface DemoSpots {
   strikeY: number;
-  tapX: number;
-  tapY: number;
+  /** Two lines the tap demo alternates between: where the finger taps and where "/2" appears. */
+  taps: { x: number; y: number; textX: number }[];
   width: number;
 }
 
@@ -93,15 +93,18 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
     const wrap = list.current.parentElement;
     if (!lines.length || !wrap) return;
     const centre = (el: HTMLElement) => el.offsetTop + el.offsetHeight / 2;
-    const second = lines[1] ?? lines[0];
-    const price = second.querySelector<HTMLElement>(".rline-price");
-    setDemo({
-      strikeY: centre(lines[0]),
-      tapX: price ? second.offsetLeft + price.offsetLeft + price.offsetWidth / 2 : wrap.offsetWidth - 40,
-      tapY: centre(second),
-      width: wrap.offsetWidth,
+    // Tap demos on shared items (after the likely personal ones), the strike on the first line.
+    const all = [...lines];
+    const shared = all.slice(Math.min(personalCount, Math.max(0, all.length - 2)));
+    const tapLines = (shared.length > 1 ? shared : all).slice(0, 2);
+    const taps = tapLines.map((line) => {
+      const name = line.querySelector<HTMLElement>(".rline-strike");
+      const nameLeft = line.offsetLeft + (name?.offsetLeft ?? 0);
+      const nameWidth = name?.offsetWidth ?? 80;
+      return { x: nameLeft + Math.min(nameWidth / 2, 70), y: centre(line), textX: nameLeft + nameWidth + 8 };
     });
-  }, [step, items]);
+    setDemo({ strikeY: centre(lines[0]), taps, width: wrap.offsetWidth });
+  }, [step, items, personalCount]);
 
   /** The line under a vertical position (the nearest one when written between lines). */
   function lineAt(y: number): string | null {
@@ -225,10 +228,18 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                       pathLength={1}
                       d={`M6 ${demo.strikeY + 2} C ${demo.width * 0.3} ${demo.strikeY - 3}, ${demo.width * 0.6} ${demo.strikeY + 4}, ${demo.width - 8} ${demo.strikeY - 1}`}
                     />
-                    <circle className="ink-demo-tap" cx={demo.tapX} cy={demo.tapY} r="16" />
-                    <text className="pencil ink-demo-tapped" x={demo.tapX - 72} y={demo.tapY + 8}>
-                      /{persons ?? 3}
-                    </text>
+                    {demo.taps.map((t, i) => (
+                      <g key={i} className={`ink-demo-tap-group tap-${i + 1}`}>
+                        <circle className="ink-demo-tap" cx={t.x} cy={t.y} r="16" />
+                        {/* "/2" written in pencil where the mark appears after a real tap. */}
+                        <path className="ink-demo-slash" pathLength={1} d={`M${t.textX} ${t.y + 13} L ${t.textX + 11} ${t.y - 14}`} />
+                        <path
+                          className="ink-demo-two"
+                          pathLength={1}
+                          d={`M${t.textX + 15} ${t.y - 7} C ${t.textX + 17} ${t.y - 16}, ${t.textX + 31} ${t.y - 15}, ${t.textX + 29} ${t.y - 6} C ${t.textX + 27} ${t.y + 2}, ${t.textX + 17} ${t.y + 8}, ${t.textX + 15} ${t.y + 13} L ${t.textX + 31} ${t.y + 12}`}
+                        />
+                      </g>
+                    ))}
                   </svg>
                 )}
                 <ul className="receipt-lines" ref={list}>

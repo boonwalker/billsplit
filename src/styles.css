@@ -1910,7 +1910,7 @@ input[aria-invalid="true"] {
 }
 
 .ink-demo-strike {
-  animation: demo-strike 7s ease-in-out 0.8s infinite;
+  animation: demo-strike 7s ease-in-out 0.8s 3;
 }
 
 /* Third demo: a finger taps the price, then "/n" appears in pencil. */
@@ -1922,14 +1922,22 @@ input[aria-invalid="true"] {
   filter: none;
   transform-box: fill-box;
   transform-origin: center;
-  animation: demo-tap 7s ease-out 0.8s infinite;
+  animation: demo-tap 7s ease-out 0.8s 3;
 }
 
-.ink-demo-tapped {
-  font-size: 1.3rem;
-  fill: var(--pencil);
-  opacity: 0;
-  animation: demo-tapped 7s ease-out 0.8s infinite;
+.ink-demo .ink-demo-slash {
+  animation: demo-write-slash 7s ease-in-out 0.8s 3;
+}
+
+.ink-demo .ink-demo-two {
+  animation: demo-write-two 7s ease-in-out 0.8s 3;
+}
+
+/* The second tap demo runs on another line, shortly after the first. */
+.ink-demo .tap-2 .ink-demo-tap,
+.ink-demo .tap-2 .ink-demo-slash,
+.ink-demo .tap-2 .ink-demo-two {
+  animation-delay: 2.6s;
 }
 
 @keyframes demo-strike {
@@ -1968,17 +1976,46 @@ input[aria-invalid="true"] {
   }
 }
 
-@keyframes demo-tapped {
+@keyframes demo-write-slash {
   0%,
-  58% {
+  57% {
+    stroke-dashoffset: 1;
     opacity: 0;
   }
-  63%,
+  58% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  62%,
   90% {
+    stroke-dashoffset: 0;
     opacity: 0.9;
   }
   96%,
   100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes demo-write-two {
+  0%,
+  62% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  63% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  70%,
+  90% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  96%,
+  100% {
+    stroke-dashoffset: 0;
     opacity: 0;
   }
 }
