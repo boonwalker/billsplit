@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMarks, markDivisor, orderForMarking } from "../src/components/SupermarketSheet";
+import { applyMarks, orderForMarking } from "../src/components/SupermarketSheet";
 import { looksPersonal } from "../src/lib/personal";
 import { parseReceiptText } from "../src/lib/receipt";
 
@@ -10,19 +10,9 @@ const items = [
 ];
 
 describe("supermarket receipts", () => {
-  it("leaves crossed-out lines out and divides tapped lines by the number of people", () => {
-    expect(applyMarks(items, { milch: { perPerson: true }, dusch: { struck: true } }, 4)).toEqual([
-      { id: "milch", name: "Vollmilch 1l", qty: 1, total: 30, fullTotal: 119, divisor: 4 },
-      { id: "nudeln", name: "Spaghetti", qty: 2, total: 258 },
-    ]);
+  it("leaves crossed-out lines out", () => {
+    expect(applyMarks(items, { dusch: { struck: true }, milch: { struck: false } }).map((i) => i.id)).toEqual(["milch", "nudeln"]);
     expect(applyMarks(items, {})).toEqual(items);
-  });
-
-  it("follows the head count set below", () => {
-    expect(applyMarks(items, { dusch: { perPerson: true } }, 3)[2]).toMatchObject({ total: 65, fullTotal: 195, divisor: 3 });
-    // Without a head count the price stays as it is until one is set.
-    expect(applyMarks(items, { dusch: { perPerson: true } })[2]).toEqual(items[2]);
-    expect(markDivisor({ struck: true }, 2)).toBe(1);
   });
 
   it("lists items that are probably not shared first", () => {
