@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import {
   billedItems,
   billTotal,
@@ -337,6 +337,46 @@ function EqualFraction({ total, people, share, currency }: { total: number; peop
   );
 }
 
+/** Where the tap demo runs: the spot a finger taps on two lines, then they get crossed out. */
+interface TapDemo {
+  taps: { x: number; y: number }[];
+  width: number;
+}
+
+const TAP_DEMO_KEY = (billId: string) => `billsplit.tapDemo.${billId}`;
+
+/**
+ * Equal split, payer's view: shows a few times on two lines that tapping crosses a line out.
+ * Runs once per bill (and stops as soon as the payer taps a line).
+ */
+function useTapDemo(billId: string, enabled: boolean, list: RefObject<HTMLUListElement | null>) {
+  const [demo, setDemo] = useState<TapDemo | null>(null);
+  useLayoutEffect(() => {
+    if (!enabled || !list.current) return;
+    try {
+      if (localStorage.getItem(TAP_DEMO_KEY(billId))) return;
+      localStorage.setItem(TAP_DEMO_KEY(billId), "1");
+    } catch {
+      // Without storage the demo simply shows again next time.
+    }
+    const lines = [...list.current.querySelectorAll<HTMLElement>("li[data-item]:not(.excluded)")].slice(0, 2);
+    const wrap = list.current.parentElement;
+    if (!lines.length || !wrap) return;
+    // Layout offsets relative to the wrapper are not affected by the lines' print-in animation.
+    const taps = lines.map((line) => {
+      const name = line.querySelector<HTMLElement>(".rline-strike");
+      // Through the item name, also when a unit price is printed below it.
+      const row = line.querySelector<HTMLElement>(".rline-name");
+      return {
+        x: line.offsetLeft + (name?.offsetLeft ?? 0) + Math.min((name?.offsetWidth ?? 80) / 2, 70),
+        y: line.offsetTop + (row ? row.offsetTop + row.offsetHeight * 0.55 : line.offsetHeight / 2),
+      };
+    });
+    setDemo({ taps, width: wrap.offsetWidth });
+  }, [billId, enabled, list]);
+  return [demo, () => setDemo(null)] as const;
+}
+
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
 export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded }: Props) {
   const { data, participants, me, ownerName } = snapshot;
@@ -347,6 +387,9 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
   const equal = Boolean(data.equalSplit);
   const people = splitHeadCount(data, participants);
   const perPerson = (amount: number) => (equal ? Math.round(amount / people) : undefined);
+  const list = useRef<HTMLUListElement>(null);
+  const [demo, endDemo] = useTapDemo(snapshot.id, Boolean(onToggleExcluded), list);
+  const toggleExcluded = onToggleExcluded && ((itemId: string) => (endDemo(), onToggleExcluded(itemId)));
 
   return (
     <article className="receipt" aria-label="Digitale Rechnung">
@@ -368,7 +411,21 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
         </div>
 
         <div className="receipt-lines-wrap">
-          <ul className="receipt-lines">
+          {demo && (
+            <svg className="ink-demo bill-demo" width={demo.width} height="100%" aria-hidden="true">
+              {demo.taps.map((t, i) => (
+                <g key={i} className={`ink-demo-tap-group tap-${i + 1}`}>
+                  <circle className="ink-demo-tap" cx={t.x} cy={t.y} r="16" />
+                  <path
+                    className="ink-demo-tapstrike"
+                    pathLength={1}
+                    d={`M6 ${t.y + 2} C ${demo.width * 0.3} ${t.y - 2}, ${demo.width * 0.6} ${t.y + 3}, ${demo.width - 8} ${t.y}`}
+                  />
+                </g>
+              ))}
+            </svg>
+          )}
+          <ul className="receipt-lines" ref={list}>
             {data.items.map((item, idx) => (
               <ReceiptLine
                 key={item.id}
@@ -378,7 +435,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 me={me}
                 currency={data.currency}
                 onSetSlots={onSetSlots}
-                onToggleExcluded={onToggleExcluded}
+                onToggleExcluded={toggleExcluded}
                 each={perPerson(item.total)}
                 people={people}
               />

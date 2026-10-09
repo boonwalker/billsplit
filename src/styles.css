@@ -2073,6 +2073,8 @@ input[aria-invalid="true"] {
   stroke-width: 2;
   stroke-dasharray: none;
   filter: none;
+  /* Hidden while the animation waits for its turn. */
+  opacity: 0;
   transform-box: fill-box;
   transform-origin: center;
   animation: demo-tap 7s ease-out 0.8s 3;
@@ -2086,6 +2088,17 @@ input[aria-invalid="true"] {
 .ink-demo .tap-2 .ink-demo-tap,
 .ink-demo .tap-2 .ink-demo-tapstrike {
   animation-delay: 2.6s;
+}
+
+/* On the finished bill the demo waits until the receipt has printed in. */
+.bill-demo .tap-1 .ink-demo-tap,
+.bill-demo .tap-1 .ink-demo-tapstrike {
+  animation-delay: 1.4s;
+}
+
+.bill-demo .tap-2 .ink-demo-tap,
+.bill-demo .tap-2 .ink-demo-tapstrike {
+  animation-delay: 3.2s;
 }
 
 @keyframes demo-strike {

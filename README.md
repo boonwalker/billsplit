@@ -74,7 +74,8 @@ jemand fehlt.
 
 Vergessene Artikel, die nicht für alle waren, kann der Rechnungssteller in der Gleichverteilung noch **antippen**:
 Die Zeile wird eingedrückt, ploppt beim Loslassen wieder auf und wird durchgestrichen. Gestrichene Artikel bleiben
-auf dem Beleg sichtbar, zählen aber nicht mehr zur Summe; nochmal antippen nimmt sie wieder auf.
+auf dem Beleg sichtbar, zählen aber nicht mehr zur Summe; nochmal antippen nimmt sie wieder auf. Beim ersten Öffnen einer
+solchen Rechnung führt eine kurze Animation auf zwei Zeilen vor, wie Antippen durchstreicht.
 
 ### Supermarkt-Einkäufe
 
