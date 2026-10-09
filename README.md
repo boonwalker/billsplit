@@ -65,6 +65,10 @@ oder Abholbestellung (Gebühren auf dem Beleg oder typische Liefer-App), fragt e
 Hakt mehr als eine Person dieselbe Position ab (z. B. eine Vorspeisenplatte), wird sie automatisch anteilig
 geteilt. Insgesamt wird sie nie mehr als einmal berechnet.
 
+Bei Positionen mit mehreren Stück (z. B. 3x Bier) kann jeder höchstens so viele Stück übernehmen, wie noch frei
+sind. Hat Anna schon 1 von 3 abgehakt, kann Ben maximal die restlichen 2 nehmen. Der Server prüft das ebenfalls,
+falls zwei Personen gleichzeitig tippen.
+
 ## Technik
 
 | Teil | Umsetzung |

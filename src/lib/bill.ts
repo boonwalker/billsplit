@@ -177,11 +177,22 @@ export function unassignedAmount(data: BillData, participants: PublicParticipant
 }
 
 /** Drops claims for removed items and clamps units to the item quantity. */
-export function sanitizeClaims(claims: ItemClaims, items: BillItem[]): ItemClaims {
+/**
+ * Most units one person may take of an item. A single item can be shared by several
+ * people; of a multi-quantity item only what the others have left is available.
+ */
+export function unitLimit(item: BillItem, othersClaims: ItemClaims[]): number {
+  if (item.qty <= 1) return 1;
+  const taken = othersClaims.reduce((sum, c) => sum + (c[item.id] ?? 0), 0);
+  return Math.max(0, item.qty - taken);
+}
+
+/** Units of one participant, limited to the bill's items and to what the others have left. */
+export function sanitizeClaims(claims: ItemClaims, items: BillItem[], othersClaims: ItemClaims[] = []): ItemClaims {
   const out: ItemClaims = {};
   for (const item of items) {
-    const units = Math.floor(Number(claims[item.id] ?? 0));
-    if (units > 0) out[item.id] = Math.min(units, item.qty);
+    const units = Math.min(Math.floor(Number(claims[item.id] ?? 0)), unitLimit(item, othersClaims));
+    if (units > 0) out[item.id] = units;
   }
   return out;
 }

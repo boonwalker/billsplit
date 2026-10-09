@@ -72,6 +72,35 @@ describe("BillStore", () => {
     expect(store.snapshot(id, anna).participants.find((p) => p.id === anna)?.claims).toEqual({ bier: 2 });
   });
 
+  it("never hands out more units of a multi-quantity item than the bill has", () => {
+    const { store, owner, anna, id } = setup();
+    const ben = participantIdFromKey("ben-key-0123456789");
+    store.join(id, anna, "Anna");
+    store.join(id, ben, "Ben");
+    store.setClaims(id, anna, { bier: 1 });
+    store.setClaims(id, ben, { bier: 3 });
+    const claims = (pid: string) => store.snapshot(id, owner).participants.find((p) => p.id === pid)?.claims;
+    expect(claims(ben)).toEqual({ bier: 2 });
+    // Nothing left for the payer; a single item can still be shared.
+    store.setClaims(id, owner, { bier: 1, pizza: 1 });
+    store.setClaims(id, anna, { bier: 1, pizza: 1 });
+    expect(claims(owner)).toEqual({ pizza: 1 });
+    expect(claims(anna)).toEqual({ bier: 1, pizza: 1 });
+  });
+
+  it("keeps earlier claims when the payer lowers a quantity", () => {
+    const { store, owner, anna, id } = setup();
+    const ben = participantIdFromKey("ben-key-0123456789");
+    store.join(id, anna, "Anna");
+    store.join(id, ben, "Ben");
+    store.setClaims(id, anna, { bier: 2 });
+    store.setClaims(id, ben, { bier: 1 });
+    store.updateData(id, owner, { ...data, items: [{ id: "bier", name: "Bier", qty: 2, total: 800 }] });
+    const view = store.snapshot(id, owner);
+    expect(view.participants.find((p) => p.id === anna)?.claims).toEqual({ bier: 2 });
+    expect(view.participants.find((p) => p.id === ben)?.claims).toEqual({});
+  });
+
   it("rejects claims from devices that did not join", () => {
     const { store, anna, id } = setup();
     expect(() => store.setClaims(id, anna, { bier: 1 })).toThrow(StoreError);

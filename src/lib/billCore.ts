@@ -91,7 +91,10 @@ export class BillCore {
   setClaims(billId: string, participantId: string, claims: ItemClaims): void {
     const bill = this.get(billId);
     const p = this.participant(bill, participantId);
-    p.claims = sanitizeClaims(claims, bill.data.items);
+    const others = Object.entries(bill.participants)
+      .filter(([id]) => id !== participantId)
+      .map(([, other]) => other.claims);
+    p.claims = sanitizeClaims(claims, bill.data.items, others);
     this.changed(billId);
   }
 
@@ -118,7 +121,12 @@ export class BillCore {
     const bill = this.get(billId);
     if (requesterId !== bill.ownerId) throw new BillError("Nur wer die Rechnung bezahlt hat, kann sie bearbeiten.", 403);
     bill.data = data;
-    for (const p of Object.values(bill.participants)) p.claims = sanitizeClaims(p.claims, data.items);
+    // Earlier claims win when a reduced quantity no longer covers everyone.
+    const kept: ItemClaims[] = [];
+    for (const p of Object.values(bill.participants)) {
+      p.claims = sanitizeClaims(p.claims, data.items, kept);
+      kept.push(p.claims);
+    }
     this.changed(billId);
   }
 

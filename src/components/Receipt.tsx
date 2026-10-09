@@ -9,6 +9,7 @@ import {
   splitHeadCount,
   subtotal,
   tipTotal,
+  unitLimit,
   type BillItem,
   type BillSnapshot,
   type PublicParticipant,
@@ -64,7 +65,12 @@ function ReceiptLine({
     .map((p) => `${p.id}:${p.claims[item.id]}`)
     .join(",");
   const flash = useFlash(others);
-  const interactive = Boolean(onSetUnits && me);
+  // Of a multi-quantity item nobody can take more than the others have left.
+  const maxUnits = unitLimit(
+    item,
+    participants.filter((p) => p.id !== me).map((p) => p.claims),
+  );
+  const interactive = Boolean(onSetUnits && me) && (myUnits > 0 || maxUnits > 0);
 
   function toggle() {
     if (!onSetUnits) return;
@@ -116,7 +122,7 @@ function ReceiptLine({
           <span>
             {myUnits} von {item.qty} für dich
           </span>
-          <button type="button" onClick={() => onSetUnits!(item.id, myUnits + 1)} disabled={myUnits >= item.qty} aria-label="Eins mehr">
+          <button type="button" onClick={() => onSetUnits!(item.id, myUnits + 1)} disabled={myUnits >= maxUnits} aria-label="Eins mehr">
             +
           </button>
         </div>
