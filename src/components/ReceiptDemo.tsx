@@ -54,11 +54,13 @@ export function demoLayout(list: HTMLUListElement, selector = "li[data-item]"): 
   };
   const singles = lines.filter((line) => line.dataset.qty === "1");
   const [strikeLine, tapLine] = singles;
-  const holdLine = lines.find((line) => line !== strikeLine && line !== tapLine) ?? lines[lines.length - 1];
+  // The long press too only on a single item, preferably a third one (the steps run one after
+  // another, so otherwise one of the first two); without any single item it is left out.
+  const holdLine = singles[2] ?? singles[0];
   return {
     strike: strikeLine && spot(strikeLine),
     tap: tapLine && spot(tapLine),
-    hold: spot(holdLine),
+    hold: holdLine && spot(holdLine),
     width: wrap.offsetWidth,
   };
 }

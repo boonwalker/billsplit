@@ -117,7 +117,7 @@ Lesen markiert, ergänzt um eine Stichwortliste), stehen oben. **Gedrückt halte
 auf das „/2“ hebt es wieder auf, statt die Zeile zu streichen. Eine
 Anfangsanimation zeigt das im Loop, bis der Beleg berührt wird: eine Zeile wird mit dem Finger durchgestrichen, eine
 zweite angetippt und dann durchgestrichen, eine dritte gedrückt gehalten (ein Ring füllt sich um den Finger, „/2“
-erscheint, eine Comic-Sprechblase erklärt es). Durchgestrichen werden in der Animation nur Positionen mit einem Stück.
+erscheint, eine Comic-Sprechblase erklärt es). Die Animation nutzt nur Positionen mit einem Stück.
 
 ### Originalbeleg
 
