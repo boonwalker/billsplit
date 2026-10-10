@@ -1633,14 +1633,20 @@ input[aria-invalid="true"] {
 .rline.strikable .rline-text,
 .rline.strikable .rline-each,
 .rline.strikable .rline-price,
-.rline.strikable .rline-div {
+.rline.strikable .rline-div,
+.rline.pressable .rline-text,
+.rline.pressable .rline-each,
+.rline.pressable .rline-price,
+.rline.pressable .rline-div {
   transition:
     transform 0.32s cubic-bezier(0.3, 1.8, 0.5, 1),
     background-size 0.45s ease 0.15s,
     color 0.3s ease;
 }
 
+.rline.pressable .rline-main,
 .rline.strikable .rline-main {
+  -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
@@ -1650,7 +1656,11 @@ input[aria-invalid="true"] {
 .rline.strikable.holding .rline-text,
 .rline.strikable.holding .rline-each,
 .rline.strikable.holding .rline-price,
-.rline.strikable.holding .rline-div {
+.rline.strikable.holding .rline-div,
+.rline.pressable.holding .rline-text,
+.rline.pressable.holding .rline-each,
+.rline.pressable.holding .rline-price,
+.rline.pressable.holding .rline-div {
   transform: scale(0.93, 0.84);
   transition-duration: 0.09s, 0.45s, 0.3s;
   transition-timing-function: ease-out, ease, ease;
@@ -3422,14 +3432,16 @@ input[aria-invalid="true"] {
 }
 
 /* Partly crossed out: the receipt price small above the billed one, so the name keeps its room. */
-.rline.partly .rline-price {
+.rline.partly .rline-price,
+.rline.repriced .rline-price {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
   line-height: 1.15;
 }
 
-.rline.partly .rline-price .rline-full {
+.rline.partly .rline-price .rline-full,
+.rline.repriced .rline-price .rline-full {
   margin: 0 0 1px;
 }
 
@@ -3471,4 +3483,47 @@ input[aria-invalid="true"] {
 .fee-line.strikable.holding .fee-strike {
   transform: scale(0.93, 0.84);
   transition-duration: 0.45s, 0.3s, 0.09s;
+}
+
+/* Long press on a line (payer): only a part of it goes into the split. */
+.divisor-sheet {
+  align-items: center;
+  text-align: center;
+}
+
+.divisor-sheet h2 {
+  align-self: stretch;
+}
+
+.divisor-big {
+  gap: 10px;
+  margin: 6px 0 2px;
+}
+
+.divisor-big .divide-by-sign {
+  width: 34px;
+  height: 80px;
+}
+
+.divisor-big .divide-by-value {
+  font-size: 4rem;
+  min-width: 1.2ch;
+}
+
+.divisor-big .divide-by-arrows button {
+  width: 64px;
+  height: 34px;
+}
+
+.divisor-big .divide-by-arrows button:disabled {
+  opacity: 0.35;
+}
+
+.divisor-result {
+  margin: 0;
+  color: var(--muted);
+}
+
+.divisor-result b {
+  color: var(--text);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import {
   billedItem,
   billedItems,
@@ -20,6 +20,7 @@ import {
   type PublicParticipant,
 } from "../lib/bill";
 import { formatMoney } from "../lib/money";
+import { vibrate } from "../lib/haptics";
 import ClaimDemo, { onceInView, useClaimDemo } from "./ClaimDemo";
 
 interface Props {
@@ -30,6 +31,8 @@ interface Props {
   onShowOriginal?: () => void;
   /** Payer in equal split: crosses a line out (or brings it back) so it is not billed. */
   onToggleExcluded?: (itemId: string) => void;
+  /** Payer: a line was held – open its settings (bill only a part). */
+  onEditDivisor?: (itemId: string) => void;
   /** … the same for a fee and for the tip. */
   onToggleFee?: (feeId: string) => void;
   onToggleTip?: () => void;
@@ -78,6 +81,7 @@ function ReceiptLine({
   currency,
   onSetSlots,
   onToggleExcluded,
+  onLongPress,
   each,
   people = 1,
 }: {
@@ -92,6 +96,8 @@ function ReceiptLine({
   people?: number;
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
   onToggleExcluded?: (itemId: string) => void;
+  /** Payer: holding the line opens its settings (bill only a part of it). */
+  onLongPress?: () => void;
 }) {
   const holders = slotHolders(item.id, participants);
   const mine = me ? participants.find((p) => p.id === me) : undefined;
@@ -128,7 +134,40 @@ function ReceiptLine({
   const takenByOthers = canEdit && done && myUnits === 0;
   const interactive = onToggleExcluded ? true : canEdit && !takenByOthers && (myUnits > 0 || freeSlots.length > 0);
 
+  // Long press (payer): opens the settings of the line instead of ticking or striking it.
+  const pressTimer = useRef<number | null>(null);
+  const pressStart = useRef<{ x: number; y: number } | null>(null);
+  const longPressed = useRef(false);
+  function endPress() {
+    if (pressTimer.current) window.clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+    pressStart.current = null;
+    setHolding(false);
+  }
+  function pressDown(e: ReactPointerEvent) {
+    setHolding(true);
+    if (!onLongPress) return;
+    longPressed.current = false;
+    pressStart.current = { x: e.clientX, y: e.clientY };
+    pressTimer.current = window.setTimeout(() => {
+      longPressed.current = true;
+      endPress();
+      vibrate([12]);
+      onLongPress();
+    }, 480);
+  }
+  function pressMove(e: ReactPointerEvent) {
+    const start = pressStart.current;
+    if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) endPress();
+  }
+
   function toggle() {
+    // The click that ends a long press only closes it.
+    if (longPressed.current) {
+      longPressed.current = false;
+      return;
+    }
+    if (!interactive) return;
     if (onToggleExcluded) {
       onToggleExcluded(item.id);
       return;
@@ -173,20 +212,22 @@ function ReceiptLine({
   return (
     <li
       data-item={item.id}
-      className={`rline${done ? " done" : ""}${takenByOthers ? " taken" : ""}${excluded ? " excluded" : ""}${struckUnits > 0 ? " partly" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${
+      className={`rline${done ? " done" : ""}${takenByOthers ? " taken" : ""}${excluded ? " excluded" : ""}${struckUnits > 0 ? " partly" : ""}${item.fullTotal !== undefined ? " repriced" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${
         each !== undefined || excluded ? " equal" : ""
-      }${onToggleExcluded ? " strikable" : ""}${holding ? " holding" : ""}`}
+      }${onToggleExcluded ? " strikable" : ""}${onLongPress ? " pressable" : ""}${holding ? " holding" : ""}`}
       style={{ animationDelay: `${180 + index * 70}ms` }}
     >
       <button
         type="button"
         className="rline-main"
         onClick={toggle}
-        onPointerDown={onToggleExcluded ? () => setHolding(true) : undefined}
-        onPointerUp={onToggleExcluded ? () => setHolding(false) : undefined}
-        onPointerLeave={onToggleExcluded ? () => setHolding(false) : undefined}
-        onPointerCancel={onToggleExcluded ? () => setHolding(false) : undefined}
-        disabled={!interactive}
+        onPointerDown={onToggleExcluded || onLongPress ? pressDown : undefined}
+        onPointerMove={onLongPress ? pressMove : undefined}
+        onPointerUp={onToggleExcluded || onLongPress ? endPress : undefined}
+        onPointerLeave={onToggleExcluded || onLongPress ? endPress : undefined}
+        onPointerCancel={onToggleExcluded || onLongPress ? endPress : undefined}
+        onContextMenu={onLongPress ? (e) => e.preventDefault() : undefined}
+        disabled={!interactive && !onLongPress}
         aria-pressed={onToggleExcluded ? excluded : myUnits > 0}
         aria-label={`${item.qty > 1 ? `${item.qty} × ` : ""}${item.name}, ${formatMoney(item.total, currency)}${
           onToggleExcluded ? (excluded ? " – gestrichen, antippen zum Wiederaufnehmen" : " – antippen zum Streichen") : ""
@@ -452,7 +493,7 @@ function useTapDemo(billId: string, enabled: boolean, list: RefObject<HTMLUListE
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onToggleFee, onToggleTip }: Props) {
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onEditDivisor, onToggleFee, onToggleTip }: Props) {
   const { data, participants, me, ownerName } = snapshot;
   const billed = billedItems(data);
   const sub = subtotal(billed);
@@ -515,6 +556,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 currency={data.currency}
                 onSetSlots={setSlots}
                 onToggleExcluded={toggleExcluded}
+                onLongPress={onEditDivisor && !item.excluded ? () => onEditDivisor(item.id) : undefined}
                 each={perPerson(billedItem(item).total)}
                 people={people}
               />

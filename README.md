@@ -91,6 +91,13 @@ streicht jedes Antippen eins mehr („2x“ → „1x“), nach dem letzten komm
 (z. B. „Kl. Papiertasche“) und das Trinkgeld streichen; Zwischensumme und Summe nicht. Beim ersten Öffnen einer
 solchen Rechnung führt eine kurze Animation auf zwei Zeilen vor, wie Antippen durchstreicht.
 
+### Nur einen Teil berechnen
+
+Hält der Bezahler eine Position auf der Rechnung gedrückt, öffnet sich ein Blatt mit großem Bleistift-„/“ und Pfeilen
+(/1 bis /5): Vom Liter Milch geht dann z. B. nur die Hälfte in die Aufteilung, die andere Hälfte trägt er selbst. Auf
+dem Beleg steht „/2“ hinter dem Namen und der Belegpreis klein durchgestrichen über dem berechneten Teil; /1 stellt die
+Position wieder her. Kurzes Antippen hakt (bzw. streicht) wie gewohnt.
+
 ### Supermarkt-Einkäufe
 
 Die Erkennung merkt anhand des Geschäftsnamens und der Produkte, ob es ein Supermarkt- oder Drogerie-Einkauf ist.

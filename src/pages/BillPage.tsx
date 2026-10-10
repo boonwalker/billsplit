@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import DemoBar from "../components/DemoBar";
+import DivisorSheet from "../components/DivisorSheet";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
 import OpenInApp from "../components/OpenInApp";
@@ -41,6 +42,8 @@ export default function BillPage({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
   /** Scrolled to the very end, where the owner panel shows what the bar at the bottom says. */
   const [atEnd, setAtEnd] = useState(false);
+  /** Payer: the line whose settings are open (after holding it). */
+  const [divisorFor, setDivisorFor] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   // Hides the payer's bar at the end of the page (with some slack, so it does not flicker),
   // also when the page is too short to scroll at all.
@@ -212,6 +215,23 @@ export default function BillPage({ id }: { id: string }) {
     updateData({ ...snap.data, items });
   }
 
+  /**
+   * Payer: only 1/divisor of a line goes into the split (e.g. half of a litre of milk), the
+   * payer takes the rest. The receipt price is kept in fullTotal; 1 restores the line.
+   */
+  function applyDivisor(itemId: string, divisor: number) {
+    const items = snap.data.items.map((item) => {
+      if (item.id !== itemId) return item;
+      const full = item.fullTotal ?? item.total;
+      const rest = { ...item, total: full };
+      delete rest.fullTotal;
+      delete rest.divisor;
+      return divisor > 1 ? { ...rest, fullTotal: full, divisor, total: Math.round(full / divisor) } : rest;
+    });
+    replace({ ...snap, data: { ...snap.data, items } });
+    updateData({ ...snap.data, items });
+  }
+
   /** Equal split: the payer crosses a fee out (or brings it back). */
   function toggleFee(feeId: string) {
     const fees = (snap.data.fees ?? []).map((fee) => {
@@ -350,6 +370,7 @@ export default function BillPage({ id }: { id: string }) {
             onShowOriginal={snap.hasReceiptImage ? () => navigate(`/b/${id}/beleg`) : undefined}
             onToggleExcluded={snap.isOwner && equal ? toggleExcluded : undefined}
             onToggleFee={snap.isOwner && equal ? toggleFee : undefined}
+            onEditDivisor={snap.isOwner ? setDivisorFor : undefined}
             onToggleTip={snap.isOwner && equal ? toggleTip : undefined}
           />
         </div>
@@ -373,6 +394,15 @@ export default function BillPage({ id }: { id: string }) {
       )}
 
       {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} />}
+
+      {divisorFor && snap.data.items.some((i) => i.id === divisorFor) && (
+        <DivisorSheet
+          item={snap.data.items.find((i) => i.id === divisorFor)!}
+          currency={snap.data.currency}
+          onApply={(divisor) => applyDivisor(divisorFor, divisor)}
+          onClose={() => setDivisorFor(null)}
+        />
+      )}
 
       {askName && (
         <NamePrompt
