@@ -84,17 +84,28 @@ async function readJson(req: IncomingMessage, limit: number): Promise<unknown> {
   }
 }
 
+/** Where in a bill a validation problem is, in the user's words ("Position 4", "Gebühr 1", …). */
+function describePath(path: PropertyKey[]): string {
+  const parts = path.filter((p) => p !== "data");
+  const [head, index] = parts;
+  if (head === "items" && typeof index === "number") return `Position ${index + 1}`;
+  if (head === "fees" && typeof index === "number") return `Gebühr ${index + 1}`;
+  const names: Record<string, string> = { title: "Titel", date: "Datum", currency: "Währung", tipAmount: "Trinkgeld", tipPercent: "Trinkgeld", name: "Name" };
+  return names[String(head)] ?? parts.map(String).join(".");
+}
+
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
   if (!result.success) {
-    // Say what is wrong where it helps the user fix it.
+    // Say what is wrong and where, so the user can fix it.
     const issue = result.error.issues[0];
     const field = String(issue?.path.at(-1) ?? "");
+    const where = issue?.path.length ? ` (${describePath(issue.path)})` : "";
     if (issue?.code === "too_big" && ["total", "amount", "tipAmount", "fullTotal"].includes(field)) {
-      throw new HttpError("Ein Betrag ist zu hoch.", 400);
+      throw new HttpError(`Ein Betrag ist zu hoch${where}.`, 400);
     }
-    if (issue?.code === "too_big" && field === "name") throw new HttpError("Eine Bezeichnung ist zu lang.", 400);
-    throw new HttpError("Ungültige Anfrage.", 400);
+    if (issue?.code === "too_big" && field === "name") throw new HttpError(`Eine Bezeichnung ist zu lang${where}.`, 400);
+    throw new HttpError(`Ungültige Anfrage${where}.`, 400);
   }
   return result.data;
 }

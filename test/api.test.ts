@@ -166,7 +166,7 @@ describe("bills API", () => {
       name: "Niklas",
     });
     expect(tooHigh.status).toBe(400);
-    expect(tooHigh.json.error).toBe("Ein Betrag ist zu hoch.");
+    expect(tooHigh.json.error).toBe("Ein Betrag ist zu hoch (Position 1).");
   });
 
   it("rejects invalid input and unknown bills", async () => {
