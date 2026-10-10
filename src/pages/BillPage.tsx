@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import DemoBar from "../components/DemoBar";
 import DivisorSheet from "../components/DivisorSheet";
 import Header from "../components/Header";
@@ -45,6 +45,8 @@ export default function BillPage({ id }: { id: string }) {
   /** Payer: the line whose settings are open (after holding it). */
   const [divisorFor, setDivisorFor] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  /** Height of the friend's pay bar: the receipt can always be scrolled up above it. */
+  const [payBarHeight, setPayBarHeight] = useState<number | null>(null);
   // Hides the payer's bar at the end of the page (with some slack, so it does not flicker),
   // also when the page is too short to scroll at all.
   useEffect(() => {
@@ -292,7 +294,10 @@ export default function BillPage({ id }: { id: string }) {
       />
 
       <div className="bill-scroll" ref={scroller}>
-      <main className="content bill-content">
+      <main
+        className="content bill-content"
+        style={payBarHeight ? ({ "--paybar-h": `${payBarHeight}px` } as CSSProperties) : undefined}
+      >
         {DEMO && <DemoBar />}
         {/* iPhone: shared links open in Safari – offer the way into the home-screen app. */}
         {inBrowser && <OpenInApp url={url} />}
@@ -393,7 +398,7 @@ export default function BillPage({ id }: { id: string }) {
         </div>
       )}
 
-      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} />}
+      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} onHeight={setPayBarHeight} />}
 
       {divisorFor && snap.data.items.some((i) => i.id === divisorFor) && (
         <DivisorSheet

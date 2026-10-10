@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
 import { centsToInput, formatMoney } from "../lib/money";
 import { copyText } from "../lib/clipboard";
@@ -12,10 +12,22 @@ interface Props {
   onPay: () => void;
   /** Marks the friend's share as paid (or takes that back). */
   onMarkPaid: (paid: boolean) => void;
+  /** The bar's height whenever it changes (it grows after paying), so the page can scroll past it. */
+  onHeight?: (px: number) => void;
 }
 
 /** Sticky bottom bar for friends: their individual sum and the pay button. */
-export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
+export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props) {
+  const bar = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = bar.current;
+    if (!el || !onHeight) return;
+    const report = () => onHeight(el.offsetHeight);
+    report();
+    const observer = new ResizeObserver(report);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onHeight]);
   const [copied, setCopied] = useState(false);
   /** Amount copied in the first tap; the second tap then opens PayPal. */
   const [prepared, setPrepared] = useState<{ amount: string; copied: boolean } | null>(null);
@@ -61,7 +73,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
   }
 
   return (
-    <div className="paybar" role="region" aria-label="Dein Anteil">
+    <div className="paybar" ref={bar} role="region" aria-label="Dein Anteil">
       <div className="paybar-inner">
         <div className="paybar-sum">
           <span className="paybar-label">

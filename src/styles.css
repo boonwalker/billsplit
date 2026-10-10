@@ -2388,6 +2388,12 @@ input[aria-invalid="true"] {
   padding-bottom: 210px;
 }
 
+/* Friends: as far as the pay bar is high (it grows after paying), so the torn-off end of the
+   receipt can always be scrolled up above it. */
+.page.guest .bill-content {
+  padding-bottom: calc(var(--paybar-h, 186px) + 24px);
+}
+
 .page.owner .bill-content {
   padding-bottom: 40px;
 }
