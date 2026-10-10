@@ -12,6 +12,7 @@ import OwnerPanel, { EqualSplitToggle, ownerStatus, ownerSummary, TipSplit } fro
 import PayBar from "../components/PayBar";
 import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
+import { guestStatus } from "../lib/balances";
 import { billUrl, sharedTotal, type BillData, type Debtor } from "../lib/bill";
 import { setItemDivisor, toggleFeeExcluded, toggleItemExcluded, toggleTipExcluded } from "../lib/billEdits";
 import { DEMO } from "../lib/demo";
@@ -109,11 +110,12 @@ export default function BillPage({ id }: { id: string }) {
     }
   }, [snapshot?.me, snapshot?.isOwner, snapshot?.data.title, snapshot?.createdAt, id]);
 
-  // The list of bills shows whether the friend marked their share as paid.
-  const markedPaid = snapshot && !snapshot.isOwner && snapshot.me ? Boolean(snapshot.myPayment?.markedPaidAt) : null;
+  // The list of bills shows what the friend still owes, or that it is marked as paid / settled.
+  const guest = snapshot && !snapshot.isOwner && snapshot.me ? guestStatus(snapshot) : null;
   useEffect(() => {
-    if (markedPaid !== null) updateRecent(id, { markedPaid });
-  }, [markedPaid, id]);
+    if (guest) updateRecent(id, guest);
+    // A new status object comes with every snapshot; only its values matter.
+  }, [guest?.markedPaid, guest?.owed, guest?.settled, guest?.currency, id]);
   // … and for the payer whether everything has come back.
   const status = snapshot?.isOwner ? ownerStatus(snapshot) : null;
   useEffect(() => {

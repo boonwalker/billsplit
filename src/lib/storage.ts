@@ -130,7 +130,9 @@ export interface RecentBill {
   createdAt: string;
   /** Guest only: they marked their share as paid. */
   markedPaid?: boolean;
-  /** Payer only: friends joined and nothing is missing any more. */
+  /** Guest only: what is still open of their share ("Du schuldest"), in cents of `currency`. */
+  owed?: number;
+  /** Payer: friends joined and nothing is missing any more · guest: the share is settled (received or offset). */
   settled?: boolean;
   /** Payer only: what is still missing ("Dir fehlen noch"), in cents of `currency`. */
   missing?: number;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import { ownerStatus } from "../components/OwnerPanel";
+import { guestStatus } from "../lib/balances";
 import { formatMoney } from "../lib/money";
 import { api } from "../lib/api";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
@@ -31,8 +32,10 @@ export default function Home() {
             const status = ownerStatus(snap);
             if (status.settled !== Boolean(b.settled) || status.missing !== b.missing || status.currency !== b.currency) updateRecent(b.id, status);
           } else if (snap.me) {
-            const markedPaid = Boolean(snap.myPayment?.markedPaidAt);
-            if (markedPaid !== Boolean(b.markedPaid)) updateRecent(b.id, { markedPaid });
+            const status = guestStatus(snap);
+            if (status.markedPaid !== Boolean(b.markedPaid) || status.owed !== b.owed || status.settled !== Boolean(b.settled) || status.currency !== b.currency) {
+              updateRecent(b.id, status);
+            }
           }
         }
         if (!cancelled) setRecent(loadRecent());
@@ -192,7 +195,7 @@ export default function Home() {
                     <span className="muted small">
                       {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? (
                         <>
-                          du leihst
+                          Du leihst
                           {b.settled ? (
                             <>
                               {" "}
@@ -202,7 +205,16 @@ export default function Home() {
                             b.missing !== undefined && b.missing > 0 && <> · {formatMoney(b.missing, b.currency ?? "EUR")}</>
                           )}
                         </>
-                      ) : b.markedPaid ? <span className="list-paid">✓ als bezahlt markiert</span> : "du schuldest"}
+                      ) : b.settled ? (
+                        <span className="list-paid">✓ beglichen</span>
+                      ) : b.markedPaid ? (
+                        <span className="list-paid">✓ als bezahlt markiert</span>
+                      ) : (
+                        <>
+                          Du schuldest
+                          {b.owed !== undefined && b.owed > 0 && <> · {formatMoney(b.owed, b.currency ?? "EUR")}</>}
+                        </>
+                      )}
                     </span>
                   </button>
                   <button

@@ -53,7 +53,7 @@ function debtorOpen(d: NonNullable<BillSnapshot["debtors"]>[number]): Cents {
 }
 
 /** My open amount in someone else's bill (0 once the payer confirmed it as received). */
-function myOpen(snap: BillSnapshot): Cents {
+export function myOpen(snap: BillSnapshot): Cents {
   if (!snap.me || snap.myReceived) return 0;
   const share = participantShare(snap.data, snap.participants, snap.me).total;
   const credit = snap.myCredit ? snap.myCredit.confirmed + snap.myCredit.pending : 0;
@@ -129,3 +129,11 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
     }))
     .sort((x, y) => y.lent + y.owed - (x.lent + x.owed));
 }
+
+/** A friend's line in the list of bills: what is still open, or that it is marked as paid / settled. */
+export function guestStatus(snap: BillSnapshot): { markedPaid: boolean; owed: Cents; settled: boolean; currency: string } {
+  const owed = myOpen(snap);
+  const covered = Boolean(snap.myReceived) || (snap.myCredit ? snap.myCredit.confirmed + snap.myCredit.pending > 0 : false);
+  return { markedPaid: Boolean(snap.myPayment?.markedPaidAt), owed, settled: owed === 0 && covered, currency: snap.data.currency };
+}
+

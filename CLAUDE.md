@@ -137,8 +137,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   nur drei Punkte + „billsplit generiert die interaktive Rechnung“
 - Startseite: „Du hast bezahlt und willst anteilig Geld zurück“, „Für digitale Rechnungen aus App oder Mail“,
   „Anteil“ statt „Teil“
-- Rechnungsliste: „Du schuldest“, „als bezahlt markiert“, „Du leihst · Betrag“ (immer der aktuell noch offene),
-  „Du leihst · ausgeglichen“ (grün mit Haken)
+- Rechnungsliste: „Du schuldest · Betrag“ (immer der aktuell noch offene), „✓ als bezahlt markiert“, „✓ beglichen“,
+  „Du leihst · Betrag“ (immer der aktuell noch offene), „Du leihst · ✓ ausgeglichen“ (grün mit Haken)
 - Trinkgeld-Reiter: „absolut“, „in Prozent“, „als Endbetrag“ (Endbetrag → Trinkgeld = Differenz)
 - Supermarkt-Frage: „Soll etwas nicht oder nur teilweise in Rechnung gestellt werden?“ / kleiner „z.B. Gewürze,
   Duschgel, Pfand?“; Knöpfe „Alles aufteilen“, „Manches nicht“, „Jeder selber abhaken“; Personenzahl „inklusive Dir“
