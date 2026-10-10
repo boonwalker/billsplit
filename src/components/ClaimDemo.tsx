@@ -33,7 +33,7 @@ const KEY = (billId: string) => `billsplit.claimDemo.${billId}`;
 const CAPTION: Record<Step, (other: string) => string> = {
   tick: () => "Antippen = abhaken",
   share: (other) => `Namen antippen = mit ${other} teilen`,
-  offer: () => "Eigenen Namen antippen = Du wartest auf jemanden",
+  offer: () => "Eigenen Namen antippen = Du willst mit jemandem teilen",
 };
 
 /**
