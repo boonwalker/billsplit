@@ -247,12 +247,25 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
     setNotice(divisor > 1 ? `${item.name}: nur 1/${divisor} wird aufgeteilt, den Rest trägst Du.` : `${item.name} wird wieder ganz aufgeteilt.`);
   }
 
-  /** A tap crosses the line out (or back in); it is pressed in and pops back up. */
+  /** Whether a tap hit the pencilled "/2" of a line (a little room around it, but not the whole line). */
+  function onDivisor(item: BillItem, point: InkPoint): boolean {
+    const mark = list.current?.querySelector<HTMLElement>(`li[data-item="${CSS.escape(item.id)}"] .rline-divisor`);
+    if (!mark) return false;
+    const r = mark.getBoundingClientRect();
+    const slop = 8;
+    return point.x >= r.left - slop && point.x <= r.right + slop && point.y >= r.top - slop && point.y <= r.bottom + slop;
+  }
+
+  /**
+   * A tap crosses the line out (or back in); it is pressed in and pops back up. A tap right on
+   * the "/2" takes that back instead: the whole line goes into the split again.
+   */
   function tap(point: InkPoint) {
     const item = itemAt(point);
     if (!item) return;
     setPressed((p) => ({ id: item.id, n: (p?.n ?? 0) + 1 }));
-    toggle([item]);
+    if ((marks[item.id]?.divisor ?? 1) > 1 && onDivisor(item, point)) setDivisor(item, 1);
+    else toggle([item]);
   }
 
   /** Every stroke crosses out the line it was drawn on (up/down swipes scroll instead). */
