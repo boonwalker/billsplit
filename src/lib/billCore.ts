@@ -79,6 +79,21 @@ export class BillCore {
   /** Called after a settlement payment was created or decided (in addition to `changed` for its bills). */
   protected transfersChanged(): void {}
 
+  /** Whether a participant has the app open right now (the server tracks open connections). */
+  protected isOnline(_participantId: string): boolean {
+    return false;
+  }
+
+  /** Whether the participant takes part in the bill (payer or friend). */
+  participates(billId: string, participantId: string): boolean {
+    return Boolean(this.bills.get(billId)?.participants[participantId]);
+  }
+
+  /** Ids of the bills a participant takes part in. */
+  billsOf(participantId: string): string[] {
+    return [...this.bills.values()].filter((b) => b.participants[participantId]).map((b) => b.id);
+  }
+
   protected get(billId: string): StoredBill {
     const bill = this.bills.get(billId);
     if (!bill) throw new BillError("Diese Rechnung gibt es nicht (mehr).", 404);
@@ -377,6 +392,7 @@ export class BillCore {
       me,
       isOwner,
       hasReceiptImage: Boolean(bill.receiptImage),
+      online: Object.keys(bill.participants).filter((pid) => this.isOnline(pid)).length,
     };
     if (me && !isOwner) {
       const p = bill.participants[me];

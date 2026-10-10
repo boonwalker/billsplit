@@ -210,6 +210,8 @@ export interface BillSnapshot {
   myCredit?: ShareCredit;
   /** The photo or screenshot the bill was read from is stored and can be viewed. */
   hasReceiptImage?: boolean;
+  /** How many people of this bill have the app open right now (anywhere in the app). */
+  online?: number;
 }
 
 export interface ShareSummary {

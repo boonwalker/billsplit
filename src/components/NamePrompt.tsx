@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { LogoMark } from "./Logo";
 
 interface Props {
   ownerName: string;
@@ -20,8 +21,8 @@ export default function NamePrompt({ ownerName, initialName = "", onSubmit, extr
           if (name.trim()) onSubmit(name.trim());
         }}
       >
-        <div className="sheet-emoji" aria-hidden="true">
-          👋
+        <div className="sheet-logo" aria-hidden="true">
+          <LogoMark size={52} />
         </div>
         <h2>Wie heißt du?</h2>
         <p className="muted">

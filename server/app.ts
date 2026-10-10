@@ -13,6 +13,8 @@ const MAX_JSON_BODY = 256 * 1024;
 /** Stored receipt photos are downscaled JPEGs of a few hundred KB. */
 const MAX_RECEIPT_IMAGE = 6 * 1024 * 1024;
 const HEARTBEAT_MS = 25_000;
+/** How long a device still counts as online after its last connection closed. */
+const PRESENCE_GRACE_MS = 12_000;
 
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -131,21 +133,83 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const limits = options.limits ?? limitsFromEnv();
   const trustProxy = options.trustProxy ?? false;
   const subscribers = new Map<string, Set<Subscriber>>();
+  /** Per device: the app's own event stream (changes in any of its bills). */
+  const userStreams = new Map<string, Set<ServerResponse>>();
   const handoffs = new HandoffBoard();
 
-  store.onChange((billId) => {
-    const subs = subscribers.get(billId);
-    if (!subs) return;
-    for (const sub of subs) {
+  store.onChange((billId, kind) => {
+    for (const sub of subscribers.get(billId) ?? []) {
       try {
         sub.res.write(`event: snapshot\ndata: ${JSON.stringify(store.snapshot(billId, sub.viewer))}\n\n`);
       } catch {
         // connection closed; cleaned up by its close handler
       }
     }
+    // The dashboards of everyone in the bill reload their balances.
+    if (kind !== "data") return;
+    for (const [viewer, streams] of userStreams) {
+      if (!store.participates(billId, viewer)) continue;
+      for (const res of streams) {
+        try {
+          res.write(`event: changed\ndata: ${JSON.stringify({ billId })}\n\n`);
+        } catch {
+          // see above
+        }
+      }
+    }
   });
 
+  /**
+   * Presence: a device counts as online while it has an event stream open (the app keeps one
+   * while it is in the foreground). Going offline waits a moment, so switching screens or a
+   * short reconnect does not make the count flicker.
+   */
+  const connections = new Map<string, number>();
+  const offlineTimers = new Map<string, NodeJS.Timeout>();
+  function connected(viewer: string | null): () => void {
+    if (!viewer) return () => {};
+    connections.set(viewer, (connections.get(viewer) ?? 0) + 1);
+    clearTimeout(offlineTimers.get(viewer));
+    offlineTimers.delete(viewer);
+    store.setOnline(viewer, true);
+    return () => {
+      const left = (connections.get(viewer) ?? 1) - 1;
+      if (left > 0) return void connections.set(viewer, left);
+      connections.delete(viewer);
+      offlineTimers.set(
+        viewer,
+        setTimeout(() => {
+          offlineTimers.delete(viewer);
+          if (!connections.has(viewer)) store.setOnline(viewer, false);
+        }, PRESENCE_GRACE_MS),
+      );
+    };
+  }
+
+  function subscribeUser(req: IncomingMessage, res: ServerResponse, viewer: string): void {
+    res.writeHead(200, {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-store",
+      connection: "keep-alive",
+      "x-accel-buffering": "no",
+    });
+    res.write(`retry: 2000\nevent: hello\ndata: {}\n\n`);
+    let set = userStreams.get(viewer);
+    if (!set) userStreams.set(viewer, (set = new Set()));
+    set.add(res);
+    const leave = connected(viewer);
+    const heartbeat = setInterval(() => res.write(": ping\n\n"), HEARTBEAT_MS);
+    req.on("close", () => {
+      clearInterval(heartbeat);
+      set.delete(res);
+      if (set.size === 0) userStreams.delete(viewer);
+      leave();
+    });
+  }
+
   function subscribe(req: IncomingMessage, res: ServerResponse, billId: string, viewer: string | null): void {
+    store.snapshot(billId, viewer); // throws for unknown bills before anything is counted
+    const leave = connected(viewer);
     const snapshot = store.snapshot(billId, viewer);
     res.writeHead(200, {
       "content-type": "text/event-stream; charset=utf-8",
@@ -163,6 +227,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       clearInterval(heartbeat);
       set.delete(sub);
       if (set.size === 0) subscribers.delete(billId);
+      leave();
     });
   }
 
@@ -205,6 +270,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         handoffs.clear(address);
         return sendJson(res, 200, { ok: true });
       }
+    }
+
+    // The app's own event stream: presence, and changes in any of the viewer's bills.
+    if (parts[1] === "events" && parts.length === 2 && method === "GET") {
+      return subscribeUser(req, res, requireViewer(req, url));
     }
 
     // Settling up across bills: open shares in the viewer's bills and settlement payments.

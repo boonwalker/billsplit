@@ -76,7 +76,8 @@ export function participantIdFromKey(key: string): string {
   return createHash("sha256").update(key).digest("base64url").slice(0, 16);
 }
 
-export type ChangeListener = (billId: string) => void;
+/** data: the bill itself changed · presence: only who of its people is online. */
+export type ChangeListener = (billId: string, kind: "data" | "presence") => void;
 
 /** Server-side bill store: the shared rules plus a JSON file and change notifications. */
 export class BillStore extends BillCore {
@@ -112,8 +113,23 @@ export class BillStore extends BillCore {
   }
 
   protected override changed(billId: string): void {
-    for (const l of this.listeners) l(billId);
+    for (const l of this.listeners) l(billId, "data");
     this.scheduleSave();
+  }
+
+  // ───── presence: who has the app open (an open event stream) ─────
+  private online = new Set<string>();
+
+  protected override isOnline(participantId: string): boolean {
+    return this.online.has(participantId);
+  }
+
+  /** Marks a participant on- or offline; their bills' viewers get the new head count. */
+  setOnline(participantId: string, online: boolean): void {
+    if (this.online.has(participantId) === online) return;
+    if (online) this.online.add(participantId);
+    else this.online.delete(participantId);
+    for (const billId of this.billsOf(participantId)) for (const l of this.listeners) l(billId, "presence");
   }
 
   protected override transfersChanged(): void {

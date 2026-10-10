@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import HandoffPrompt from "./components/HandoffPrompt";
+import { useAppEvents } from "./lib/liveEvents";
 import { useRoute } from "./lib/router";
 import BillPage from "./pages/BillPage";
 import Dashboard from "./pages/Dashboard";
@@ -12,6 +13,7 @@ import Profile from "./pages/Profile";
 const Scan = lazy(() => import("./pages/Scan"));
 
 export default function App() {
+  useAppEvents();
   return (
     <>
       <Page />

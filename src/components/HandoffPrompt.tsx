@@ -47,6 +47,9 @@ export default function HandoffPrompt() {
   }
 
   return (
+    <>
+    {/* Dims the app behind it, so the notice cannot be missed. */}
+    <div className="handoff-backdrop" aria-hidden="true" onClick={close} />
     <div className="handoff" role="dialog" aria-label="Rechnung aus Safari öffnen">
       <button type="button" className="handoff-close" aria-label="Schließen" onClick={close}>
         ✕
@@ -58,5 +61,6 @@ export default function HandoffPrompt() {
         Kopierten Link öffnen
       </button>
     </div>
+    </>
   );
 }

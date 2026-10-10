@@ -66,14 +66,14 @@ export function demoLayout(list: HTMLUListElement, selector = "li[data-item]"): 
 }
 
 const STEPS: { phase: DemoPhase; ms: number }[] = [
+  { phase: "pause", ms: 500 },
+  { phase: "strike", ms: 1700 },
+  { phase: "pause", ms: 350 },
+  { phase: "tap", ms: 2000 },
+  { phase: "pause", ms: 350 },
+  { phase: "press", ms: 750 },
+  { phase: "held", ms: 2600 },
   { phase: "pause", ms: 700 },
-  { phase: "strike", ms: 2500 },
-  { phase: "pause", ms: 500 },
-  { phase: "tap", ms: 3000 },
-  { phase: "pause", ms: 500 },
-  { phase: "press", ms: 1100 },
-  { phase: "held", ms: 3600 },
-  { phase: "pause", ms: 900 },
 ];
 
 /** Runs the demo steps in a loop while active; steps whose line is missing are skipped. */

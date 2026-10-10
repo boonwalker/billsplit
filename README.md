@@ -141,6 +141,14 @@ geändert, wird nichts gebucht und die neue Aufstellung gezeigt. Schuldet die Pe
 trägst Du den Ausgleich ein, sobald das Geld da ist. Im Dashboard zählt ein als bezahlt markierter Anteil bereits als
 beglichen.
 
+### Live-Anzeige und Echtzeit
+
+Solange die App im Vordergrund ist, hält sie eine Verbindung zum Server offen. Darüber zählt das Gerät als online:
+Oben rechts in jeder Rechnung steht „● LIVE · 👤 3“ – so viele Personen dieser Rechnung haben die App gerade offen,
+egal in welcher Ansicht. Geht die App in den Hintergrund, zählt die Person nach etwa 12 Sekunden nicht mehr mit.
+Über dieselbe Verbindung meldet der Server Änderungen an allen Rechnungen der Person: Das Dashboard rechnet dann
+sofort neu (streicht der Rechnungssteller z. B. die Creme Brulée, sinkt der geschuldete Betrag beim Schuldner live).
+
 ### Gesamtausgleich mit möglichst wenigen Zahlungen
 
 Oben im Dashboard (unter dem Ring) steht ein Zahlungsplan: „Alles ausgleichen mit einer Zahlung statt 3“. Er wird aus

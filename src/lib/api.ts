@@ -29,6 +29,11 @@ export interface Api {
   createTransfer(input: { toId: string; amount: number; currency: string; allocations: TransferAllocation[] }): Promise<TransferList>;
   /** Recipient: confirm / reject · payer: cancel a waiting settlement payment. */
   decideTransfer(id: string, action: "confirm" | "reject" | "cancel"): Promise<TransferList>;
+  /**
+   * The app's own event stream while it is open: it marks this device as online and reports
+   * changes in any of its bills. Returns a function that closes it.
+   */
+  subscribeEvents(onBillChanged: (billId: string) => void): () => void;
   /** Live updates of one bill; returns an unsubscribe function. */
   subscribe(id: string, onSnapshot: (s: BillSnapshot) => void, onLive: (live: boolean) => void): () => void;
 }
@@ -98,6 +103,14 @@ const serverApi: Api = {
   transfers: () => request("GET", "/api/transfers"),
   createTransfer: (input) => request("POST", "/api/transfers", input),
   decideTransfer: (id, action) => request("POST", `/api/transfers/${encodeURIComponent(id)}/${action}`, {}),
+  subscribeEvents(onBillChanged) {
+    const source = new EventSource(`/api/events?key=${encodeURIComponent(deviceKey())}`);
+    source.addEventListener("changed", (e) => {
+      const { billId } = JSON.parse((e as MessageEvent<string>).data) as { billId: string };
+      onBillChanged(billId);
+    });
+    return () => source.close();
+  },
   subscribe(id, onSnapshot, onLive) {
     // EventSource cannot send headers, so the device key goes into the query.
     const source = new EventSource(`${bill(id)}/events?key=${encodeURIComponent(deviceKey())}`);

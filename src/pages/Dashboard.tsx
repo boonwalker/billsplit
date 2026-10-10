@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Header from "../components/Header";
 import SettleSheet from "../components/SettleSheet";
 import { PlanCard, PlanPaySheet, TransferInbox } from "../components/SettlementPanel";
 import { api } from "../lib/api";
 import { computeBalances, type Balances, type PersonBalance } from "../lib/balances";
 import type { BillSnapshot, NetworkEdge, Transfer } from "../lib/bill";
+import { useBillChanges } from "../lib/liveEvents";
 import { planSettlement, type PlannedTransfer } from "../lib/simplify";
 import { formatMoney } from "../lib/money";
 import { loadOwnProfile, loadRecent } from "../lib/storage";
@@ -200,6 +201,15 @@ export default function Dashboard() {
     setBalances(next);
     return next;
   }, [loadNetwork]);
+
+  // Live: whenever one of my bills changes (e.g. the payer crosses an item out), the balances are
+  // computed again – bundled, as one change often comes with several updates.
+  const reloadTimer = useRef<number | null>(null);
+  const onBillChanged = useCallback(() => {
+    if (reloadTimer.current) window.clearTimeout(reloadTimer.current);
+    reloadTimer.current = window.setTimeout(() => void load(), 350);
+  }, [load]);
+  useBillChanges(onBillChanged);
 
   const [paying, setPaying] = useState<{ planned: PlannedTransfer; edges: NetworkEdge[]; me: string } | null>(null);
   const plans = useMemo(() => (network ? planSettlement(network.me, network.edges) : []), [network]);

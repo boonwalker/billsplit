@@ -6,6 +6,7 @@ import NamePrompt from "../components/NamePrompt";
 import OpenInApp from "../components/OpenInApp";
 import OwnerPanel, { EqualSplitToggle, ownerStatus, ownerSummary, TipSplit } from "../components/OwnerPanel";
 import PayBar from "../components/PayBar";
+import { useOneLine } from "../lib/useOneLine";
 import QrCode from "../components/QrCode";
 import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
@@ -45,6 +46,7 @@ export default function BillPage({ id }: { id: string }) {
   /** Payer: the line whose settings are open (after holding it). */
   const [divisorFor, setDivisorFor] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  const fitEditLabel = useOneLine();
   /** Height of the friend's pay bar: the receipt can always be scrolled up above it. */
   const [payBarHeight, setPayBarHeight] = useState<number | null>(null);
   // Hides the payer's bar at the end of the page (with some slack, so it does not flicker),
@@ -287,8 +289,21 @@ export default function BillPage({ id }: { id: string }) {
         back="/"
         title={snap.data.title}
         action={
-          <span className={`live-dot${live ? " on" : ""}`} title={live ? "Live verbunden" : "Verbinde …"}>
+          <span
+            className={`live-dot${live ? " on" : ""}`}
+            title={live ? `Live verbunden${snap.online ? ` · ${snap.online} ${snap.online === 1 ? "Person hat" : "Personen haben"} die App gerade offen` : ""}` : "Verbinde …"}
+          >
             {live ? "live" : "…"}
+            {/* How many people of this bill have the app open right now. */}
+            {live && snap.online ? (
+              <span className="live-count" aria-label={`${snap.online} online`}>
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                  <circle cx="8" cy="5" r="3" fill="currentColor" />
+                  <path d="M2.5 14.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6" fill="currentColor" />
+                </svg>
+                {snap.online}
+              </span>
+            ) : null}
           </span>
         }
       />
@@ -328,12 +343,15 @@ export default function BillPage({ id }: { id: string }) {
               </svg>
               Per WhatsApp senden
             </a>
-            <div className="row gap">
+            <div className="row gap share-row">
               <button className="btn btn-ghost grow" onClick={share}>
                 {copied ? "✓ Link kopiert" : "Link teilen"}
               </button>
-              <button className="btn btn-ghost grow" onClick={() => navigate(`/b/${id}/edit`)}>
-                Positionen bearbeiten
+              <button className="btn btn-ghost grow edit-items" onClick={() => navigate(`/b/${id}/edit`)}>
+                {/* As large as "Link teilen": the text shrinks only as far as it must to fit. */}
+                <span className="fit-line" ref={fitEditLabel}>
+                  Positionen bearbeiten
+                </span>
               </button>
             </div>
             <a className="scroll-hint" href="#receipt" onClick={(e) => (e.preventDefault(), document.getElementById("receipt")?.scrollIntoView({ behavior: "smooth" }))}>

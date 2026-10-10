@@ -42,6 +42,7 @@ class LocalStore extends BillCore {
       // ignore – the demo keeps working in memory
     }
     for (const fn of this.listeners.get(billId) ?? []) fn();
+    for (const fn of this.allListeners) fn(billId);
   }
 
   protected override transfersChanged(): void {
@@ -54,6 +55,18 @@ class LocalStore extends BillCore {
 
   private notifyAll(): void {
     for (const set of this.listeners.values()) for (const fn of set) fn();
+  }
+
+  /** Changes in any bill (the demo's stand-in for the app's event stream). */
+  private allListeners = new Set<(billId: string) => void>();
+  listenAll(fn: (billId: string) => void): () => void {
+    this.allListeners.add(fn);
+    return () => this.allListeners.delete(fn);
+  }
+
+  /** In the demo, whoever is looking (the current persona) has the app open. */
+  protected override isOnline(participantId: string): boolean {
+    return participantId === deviceKey();
   }
 
   listen(billId: string, fn: () => void): () => void {
@@ -131,6 +144,7 @@ export const localApi: Api = {
   transfers: () => call(() => ({ me: me(), transfers: localStore().listTransfers(me()) })),
   createTransfer: (input) => call(() => (localStore().createTransfer(me(), input), { me: me(), transfers: localStore().listTransfers(me()) })),
   decideTransfer: (id, action) => call(() => (localStore().decideTransfer(me(), id, action), { me: me(), transfers: localStore().listTransfers(me()) })),
+  subscribeEvents: (onBillChanged) => localStore().listenAll(onBillChanged),
   subscribe(id, onSnapshot, onLive) {
     const push = () => {
       if (localStore().has(id)) onSnapshot(view(id));

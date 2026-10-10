@@ -23,10 +23,10 @@ interface Layout {
 
 const STEPS: Step[] = ["tick", "share", "offer"];
 const CYCLES = 2;
-const START_MS = 1400;
+const START_MS = 1000;
 /** Duration of the stages of one step. */
-const STAGE_MS: Record<Exclude<Stage, "hidden">, number> = { before: 900, tap: 450, after: 1700 };
-const GAP_MS = 450;
+const STAGE_MS: Record<Exclude<Stage, "hidden">, number> = { before: 600, tap: 320, after: 1300 };
+const GAP_MS = 300;
 
 const KEY = (billId: string) => `billsplit.claimDemo.${billId}`;
 
@@ -135,7 +135,7 @@ export function Handwritten({ text }: { text: string }) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     setShown(0);
-    const timer = window.setInterval(() => setShown((n) => (n >= text.length ? n : n + 1)), 42);
+    const timer = window.setInterval(() => setShown((n) => (n >= text.length ? n : n + 1)), 18);
     return () => window.clearInterval(timer);
   }, [text]);
   // All letters are laid out from the start (invisible ones too), so the bubble keeps its size.
