@@ -2485,7 +2485,39 @@ input[aria-invalid="true"] {
 }
 
 .page.owner .bill-content {
-  padding-bottom: 120px;
+  padding-bottom: 40px;
+}
+
+/* Bill page: only the middle scrolls, the bar sits at the bottom of the screen. */
+.page.bill-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bill-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bill-page .paybar,
+.bill-page .ownerbar {
+  position: absolute;
+}
+
+/* At the end of the page the owner panel says the same: the bar slides away. */
+.ownerbar {
+  transition: transform 0.35s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+.ownerbar.away {
+  transform: translateY(calc(100% + 12px));
 }
 
 .paybar,

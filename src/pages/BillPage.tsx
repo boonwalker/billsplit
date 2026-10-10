@@ -28,6 +28,28 @@ export default function BillPage({ id }: { id: string }) {
   const [askName, setAskName] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  /** Scrolled to the very end, where the owner panel shows what the bar at the bottom says. */
+  const [atEnd, setAtEnd] = useState(false);
+  const scroller = useRef<HTMLDivElement>(null);
+  // Hides the payer's bar at the end of the page (with some slack, so it does not flicker),
+  // also when the page is too short to scroll at all.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const check = () => {
+      const left = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setAtEnd((was) => (was ? left <= 140 : left < 48));
+    };
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", check);
+      observer.disconnect();
+    };
+  }, [snapshot !== null]);
   const joining = useRef(false);
 
   // Opening the bill (by scanning the QR code) joins it with the profile name.
@@ -203,7 +225,8 @@ export default function BillPage({ id }: { id: string }) {
   const summary = snap.isOwner ? ownerSummary(snap) : null;
 
   return (
-    <div className={`page ${snap.isOwner ? "owner" : "guest"}`}>
+    // Only the middle scrolls: the bar at the bottom stays put (iOS moves fixed bars around while scrolling).
+    <div className={`page bill-page ${snap.isOwner ? "owner" : "guest"}`}>
       <Header
         back="/"
         title={snap.data.title}
@@ -214,6 +237,7 @@ export default function BillPage({ id }: { id: string }) {
         }
       />
 
+      <div className="bill-scroll" ref={scroller}>
       <main className="content bill-content">
         {DEMO && <DemoBar />}
         {/* iPhone: shared links open in Safari – offer the way into the home-screen app. */}
@@ -290,9 +314,10 @@ export default function BillPage({ id }: { id: string }) {
 
         {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} />}
       </main>
+      </div>
 
       {snap.isOwner && summary && (
-        <div className="ownerbar">
+        <div className={`ownerbar${atEnd ? " away" : ""}`} aria-hidden={atEnd}>
           <div className="ownerbar-inner">
             <span>
               Dir fehlen noch
