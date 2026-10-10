@@ -1,0 +1,374 @@
+/* ───────────────────────── editor ───────────────────────── */
+.capture-row {
+  display: flex;
+  gap: 10px;
+}
+
+.capture-row .btn {
+  flex: 1 1 0;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+
+.items-editor {
+  gap: 8px;
+}
+
+.items-head,
+.item-row {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) 100px 34px;
+  gap: 6px;
+  align-items: start;
+}
+
+.item-row.invalid input {
+  border-color: var(--danger);
+}
+
+.qty-input {
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.price-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.price-input {
+  text-align: right;
+}
+
+.item-row .icon-btn {
+  height: 46px;
+  width: 34px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip {
+  min-height: 38px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.chip.active {
+  background: var(--brand);
+  color: var(--paper);
+  border-color: var(--brand);
+}
+
+.tip-control {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tip-mode {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.tip-mode button {
+  min-height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-weight: 600;
+  /* Three tabs side by side on a phone: each label stays on one line. */
+  padding: 0 4px;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tip-mode button.on {
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+}
+
+.tip-mode button:focus-visible {
+  outline: 2px solid var(--claim);
+  outline-offset: 2px;
+}
+
+.tip-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tip-field input {
+  width: 92px;
+  min-height: 38px;
+  text-align: right;
+}
+
+.tip-field.wide input {
+  width: 100%;
+  min-height: 52px;
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+}
+
+.tip-field.wide {
+  display: flex;
+}
+
+.tip-field span {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tip-preview {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 2px dashed var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tip-preview dt {
+  color: var(--muted);
+}
+
+.tip-preview dd {
+  margin: 0;
+  text-align: right;
+}
+
+.tip-preview .strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.sheet-back {
+  align-self: center;
+  font-size: 0.9rem;
+}
+
+.sticky-footer {
+  position: sticky;
+  bottom: 0;
+  padding: 14px 0 calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, var(--bg) 35%);
+}
+
+.scanning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  text-align: center;
+}
+
+.content.scan-content {
+  padding: 10px 10px 16px;
+}
+
+/* The photo being read: as large as the screen allows, in the photo's own shape (no bars). */
+.scan-photo {
+  --avail: calc(100dvh - 160px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  position: relative;
+  width: min(100%, calc(var(--avail) * var(--ar, 0.75)));
+  aspect-ratio: var(--ar, 0.75);
+  border-radius: 14px;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: var(--shadow-lg);
+}
+
+.scan-photo-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * The scanning light: a bright line that sweeps down and then up again, always dragging its
+ * glow behind it (above while going down, below while going up). It turns around outside the
+ * photo, where the glow switches sides unseen. Only transform and opacity are animated, so the
+ * browser can run it off the main thread and it keeps moving while the page is busy.
+ */
+.scan-beam {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: transform;
+  transform: translate3d(0, -50%, 0);
+  animation: beam-sweep 3.4s infinite;
+}
+
+.scan-beam i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--mint);
+  box-shadow:
+    0 0 10px 2px color-mix(in srgb, var(--mint) 80%, transparent),
+    0 0 26px 6px color-mix(in srgb, var(--mint) 35%, transparent);
+}
+
+.scan-beam::before,
+.scan-beam::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 34%;
+  will-change: opacity;
+}
+
+/* Glow trailing above the line on the way down … */
+.scan-beam::before {
+  bottom: 50%;
+  background: linear-gradient(transparent, color-mix(in srgb, var(--mint) 18%, transparent) 55%, color-mix(in srgb, var(--mint) 55%, transparent));
+  animation: beam-trail-down 3.4s infinite;
+}
+
+/* … and below it on the way up. */
+.scan-beam::after {
+  top: 50%;
+  background: linear-gradient(color-mix(in srgb, var(--mint) 55%, transparent), color-mix(in srgb, var(--mint) 18%, transparent) 45%, transparent);
+  opacity: 0;
+  animation: beam-trail-up 3.4s infinite;
+}
+
+@keyframes beam-sweep {
+  /* Line at the top edge, moving down until line and glow have left the photo. */
+  0% {
+    transform: translate3d(0, -50%, 0);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  47% {
+    transform: translate3d(0, 90%, 0);
+    animation-timing-function: steps(1, end);
+  }
+  /* Line at the bottom edge, moving up. */
+  50% {
+    transform: translate3d(0, 50%, 0);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  97% {
+    transform: translate3d(0, -90%, 0);
+    animation-timing-function: steps(1, end);
+  }
+  100% {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+@keyframes beam-trail-down {
+  0%,
+  48% {
+    opacity: 1;
+  }
+  49%,
+  99% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes beam-trail-up {
+  0%,
+  48% {
+    opacity: 0;
+  }
+  49%,
+  99% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.scan-msg {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.scanning progress {
+  width: 70%;
+  accent-color: var(--claim);
+}
+
+.dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--claim);
+  animation: bounce 1s infinite ease-in-out;
+}
+
+.dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.5);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--mint-soft);
+  border-top-color: var(--claim);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

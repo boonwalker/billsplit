@@ -1,0 +1,624 @@
+/* ───────────────────────── the receipt ───────────────────────── */
+.receipt {
+  --tooth: 9px;
+  filter: drop-shadow(0 14px 22px rgb(13 59 42 / 0.16)) drop-shadow(0 2px 3px rgb(13 59 42 / 0.1));
+  padding: 4px 4px 10px;
+}
+
+.receipt-paper {
+  position: relative;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 27px, rgb(0 0 0 / 0.012) 27px 28px),
+    var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 30px 18px 34px;
+  /* Torn/zigzag paper edges at top and bottom. */
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 1px) no-repeat;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) center / 100% calc(100% - 2 * var(--tooth) + 1px) no-repeat;
+  animation: print 1.1s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+
+/* The paper slides out of the "printer". */
+@keyframes print {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-24px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: none;
+  }
+}
+
+.receipt-head {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.receipt-logo {
+  color: var(--claim);
+  font-size: 1.2rem;
+}
+
+.receipt-head h2 {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 4px 0 2px;
+}
+
+.receipt-head p {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.receipt-paidby {
+  margin-top: 4px !important;
+  padding: 2px 10px;
+  border: 1px dashed var(--ink-faint);
+  border-radius: 999px;
+}
+
+.receipt-rule {
+  height: 0;
+  border-top: 2px dashed var(--ink-faint);
+  margin: 16px 0 10px;
+}
+
+.receipt-rule.double {
+  border-top-style: double;
+  border-top-width: 4px;
+  margin-top: 6px;
+}
+
+.receipt-cols {
+  display: flex;
+  justify-content: space-between;
+  padding-left: 38px;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.receipt-lines {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.rline {
+  position: relative;
+  border-radius: 10px;
+  animation: line-in 0.45s ease both;
+  transition: background 0.3s ease;
+}
+
+@keyframes line-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.rline.flash {
+  animation: flash 0.9s ease;
+}
+
+@keyframes flash {
+  0% {
+    background: color-mix(in srgb, var(--mint) 55%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.rline-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 4px;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rline-main:disabled {
+  cursor: default;
+}
+
+.rline-main:focus-visible {
+  outline: 2px solid var(--claim);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Tick circle: grey ring, green arc that fills with the units taken, check mark. */
+.tick {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -2px;
+}
+
+.tick svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tick-ring {
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: 2;
+}
+
+.tick-arc {
+  fill: none;
+  stroke: var(--claim);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--fill, 0) * 100);
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dashoffset 0.35s ease;
+}
+
+.tick-check {
+  fill: none;
+  stroke: var(--claim);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.25s ease 0.1s;
+}
+
+.mine .tick-check {
+  stroke-dashoffset: 0;
+}
+
+.mine .tick-ring {
+  fill: color-mix(in srgb, var(--mint) 22%, transparent);
+}
+
+.rline-main:active .tick {
+  transform: scale(0.9);
+}
+
+.rline-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.rline-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  transition: color 0.3s ease;
+}
+
+/* Animated strike-through for fully assigned lines. As an inline background it is drawn
+   per wrapped line at the same height and sweeps from the first line to the last. */
+.rline-strike {
+  background: linear-gradient(var(--ink), var(--ink)) no-repeat 0 58% / 0% 1.6px;
+  transition: background-size 0.45s ease;
+}
+
+.rline-qty {
+  color: var(--claim);
+}
+
+.rline-unit {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.rline-dots {
+  flex: 1 1 12px;
+  min-width: 12px;
+  align-self: center;
+  border-bottom: 2px dotted var(--ink-faint);
+  transform: translateY(3px);
+}
+
+.rline-price {
+  flex: none;
+  font-weight: 700;
+  white-space: nowrap;
+  background: linear-gradient(var(--ink), var(--ink)) no-repeat 0 58% / 0% 1.6px;
+  transition: background-size 0.45s ease 0.15s;
+}
+
+.rline.done .rline-strike,
+.rline.done .rline-price {
+  background-size: 100% 1.6px;
+}
+
+.rline.done .rline-name,
+.rline.done .rline-price {
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.rline.done .rline-name .rline-qty {
+  color: inherit;
+}
+
+.rline-claims {
+  list-style: none;
+  margin: -4px 0 6px;
+  padding: 0 4px 0 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--claim);
+}
+
+.rline-claims li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  animation: claim-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+@keyframes claim-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* Someone else's units: tap to share one of them. */
+.receipt-original {
+  display: block;
+  margin: 10px auto 0;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--claim);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.original {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.original-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.original-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.original-full {
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-viewer-stage {
+  flex: 1;
+  padding-top: calc(env(safe-area-inset-top) + 60px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.photo-viewer-stage img {
+  max-width: 100%;
+  max-height: calc(100dvh - 200px);
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.photo-viewer-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 10px);
+  right: 12px;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.18);
+  color: #fff;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.photo-viewer-hint {
+  margin: 0;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px);
+  text-align: center;
+  font-size: 0.8rem;
+  color: rgb(255 255 255 / 0.6);
+}
+
+/* Equal split: per-person amounts look pencilled onto the receipt. */
+.pencil {
+  font-family: "Caveat", "Bradley Hand", "Segoe Print", cursive;
+  font-weight: 600;
+  color: var(--pencil);
+  filter: url(#pencil-grain);
+}
+
+.pencil-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.rline-each {
+  flex: none;
+  margin-right: 8px;
+  font-size: 1.15rem;
+  line-height: 1;
+  transform: rotate(-3deg);
+}
+
+.rline-div {
+  flex: none;
+  margin-left: 3px;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.rline.equal .tick {
+  display: none;
+}
+
+/* Taken completely by others: no tick circle (the place stays, so the names line up). */
+.rline.taken .tick {
+  visibility: hidden;
+}
+
+/* Equal split, payer's view: tapping a line crosses it out. While the finger rests on it, the
+   letters and digits are pressed in; on release they pop back up with a slight overshoot. */
+.rline.strikable .rline-text,
+.rline.strikable .rline-each,
+.rline.strikable .rline-price,
+.rline.strikable .rline-div,
+.rline.pressable .rline-text,
+.rline.pressable .rline-each,
+.rline.pressable .rline-price,
+.rline.pressable .rline-div {
+  transition:
+    transform 0.32s cubic-bezier(0.3, 1.8, 0.5, 1),
+    background-size 0.45s ease 0.15s,
+    color 0.3s ease;
+}
+
+.rline.pressable .rline-main,
+.rline.strikable .rline-main {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rline.strikable.holding .rline-text,
+.rline.strikable.holding .rline-each,
+.rline.strikable.holding .rline-price,
+.rline.strikable.holding .rline-div,
+.rline.pressable.holding .rline-text,
+.rline.pressable.holding .rline-each,
+.rline.pressable.holding .rline-price,
+.rline.pressable.holding .rline-div {
+  transform: scale(0.93, 0.84);
+  transition-duration: 0.09s, 0.45s, 0.3s;
+  transition-timing-function: ease-out, ease, ease;
+}
+
+/* Lines crossed out by the payer are struck like pencil and are not billed. */
+.rline.excluded .rline-strike,
+.rline.excluded .rline-price {
+  background-image: linear-gradient(var(--pencil), var(--pencil));
+  background-size: 100% 2.2px;
+}
+
+.fraction {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fraction-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+}
+
+.fraction-bar {
+  width: calc(100% + 10px);
+  height: 12px;
+  margin: 1px -6px 0 -4px;
+  overflow: visible;
+  filter: url(#pencil-grain);
+}
+
+.fraction-bar path {
+  fill: var(--pencil);
+  stroke: none;
+}
+
+.fraction-bar .fraction-bar-thin {
+  opacity: 0.35;
+}
+
+.fraction-den {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.fraction-result {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 1.6rem;
+  line-height: 1;
+  transform: rotate(-2deg);
+}
+
+.fraction-result small {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.equal-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.equal-toggle.on {
+  border-color: color-mix(in srgb, var(--mint) 60%, var(--surface));
+  background: color-mix(in srgb, var(--mint) 14%, var(--surface));
+}
+
+.equal-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.equal-toggle-text small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.switch {
+  flex: none;
+  position: relative;
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--ink-faint);
+  transition: background 0.2s ease;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: transform 0.2s ease;
+}
+
+.equal-toggle.on .switch {
+  background: var(--claim);
+}
+
+.equal-toggle.on .switch::after {
+  transform: translateX(18px);
+}
+
+/* Crossing out and tapping lines in the supermarket view. */
+.receipt-lines-wrap {
+  position: relative;
+}
+
+.ink-layer {
+  position: absolute;
+  inset: -6px;
+  z-index: 3;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  /* Up/down swipes scroll as usual; sideways and slanted strokes cross lines out. */
+  touch-action: pan-y;
+  cursor: crosshair;
+  color: var(--pencil);
+}
+
+.rline-divisor {
+  margin-left: 8px;
+  font-size: 1.25rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rline-full {
+  margin-right: 6px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}

@@ -1,0 +1,239 @@
+/* ───────── settling up with as few payments as possible ───────── */
+.plan-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.plan-card h4,
+.inbox-card h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.plan-card h4 small {
+  margin-left: 6px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.plan-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.plan-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-text small {
+  font-size: 0.78rem;
+}
+
+.plan-amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.plan-pay {
+  min-height: 38px;
+  padding: 6px 14px;
+}
+
+.plan-incoming {
+  margin: 0;
+}
+
+.pay-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pay-buttons-busy {
+  text-align: center;
+}
+
+.transfer-inbox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.inbox-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.inbox-card.incoming {
+  border-color: var(--claim);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mint) 45%, transparent);
+}
+
+.inbox-card.rejected h4 {
+  color: var(--danger);
+}
+
+.inbox-card.confirmed h4 {
+  color: var(--claim);
+}
+
+.inbox-card p {
+  margin: 0;
+}
+
+.inbox-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.inbox-actions .btn {
+  flex: 1;
+}
+
+.debtor-credit {
+  font-size: 0.75rem;
+  color: var(--claim);
+}
+
+.dashboard-btn .badge {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--paypal);
+  color: var(--paypal-ink);
+  font-size: 0.75rem;
+}
+
+/* "Link teilen" and "Positionen bearbeiten" side by side, both on one line and equally large. */
+.share-row .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.share-row .edit-items {
+  padding-inline: 10px;
+}
+
+.fit-line {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* "● LIVE  👤 3": how many people of the bill have the app open right now. */
+.live-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 2px;
+  padding-left: 7px;
+  border-left: 1px solid var(--border);
+  letter-spacing: 0;
+}
+
+/* Payer at the top of a new bill: the finished receipt peeks up from behind the bar. */
+.receipt-peek {
+  position: fixed;
+  left: 50%;
+  z-index: 39;
+  width: min(100% - 40px, 520px);
+  transform: translateX(-50%);
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: inherit;
+  cursor: pointer;
+  filter: drop-shadow(0 -6px 16px rgb(0 0 0 / 0.35));
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The receipt's own paper (same padding and type), torn at the top only. */
+.receipt-paper.receipt-peek-paper {
+  display: block;
+  padding-bottom: 44px;
+  -webkit-mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) bottom / 100% calc(100% - var(--tooth) + 1px) no-repeat;
+  mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) bottom / 100% calc(100% - var(--tooth) + 1px) no-repeat;
+  animation:
+    peek-in 0.9s cubic-bezier(0.25, 1.4, 0.45, 1) 0.5s both,
+    peek-nudge 4.5s ease-in-out 2.5s infinite;
+}
+
+.receipt-peek {
+  --tooth: 9px;
+}
+
+/* Once scrolling starts, the snippet holds still and waits for the receipt to reach it. */
+.receipt-peek.following .receipt-peek-paper {
+  animation: peek-in 0.9s cubic-bezier(0.25, 1.4, 0.45, 1) 0.5s both;
+}
+
+.receipt-peek-title {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 4px 0 2px;
+}
+
+.receipt-peek-hint {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--claim);
+}
+
+/* Slides up out of the bar, overshooting a little like paper being pulled. */
+@keyframes peek-in {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* Every few seconds it lifts a little more, as if someone tugs at it. */
+@keyframes peek-nudge {
+  0%,
+  78%,
+  100% {
+    transform: none;
+  }
+  86% {
+    transform: translateY(-10px);
+  }
+  92% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Loading screens (scanning, creating the bill): no separator line under the header. */
+.loading-page .topbar {
+  box-shadow: none;
+}

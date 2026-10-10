@@ -1,0 +1,178 @@
+/* ───────────────────────── home ───────────────────────── */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 2px 4px;
+}
+
+.hero h2 {
+  font-size: clamp(2.1rem, 9vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.hl {
+  background: var(--hl-bg);
+  color: var(--hl-fg);
+  padding: 0 2px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.1s ease;
+}
+
+.action-card:active {
+  transform: scale(0.985);
+}
+
+.action-card.primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--paper);
+  box-shadow: var(--shadow-lg);
+}
+
+.action-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--mint-soft);
+  color: var(--claim);
+}
+
+.primary .action-icon {
+  background: var(--mint);
+  color: var(--brand);
+}
+
+/* Middle step between the dark primary card and the plain one. */
+.action-card.secondary {
+  background: color-mix(in srgb, var(--mint) 22%, var(--surface));
+  border-color: color-mix(in srgb, var(--mint) 55%, var(--surface));
+}
+
+.secondary .action-icon {
+  background: var(--surface);
+}
+
+.action-icon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.action-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.action-text b {
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+}
+
+.action-text small {
+  opacity: 0.75;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding-right: 4px;
+}
+
+.list-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shop-persons-hint {
+  font-weight: 400;
+  font-size: 0.85em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.list-paid {
+  color: var(--claim);
+  font-weight: 600;
+}
+
+.list-title {
+  font-weight: 650;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.steps li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.steps li > span {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--mint);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+}

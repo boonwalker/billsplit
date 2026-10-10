@@ -1,0 +1,95 @@
+/* Bank transfer / Wero: the details to paste into the banking app. */
+.paybar-other {
+  align-self: center;
+  color: var(--paper);
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
+.transfer-backdrop {
+  z-index: 120;
+}
+
+.transfer-sheet {
+  gap: 10px;
+  /* It sits inside the dark pay bar: back to the normal text colour. */
+  color: var(--text);
+  text-align: left;
+}
+
+.transfer-sheet h2 {
+  margin-bottom: 4px;
+}
+
+.transfer-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.transfer-tabs button {
+  flex: 1;
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.transfer-tabs button.on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.copy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.copy-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.copy-row-text small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.copy-row-text b {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.copy-row-btn {
+  flex: none;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--claim);
+  border-radius: 10px;
+  background: none;
+  color: var(--claim);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copy-row-btn.done {
+  background: var(--claim);
+  color: #fff;
+}

@@ -1,0 +1,118 @@
+/* ───────────────────────── billsplit design tokens ───────────────────────── */
+:root {
+  --brand: #0d3b2a;
+  --brand-2: #155c41;
+  --mint: #3ddc97;
+  --mint-soft: #d9f7e8;
+  --paper: #fffdf6;
+  --paper-edge: #efe9d8;
+  --ink: #1b1f1c;
+  --ink-soft: #5b625d;
+  --ink-faint: #c9c6ba;
+  /* Claim colour on paper; dark enough for small text (WCAG AA). */
+  --claim: #0f7a4d;
+  --pencil: #3f413f;
+  --paypal: #ffc439;
+  --paypal-ink: #11233f;
+
+  --bg: #eef1ec;
+  --surface: #ffffff;
+  --text: #15201b;
+  --muted: #5d6963;
+  --border: #dfe5df;
+  --danger: #b42318;
+  --warning: #8a5a00;
+  --radius: 18px;
+  --shadow-sm: 0 1px 2px rgb(13 59 42 / 0.06), 0 2px 8px rgb(13 59 42 / 0.05);
+  --shadow-lg: 0 2px 4px rgb(13 59 42 / 0.06), 0 18px 40px -12px rgb(13 59 42 / 0.28);
+  --link: var(--claim);
+  --primary-bg: var(--brand);
+  --primary-fg: var(--paper);
+  --hl-bg: linear-gradient(transparent 62%, var(--mint) 62%, var(--mint) 92%, transparent 92%);
+  --hl-fg: currentColor;
+  --font-display: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+
+/* Dark theme: follows the OS unless the host forces a theme via data-theme. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1511;
+    --surface: #13201a;
+    --text: #e6eee9;
+    --muted: #93a39b;
+    --border: #23332b;
+    --danger: #f97066;
+    --warning: #f5c04e;
+    --mint-soft: #123a2a;
+    --shadow-sm: none;
+    --shadow-lg: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+    --link: var(--mint);
+    --primary-bg: var(--mint);
+    --primary-fg: var(--brand);
+    --hl-bg: none;
+    --hl-fg: var(--mint);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1511;
+  --surface: #13201a;
+  --text: #e6eee9;
+  --muted: #93a39b;
+  --border: #23332b;
+  --danger: #f97066;
+  --warning: #f5c04e;
+  --mint-soft: #123a2a;
+  --shadow-sm: none;
+  --shadow-lg: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+  --link: var(--mint);
+  --primary-bg: var(--mint);
+  --primary-fg: var(--brand);
+  --hl-bg: none;
+  --hl-fg: var(--mint);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--link);
+}

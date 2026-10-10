@@ -1,0 +1,219 @@
+/* Normal split: a short ghost demo of ticking, sharing and offering to share (see ClaimDemo). */
+.claim-demo {
+  position: absolute;
+  /* Room below the last line for a bubble, but nothing beyond the paper's sides. */
+  inset: 0 0 -90px;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.claim-demo-tick {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+}
+
+.claim-demo-tick svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.claim-demo-tick circle {
+  fill: var(--paper);
+  stroke: var(--ink-faint);
+  stroke-width: 2;
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+.claim-demo-tick path {
+  fill: none;
+  stroke: var(--claim);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.3s ease 0.1s;
+}
+
+.claim-demo.after .claim-demo-tick circle {
+  fill: color-mix(in srgb, var(--mint) 22%, var(--paper));
+  stroke: var(--claim);
+}
+
+.claim-demo.after .claim-demo-tick path {
+  stroke-dashoffset: 0;
+}
+
+/* Ghost name chips below the line, where the real ones are listed. */
+.claim-demo-chips {
+  position: absolute;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  max-width: calc(100% - 36px);
+  margin-top: -2px;
+  padding: 2px 6px 2px 0;
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--claim);
+  white-space: nowrap;
+  animation: claim-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+/* The explanation: a light comic speech bubble that pops up, written in pencil. */
+.claim-demo-bubble {
+  --bubble: #fffef6;
+  --outline: #2b2d2b;
+  position: absolute;
+  padding: 6px 14px 7px;
+  border: 2px solid var(--outline);
+  border-radius: 18px 20px 17px 21px / 16px 18px 20px 17px;
+  background: var(--bubble);
+  box-shadow: 3px 3px 0 var(--outline);
+  transform-origin: var(--tail-apex, 27px) -10px;
+  animation: bubble-pop 0.5s cubic-bezier(0.25, 1.6, 0.45, 1) both;
+}
+
+/*
+ * The tail, pointing up at what is tapped: an outlined triangle with a filled one on top. Its tip
+ * sits at --tail-apex; when the bubble rests against the edge of the paper, the tail leans over
+ * to still point right at the spot.
+ */
+.claim-demo-bubble::before,
+.claim-demo-bubble::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 90px;
+}
+
+.claim-demo-bubble::before {
+  top: -14px;
+  height: 16px;
+  background: var(--outline);
+  clip-path: polygon(18px 100%, 33px 100%, var(--tail-apex, 27px) 0);
+}
+
+.claim-demo-bubble::after {
+  top: -9px;
+  height: 11px;
+  background: var(--bubble);
+  clip-path: polygon(21px 100%, 30px 100%, calc(var(--tail-apex, 27px) * 0.6 + 10.2px) 0);
+}
+
+@keyframes bubble-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08) rotate(1.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-1deg);
+  }
+}
+
+.claim-demo-writing {
+  display: block;
+  font-family: "Caveat", "Bradley Hand", "Segoe Print", cursive;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: #3f413f;
+  white-space: normal;
+  filter: url(#pencil-grain);
+}
+
+/* Each letter comes in as the pencil reaches it. */
+.claim-demo-writing span {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.claim-demo-writing span.on {
+  opacity: 1;
+}
+
+.claim-demo-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 2px;
+  border: 1px dashed color-mix(in srgb, var(--claim) 45%, transparent);
+  border-radius: 999px;
+}
+
+.claim-demo-chip i {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--claim);
+  color: var(--paper);
+  font-size: 0.6rem;
+  font-style: normal;
+}
+
+.claim-demo-chip.mine {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.claim-demo-chip.half,
+.claim-demo-chip.offer {
+  border-style: solid;
+  border-color: var(--claim);
+  animation: claim-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+.claim-demo-chip.offer {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--mint) 35%, transparent);
+}
+
+.claim-demo-note {
+  color: var(--muted);
+  font-weight: 400;
+  font-style: italic;
+  animation: claim-in 0.35s ease both;
+}
+
+/* The finger tapping the tick or the name. */
+.claim-demo-tap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  border: 2px solid var(--claim);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mint) 45%, transparent);
+  animation: claim-demo-tap 0.45s ease-out both;
+}
+
+@keyframes claim-demo-tap {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  35% {
+    opacity: 0.95;
+    transform: scale(0.75);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}

@@ -1,0 +1,140 @@
+/* ───────────────────────── payer panel ───────────────────────── */
+.owner-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-head h3 {
+  font-size: 1.2rem;
+}
+
+.empty {
+  padding: 4px 0;
+}
+
+.debtors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.debtor {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--bg);
+  animation: claim-in 0.4s ease both;
+}
+
+.debtor.announced {
+  background: color-mix(in srgb, var(--paypal) 18%, var(--surface));
+}
+
+.debtor.received {
+  background: var(--mint-soft);
+}
+
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--mint);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.debtor-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.debtor-name {
+  font-weight: 700;
+}
+
+.debtor-status {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.debtor-amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.received-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.received-toggle input {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  accent-color: var(--claim);
+}
+
+.owner-sums {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 2px dashed var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.owner-sums dt {
+  color: var(--muted);
+}
+
+.owner-sums dd {
+  margin: 0;
+  text-align: right;
+}
+
+.owner-sums .strong {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--warning);
+}
+
+.hint.muted {
+  color: var(--muted);
+}

@@ -1,0 +1,61 @@
+/* ───────────────────────── moving to a new device ───────────────────────── */
+
+.device-transfer {
+  gap: 10px;
+}
+
+.device-transfer .btn-ghost {
+  justify-content: center;
+}
+
+.device-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 4px;
+  text-align: center;
+}
+
+.device-panel .qr {
+  width: min(64vw, 240px);
+}
+
+.recovery-code {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-all;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+.recovery-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: inherit;
+  resize: vertical;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 14px;
+}
+
+.device-restore-toggle {
+  align-self: center;
+}
+
+.device-card {
+  gap: 12px;
+}
+
+.device-card h3 {
+  margin: 0;
+}

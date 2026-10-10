@@ -1,0 +1,135 @@
+/* ───────────────────────── top bar ───────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: grid;
+  /* Back button and badge keep their size; the title gets what is left and is shortened. */
+  grid-template-columns: minmax(44px, auto) minmax(0, 1fr) minmax(44px, auto);
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: calc(6px + env(safe-area-inset-top)) 12px 6px;
+  background: var(--bg);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.topbar h1 {
+  font-size: 1rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-left {
+  display: flex;
+}
+
+.topbar-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.brand-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.wordmark b {
+  font-weight: 700;
+  color: var(--link);
+}
+
+.logo-mark {
+  display: block;
+  border-radius: 9px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--mint-soft);
+}
+
+.icon-btn.subtle {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.avatar-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--brand);
+  background: var(--mint);
+  color: var(--brand);
+  font-family: var(--font-display);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.live-dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+}
+
+.live-dot.on {
+  color: var(--claim);
+}
+
+.live-dot.on::before {
+  background: #1fbf75;
+  box-shadow: 0 0 0 0 rgb(31 191 117 / 0.6);
+  animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+  70% {
+    box-shadow: 0 0 0 7px rgb(31 191 117 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(31 191 117 / 0);
+  }
+}

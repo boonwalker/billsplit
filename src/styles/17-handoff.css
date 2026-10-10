@@ -1,0 +1,104 @@
+/* Safari on the iPhone: the way from the browser into the home-screen app. */
+.open-in-app {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px 10px 14px;
+  border-radius: 14px;
+  background: var(--mint-soft);
+  font-size: 0.9rem;
+}
+
+.open-in-app.done {
+  display: block;
+  line-height: 1.4;
+}
+
+.open-in-app .btn {
+  flex: none;
+  min-height: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--claim);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+/* The home-screen app, after coming over from Safari: open the copied link. */
+.handoff {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 18px 16px 16px;
+  border-radius: 20px;
+  border: 2px solid var(--mint);
+  background: var(--surface);
+  /* Clearly lifted off the app: a dark rim, a mint glow and a deep shadow. */
+  box-shadow:
+    0 0 0 4px rgb(0 0 0 / 0.55),
+    0 0 28px 2px color-mix(in srgb, var(--mint) 45%, transparent),
+    0 24px 50px -10px rgb(0 0 0 / 0.7);
+  animation: handoff-in 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.handoff-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 94;
+  background: rgb(5 20 14 / 0.55);
+  backdrop-filter: blur(2px);
+  animation: handoff-dim 0.3s ease both;
+}
+
+@keyframes handoff-dim {
+  from {
+    opacity: 0;
+  }
+}
+
+.sheet-logo {
+  display: flex;
+}
+
+@keyframes handoff-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+.handoff p {
+  margin: 0;
+}
+
+.handoff-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.handoff-error {
+  font-size: 0.85rem;
+  color: var(--danger, #b3261e);
+}
+
+.handoff-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}

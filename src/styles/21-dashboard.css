@@ -1,0 +1,351 @@
+/* ───────────────────────── dashboard ───────────────────────── */
+/* Lent vs. owed: green and orange, checked for colour blindness against each surface. */
+:root {
+  --lent: #0f7a4d;
+  --owed: #f76707;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --lent: #22a86a;
+    --owed: #e8590c;
+  }
+}
+
+:root[data-theme="dark"] {
+  --lent: #22a86a;
+  --owed: #e8590c;
+}
+
+.dashboard-btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.balance-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 0;
+}
+
+.balance-ring-chart {
+  position: relative;
+  width: min(240px, 70vw);
+  aspect-ratio: 1;
+}
+
+.balance-ring-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.balance-ring-chart circle {
+  fill: none;
+  stroke-width: 26px;
+}
+
+.ring-track {
+  stroke: var(--border);
+}
+
+.ring-slice {
+  cursor: pointer;
+  transition: stroke-width 0.2s ease, opacity 0.2s ease;
+  animation: ring-in 0.8s cubic-bezier(0.3, 0.9, 0.3, 1) both;
+}
+
+.ring-slice.lent {
+  stroke: var(--lent);
+}
+
+.ring-slice.owed {
+  stroke: var(--owed);
+}
+
+.ring-slice.active {
+  stroke-width: 32px;
+}
+
+.ring-slice.dim {
+  opacity: 0.35;
+}
+
+@keyframes ring-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.balance-ring-centre {
+  position: absolute;
+  inset: 22%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.balance-ring-centre b {
+  font-family: var(--font-mono);
+  font-size: 1.45rem;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.balance-ring-centre b.settled {
+  font-size: 2rem;
+  color: var(--claim);
+}
+
+.balance-ring-centre small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.balance-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.balance-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.balance-legend-row.active {
+  background: var(--bg);
+}
+
+.balance-legend-row span {
+  flex: 1;
+  text-align: left;
+}
+
+.balance-legend-row b {
+  font-family: var(--font-mono);
+}
+
+.balance-note {
+  margin: 2px 10px 0;
+}
+
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+
+.swatch.lent {
+  background: var(--lent);
+}
+
+.swatch.owed {
+  background: var(--owed);
+}
+
+/* One small ring per person, two (or three) side by side. */
+.person-rings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.person-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  min-width: 0;
+}
+
+.person-ring-chart {
+  position: relative;
+  width: 84px;
+  aspect-ratio: 1;
+  margin-bottom: 6px;
+}
+
+.person-ring-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.person-ring-chart circle {
+  fill: none;
+  stroke-width: 30px;
+}
+
+.person-ring-initial {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.person-ring-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-ring-amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.person-ring small {
+  font-size: 0.75rem;
+}
+
+.person-ring-both {
+  font-family: var(--font-mono);
+}
+
+/* A person with open amounts: the whole tile opens the settlement. */
+.person-ring {
+  position: relative;
+}
+
+.person-ring-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: none;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.person-ring.open:active {
+  transform: scale(0.98);
+}
+
+.person-ring-action {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--link);
+}
+
+/* Settling up with one person: every open amount bill by bill, then pay or confirm. */
+.settle-backdrop {
+  z-index: 70;
+}
+
+.settle-sheet {
+  color: var(--text);
+}
+
+.settle-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+
+.settle-entries li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settle-entries li > span:first-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settle-entries small {
+  font-size: 0.78rem;
+}
+
+.settle-amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.settle-total {
+  margin: 4px 0 0;
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.settle-total b {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+}
+
+.settle-copied {
+  color: var(--text);
+  text-align: center;
+}
+
+.settle-question {
+  margin: 0;
+  font-weight: 700;
+  text-align: center;
+}
+
+.settle-other {
+  align-self: center;
+}
+
+.settle-done {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--claim);
+}

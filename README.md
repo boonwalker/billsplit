@@ -295,8 +295,9 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 
 - `npm test`: Unit- und API-Tests (vitest, `test/`).
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
-  gebauten Server mit leerem Datenordner: Rechnung beitreten, abhaken, per PayPal zahlen, „erhalten“; Mehrfach-
-  Positionen; Gesamtausgleich mit Bestätigung; Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code.
+  gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
+  abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code.
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait

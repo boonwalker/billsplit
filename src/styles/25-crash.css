@@ -1,0 +1,13 @@
+/* ───────────────────────── crash screen ───────────────────────── */
+
+.crash {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18vh;
+  text-align: center;
+}
+
+.crash h2 {
+  margin: 0;
+}

@@ -31,7 +31,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 117 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 120 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -90,8 +90,12 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
   max. 2000 px Kantenlänge). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
-- **Seiten:** `Home`, `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“), `BillPage` (fertige
-  Rechnung, QR-Code, Beleg, PayBar/OwnerPanel), `Dashboard`, `Profile`, `OriginalReceipt`.
+- **Seiten:** `Home`, `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in
+  `src/lib/draft.ts`, Wartebildschirme in `BusyScreen`), `BillPage` (fertige Rechnung; Teile in
+  `src/components/bill/`: `QrHero`, `LiveBadge`, `ReceiptPeek`, `OwnerBar`; Streichen/„/2“ als reine Funktionen in
+  `src/lib/billEdits.ts`), `Dashboard`, `Profile`, `DeviceLink`, `OriginalReceipt`.
+- **CSS:** `src/styles.css` importiert die Teile in `src/styles/NN-name.css` in fester Reihenfolge (spätere Regeln
+  gewinnen) – neue Regeln in die Datei ihres Bereichs oder eine neue Datei am Ende.
 - **Wichtige Komponenten:** `Receipt` (Beleg mit Abhaken/Streichen), `ClaimDemo`/`ReceiptDemo` (Erklär-Animationen
   mit Sprechblasen), `SupermarketSheet`, `DivisorSheet` („/2“–„/5“), `PayBar`, `PayButtons`, `OwnerPanel`,
   `SettleSheet` (Ausgleich mit einer Person), `SettlementPanel` (Gesamtausgleich, Eingangs-Bestätigung).
@@ -147,8 +151,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 
 Aus der Verbesserungsanalyse vom 10.10.2026, empfohlene Reihenfolge:
 
-1. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen.
-2. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
+1. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
    dem Auftraggeber klären, ob die Regel für „Dir“ auch für Du/Dein gelten soll.
 
 Erledigt am 10.10.2026: einheitlicher Ausgleich über bestätigte Zahlungen, Gerät übertragen/Wiederherstellungs-Code,

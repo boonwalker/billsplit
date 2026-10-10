@@ -1,0 +1,418 @@
+/* "Manches nicht": a full-screen step of the app with a large receipt to cross out and tap. */
+.scribble {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  animation: scribble-in 0.3s ease both;
+}
+
+@keyframes scribble-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* The receipt fills the screen from the very top; the notch area is paper as well. */
+.scribble-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 6px 12px;
+}
+
+.scribble .receipt {
+  padding: 0;
+}
+
+/* The equal-split switch at the top, then the receipt. */
+.scribble-toggle {
+  margin: calc(env(safe-area-inset-top) + 10px) 4px 10px;
+  width: calc(100% - 8px);
+}
+
+.scribble-own {
+  margin: 0;
+  max-width: 13em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* The receipt card as everywhere in the app, only larger lines for fingers. */
+.scribble .receipt-paper {
+  font-size: 1rem;
+}
+
+.scribble .rline-main {
+  min-height: 48px;
+  align-items: center;
+  padding: 9px 4px;
+}
+
+.scribble .rline.done .rline-strike,
+.scribble .rline.done .rline-price {
+  background-image: linear-gradient(var(--pencil), var(--pencil));
+  background-size: 100% 2.5px;
+}
+
+.scribble .rline-divisor {
+  font-size: 1.5rem;
+}
+
+.scribble .rline-div {
+  font-size: 1.35rem;
+  margin-left: 6px;
+}
+
+/* Groups on the marking receipt: likely personal items first. */
+.scribble .rline-group {
+  padding: 12px 4px 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Crossing out takes a moment, while the finger's stroke fades into it. */
+.scribble .rline-strike,
+.scribble .rline-price {
+  transition: background-size 0.7s ease 0.15s, color 0.4s ease;
+}
+
+/* A tapped line is pressed in and pops back up. */
+.scribble .rline.pressed .rline-main {
+  animation: press-pop 0.45s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes press-pop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.94, 0.88);
+  }
+  65% {
+    transform: scale(1.04, 1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.scribble-foot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 14px calc(env(safe-area-inset-bottom) + 8px);
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  box-shadow: 0 -8px 24px -12px rgb(0 0 0 / 0.25);
+}
+
+/* Short confirmation floating above the footer, over the receipt. */
+.scribble-notice {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc(100% + 8px);
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--mint-soft);
+  box-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.3);
+  font-size: 0.85rem;
+  pointer-events: none;
+  animation: notice-float 2.6s ease both;
+}
+
+@keyframes notice-float {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  10%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.scribble-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* "/ 4" with small arrows – what everything not crossed out is divided by. */
+.divide-by {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.divide-by-sign {
+  color: var(--pencil);
+  width: 20px;
+  height: 44px;
+  overflow: visible;
+  filter: url(#pencil-grain);
+}
+
+.divide-by-sign path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.divide-by-sign .divide-by-sign-thin {
+  stroke-width: 3;
+  opacity: 0.45;
+}
+
+.divide-by-value {
+  min-width: 1.4ch;
+  font-family: var(--font-display);
+  font-size: 2.3rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.divide-by-arrows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.divide-by-arrows button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 24px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--mint-soft);
+  color: var(--claim);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.divide-by-arrows svg {
+  width: 20px;
+  height: 10px;
+  overflow: visible;
+}
+
+.divide-by-arrows svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.scribble-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.scribble-sum {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.scribble-sum small {
+  display: block;
+  font-family: var(--font-body, inherit);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.scribble-each {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--claim);
+  font-weight: 600;
+}
+
+.scribble-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.scribble-actions .btn {
+  flex: 1;
+}
+
+.scribble-back {
+  flex: none;
+  width: 52px;
+  height: auto;
+  border-radius: 14px;
+  background: var(--mint-soft);
+  color: var(--claim);
+}
+
+.scribble .rline-div {
+  font-size: 1.4rem;
+  margin-left: 6px;
+}
+
+.claim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -2px 0;
+  padding: 1px 8px 1px 2px;
+  border: 1px dashed color-mix(in srgb, var(--claim) 45%, transparent);
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.claim-btn.offer {
+  border-style: solid;
+  border-color: var(--claim);
+  animation: offer-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes offer-pulse {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--mint) 35%, transparent);
+  }
+}
+
+.claim-btn.sharing {
+  border-style: solid;
+  background: color-mix(in srgb, var(--mint) 22%, transparent);
+}
+
+.rline-hint {
+  margin: 0 4px 8px 40px;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.rline-hint.offer {
+  color: var(--claim);
+  font-weight: 700;
+}
+
+.rline-claims li.me {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.claim-dot {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--claim);
+  color: var(--paper);
+  font-size: 0.6rem;
+}
+
+.claim-cost {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.shared-note {
+  color: var(--ink-soft);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.rline-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -2px 0 8px 40px;
+  font-size: 0.8rem;
+}
+
+.rline-stepper button {
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1.5px solid var(--claim);
+  background: transparent;
+  color: var(--claim);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.rline-stepper button:disabled {
+  opacity: 0.35;
+}
+
+.receipt-sums {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.receipt-sums dd {
+  margin: 0;
+  text-align: right;
+}
+
+.receipt-sums .grand {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.receipt-progress {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.receipt-barcode {
+  height: 42px;
+  margin: 16px auto 8px;
+  width: 70%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ink) 0 2px,
+    transparent 2px 4px,
+    var(--ink) 4px 5px,
+    transparent 5px 8px,
+    var(--ink) 8px 11px,
+    transparent 11px 12px
+  );
+  opacity: 0.85;
+}
+
+.receipt-thanks {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}

@@ -1,0 +1,266 @@
+/* Partly crossed out: the receipt price small above the billed one, so the name keeps its room. */
+.rline.partly .rline-price,
+.rline.repriced .rline-price {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.rline.partly .rline-price .rline-full,
+.rline.repriced .rline-price .rline-full {
+  margin: 0 0 1px;
+}
+
+/* "Manches nicht": some units of a line crossed out – "3x" in pencil becomes "2x". */
+.rline.partly .rline-qty s {
+  text-decoration-color: var(--pencil);
+  text-decoration-thickness: 2px;
+  color: var(--ink-soft);
+}
+
+.rline-left {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* Fees and tip below the subtotal: crossed out by the payer like an item line. */
+.fee-strike {
+  display: inline-block;
+  background: linear-gradient(var(--pencil), var(--pencil)) no-repeat 0 58% / 0% 2px;
+  transition:
+    background-size 0.45s ease 0.1s,
+    color 0.3s ease,
+    transform 0.32s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.fee-line.struck .fee-strike {
+  background-size: 100% 2px;
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+
+.fee-line.strikable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.fee-line.strikable.holding .fee-strike {
+  transform: scale(0.93, 0.84);
+  transition-duration: 0.45s, 0.3s, 0.09s;
+}
+
+/* Long press on a line (payer): only a part of it goes into the split. */
+.divisor-sheet {
+  align-items: center;
+  text-align: center;
+}
+
+.divisor-sheet h2 {
+  align-self: stretch;
+}
+
+.divisor-big {
+  gap: 10px;
+  margin: 6px 0 2px;
+}
+
+.divisor-big .divide-by-sign {
+  width: 34px;
+  height: 80px;
+}
+
+.divisor-big .divide-by-value {
+  font-size: 4rem;
+  min-width: 1.2ch;
+}
+
+.divisor-big .divide-by-arrows button {
+  width: 64px;
+  height: 34px;
+}
+
+.divisor-big .divide-by-arrows button:disabled {
+  opacity: 0.35;
+}
+
+.divisor-result {
+  margin: 0;
+  color: var(--muted);
+}
+
+.divisor-result b {
+  color: var(--text);
+}
+
+/* Above the full-screen "Manches nicht" step. */
+.divisor-backdrop {
+  z-index: 130;
+}
+
+/* Long-press demo: a finger rests on the line while a ring fills around it. */
+.hold-demo {
+  position: absolute;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.hold-demo-dot {
+  fill: color-mix(in srgb, var(--mint) 45%, transparent);
+  stroke: var(--claim);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hold-demo-dot 0.75s ease-out both;
+}
+
+.hold-demo-ring {
+  fill: none;
+  stroke: var(--claim);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transform: rotate(-90deg);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hold-demo-ring 0.6s linear 0.1s both;
+}
+
+@keyframes hold-demo-dot {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  15%,
+  100% {
+    opacity: 1;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes hold-demo-ring {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The line sinks in under the resting finger. */
+.scribble .rline.demo-holding .rline-main {
+  transform: scale(0.97);
+  transition: transform 0.6s ease;
+}
+
+.hold-demo-bubble {
+  z-index: 3;
+  pointer-events: none;
+}
+
+/*
+ * Long presses on the receipt open the "/" sheet: iOS must not start a text selection (or its
+ * magnifier and callout) on the receipt or on the sheet that opens under the finger.
+ */
+.scribble,
+.ink-layer,
+.divisor-backdrop {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* A sideways stroke across a line crosses it out on the bill too, so only vertical panning scrolls. */
+.rline.strikable .rline-main {
+  touch-action: pan-y;
+}
+
+/* The payer's intro on the receipt: strokes in pencil, a tapping finger, a long press. */
+.rdemo {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.rdemo-strike {
+  fill: none;
+  stroke: var(--pencil);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: url(#pencil-grain);
+  animation: rdemo-draw 1.5s ease-in-out both;
+}
+
+.rdemo-strike.after-tap {
+  animation-delay: 0.32s;
+}
+
+.rdemo-tap {
+  fill: color-mix(in srgb, var(--mint) 45%, transparent);
+  stroke: var(--claim);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rdemo-tap 0.45s ease-out both;
+}
+
+@keyframes rdemo-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  40%,
+  80% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes rdemo-tap {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  35% {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/* The pencilled "/2" next to the held line on the finished bill. */
+.rdemo-divisor {
+  position: absolute;
+  z-index: 2;
+  font-size: 1.25rem;
+  line-height: 1;
+  transform: translateY(-55%);
+  pointer-events: none;
+  animation: claim-in 0.35s ease both;
+}
+
+/* "in PayPal ins Betragsfeld tippen …" stays on one line (the text is shrunk a little to fit). */
+.paybar-oneline {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Examples under the supermarket question, on a line of their own and a little smaller. */
+.shop-examples {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.88em;
+}
