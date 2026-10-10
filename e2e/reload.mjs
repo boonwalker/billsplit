@@ -1,0 +1,20 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const start = (sha) => spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3195", DATA_DIR: process.argv[2] + "/data", RAILWAY_GIT_COMMIT_SHA: sha }, stdio: "ignore" });
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+let srv = start("aaaaaaa1");
+await wait(1500);
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const page = await browser.newPage();
+let loads = 0;
+page.on("load", () => loads++);
+await page.goto("http://localhost:3195/");
+await wait(800);
+srv.kill(); await wait(500);
+srv = start("bbbbbbb2"); await wait(1500);
+await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true }); document.dispatchEvent(new Event("visibilitychange")); });
+await wait(1500);
+console.log("page loads:", loads);
+srv.kill();
+await browser.close();

@@ -1,0 +1,18 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const SP = process.argv[2];
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3256", DATA_DIR: SP + "/data-hold" }, stdio: "ignore" });
+await wait(1500);
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE", hasTouch: true });
+await ctx.addInitScript(() => localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Niklas", paypalMe: "nik", paypalEmail: "" })));
+const page = await ctx.newPage();
+await page.route("**/api/parse-receipt", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ merchant: "REWE City", date: "2017-06-23", currency: "EUR", items: [{ name: "Spruehsahne 30%", qty: 2, total: 198 }, { name: "Vanille", qty: 1, total: 199 }, { name: "Milchschokostr", qty: 1, total: 99 }, { name: "Trinkhalme", qty: 1, total: 149 }], total: 655, tip: null, fees: [{ name: "KL.PAPIERTASCHE", amount: 10 }], delivery: false, supermarket: true, engine: "ai" }) }));
+await page.goto("http://localhost:3256/");
+await page.locator(".action-card.primary input[type=file]").setInputFiles(`${SP}/shots/app-receipt.png`);
+await page.waitForSelector(".sheet h2", { timeout: 15000 });
+await page.getByRole("button", { name: "Manches nicht" }).click(); await wait(900);
+await wait(8600); await page.screenshot({ path: `${SP}/shots/hold-press.png`, clip: { x: 0, y: 280, width: 390, height: 260 } }); await wait(2000); await page.screenshot({ path: `${SP}/shots/hold-after.png`, clip: { x: 0, y: 280, width: 390, height: 320 } });
+await browser.close(); srv.kill();

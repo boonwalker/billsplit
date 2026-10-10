@@ -1,0 +1,9 @@
+{
+  "name": "billsplit-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Klick-Tests (Playwright, Chromium) – siehe e2e/README.md",
+  "dependencies": {
+    "playwright-core": "1.56"
+  }
+}

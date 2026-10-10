@@ -1,0 +1,31 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const SP = process.argv[2];
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3242", DATA_DIR: SP + "/data-waitnote" }, stdio: "ignore" });
+await wait(1500);
+const call = (path, key, method, body) => fetch(`http://localhost:3242${path}`, { method, headers: { "content-type": "application/json", "x-billsplit-key": key }, body: JSON.stringify(body) }).then((r) => r.json());
+const { id } = await call("/api/bills", "ownerkey-1234567890abcdef", "POST", { name: "Niklas", data: { title: "Takumi", date: "2026-10-10", currency: "EUR", items: [{ id: "a", name: "Vorspeisenplatte", qty: 1, total: 1400 }], tipPercent: 0, payment: { paypalMe: "nik" } } });
+const ANNA = "annakey-1234567890abcdef";
+await call(`/api/bills/${id}/join`, ANNA, "POST", { name: "Anna" });
+await call(`/api/bills/${id}/claims`, ANNA, "PUT", { claims: { a: [0] }, splits: { a: [0] } });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "de-DE" });
+await ctx.addInitScript((id) => { localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Ben", paypalMe: "", paypalEmail: "" })); localStorage.setItem(`billsplit.claimDemo.${id}`, "1"); }, id);
+const p = await ctx.newPage();
+await p.goto(`http://localhost:3242/#/b/${id}`); await p.waitForSelector(".rline-claims"); await wait(600);
+console.log("offered, nobody joined:", await p.locator(".rline-claims").innerText());
+await p.locator(".claim-btn").first().click(); await wait(1200);
+console.log("Ben joined:", await p.locator(".rline-claims").innerText());
+// Anna's own view of her offer.
+const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "de-DE" });
+await ctx2.addInitScript((id) => { localStorage.setItem("billsplit.deviceKey", JSON.stringify("annakey-1234567890abcdef")); localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Anna", paypalMe: "", paypalEmail: "" })); localStorage.setItem(`billsplit.claimDemo.${id}`, "1"); }, id);
+await call(`/api/bills/${id}/claims`, "benkey-unused-1234567890", "PUT", {}).catch(() => {});
+const { id: id2 } = await call("/api/bills", "ownerkey-1234567890abcdef", "POST", { name: "Niklas", data: { title: "B", date: "2026-10-10", currency: "EUR", items: [{ id: "a", name: "Butter", qty: 1, total: 390 }], tipPercent: 0, payment: { paypalMe: "nik" } } });
+await call(`/api/bills/${id2}/join`, ANNA, "POST", { name: "Anna" });
+await call(`/api/bills/${id2}/claims`, ANNA, "PUT", { claims: { a: [0] }, splits: { a: [0] } });
+const p2 = await ctx2.newPage();
+await p2.goto(`http://localhost:3242/#/b/${id2}`); await p2.waitForSelector(".rline-claims"); await wait(600);
+console.log("Anna's own offer:", await p2.locator(".rline-claims").innerText());
+await browser.close(); srv.kill();

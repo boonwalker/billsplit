@@ -1,0 +1,31 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const SP = process.argv[2];
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3235", DATA_DIR: SP + "/data-settled" }, stdio: "ignore" });
+await wait(1500);
+const OK = "ownerkey-1234567890abcdef", GK = "guestkey-1234567890abcdef";
+const call = (path, key, body) => fetch(`http://localhost:3235${path}`, { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": key }, body: JSON.stringify(body) }).then((r) => r.json());
+const { id } = await call("/api/bills", OK, { name: "Niklas", data: { title: "Lidl", date: "2026-10-10", currency: "EUR", items: [{ id: "a", name: "Pizza", qty: 1, total: 1000 }], tipPercent: 0, payment: { paypalMe: "nik" }, equalSplit: true } });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ locale: "de-DE" });
+await ctx.addInitScript((id) => {
+  localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Niklas", paypalMe: "nik", paypalEmail: "" }));
+  localStorage.setItem("billsplit.deviceKey", JSON.stringify("ownerkey-1234567890abcdef"));
+  if (!localStorage.getItem("billsplit.recent")) localStorage.setItem("billsplit.recent", JSON.stringify([{ id, title: "Lidl", role: "owner", createdAt: new Date().toISOString() }]));
+}, id);
+const p = await ctx.newPage();
+const show = async (label) => { await p.goto("http://localhost:3235/"); await wait(900); await p.reload(); await wait(900); console.log(label, await p.locator(".list-item .muted").allTextContents()); };
+await show("nobody joined:");
+const joined = await call(`/api/bills/${id}/join`, GK, { name: "Ben" });
+await show("Ben joined:");
+const ben = joined.participants.find((x) => x.name === "Ben").id;
+await call(`/api/bills/${id}/received`, OK, { participantId: ben, received: true });
+await show("Ben received:");
+await p.goto(`http://localhost:3235/#/b/${id}`); await wait(800);
+console.log("ownerbar:", await p.locator(".ownerbar strong").textContent());
+await call(`/api/bills/${id}/received`, OK, { participantId: ben, received: false });
+await show("received undone:");
+await browser.close();
+srv.kill();

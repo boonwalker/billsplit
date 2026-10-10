@@ -1,0 +1,22 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const SP = process.argv[2];
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3256", DATA_DIR: SP + "/data-demoequal" }, stdio: "ignore" });
+await wait(1500);
+const OK = "ownerkey-1234567890abcdef";
+const res = await fetch("http://localhost:3256/api/bills", { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": OK }, body: JSON.stringify({ name: "Niklas", data: { title: "T", date: "2026-10-10", currency: "EUR", items: ["a", "b", "c", "d"].map((x, i) => ({ id: x, name: "Position " + x, qty: 1, total: 500 + i * 100 })), tipPercent: 0, payment: { paypalMe: "nik" } } }) });
+const { id } = await res.json();
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "de-DE" });
+await ctx.addInitScript(() => { localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Niklas", paypalMe: "nik", paypalEmail: "" })); localStorage.setItem("billsplit.deviceKey", JSON.stringify("ownerkey-1234567890abcdef")); });
+const p = await ctx.newPage();
+await p.goto(`http://localhost:3256/#/b/${id}`); await p.waitForSelector(".receipt .rline");
+await p.locator(".receipt-lines li[data-item]").nth(3).scrollIntoViewIfNeeded(); await wait(2500);
+console.log("demo running:", await p.locator(".claim-demo").count());
+await p.getByRole("switch", { name: /Gleichverteilung/ }).click(); await wait(300);
+console.log("after equal on:", await p.locator(".claim-demo, .claim-demo-bubble").count());
+await wait(4000);
+console.log("4s later:", await p.locator(".claim-demo, .claim-demo-bubble").count());
+await browser.close(); srv.kill();

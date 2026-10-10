@@ -1,0 +1,30 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const SP = process.argv[2];
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3234", DATA_DIR: SP + "/data-paidlist" }, stdio: "ignore" });
+await wait(1500);
+const res = await fetch("http://localhost:3234/api/bills", { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": "ownerkey-1234567890abcdef" }, body: JSON.stringify({ name: "Andy", data: { title: "REWE City", date: "2026-10-09", currency: "EUR", items: [{ id: "a", name: "Pizza", qty: 1, total: 1000 }], tipPercent: 0, payment: { paypalMe: "andy" } } }) });
+const { id } = await res.json();
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ locale: "de-DE", viewport: { width: 390, height: 844 } });
+await ctx.addInitScript(() => { if (!localStorage.getItem("billsplit.profile")) localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Ben", paypalMe: "", paypalEmail: "" })); });
+const p = await ctx.newPage();
+await p.goto(`http://localhost:3234/#/b/${id}`);
+await p.waitForSelector(".paybar");
+await p.locator(".receipt .rline-main").first().click(); await wait(700);
+await p.locator(".paybar .btn-paypal").click(); await wait(200);
+const [popup] = await Promise.all([ctx.waitForEvent("page"), p.locator(".paybar .btn-paypal").click()]);
+await popup.close();
+await p.getByRole("button", { name: "Als bezahlt markieren" }).click(); await wait(600);
+await p.goto("http://localhost:3234/"); await wait(800);
+console.log("list after marking:", await p.locator(".list-item .muted").allTextContents());
+// Undo on another device-less path: unmark via API with the guest key, then reopen home.
+const key = JSON.parse(await p.evaluate(() => localStorage.getItem("billsplit.deviceKey")));
+await fetch(`http://localhost:3234/api/bills/${id}/paid`, { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": key }, body: JSON.stringify({ paid: false }) });
+await p.reload(); await wait(1000);
+console.log("list after unmark elsewhere:", await p.locator(".list-item .muted").allTextContents());
+await p.screenshot({ path: `${SP}/shots/paidlist.png` });
+await browser.close();
+srv.kill();

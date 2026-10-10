@@ -1,0 +1,22 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const SP = process.argv[2];
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3252", DATA_DIR: SP + "/data-demotaken" }, stdio: "ignore" });
+await wait(1500);
+const call = (path, key, method, body) => fetch(`http://localhost:3252${path}`, { method, headers: { "content-type": "application/json", "x-billsplit-key": key }, body: body && JSON.stringify(body) }).then((r) => r.json());
+const OK = "ownerkey-1234567890abcdef";
+const { id } = await call("/api/bills", OK, "POST", { name: "Katia", data: { title: "X", date: "2026-10-10", currency: "EUR", items: ["a", "b", "c", "d", "e"].map((x, i) => ({ id: x, name: "Position " + x.toUpperCase(), qty: 1, total: 500 + i * 100 })), tipPercent: 0, payment: { paypalMe: "k" } } });
+await call(`/api/bills/${id}/claims`, OK, "PUT", { claims: { a: [0], b: [0] }, splits: {} });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: "de-DE" });
+await ctx.addInitScript(() => localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Ben", paypalMe: "", paypalEmail: "" })));
+const p = await ctx.newPage();
+await p.goto(`http://localhost:3252/#/b/${id}`); await p.waitForSelector(".receipt .rline");
+await p.locator(".receipt-lines li[data-item]").nth(4).scrollIntoViewIfNeeded();
+await wait(2200);
+const tick = await p.locator(".claim-demo-tick").boundingBox();
+const lineOf = await p.evaluate((y) => [...document.querySelectorAll(".receipt-lines li[data-item]")].find((l) => { const r = l.getBoundingClientRect(); return y >= r.top && y <= r.bottom; })?.innerText.split("\n")[0], tick.y + tick.height / 2);
+console.log("tick demo on:", lineOf);
+await browser.close(); srv.kill();

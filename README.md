@@ -331,6 +331,16 @@ claude.ai-Artifact gedacht:
 | `GET` | `/api/bills/:id/receipt-image` | Belegfoto abrufen |
 | `POST` | `/api/bills/:id/received` | Zahlungseingang bestätigen (nur Rechnungssteller) |
 | `POST`/`GET`/`DELETE` | `/api/handoff` | Weiterleitung Safari → Home-Bildschirm-App vermerken / abfragen / erledigen |
+| `GET` | `/api/events` | App-weiter Live-Stream: Änderungen an allen eigenen Rechnungen, Online-Status |
+| `GET` | `/api/network` | Offene Anteile aller eigenen Rechnungen (Grundlage für den Zahlungsplan) |
+| `GET`/`POST` | `/api/transfers` | Eigene Ausgleichszahlungen abrufen / neue eintragen |
+| `POST` | `/api/transfers/:id/(confirm\|reject\|cancel)` | Eingang bestätigen bzw. ablehnen (Empfänger) oder zurückziehen (Zahler) |
 
-Geräte authentifizieren sich mit dem Header `x-billsplit-key`. Beim Event-Stream wird er als Query-Parameter `key`
+Geräte authentifizieren sich mit dem Header `x-billsplit-key`. Bei den Event-Streams wird er als Query-Parameter `key`
 übergeben, weil `EventSource` keine eigenen Header unterstützt.
+
+## Weiterentwickeln
+
+`CLAUDE.md` hält Arbeitsweise, Entscheidungen, feste Formulierungen und Backlog fest, `docs/verlauf-anforderungen.md`
+alle bisherigen Wünsche im Wortlaut, `e2e/README.md` die Klick-Tests.
+

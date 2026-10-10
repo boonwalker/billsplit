@@ -1,0 +1,25 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const SP = process.argv[2];
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3241", DATA_DIR: SP + "/data-bar" }, stdio: "ignore" });
+await wait(1500);
+const items = Array.from({ length: 12 }, (_, i) => ({ id: "i" + i, name: "Position " + (i + 1), qty: 1, total: 500 + i * 100 }));
+const res = await fetch("http://localhost:3241/api/bills", { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": "ownerkey-1234567890abcdef" }, body: JSON.stringify({ name: "Niklas", data: { title: "Abacco's", date: "2026-10-10", currency: "EUR", items, tipPercent: 10, payment: { paypalMe: "nik" } } }) });
+const { id } = await res.json();
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE", hasTouch: true });
+await ctx.addInitScript(() => { localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Niklas", paypalMe: "nik", paypalEmail: "" })); localStorage.setItem("billsplit.deviceKey", JSON.stringify("ownerkey-1234567890abcdef")); });
+const p = await ctx.newPage();
+await p.goto(`http://localhost:3241/#/b/${id}`); await p.waitForSelector(".ownerbar"); await wait(800);
+const state = async (label) => console.log(label, await p.evaluate(() => { const b = document.querySelector(".ownerbar").getBoundingClientRect(); const s = document.querySelector(".bill-scroll"); return { barTop: Math.round(b.top), barBottom: Math.round(b.bottom), away: document.querySelector(".ownerbar").classList.contains("away"), scrollTop: Math.round(s.scrollTop), max: s.scrollHeight - s.clientHeight }; }));
+await state("top:");
+await p.evaluate(() => (document.querySelector(".bill-scroll").scrollTop = 900)); await wait(500); await state("middle:");
+await p.screenshot({ path: `${SP}/shots/bar-mid.png` });
+await p.evaluate(() => { const s = document.querySelector(".bill-scroll"); s.scrollTop = s.scrollHeight; }); await wait(600); await state("end:");
+await p.screenshot({ path: `${SP}/shots/bar-end.png` });
+await p.evaluate(() => { const s = document.querySelector(".bill-scroll"); s.scrollTop = s.scrollHeight - s.clientHeight - 100; }); await wait(500); await state("100px above end (still away):");
+await p.evaluate(() => { const s = document.querySelector(".bill-scroll"); s.scrollTop = s.scrollHeight - s.clientHeight - 300; }); await wait(600); await state("300px above end:");
+await p.locator(".scroll-hint").click().catch(() => {});
+await browser.close(); srv.kill();

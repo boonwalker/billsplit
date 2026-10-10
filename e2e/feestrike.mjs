@@ -1,0 +1,28 @@
+import { chromium } from "playwright-core";
+import { spawn } from "node:child_process";
+const SP = process.argv[2];
+const ROOT = new URL("..", import.meta.url).pathname; // Repo-Wurzel (Server läuft aus dist-server/)
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...process.env, PORT: "3254", DATA_DIR: SP + "/data-feestrike" }, stdio: "ignore" });
+await wait(1500);
+const OK = "ownerkey-1234567890abcdef";
+const res = await fetch("http://localhost:3254/api/bills", { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": OK }, body: JSON.stringify({ name: "Niklas", data: { title: "REWE City", date: "2017-06-23", currency: "EUR", items: [{ id: "a", name: "Vanille", qty: 1, total: 199 }, { id: "b", name: "Milchschokostr", qty: 1, total: 99 }], fees: [{ id: "f1", name: "KL.PAPIERTASCHE", amount: 10 }], tipPercent: 0, tipAmount: 50, tipSplitCount: 2, equalSplit: true, payment: { paypalMe: "nik" } } }) });
+const { id } = await res.json();
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE" });
+await ctx.addInitScript((id) => { localStorage.setItem("billsplit.profile", JSON.stringify({ name: "Niklas", paypalMe: "nik", paypalEmail: "" })); localStorage.setItem("billsplit.deviceKey", JSON.stringify("ownerkey-1234567890abcdef")); localStorage.setItem(`billsplit.tapDemo.${id}`, "1"); }, id);
+const p = await ctx.newPage();
+await p.goto(`http://localhost:3254/#/b/${id}`); await p.waitForSelector(".receipt-sums");
+const sum = () => p.locator(".fraction").getAttribute("aria-label");
+console.log("start:", await sum());
+await p.locator("dt.fee-line", { hasText: "PAPIERTASCHE" }).click(); await wait(900);
+console.log("fee struck:", await sum(), "| class:", await p.locator("dt.fee-line", { hasText: "PAPIERTASCHE" }).getAttribute("class"));
+await p.locator("dd.fee-line").last().click(); await wait(900);
+console.log("tip struck too:", await sum());
+await p.locator(".receipt-sums").screenshot({ path: `${SP}/shots/feestrike.png` });
+await p.reload(); await p.waitForSelector(".receipt-sums"); await wait(800);
+console.log("after reload:", await sum());
+await p.locator("dt.fee-line", { hasText: "PAPIERTASCHE" }).click(); await wait(900);
+console.log("fee back:", await sum());
+console.log("zwischensumme clickable?", await p.locator(".receipt-sums dt", { hasText: "Zwischensumme" }).getAttribute("role"));
+await browser.close(); srv.kill();

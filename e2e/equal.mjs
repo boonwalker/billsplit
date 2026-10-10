@@ -1,0 +1,38 @@
+import { chromium } from "playwright-core";
+const SP = process.argv[2];
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "de-DE" });
+const page = await ctx.newPage();
+const errors = [];
+page.on("pageerror", (e) => errors.push(e.message));
+await page.goto("http://localhost:8800/");
+await page.locator(".action-card.primary").click();
+await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("deinname").fill("niklasb");
+await page.getByRole("button", { name: "Weiter zur Kamera" }).click();
+await page.waitForTimeout(400);
+await page.getByPlaceholder("z. B. Trattoria Da Mario").fill("REWE");
+const items = [["Bio Vollmilch 1l", "1", "1,49"], ["Bananen", "1", "2,29"], ["Bergkäse", "1", "4,99"], ["Mineralwasser 6x1,5l", "2", "5,98"]];
+for (let i = 0; i < items.length; i++) {
+  if (i > 0) await page.getByRole("button", { name: "+ Position hinzufügen" }).click();
+  await page.getByLabel("Anzahl").nth(i).fill(items[i][1]);
+  await page.getByLabel("Bezeichnung").nth(i).fill(items[i][0]);
+  await page.getByLabel("Preis gesamt").nth(i).fill(items[i][2]);
+}
+await page.getByRole("button", { name: "QR-Code erstellen" }).click();
+await page.waitForTimeout(500);
+await page.getByRole("button", { name: "Ohne Trinkgeld weiter" }).click();
+await page.waitForTimeout(1500);
+await page.getByRole("switch", { name: /Gleichverteilung/ }).click();
+await page.waitForTimeout(600);
+await page.getByRole("button", { name: "Eine Person mehr" }).click();
+await page.getByRole("button", { name: "Eine Person mehr" }).click();
+await page.waitForTimeout(800);
+await page.locator(".receipt-anchor").screenshot({ path: `${SP}/shots/equal-owner.png` });
+console.log("sums:", (await page.locator(".receipt-sums").innerText()).replace(/\n+/g, " | "));
+await page.getByRole("radio", { name: /Anna/ }).click(); await page.waitForTimeout(800);
+console.log("anna intro:", await page.locator(".guest-intro").innerText());
+console.log("anna tick disabled:", await page.locator(".rline-main").first().isDisabled());
+console.log("anna paybar:", (await page.locator(".paybar").innerText()).replace(/\n+/g, " | "));
+console.log("errors:", errors);
+await browser.close();
