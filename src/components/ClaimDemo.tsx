@@ -30,10 +30,10 @@ const GAP_MS = 450;
 
 const KEY = (billId: string) => `billsplit.claimDemo.${billId}`;
 
-const CAPTION: Record<Step, string> = {
-  tick: "Antippen = abhaken",
-  share: "Namen antippen = mitteilen",
-  offer: "Eigenen Namen antippen = hab ich mir geteilt!",
+const CAPTION: Record<Step, (other: string) => string> = {
+  tick: () => "Antippen = abhaken",
+  share: (other) => `Namen antippen = mit ${other} teilen`,
+  offer: () => "Eigenen Namen antippen = hab ich mir geteilt!",
 };
 
 /** Runs once per bill and device; `stop` ends it early (e.g. as soon as the user taps a line). */
@@ -149,7 +149,7 @@ export default function ClaimDemo({ layout, step, stage, otherName }: { layout: 
         </span>
       )}
       <div key={step} className="claim-demo-bubble" style={{ left: bubble.x, top: bubble.y } as CSSProperties}>
-        <Handwritten text={CAPTION[step]} />
+        <Handwritten text={CAPTION[step](other)} />
       </div>
     </div>
   );

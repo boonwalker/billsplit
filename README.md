@@ -157,7 +157,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 
 
 Beim ersten Öffnen einer Rechnung (ohne Gleichverteilung) führt eine kurze Animation auf den ersten Zeilen vor, wie
-man abhakt („Antippen = abhaken“), ein Stück mit jemandem teilt („Namen antippen = mitteilen“) und die Hälfte des
+man abhakt („Antippen = abhaken“), ein Stück mit jemandem teilt („Namen antippen = mit Anna teilen“, mit dem Namen einer Person aus der Rechnung) und die Hälfte des
 eigenen Stücks zum Teilen anbietet („Eigenen Namen antippen = hab ich mir geteilt!“). Sie läuft zweimal, einmal pro
 Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an der Rechnung.
 ### Live stellen (Railway)
