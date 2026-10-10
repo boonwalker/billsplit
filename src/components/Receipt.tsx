@@ -122,6 +122,8 @@ function ReceiptLine({
   const iAmWaiting = waitingSlots.some((slot) => holders.get(slot)?.[0] === me);
   const someoneElseWaiting = waitingSlots.some((slot) => holders.get(slot)?.[0] !== me);
   const freeSlots = Array.from({ length: item.qty }, (_, slot) => slot).filter((slot) => !holders.has(slot));
+  /** Halves others offered and nobody joined yet: ticking the circle takes the other half too. */
+  const offeredSlots = participants.filter((p) => p.id !== me).flatMap(waiting);
   const others = claimants
     .filter((p) => p.id !== me)
     .map((p) => `${p.id}:${p.claims[item.id].join("+")}`)
@@ -133,7 +135,7 @@ function ReceiptLine({
   // Others already took the whole line: there is nothing left to tick, only sharing by tapping
   // a name – so the tick circle goes away and the line itself does nothing.
   const takenByOthers = canEdit && done && myUnits === 0;
-  const interactive = onToggleExcluded ? true : canEdit && !takenByOthers && (myUnits > 0 || freeSlots.length > 0);
+  const interactive = onToggleExcluded ? true : canEdit && !takenByOthers && (myUnits > 0 || freeSlots.length > 0 || offeredSlots.length > 0);
 
   // Long press (payer): opens the settings of the line instead of ticking or striking it.
   const pressTimer = useRef<number | null>(null);
@@ -196,9 +198,10 @@ function ReceiptLine({
       return;
     }
     if (!onSetSlots) return;
-    // Ticking takes one unit; more can be added with the stepper.
+    // Ticking takes one unit (or, when none is free, the other half of an offered one);
+    // more can be added with the stepper.
     if (myUnits > 0) onSetSlots(item.id, [], []);
-    else onSetSlots(item.id, [freeSlots[0] ?? 0], []);
+    else onSetSlots(item.id, [freeSlots[0] ?? offeredSlots[0] ?? 0], []);
   }
 
   /** Shares a unit with someone who has it (preferably one they offered), or stops sharing with them. */
@@ -369,7 +372,7 @@ function ReceiptLine({
       {canEdit &&
         othersWaiting.map((p) => (
           <p key={p.id} className="rline-hint offer">
-            {p.name} möchte teilen – tippe auf den Namen, um die andere Hälfte zu übernehmen.
+            {p.name} möchte teilen – tippe auf den Kreis oder den Namen, um die andere Hälfte zu übernehmen.
           </p>
         ))}
       {canEdit && item.qty > 1 && done && myUnits === 0 && (
