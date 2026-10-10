@@ -4201,3 +4201,8 @@ input[aria-invalid="true"] {
     transform: translateY(-3px);
   }
 }
+
+/* Loading screens (scanning, creating the bill): no separator line under the header. */
+.loading-page .topbar {
+  box-shadow: none;
+}

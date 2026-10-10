@@ -340,7 +340,7 @@ export default function Editor({ billId }: { billId?: string }) {
   // After "Rechnung erstellen": never the scan screen, only the dots and a line of text.
   if (busy?.create) {
     return (
-      <div className="page">
+      <div className="page loading-page">
         <Header back="/" />
         <main className="content center-v">
           <div className="scanning creating" role="status">
@@ -358,7 +358,7 @@ export default function Editor({ billId }: { billId?: string }) {
 
   if (busy) {
     return (
-      <div className="page">
+      <div className="page loading-page">
         <Header back="/" />
         <main className={`content center-v${preview ? " scan-content" : ""}`}>
           <div className="scanning" role="status">
