@@ -3,10 +3,10 @@ import { billedItems, type BillFee, type BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { vibrate } from "../lib/haptics";
 import { formatMoney } from "../lib/money";
-import { Handwritten } from "./ClaimDemo";
 import DivisorSheet from "./DivisorSheet";
 import InkLayer from "./InkLayer";
 import PhotoViewer from "./PhotoViewer";
+import ReceiptDemo, { demoLayout, useDemoLoop, type DemoLayout } from "./ReceiptDemo";
 import { FeeLine, formatDate, PencilFilter } from "./Receipt";
 
 /**
@@ -67,22 +67,6 @@ export function orderForMarking(items: BillItem[], isPersonal: (item: BillItem) 
   return [...items.filter(isPersonal), ...items.filter((i) => !isPersonal(i))];
 }
 
-/** Where the demo animations run: a stroke across the first line, taps on two more lines. */
-interface DemoSpots {
-  strikeY: number;
-  /** Lines the tap demo alternates between: where the finger taps, then the line gets crossed out. */
-  taps: { x: number; y: number }[];
-  /** The line the long press is shown on: where the finger rests, and the line's bottom for the bubble. */
-  hold: { id: string; x: number; y: number; bottom: number };
-  width: number;
-}
-
-/** When the long-press demo runs: after the first round of strike and taps, before two more. */
-const HOLD_DEMO_AT = 9200;
-const HOLD_PRESS_MS = 1100;
-const HOLD_SHOWN_MS = 4000;
-/** One round of the strike and tap demos (the CSS animations run once per round). */
-const DEMO_ROUND_MS = 9200;
 
 /**
  * Asked after a supermarket receipt was recognised: is anything not (or only partly)
@@ -105,10 +89,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
   const [pressed, setPressed] = useState<{ id: string; n: number } | null>(null);
   const ordered = orderForMarking(items, isPersonal);
   const personalCount = ordered.filter(isPersonal).length;
-  const [demo, setDemo] = useState<DemoSpots | null>(null);
-  /** 0, 2, 3: strike and tap demos · 1: the long press · 4: done. */
-  const [demoRound, setDemoRound] = useState(0);
-  const [holdStage, setHoldStage] = useState<"press" | "after" | null>(null);
+  const [demo, setDemo] = useState<DemoLayout | null>(null);
   const list = useRef<HTMLUListElement>(null);
 
   // The notice floats over the receipt for a moment, then gets out of the way.
@@ -133,55 +114,12 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
     setNotice(`${fee.name} wird ${struck ? "nicht" : "wieder"} abgerechnet.`);
   }
 
-  // Place the demo strokes on the first lines once the paper is laid out. Layout offsets
-  // (relative to the wrapper, which is positioned) are not affected by the paper's print-in animation.
+  // Place the demos on the lines once the paper is laid out; they loop until the paper is touched.
   useLayoutEffect(() => {
     if (step !== "some" || !list.current) return;
-    const lines = list.current.querySelectorAll<HTMLElement>("li[data-item]");
-    const wrap = list.current.parentElement;
-    if (!lines.length || !wrap) return;
-    const centre = (el: HTMLElement) => el.offsetTop + el.offsetHeight / 2;
-    // The strike demo on the first line, tap demos on the next two (likely personal ones come first).
-    const all = [...lines];
-    const tapLines = all.length > 2 ? all.slice(1, 3) : all.slice(0, 2);
-    const taps = tapLines.map((line) => {
-      const name = line.querySelector<HTMLElement>(".rline-strike");
-      return { x: line.offsetLeft + (name?.offsetLeft ?? 0) + Math.min((name?.offsetWidth ?? 80) / 2, 70), y: centre(line) };
-    });
-    // The long press on a line of its own where possible (the fourth one, else the last).
-    const holdLine = all.length > 3 ? all[3] : all[all.length - 1];
-    const holdName = holdLine.querySelector<HTMLElement>(".rline-strike");
-    const hold = {
-      id: holdLine.dataset.item ?? "",
-      x: holdLine.offsetLeft + (holdName?.offsetLeft ?? 0) + Math.min((holdName?.offsetWidth ?? 80) / 2, 70),
-      y: centre(holdLine),
-      bottom: holdLine.offsetTop + holdLine.offsetHeight,
-    };
-    setDemo({ strikeY: centre(lines[0]), taps, hold, width: wrap.offsetWidth });
+    setDemo(demoLayout(list.current));
   }, [step, items]);
-
-  // The demos in order: strike and taps, the long press once, then strike and taps twice more.
-  const demoReady = step === "some" && demo !== null && !touched;
-  useEffect(() => {
-    if (!demoReady) return;
-    const at = (ms: number, run: () => void) => window.setTimeout(run, ms);
-    const end = HOLD_DEMO_AT + HOLD_PRESS_MS + HOLD_SHOWN_MS;
-    const timers = [
-      at(HOLD_DEMO_AT, () => {
-        setDemoRound(1);
-        setHoldStage("press");
-      }),
-      at(HOLD_DEMO_AT + HOLD_PRESS_MS, () => setHoldStage("after")),
-      at(end, () => {
-        setHoldStage(null);
-        setDemoRound(2);
-      }),
-      at(end + DEMO_ROUND_MS, () => setDemoRound(3)),
-      at(end + 2 * DEMO_ROUND_MS, () => setDemoRound(4)),
-    ];
-    return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [demoReady]);
-  const holdDemo = demoReady && holdStage ? holdStage : null;
+  const { phase: demoPhase, round: demoRound } = useDemoLoop(demo, step === "some" && !touched);
 
   /** The line under a vertical position (the nearest one when written between lines). */
   function lineAt(y: number): string | null {
@@ -334,52 +272,14 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
               </div>
               <div className="receipt-lines-wrap">
                 <InkLayer onInk={readInk} onTap={tap} onLongPress={hold} onStart={() => setTouched(true)} />
-                {demo && !touched && demoRound !== 1 && demoRound < 4 && (
-                  <svg key={demoRound} className="ink-demo" width={demo.width} height="100%" aria-hidden="true">
-                    <path
-                      className="ink-demo-strike"
-                      pathLength={1}
-                      d={`M6 ${demo.strikeY + 2} C ${demo.width * 0.3} ${demo.strikeY - 3}, ${demo.width * 0.6} ${demo.strikeY + 4}, ${demo.width - 8} ${demo.strikeY - 1}`}
-                    />
-                    {demo.taps.map((t, i) => (
-                      <g key={i} className={`ink-demo-tap-group tap-${i + 1}`}>
-                        <circle className="ink-demo-tap" cx={t.x} cy={t.y} r="16" />
-                        {/* After the tap the line gets crossed out in pencil. */}
-                        <path
-                          className="ink-demo-tapstrike"
-                          pathLength={1}
-                          d={`M6 ${t.y + 2} C ${demo.width * 0.3} ${t.y - 2}, ${demo.width * 0.6} ${t.y + 3}, ${demo.width - 8} ${t.y}`}
-                        />
-                      </g>
-                    ))}
-                  </svg>
-                )}
-                {/* Long press: the finger rests on a line, "/2" appears – only half of it is split. */}
-                {demo && holdDemo === "press" && (
-                  <svg className="hold-demo" style={{ left: demo.hold.x - 26, top: demo.hold.y - 26 }} width="52" height="52" aria-hidden="true">
-                    <circle className="hold-demo-dot" cx="26" cy="26" r="15" />
-                    <circle className="hold-demo-ring" cx="26" cy="26" r="22" pathLength={1} />
-                  </svg>
-                )}
-                {demo && holdDemo === "after" && (
-                  <div
-                    className="claim-demo-bubble hold-demo-bubble"
-                    style={{
-                      left: Math.max(4, demo.hold.x - 22),
-                      top: demo.hold.bottom + 14,
-                      maxWidth: `calc(100% - ${Math.max(4, demo.hold.x - 22) + 26}px)`,
-                    }}
-                  >
-                    <Handwritten text="Gedrückt halten = nur einen Teil aufteilen" />
-                  </div>
-                )}
+                {demo && !touched && <ReceiptDemo layout={demo} phase={demoPhase} round={demoRound} />}
                 <ul className="receipt-lines" ref={list}>
                   {ordered.map((item, index) => {
                     const units = struckUnits(item, marks[item.id]);
                     const allStruck = units >= item.qty;
                     const partly = units > 0 && !allStruck;
                     // The demo shows "/2" on its line for a moment without marking it.
-                    const divisor = marks[item.id]?.divisor ?? (holdDemo === "after" && demo?.hold.id === item.id ? 2 : 1);
+                    const divisor = marks[item.id]?.divisor ?? (demoPhase === "held" && demo?.hold?.id === item.id ? 2 : 1);
                     const base = divisor > 1 ? Math.round(item.total / divisor) : item.total;
                     const price = partly ? Math.round((base * (item.qty - units)) / item.qty) : base;
                     const heading =
@@ -393,9 +293,10 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                         {heading}
                         <li
                           data-item={item.id}
+                          data-qty={item.qty}
                           className={`rline${allStruck ? " done" : ""}${partly ? " partly" : ""}${divisor > 1 ? " repriced" : ""}${
                             pressed?.id === item.id ? " pressed" : ""
-                          }${holdDemo === "press" && demo?.hold.id === item.id ? " demo-holding" : ""}`}
+                          }${demoPhase === "press" && demo?.hold?.id === item.id ? " demo-holding" : ""}`}
                         >
                           {/* Re-keyed on every tap so the press animation starts again. */}
                           <div className="rline-main" key={pressed?.id === item.id ? pressed.n : 0}>

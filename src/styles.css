@@ -2100,123 +2100,6 @@ input[aria-invalid="true"] {
   margin-left: 6px;
 }
 
-.ink-demo {
-  position: absolute;
-  inset: 0 auto auto 0;
-  z-index: 2;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.ink-demo path {
-  fill: none;
-  stroke: var(--pencil);
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  opacity: 0;
-  filter: url(#pencil-grain);
-}
-
-.ink-demo-strike {
-  animation: demo-strike 7s ease-in-out 0.8s 3;
-}
-
-/* Third demo: a finger taps the price, then "/n" appears in pencil. */
-.ink-demo .ink-demo-tap {
-  fill: color-mix(in srgb, var(--mint) 45%, transparent);
-  stroke: var(--claim);
-  stroke-width: 2;
-  stroke-dasharray: none;
-  filter: none;
-  /* Hidden while the animation waits for its turn. */
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: demo-tap 7s ease-out 0.8s 3;
-}
-
-.ink-demo .ink-demo-tapstrike {
-  animation: demo-tapstrike 7s ease-in-out 0.8s 3;
-}
-
-/* The second tap demo runs on another line, shortly after the first. */
-.ink-demo .tap-2 .ink-demo-tap,
-.ink-demo .tap-2 .ink-demo-tapstrike {
-  animation-delay: 2.6s;
-}
-
-/* On the finished bill the demo waits until the receipt has printed in. */
-.bill-demo .tap-1 .ink-demo-tap,
-.bill-demo .tap-1 .ink-demo-tapstrike {
-  animation-delay: 1.4s;
-}
-
-.bill-demo .tap-2 .ink-demo-tap,
-.bill-demo .tap-2 .ink-demo-tapstrike {
-  animation-delay: 3.2s;
-}
-
-@keyframes demo-strike {
-  0% {
-    stroke-dashoffset: 1;
-    opacity: 0.9;
-  }
-  15%,
-  36% {
-    stroke-dashoffset: 0;
-    opacity: 0.9;
-  }
-  42%,
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-
-@keyframes demo-tapstrike {
-  0%,
-  56% {
-    stroke-dashoffset: 1;
-    opacity: 0;
-  }
-  57% {
-    stroke-dashoffset: 1;
-    opacity: 0.9;
-  }
-  66%,
-  86% {
-    stroke-dashoffset: 0;
-    opacity: 0.9;
-  }
-  93%,
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-
-@keyframes demo-tap {
-  0%,
-  50% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  53% {
-    opacity: 0.9;
-    transform: scale(0.6);
-  }
-  62% {
-    opacity: 0;
-    transform: scale(1.5);
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
 .claim-btn {
   display: inline-flex;
   align-items: center;
@@ -3537,13 +3420,6 @@ input[aria-invalid="true"] {
   z-index: 130;
 }
 
-/* "Manches nicht": every demo round runs once; the rounds are re-mounted in turn. */
-.scribble .ink-demo .ink-demo-strike,
-.scribble .ink-demo .ink-demo-tap,
-.scribble .ink-demo .ink-demo-tapstrike {
-  animation-iteration-count: 1;
-}
-
 /* Long-press demo: a finger rests on the line while a ring fills around it. */
 .hold-demo {
   position: absolute;
@@ -3613,4 +3489,84 @@ input[aria-invalid="true"] {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* A sideways stroke across a line crosses it out on the bill too, so only vertical panning scrolls. */
+.rline.strikable .rline-main {
+  touch-action: pan-y;
+}
+
+/* The payer's intro on the receipt: strokes in pencil, a tapping finger, a long press. */
+.rdemo {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 2;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.rdemo-strike {
+  fill: none;
+  stroke: var(--pencil);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: url(#pencil-grain);
+  animation: rdemo-draw 2.3s ease-in-out both;
+}
+
+.rdemo-strike.after-tap {
+  animation-delay: 0.5s;
+}
+
+.rdemo-tap {
+  fill: color-mix(in srgb, var(--mint) 45%, transparent);
+  stroke: var(--claim);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rdemo-tap 0.6s ease-out both;
+}
+
+@keyframes rdemo-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0.9;
+  }
+  40%,
+  80% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes rdemo-tap {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  35% {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/* The pencilled "/2" next to the held line on the finished bill. */
+.rdemo-divisor {
+  position: absolute;
+  z-index: 2;
+  font-size: 1.25rem;
+  line-height: 1;
+  transform: translateY(-55%);
+  pointer-events: none;
+  animation: claim-in 0.35s ease both;
 }

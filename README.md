@@ -88,8 +88,9 @@ Vergessene Artikel, die nicht für alle waren, kann der Rechnungssteller in der 
 Die Zeile wird eingedrückt, ploppt beim Loslassen wieder auf und wird durchgestrichen. Gestrichene Artikel bleiben
 auf dem Beleg sichtbar, zählen aber nicht mehr zur Summe; nochmal antippen nimmt sie wieder auf. Bei mehreren Stück
 streicht jedes Antippen eins mehr („2x“ → „1x“), nach dem letzten kommen alle zurück. Genauso lassen sich Gebühren
-(z. B. „Kl. Papiertasche“) und das Trinkgeld streichen; Zwischensumme und Summe nicht. Beim ersten Öffnen einer
-solchen Rechnung führt eine kurze Animation auf zwei Zeilen vor, wie Antippen durchstreicht.
+(z. B. „Kl. Papiertasche“) und das Trinkgeld streichen; Zwischensumme und Summe nicht. Ein Wisch seitlich über eine
+Zeile streicht sie ebenso. Beim ersten Öffnen einer solchen Rechnung läuft dieselbe Anfangsanimation wie bei
+„Manches nicht“ (siehe unten), bis der Bezahler eine Zeile berührt.
 
 ### Nur einen Teil berechnen
 
@@ -113,9 +114,10 @@ runter wischen scrollt. Alles Übrige wird durch die unten eingestellte Personen
 sofort zu sehen und verblassen in den Durchstreich-Strich, angetippte Zeilen werden kurz „eingedrückt“. Artikel, die
 wahrscheinlich keine Gemeinschaftsausgabe sind (Drogerie, Haushalt, Vorräte wie Milch oder Gewürze – von der KI beim
 Lesen markiert, ergänzt um eine Stichwortliste), stehen oben. **Gedrückt halten** öffnet auch hier das „/“-Blatt (nur einen Teil aufteilen, siehe oben); ein Tipp direkt
-auf das „/2“ hebt es wieder auf, statt die Zeile zu streichen. Kurze
-Animationen führen das zu Beginn vor: erst Durchstreichen und Antippen, dann einmal das Gedrückthalten (ein Ring
-füllt sich um den Finger, „/2“ erscheint, eine Comic-Sprechblase erklärt es), danach noch zweimal Streichen und Tippen.
+auf das „/2“ hebt es wieder auf, statt die Zeile zu streichen. Eine
+Anfangsanimation zeigt das im Loop, bis der Beleg berührt wird: eine Zeile wird mit dem Finger durchgestrichen, eine
+zweite angetippt und dann durchgestrichen, eine dritte gedrückt gehalten (ein Ring füllt sich um den Finger, „/2“
+erscheint, eine Comic-Sprechblase erklärt es). Durchgestrichen werden in der Animation nur Positionen mit einem Stück.
 
 ### Originalbeleg
 

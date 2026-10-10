@@ -22,6 +22,7 @@ import {
 import { formatMoney } from "../lib/money";
 import { vibrate } from "../lib/haptics";
 import ClaimDemo, { onceInView, useClaimDemo } from "./ClaimDemo";
+import ReceiptDemo, { demoLayout, useDemoLoop, type DemoLayout } from "./ReceiptDemo";
 
 interface Props {
   snapshot: BillSnapshot;
@@ -144,8 +145,12 @@ function ReceiptLine({
     pressStart.current = null;
     setHolding(false);
   }
+  /** Equal split, payer: a sideways stroke across the line crosses it out, like a tap. */
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(0);
   function pressDown(e: ReactPointerEvent) {
     setHolding(true);
+    if (onToggleExcluded) swipeStart.current = { x: e.clientX, y: e.clientY };
     if (!onLongPress) return;
     longPressed.current = false;
     pressStart.current = { x: e.clientX, y: e.clientY };
@@ -160,6 +165,22 @@ function ReceiptLine({
   function pressMove(e: ReactPointerEvent) {
     const start = pressStart.current;
     if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) endPress();
+    const swipe = swipeStart.current;
+    if (swipe && onToggleExcluded) {
+      const dx = Math.abs(e.clientX - swipe.x);
+      if (dx > 10) setHolding(false);
+      if (dx > 44 && Math.abs(e.clientY - swipe.y) < dx * 0.6) {
+        swipeStart.current = null;
+        // The click a browser may still send after the stroke must not toggle it back.
+        swiped.current = Date.now();
+        vibrate([12]);
+        onToggleExcluded(item.id);
+      }
+    }
+  }
+  function pressEnd() {
+    swipeStart.current = null;
+    endPress();
   }
 
   function toggle() {
@@ -169,6 +190,7 @@ function ReceiptLine({
       return;
     }
     if (!interactive) return;
+    if (Date.now() - swiped.current < 600) return;
     if (onToggleExcluded) {
       onToggleExcluded(item.id);
       return;
@@ -213,6 +235,7 @@ function ReceiptLine({
   return (
     <li
       data-item={item.id}
+      data-qty={item.qty}
       className={`rline${done ? " done" : ""}${takenByOthers ? " taken" : ""}${excluded ? " excluded" : ""}${struckUnits > 0 ? " partly" : ""}${item.fullTotal !== undefined ? " repriced" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${
         each !== undefined || excluded ? " equal" : ""
       }${onToggleExcluded ? " strikable" : ""}${onLongPress ? " pressable" : ""}${holding ? " holding" : ""}`}
@@ -223,10 +246,10 @@ function ReceiptLine({
         className="rline-main"
         onClick={toggle}
         onPointerDown={onToggleExcluded || onLongPress ? pressDown : undefined}
-        onPointerMove={onLongPress ? pressMove : undefined}
-        onPointerUp={onToggleExcluded || onLongPress ? endPress : undefined}
-        onPointerLeave={onToggleExcluded || onLongPress ? endPress : undefined}
-        onPointerCancel={onToggleExcluded || onLongPress ? endPress : undefined}
+        onPointerMove={onToggleExcluded || onLongPress ? pressMove : undefined}
+        onPointerUp={onToggleExcluded || onLongPress ? pressEnd : undefined}
+        onPointerLeave={onToggleExcluded || onLongPress ? pressEnd : undefined}
+        onPointerCancel={onToggleExcluded || onLongPress ? pressEnd : undefined}
         onContextMenu={onLongPress ? (e) => e.preventDefault() : undefined}
         disabled={!interactive && !onLongPress}
         aria-pressed={onToggleExcluded ? excluded : myUnits > 0}
@@ -445,20 +468,15 @@ function EqualFraction({ total, people, share, currency }: { total: number; peop
   );
 }
 
-/** Where the tap demo runs: the spot a finger taps on two lines, then they get crossed out. */
-interface TapDemo {
-  taps: { x: number; y: number }[];
-  width: number;
-}
-
 const TAP_DEMO_KEY = (billId: string) => `billsplit.tapDemo.${billId}`;
 
 /**
- * Equal split, payer's view: shows a few times on two lines that tapping crosses a line out.
- * Runs once per bill (and stops as soon as the payer taps a line).
+ * Equal split, payer's view: shows in a loop how lines are crossed out (with the finger or by
+ * tapping) and that holding one down bills only a part of it. Runs once per bill and stops as
+ * soon as the payer touches a line.
  */
-function useTapDemo(billId: string, enabled: boolean, list: RefObject<HTMLUListElement | null>) {
-  const [demo, setDemo] = useState<TapDemo | null>(null);
+function useTapDemo(billId: string, enabled: boolean, canHold: boolean, list: RefObject<HTMLUListElement | null>) {
+  const [demo, setDemo] = useState<DemoLayout | null>(null);
   useLayoutEffect(() => {
     if (!enabled || !list.current) return;
     try {
@@ -466,30 +484,20 @@ function useTapDemo(billId: string, enabled: boolean, list: RefObject<HTMLUListE
     } catch {
       // Without storage the demo simply shows again next time.
     }
-    const lines = [...list.current.querySelectorAll<HTMLElement>("li[data-item]:not(.excluded)")].slice(0, 2);
-    const wrap = list.current.parentElement;
-    if (!lines.length || !wrap) return;
-    // Layout offsets relative to the wrapper are not affected by the lines' print-in animation.
-    const taps = lines.map((line) => {
-      const name = line.querySelector<HTMLElement>(".rline-strike");
-      // Through the item name, also when a unit price is printed below it.
-      const row = line.querySelector<HTMLElement>(".rline-name");
-      return {
-        x: line.offsetLeft + (name?.offsetLeft ?? 0) + Math.min((name?.offsetWidth ?? 80) / 2, 70),
-        y: line.offsetTop + (row ? row.offsetTop + row.offsetHeight * 0.55 : line.offsetHeight / 2),
-      };
-    });
-    const width = wrap.offsetWidth;
+    const layout = demoLayout(list.current, "li[data-item]:not(.excluded)");
+    const lines = list.current.querySelectorAll<HTMLElement>("li[data-item]");
+    if (!layout || !lines.length) return;
+    if (!canHold) delete layout.hold;
     // Starts once the lines are on screen (the payer first sees the QR code).
-    return onceInView(lines[lines.length - 1], () => {
+    return onceInView(lines[Math.min(lines.length, 3) - 1], () => {
       try {
         localStorage.setItem(TAP_DEMO_KEY(billId), "1");
       } catch {
         // see above
       }
-      setDemo({ taps, width });
+      setDemo(layout);
     });
-  }, [billId, enabled, list]);
+  }, [billId, enabled, canHold, list]);
   return [demo, () => setDemo(null)] as const;
 }
 
@@ -504,8 +512,10 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
   const people = splitHeadCount(data, participants);
   const perPerson = (amount: number) => (equal ? Math.round(amount / people) : undefined);
   const list = useRef<HTMLUListElement>(null);
-  const [demo, endDemo] = useTapDemo(snapshot.id, Boolean(onToggleExcluded), list);
+  const [demo, endDemo] = useTapDemo(snapshot.id, Boolean(onToggleExcluded), Boolean(onEditDivisor), list);
+  const demoLoop = useDemoLoop(demo, Boolean(demo));
   const toggleExcluded = onToggleExcluded && ((itemId: string) => (endDemo(), onToggleExcluded(itemId)));
+  const editDivisor = onEditDivisor && ((itemId: string) => (endDemo(), onEditDivisor(itemId)));
   // Normal split: show once how ticking, sharing and offering to share works.
   const claimDemo = useClaimDemo(snapshot.id, Boolean(onSetSlots && me) && !equal, list);
   const setSlots = onSetSlots && ((itemId: string, slots: number[], splits: number[]) => (claimDemo.stop(), onSetSlots(itemId, slots, splits)));
@@ -531,20 +541,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
         </div>
 
         <div className="receipt-lines-wrap">
-          {demo && (
-            <svg className="ink-demo bill-demo" width={demo.width} height="100%" aria-hidden="true">
-              {demo.taps.map((t, i) => (
-                <g key={i} className={`ink-demo-tap-group tap-${i + 1}`}>
-                  <circle className="ink-demo-tap" cx={t.x} cy={t.y} r="16" />
-                  <path
-                    className="ink-demo-tapstrike"
-                    pathLength={1}
-                    d={`M6 ${t.y + 2} C ${demo.width * 0.3} ${t.y - 2}, ${demo.width * 0.6} ${t.y + 3}, ${demo.width - 8} ${t.y}`}
-                  />
-                </g>
-              ))}
-            </svg>
-          )}
+          {demo && <ReceiptDemo layout={demo} phase={demoLoop.phase} round={demoLoop.round} ghostDivisor />}
           {claimDemo.layout && !equal && <ClaimDemo layout={claimDemo.layout} step={claimDemo.step} stage={claimDemo.stage} otherName={otherName} />}
           <ul className="receipt-lines" ref={list}>
             {data.items.map((item, idx) => (
@@ -557,7 +554,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 currency={data.currency}
                 onSetSlots={setSlots}
                 onToggleExcluded={toggleExcluded}
-                onLongPress={onEditDivisor && !item.excluded ? () => onEditDivisor(item.id) : undefined}
+                onLongPress={editDivisor && !item.excluded ? () => editDivisor(item.id) : undefined}
                 each={perPerson(billedItem(item).total)}
                 people={people}
               />
