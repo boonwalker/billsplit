@@ -3091,31 +3091,35 @@ input[aria-invalid="true"] {
   border-radius: 18px 20px 17px 21px / 16px 18px 20px 17px;
   background: var(--bubble);
   box-shadow: 3px 3px 0 var(--outline);
-  transform-origin: 26px -10px;
+  transform-origin: var(--tail-apex, 27px) -10px;
   animation: bubble-pop 0.5s cubic-bezier(0.25, 1.6, 0.45, 1) both;
 }
 
-/* The tail, pointing up at what is tapped: an outlined triangle with a filled one on top. */
+/*
+ * The tail, pointing up at what is tapped: an outlined triangle with a filled one on top. Its tip
+ * sits at --tail-apex; when the bubble rests against the edge of the paper, the tail leans over
+ * to still point right at the spot.
+ */
 .claim-demo-bubble::before,
 .claim-demo-bubble::after {
   content: "";
   position: absolute;
-  left: 18px;
-  border-style: solid;
-  border-color: transparent;
+  left: 0;
+  width: 90px;
 }
 
 .claim-demo-bubble::before {
   top: -14px;
-  border-width: 0 6px 14px 9px;
-  border-bottom-color: var(--outline);
+  height: 16px;
+  background: var(--outline);
+  clip-path: polygon(18px 100%, 33px 100%, var(--tail-apex, 27px) 0);
 }
 
 .claim-demo-bubble::after {
   top: -9px;
-  left: 20px;
-  border-width: 0 4px 10px 6px;
-  border-bottom-color: var(--bubble);
+  height: 11px;
+  background: var(--bubble);
+  clip-path: polygon(21px 100%, 30px 100%, calc(var(--tail-apex, 27px) * 0.6 + 10.2px) 0);
 }
 
 @keyframes bubble-pop {

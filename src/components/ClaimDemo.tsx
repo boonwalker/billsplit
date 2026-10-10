@@ -122,6 +122,14 @@ export function useClaimDemo(billId: string, enabled: boolean, list: RefObject<H
   return { layout, ...state, stop: () => setLayout(null) };
 }
 
+/**
+ * Where the tip of the bubble's tail goes (from the inner left edge of the bubble): right at
+ * the spot, also when the bubble had to stop at the edge of the paper.
+ */
+export function tailApex(spotX: number, bubbleX: number): string {
+  return `${Math.min(80, Math.max(4, spotX - bubbleX - 2))}px`;
+}
+
 /** The caption appears letter by letter, as if written with a pencil right now. */
 export function Handwritten({ text }: { text: string }) {
   const [shown, setShown] = useState(0);
@@ -187,7 +195,11 @@ export default function ClaimDemo({ layout, step, stage, otherName }: { layout: 
         </span>
       )}
       {/* Never wider than the receipt: Safari leaves traces of anything sticking out of the paper. */}
-      <div key={step} className="claim-demo-bubble" style={{ left: bubble.x, top: bubble.y, maxWidth: `calc(100% - ${bubble.x + 26}px)` } as CSSProperties}>
+      <div
+        key={step}
+        className="claim-demo-bubble"
+        style={{ left: bubble.x, top: bubble.y, maxWidth: `calc(100% - ${bubble.x + 26}px)`, "--tail-apex": step === "tick" ? tailApex(target.x, bubble.x) : undefined } as CSSProperties}
+      >
         <Handwritten text={CAPTION[step](other)} />
       </div>
     </div>

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Handwritten } from "./ClaimDemo";
+import { useEffect, useState, type CSSProperties } from "react";
+import { Handwritten, tailApex } from "./ClaimDemo";
 
 /**
  * The payer's intro on the receipt ("Manches nicht" and the finished bill in the equal split),
@@ -148,7 +148,14 @@ export default function ReceiptDemo({
           )}
           <div
             className="claim-demo-bubble hold-demo-bubble"
-            style={{ left: Math.max(4, hold.x - 22), top: hold.bottom + 14, maxWidth: `calc(100% - ${Math.max(4, hold.x - 22) + 26}px)` }}
+            style={
+              {
+                left: Math.max(4, hold.x - 22),
+                top: hold.bottom + 14,
+                maxWidth: `calc(100% - ${Math.max(4, hold.x - 22) + 26}px)`,
+                "--tail-apex": tailApex(hold.x, Math.max(4, hold.x - 22)),
+              } as CSSProperties
+            }
           >
             <Handwritten text="Gedrückt halten = nur einen Teil in Rechnung stellen" />
           </div>
