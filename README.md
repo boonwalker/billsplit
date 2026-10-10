@@ -144,8 +144,8 @@ beglichen.
 ### Kassenbon-Vorschau
 
 Beim ersten Öffnen einer neu erstellten Rechnung schiebt sich – während der Rechnungssteller oben bei QR-Code und
-WhatsApp-Button ist – der obere Rand des Kassenbons (Zacken, Titel, „Deine interaktive Rechnung ist fertig ↓“ bzw.
-„digitale“ bei Gleichverteilung) hinter der unteren Leiste hoch ins Bild und zupft alle paar Sekunden kurz nach
+WhatsApp-Button ist – der obere Rand des Kassenbons (Zacken, Titel, „Deine interaktive Rechnung ist fertig ↓“ – für
+den Rechnungssteller ist jede Rechnung interaktiv) hinter der unteren Leiste hoch ins Bild und zupft alle paar Sekunden kurz nach
 oben. Der Schnipsel hat genau Breite, Schrift und Papier des echten Bons: Beim ersten Runterscrollen bleibt er stehen,
 bis der echte Bon ihn erreicht, und geht dort in ihn über. Danach (und bei jedem weiteren Öffnen dieser Rechnung)
 erscheint er nicht mehr. Ein Tipp auf den Schnipsel scrollt zum Bon.

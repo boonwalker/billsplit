@@ -411,7 +411,7 @@ export default function BillPage({ id }: { id: string }) {
               </button>
             </div>
             <a className="scroll-hint" href="#receipt" onClick={(e) => (e.preventDefault(), document.getElementById("receipt")?.scrollIntoView({ behavior: "smooth" }))}>
-              Deine {equal ? "digitale" : "interaktive"} Rechnung
+              Deine interaktive Rechnung
               <span aria-hidden="true">↓</span>
             </a>
           </section>
@@ -468,7 +468,7 @@ export default function BillPage({ id }: { id: string }) {
           className={`receipt-peek${peek === "following" ? " following" : ""}`}
           style={{ bottom: Math.max(0, ownerBarHeight - 26), ...(peekBox ? { left: peekBox.left, width: peekBox.width, transform: "none" } : {}) }}
           onClick={() => document.querySelector("#receipt .receipt-paper")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          aria-label={`Zur ${equal ? "digitalen" : "interaktiven"} Rechnung`}
+          aria-label="Zur interaktiven Rechnung"
         >
           {/* The same paper as the receipt itself, so the hand-over is seamless. */}
           <span className="receipt-paper receipt-peek-paper">
@@ -477,8 +477,8 @@ export default function BillPage({ id }: { id: string }) {
                 ✦
               </span>
               <span className="receipt-peek-title">{snap.data.title || "Rechnung"}</span>
-              {/* Everyone ticks their own lines: then it is the interactive bill. */}
-              <span className="receipt-peek-hint">Deine {equal ? "digitale" : "interaktive"} Rechnung ist fertig ↓</span>
+              {/* For the payer every bill is interactive (crossing out, holding, equal split or not). */}
+              <span className="receipt-peek-hint">Deine interaktive Rechnung ist fertig ↓</span>
             </span>
           </span>
         </button>
