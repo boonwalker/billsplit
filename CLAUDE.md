@@ -151,6 +151,19 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 
 Aus der Verbesserungsanalyse vom 10.10.2026, empfohlene Reihenfolge:
 
+Vorschläge aus der Bedienbarkeits-Analyse vom 10.10.2026 (dem Auftraggeber vorgelegt, noch nicht beauftragt):
+
+1. **Safari- und App-Identität zusammenführen:** Wer per WhatsApp-Link in Safari beitritt, ist dort ein anderer
+   Teilnehmer als in der Home-Bildschirm-App (getrennte Speicher, eigene Gerätekennung). Vorschlag: „In der App
+   öffnen“ nimmt die Safari-Kennung per Einmal-Code mit, die App übernimmt deren Teilnahmen (Server-Merge).
+2. **Erst fotografieren, dann Profil:** Name/Zahlungsweg während der Belegerkennung abfragen statt vorher.
+3. **„Hast Du bezahlt?“ automatisch** fragen, wenn die App nach dem PayPal-Absprung wieder in den Vordergrund kommt.
+4. **Erinnern:** Rechnungssteller schickt offenen Freunden per WhatsApp eine Erinnerung mit Betrag und Link.
+5. **Gesten-Legende** dauerhaft am Beleg (kleines „?“), nicht nur die einmalige Animation.
+6. **Bewegung reduzieren** (`prefers-reduced-motion`) für alle Animationen, nicht nur den Scanner.
+
+Weiteres:
+
 1. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
    dem Auftraggeber klären, ob die Regel für „Dir“ auch für Du/Dein gelten soll.
 
