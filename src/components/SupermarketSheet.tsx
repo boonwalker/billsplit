@@ -236,6 +236,8 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
     const item = itemAt(point);
     if (!item) return;
     vibrate([12]);
+    // A selection iOS may have started under the resting finger.
+    window.getSelection()?.removeAllRanges();
     setPressed((p) => ({ id: item.id, n: (p?.n ?? 0) + 1 }));
     setDivisorFor(item.id);
   }

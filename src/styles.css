@@ -3602,3 +3602,15 @@ input[aria-invalid="true"] {
   z-index: 3;
   pointer-events: none;
 }
+
+/*
+ * Long presses on the receipt open the "/" sheet: iOS must not start a text selection (or its
+ * magnifier and callout) on the receipt or on the sheet that opens under the finger.
+ */
+.scribble,
+.ink-layer,
+.divisor-backdrop {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}

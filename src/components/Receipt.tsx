@@ -153,6 +153,7 @@ function ReceiptLine({
       longPressed.current = true;
       endPress();
       vibrate([12]);
+      window.getSelection()?.removeAllRanges();
       onLongPress();
     }, 480);
   }
