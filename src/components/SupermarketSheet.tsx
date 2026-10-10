@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
-import { billedItems, type BillItem } from "../lib/bill";
+import { billedItems, type BillFee, type BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { formatMoney } from "../lib/money";
 import InkLayer from "./InkLayer";
 import PhotoViewer from "./PhotoViewer";
-import { formatDate, PencilFilter } from "./Receipt";
+import { FeeLine, formatDate, PencilFilter } from "./Receipt";
 
 /**
  * What the payer marked on a line: how many of its units are crossed out (by strokes or taps).
@@ -36,7 +36,9 @@ interface Props {
    * persons: how many share the purchase (payer included), undefined = count who joins.
    * partial: the payer said some items are not or only partly billed.
    */
-  onDone: (items: BillItem[], equalSplit: boolean, persons: number | undefined, partial: boolean) => void;
+  onDone: (items: BillItem[], equalSplit: boolean, persons: number | undefined, partial: boolean, excludedFees: string[]) => void;
+  /** Fees on the receipt (e.g. a paper bag): shown below a subtotal, they can be crossed out too. */
+  fees?: BillFee[];
   /** Items that are probably not a shared expense; they are listed first, ready to be crossed out. */
   isPersonal?: (item: BillItem) => boolean;
   /** Shown in the head of the receipt, like on the finished bill. */
@@ -65,7 +67,7 @@ interface DemoSpots {
  * billed – e.g. a litre of milk bought, but only 250 ml used for the shared recipe?
  * With "Manches nicht" the payer crosses lines out (or taps them); the rest is split equally.
  */
-export default function SupermarketSheet({ items, currency, onDone, isPersonal = () => false, title, date, ownerName, photoUrl }: Props) {
+export default function SupermarketSheet({ items, fees = [], currency, onDone, isPersonal = () => false, title, date, ownerName, photoUrl }: Props) {
   /** First the question, then either straight on ("all") or the receipt to mark ("some"). */
   const [step, setStep] = useState<"ask" | "all" | "some">("ask");
   const [marks, setMarks] = useState<Record<string, Mark>>({});
@@ -89,10 +91,20 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
     return () => window.clearTimeout(t);
   }, [notice]);
 
+  /** Fees crossed out in "Manches nicht". */
+  const [struckFees, setStruckFees] = useState<string[]>([]);
   const billed = step === "some" ? applyMarks(items, marks) : items;
-  const billedSum = billedItems({ items: billed }).reduce((s, i) => s + i.total, 0);
+  const itemsSum = billedItems({ items: billed }).reduce((s, i) => s + i.total, 0);
+  const excludedFees = step === "some" ? struckFees : [];
+  const billedSum = itemsSum + fees.reduce((s, f) => s + (excludedFees.includes(f.id) ? 0 : f.amount), 0);
   const anyBilled = billed.some((i) => !i.excluded);
-  const fullSum = items.reduce((s, i) => s + i.total, 0);
+  const fullSum = items.reduce((s, i) => s + i.total, 0) + fees.reduce((s, f) => s + f.amount, 0);
+
+  function toggleFee(fee: BillFee) {
+    const struck = !struckFees.includes(fee.id);
+    setStruckFees(struck ? [...struckFees, fee.id] : struckFees.filter((id) => id !== fee.id));
+    setNotice(`${fee.name} wird ${struck ? "nicht" : "wieder"} abgerechnet.`);
+  }
 
   // Place the demo strokes on the first lines once the paper is laid out. Layout offsets
   // (relative to the wrapper, which is positioned) are not affected by the paper's print-in animation.
@@ -178,7 +190,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
     e.preventDefault();
     // A shopping trip is always split equally: everything not crossed out is shared by x people.
     // Marking lines splits the rest equally unless the payer switched that off above the receipt.
-    if (anyBilled) onDone(billed, step === "some" ? split : true, persons, step === "some");
+    if (anyBilled) onDone(billed, step === "some" ? split : true, persons, step === "some", excludedFees);
   };
 
   const personsStepper = (
@@ -299,6 +311,22 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
               </div>
               <div className="receipt-rule" aria-hidden="true" />
               <dl className="receipt-sums">
+                {fees.length > 0 && (
+                  <>
+                    <dt>Zwischensumme</dt>
+                    <dd>{formatMoney(itemsSum, currency)}</dd>
+                    {fees.map((fee) => (
+                      <FeeLine
+                        key={fee.id}
+                        name={fee.name}
+                        amount={fee.amount}
+                        currency={currency}
+                        excluded={struckFees.includes(fee.id)}
+                        onToggle={() => toggleFee(fee)}
+                      />
+                    ))}
+                  </>
+                )}
                 {billedSum !== fullSum && (
                   <>
                     <dt>Auf dem Beleg</dt>

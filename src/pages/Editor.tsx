@@ -514,11 +514,15 @@ export default function Editor({ billId }: { billId?: string }) {
           title={draft.title}
           date={draft.date}
           ownerName={loadProfile().name.trim()}
+          fees={draftFees(draft)}
           photoUrl={preview ?? undefined}
-          onDone={(items, equalSplit, persons, partial) => {
+          onDone={(items, equalSplit, persons, partial, excludedFees) => {
             setAskShop(null);
             const tip = { ...draft.tip, persons: persons ? String(persons) : "" };
-            void publish({ ...toBillData({ ...draft, equalSplit, tip }, items), partial: partial || undefined });
+            const data = toBillData({ ...draft, equalSplit, tip }, items);
+            // Fees crossed out on the receipt stay on the bill, struck through.
+            const fees = data.fees?.map((fee) => (excludedFees.includes(fee.id) ? { ...fee, excluded: true } : fee));
+            void publish({ ...data, fees, partial: partial || undefined });
           }}
         />
       )}

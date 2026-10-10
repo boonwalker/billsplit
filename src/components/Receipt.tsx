@@ -318,7 +318,7 @@ function ReceiptLine({
  * A fee or the tip below the subtotal. In the equal split the payer can tap it to cross it
  * out (and back in), with the same press-in and pop as the item lines.
  */
-function FeeLine({
+export function FeeLine({
   name,
   amount,
   currency,

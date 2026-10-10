@@ -99,7 +99,8 @@ oder „Manches nicht“. Bei „Manches nicht“ füllt der Beleg im Stil der d
 Bildschirm bis zum oberen Rand, ohne App-Kopfzeile; unten bleibt nur eine schmale Leiste mit Personenzahl, Summe, Zurück und „Rechnung
 erstellen“. Eine Zeile mit
 dem Finger **durchstreichen oder antippen** nimmt den Artikel aus der Rechnung, nochmal holt ihn zurück (bei
-mehreren Stück streicht jedes Antippen eins mehr, z. B. „3x“ → „2x“, nach dem letzten kommen alle zurück); hoch und
+mehreren Stück streicht jedes Antippen eins mehr, z. B. „3x“ → „2x“, nach dem letzten kommen alle zurück; Gebühren
+wie eine Papiertasche stehen nach einer Zwischensumme und lassen sich ebenso antippen); hoch und
 runter wischen scrollt. Alles Übrige wird durch die unten eingestellte Personenzahl geteilt. Die Fingerstriche sind
 sofort zu sehen und verblassen in den Durchstreich-Strich, angetippte Zeilen werden kurz „eingedrückt“. Artikel, die
 wahrscheinlich keine Gemeinschaftsausgabe sind (Drogerie, Haushalt, Vorräte wie Milch oder Gewürze – von der KI beim
