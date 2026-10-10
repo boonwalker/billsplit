@@ -225,7 +225,7 @@ export default function Home() {
             <li>
               <span>3</span>
               <div>
-                <b>Abhaken &amp; zahlen.</b> Jeder sieht live, wer was hat, und zahlt mit einem Tipp per PayPal.
+                <b>Abhaken &amp; zahlen.</b> Jeder sieht live, wer was hat, und zahlt mit einem Klick.
               </div>
             </li>
           </ol>
