@@ -116,7 +116,10 @@ function ReceiptLine({
   const canEdit = Boolean(onSetSlots && me) && each === undefined && !excluded;
   // A single item that is taken can still be shared by ticking it; a unit of a
   // multi-quantity item is shared by tapping the name of whoever has it.
-  const interactive = onToggleExcluded ? true : canEdit && (myUnits > 0 || freeSlots.length > 0 || item.qty === 1);
+  // Others already took the whole line: there is nothing left to tick, only sharing by tapping
+  // a name – so the tick circle goes away and the line itself does nothing.
+  const takenByOthers = canEdit && done && myUnits === 0;
+  const interactive = onToggleExcluded ? true : canEdit && !takenByOthers && (myUnits > 0 || freeSlots.length > 0);
 
   function toggle() {
     if (onToggleExcluded) {
@@ -163,7 +166,7 @@ function ReceiptLine({
   return (
     <li
       data-item={item.id}
-      className={`rline${done ? " done" : ""}${excluded ? " excluded" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${
+      className={`rline${done ? " done" : ""}${takenByOthers ? " taken" : ""}${excluded ? " excluded" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${
         each !== undefined || excluded ? " equal" : ""
       }${onToggleExcluded ? " strikable" : ""}${holding ? " holding" : ""}`}
       style={{ animationDelay: `${180 + index * 70}ms` }}

@@ -1623,6 +1623,11 @@ input[aria-invalid="true"] {
   display: none;
 }
 
+/* Taken completely by others: no tick circle (the place stays, so the names line up). */
+.rline.taken .tick {
+  visibility: hidden;
+}
+
 /* Equal split, payer's view: tapping a line crosses it out. While the finger rests on it, the
    letters and digits are pressed in; on release they pop back up with a slight overshoot. */
 .rline.strikable .rline-text,
