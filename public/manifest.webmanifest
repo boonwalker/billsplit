@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "billsplit",
   "short_name": "billsplit",
   "description": "Rechnung abfotografieren, per QR-Code teilen, Positionen abhaken und per PayPal bezahlen.",
@@ -33,5 +34,12 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
+  "handle_links": "preferred"
 }

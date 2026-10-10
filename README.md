@@ -98,6 +98,16 @@ Lesen markiert, ergänzt um eine Stichwortliste), stehen oben. Kurze Animationen
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten
 auf der digitalen Rechnung führt „Zum Originalbeleg“ dorthin – für alle, die an der Rechnung teilnehmen.
 
+### Links auf dem iPhone
+
+Auf dem iPhone öffnen geteilte Links immer Safari, nie die Web-App auf dem Home-Bildschirm, und beide haben getrennte
+Speicher. Wer eine Rechnung in Safari öffnet, wird deshalb nicht automatisch beigetreten, sondern gefragt; darunter
+steht „billsplit auf dem Home-Bildschirm? In der App öffnen“. Das kopiert den Link und vermerkt die Weiterleitung für
+ein paar Minuten auf dem Server (zur Netzwerkadresse des Handys, nicht zum Link). Nur dann zeigt die App beim Öffnen
+„Aus Safari weitergeleitet – Kopierten Link öffnen“; iOS fragt einmal mit „Einfügen“ nach, dann ist man in der
+Rechnung. Ist iCloud Private Relay aktiv, haben Safari und App verschiedene Adressen und der Hinweis erscheint nicht.
+Auf Android landen Links dank `handle_links`/`launch_handler` im Manifest bevorzugt direkt in der installierten App.
+
 ### Geteilte Positionen
 
 Hakt mehr als eine Person dieselbe Position ab (z. B. eine Vorspeisenplatte), wird sie automatisch anteilig
@@ -228,6 +238,7 @@ claude.ai-Artifact gedacht:
 | `PUT` | `/api/bills/:id/receipt-image` | Belegfoto (JPEG) speichern – nur Rechnungssteller |
 | `GET` | `/api/bills/:id/receipt-image` | Belegfoto abrufen |
 | `POST` | `/api/bills/:id/received` | Zahlungseingang bestätigen (nur Rechnungssteller) |
+| `POST`/`GET`/`DELETE` | `/api/handoff` | Weiterleitung Safari → Home-Bildschirm-App vermerken / abfragen / erledigen |
 
 Geräte authentifizieren sich mit dem Header `x-billsplit-key`. Beim Event-Stream wird er als Query-Parameter `key`
 übergeben, weil `EventSource` keine eigenen Header unterstützt.

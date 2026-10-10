@@ -4,6 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 import { isAiConfigured, isSupportedMediaType, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
 import { limitsFromEnv, type Limits, type RateLimiter } from "./rateLimit.ts";
+import { HandoffBoard } from "./handoff.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
 
 /** Base64 of a downscaled receipt photo is well below this. */
@@ -110,6 +111,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const limits = options.limits ?? limitsFromEnv();
   const trustProxy = options.trustProxy ?? false;
   const subscribers = new Map<string, Set<Subscriber>>();
+  const handoffs = new HandoffBoard();
 
   store.onChange((billId) => {
     const subs = subscribers.get(billId);
@@ -170,6 +172,19 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     }
     if (url.pathname === "/api/parse-receipt" && method === "POST") {
       return handleParseReceipt(req, res);
+    }
+    // Browser → home-screen app hand-over (see handoff.ts).
+    if (url.pathname === "/api/handoff") {
+      const address = clientAddress(req, trustProxy);
+      if (method === "POST") {
+        handoffs.mark(address);
+        return sendJson(res, 200, { ok: true });
+      }
+      if (method === "GET") return sendJson(res, 200, { pending: handoffs.pending(address) });
+      if (method === "DELETE") {
+        handoffs.clear(address);
+        return sendJson(res, 200, { ok: true });
+      }
     }
 
     if (parts[1] === "bills" && parts.length === 2 && method === "POST") {

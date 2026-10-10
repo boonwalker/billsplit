@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import DemoBar from "../components/DemoBar";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
+import OpenInApp from "../components/OpenInApp";
 import OwnerPanel, { EqualSplitToggle, isSettled, ownerSummary, TipSplit } from "../components/OwnerPanel";
 import PayBar from "../components/PayBar";
 import QrCode from "../components/QrCode";
@@ -9,6 +10,7 @@ import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
 import { billUrl, sharedTotal, type BillData, type Debtor } from "../lib/bill";
 import { DEMO } from "../lib/demo";
+import { isIosBrowser } from "../lib/handoff";
 import { confirmScan, knock } from "../lib/haptics";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
@@ -26,7 +28,9 @@ export default function BillPage({ id }: { id: string }) {
   useEffect(() => {
     if (!snapshot || snapshot.me || joining.current) return;
     const name = loadProfile().name.trim();
-    if (!name) {
+    // In Safari on the iPhone, ask first: whoever continues in the home-screen app would
+    // otherwise appear twice in the bill.
+    if (!name || isIosBrowser()) {
       setAskName(true);
       return;
     }
@@ -121,6 +125,7 @@ export default function BillPage({ id }: { id: string }) {
   const equal = Boolean(snap.data.equalSplit);
   const url = billUrl(id, window.location.href, snap.data.payment);
   const mine = snap.participants.find((p) => p.id === snap.me);
+  const inBrowser = isIosBrowser();
 
   /** Sets the units the viewer takes of an item and which of them they offer for sharing. */
   function setSlots(itemId: string, slots: number[], splits: number[]) {
@@ -204,6 +209,8 @@ export default function BillPage({ id }: { id: string }) {
 
       <main className="content bill-content">
         {DEMO && <DemoBar />}
+        {/* iPhone: shared links open in Safari – offer the way into the home-screen app. */}
+        {inBrowser && <OpenInApp url={url} />}
 
         {snap.isOwner && (
           <section className="qr-hero" aria-label="QR-Code zum Teilen">
@@ -285,6 +292,8 @@ export default function BillPage({ id }: { id: string }) {
       {askName && (
         <NamePrompt
           ownerName={snap.ownerName}
+          initialName={loadProfile().name.trim()}
+          extra={inBrowser ? <OpenInApp url={url} /> : undefined}
           onSubmit={(name) => {
             saveProfile({ ...loadProfile(), name });
             setAskName(false);

@@ -1,4 +1,5 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
+import HandoffPrompt from "./components/HandoffPrompt";
 import { useRoute } from "./lib/router";
 import BillPage from "./pages/BillPage";
 import Editor from "./pages/Editor";
@@ -10,6 +11,15 @@ import Profile from "./pages/Profile";
 const Scan = lazy(() => import("./pages/Scan"));
 
 export default function App() {
+  return (
+    <>
+      <Page />
+      <HandoffPrompt />
+    </>
+  );
+}
+
+function Page(): ReactNode {
   const route = useRoute();
   switch (route.name) {
     case "profile":
