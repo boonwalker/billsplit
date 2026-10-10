@@ -47,8 +47,14 @@ export default function BillPage({ id }: { id: string }) {
   const [divisorFor, setDivisorFor] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const fitEditLabel = useOneLine();
-  /** Payer at the top (QR code, WhatsApp): the receipt peeks up from behind the bar. */
-  const [receiptInView, setReceiptInView] = useState(true);
+  /**
+   * First opening of a new bill (payer): the receipt peeks up from behind the bar at the top
+   * (QR code, WhatsApp). On the first scroll down the snippet turns into the real receipt as
+   * soon as that reaches it – and is not shown again for this bill.
+   */
+  const [peek, setPeek] = useState<"off" | "on" | "following">("off");
+  const [peekBox, setPeekBox] = useState<{ left: number; width: number } | null>(null);
+  const peekRef = useRef<HTMLButtonElement>(null);
   const [ownerBarHeight, setOwnerBarHeight] = useState(0);
   const ownerBar = useRef<HTMLDivElement>(null);
   /** Height of the friend's pay bar: the receipt can always be scrolled up above it. */
@@ -72,18 +78,45 @@ export default function BillPage({ id }: { id: string }) {
       observer.disconnect();
     };
   }, [snapshot !== null]);
-  // Whether the receipt is on screen (above the payer's bar) – otherwise it peeks up from below.
+  // Only the very first time a payer opens this bill.
+  const isOwner = Boolean(snapshot?.isOwner);
   useEffect(() => {
+    if (!isOwner) return;
+    const key = `billsplit.peekShown.${id}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+    } catch {
+      // without storage it simply shows again next time
+    }
+    setPeek("on");
+  }, [isOwner, id]);
+  // The snippet keeps the width and place of the real paper; once the paper has scrolled up to
+  // it, both are the same and the snippet hands over to the real receipt.
+  useEffect(() => {
+    if (peek === "off") return;
     const root = scroller.current;
-    const target = document.getElementById("receipt");
-    if (!root || !target || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(([entry]) => setReceiptInView(entry.isIntersecting), {
-      root,
-      rootMargin: `0px 0px -${ownerBarHeight}px 0px`,
-    });
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [snapshot !== null, ownerBarHeight]);
+    if (!root) return;
+    const check = () => {
+      const paper = document.querySelector<HTMLElement>("#receipt .receipt-paper");
+      const snippet = peekRef.current;
+      if (!paper || !snippet) return;
+      const p = paper.getBoundingClientRect();
+      setPeekBox((box) => (box && box.left === p.left && box.width === p.width ? box : { left: p.left, width: p.width }));
+      if (p.top <= snippet.getBoundingClientRect().top + 1) setPeek("off");
+    };
+    const onScroll = () => {
+      setPeek((state) => (state === "on" ? "following" : state));
+      check();
+    };
+    check();
+    root.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", check);
+    return () => {
+      root.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", check);
+    };
+  }, [peek !== "off", snapshot !== null]);
   useEffect(() => {
     const el = ownerBar.current;
     if (!el) return;
@@ -428,21 +461,25 @@ export default function BillPage({ id }: { id: string }) {
       </div>
 
       {/* The finished receipt peeks up from behind the bar: the interactive bill is ready below. */}
-      {snap.isOwner && summary && !receiptInView && !atEnd && (
+      {snap.isOwner && summary && peek !== "off" && !atEnd && (
         <button
           type="button"
-          className="receipt-peek"
-          style={{ bottom: Math.max(0, ownerBarHeight - 26) }}
-          onClick={() => document.getElementById("receipt")?.scrollIntoView({ behavior: "smooth" })}
-          aria-label="Zur digitalen Rechnung"
+          ref={peekRef}
+          className={`receipt-peek${peek === "following" ? " following" : ""}`}
+          style={{ bottom: Math.max(0, ownerBarHeight - 26), ...(peekBox ? { left: peekBox.left, width: peekBox.width, transform: "none" } : {}) }}
+          onClick={() => document.querySelector("#receipt .receipt-paper")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          aria-label={`Zur ${equal ? "digitalen" : "interaktiven"} Rechnung`}
         >
-          <span className="receipt-peek-paper">
-            <span className="receipt-peek-star" aria-hidden="true">
-              ✦
+          {/* The same paper as the receipt itself, so the hand-over is seamless. */}
+          <span className="receipt-paper receipt-peek-paper">
+            <span className="receipt-head">
+              <span className="receipt-logo" aria-hidden="true">
+                ✦
+              </span>
+              <span className="receipt-peek-title">{snap.data.title || "Rechnung"}</span>
+              {/* Everyone ticks their own lines: then it is the interactive bill. */}
+              <span className="receipt-peek-hint">Deine {equal ? "digitale" : "interaktive"} Rechnung ist fertig ↓</span>
             </span>
-            <span className="receipt-peek-title">{snap.data.title || "Rechnung"}</span>
-            {/* Everyone ticks their own lines: then it is the interactive bill. */}
-            <span className="receipt-peek-hint">Deine {equal ? "digitale" : "interaktive"} Rechnung ist fertig ↓</span>
           </span>
         </button>
       )}
