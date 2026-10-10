@@ -175,7 +175,7 @@ export default function ClaimDemo({ layout, step, stage, otherName }: { layout: 
             <i>✓</i>Du ×{done ? "½" : "1"}
             {tap}
           </span>
-          {done && <span className="claim-demo-note">½ wartet auf jemanden</span>}
+          {done && <span className="claim-demo-note">wartest auf jemanden</span>}
         </span>
       )}
       <div key={step} className="claim-demo-bubble" style={{ left: bubble.x, top: bubble.y } as CSSProperties}>
