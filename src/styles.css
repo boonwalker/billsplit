@@ -3580,3 +3580,10 @@ input[aria-invalid="true"] {
   pointer-events: none;
   animation: claim-in 0.35s ease both;
 }
+
+/* "in PayPal ins Betragsfeld tippen …" stays on one line (the text is shrunk a little to fit). */
+.paybar-oneline {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+}

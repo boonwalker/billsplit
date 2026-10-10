@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
 import { centsToInput, formatMoney } from "../lib/money";
 import { copyText } from "../lib/clipboard";
@@ -16,9 +16,37 @@ interface Props {
   onHeight?: (px: number) => void;
 }
 
+/** Shrinks the text a little (in half-pixel steps, down to 10px) until it fits on one line. */
+function fitOneLine(el: HTMLElement) {
+  el.style.fontSize = "";
+  let size = parseFloat(getComputedStyle(el).fontSize);
+  while (el.scrollWidth > el.clientWidth && size > 10) {
+    size -= 0.5;
+    el.style.fontSize = `${size}px`;
+  }
+}
+
+/** Callback ref: fits the element on one line now and again whenever its width changes. */
+function useOneLine() {
+  const observer = useRef<ResizeObserver | null>(null);
+  return useCallback((el: HTMLElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
+    if (!el) return;
+    let width = -1;
+    observer.current = new ResizeObserver(() => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      fitOneLine(el);
+    });
+    observer.current.observe(el);
+  }, []);
+}
+
 /** Sticky bottom bar for friends: their individual sum and the pay button. */
 export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props) {
   const bar = useRef<HTMLDivElement>(null);
+  const oneLine = useOneLine();
   useLayoutEffect(() => {
     const el = bar.current;
     if (!el || !onHeight) return;
@@ -148,8 +176,9 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
               {ready.copied ? (
                 <>
                   ✓ {formatMoney(due, data.currency)} in die Zwischenablage kopiert –
-                  <br />
-                  in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.
+                  <span className="paybar-oneline" ref={oneLine}>
+                    in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.
+                  </span>
                 </>
               ) : (
                 `Trag in PayPal ${formatMoney(due, data.currency)} ein.`
