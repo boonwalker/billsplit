@@ -120,6 +120,11 @@ export class BillStore extends BillCore {
     return dailyBackup(this.persistence, path.join(path.dirname(this.file), "backups"));
   }
 
+  /** How many bills are stored (for the admin page). */
+  billCount(): number {
+    return this.bills.size;
+  }
+
   /** A consistent copy of all data, e.g. to download it (see the admin endpoint). */
   async exportTo(file: string): Promise<boolean> {
     if (!this.persistence) return false;

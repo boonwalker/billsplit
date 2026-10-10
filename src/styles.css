@@ -4310,3 +4310,17 @@ input[aria-invalid="true"] {
   transform: scale(1.3);
   accent-color: var(--claim);
 }
+
+/* ───────────────────────── crash screen ───────────────────────── */
+
+.crash {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18vh;
+  text-align: center;
+}
+
+.crash h2 {
+  margin: 0;
+}

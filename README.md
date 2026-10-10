@@ -332,6 +332,20 @@ Zurückspielen: Dienst stoppen, die gewünschte Sicherung als `billsplit.db` in 
 `billsplit.db-wal`/`-shm` löschen), Dienst starten. Eine Kopie zum Herunterladen gibt es über die Admin-Seite (siehe
 „Monitoring“).
 
+### Monitoring
+
+Setzt man auf Railway unter **Variables** `ADMIN_TOKEN` (ein langes Zufallswort, mindestens 12 Zeichen), gibt es die
+Betriebsseite `https://<adresse>/api/admin?token=<ADMIN_TOKEN>` (ohne gültiges Token: „Not found“):
+
+- **pro Tag:** Belegfotos, KI-Aufrufe und -Fehler, Tokens und geschätzte Kosten (Listenpreise in
+  `server/monitor.ts`), Server- und App-Fehler; oben die Summen des laufenden Monats
+- **letzte Fehler:** Serverfehler (mit Stacktrace), fehlgeschlagene Belegerkennungen und Abstürze in der App auf den
+  Handys der Nutzer (die App meldet unbehandelte Fehler selbst; ein abgestürzter Bildschirm zeigt „Da ist etwas
+  schiefgelaufen“ mit „Neu laden“ statt einer weißen Seite)
+- **„Datenbank herunterladen“:** eine aktuelle Kopie aller Rechnungen als zusätzliches Backup außerhalb von Railway
+
+Die Zahlen liegen in `monitor.json` im Datenordner (60 Tage, 200 Fehler).
+
 ### Demo ohne Server
 
 ```bash
@@ -360,6 +374,7 @@ claude.ai-Artifact gedacht:
 | `BILL_LIMIT_PER_HOUR` | Neue Rechnungen pro Gerät/IP und Stunde (Standard 30) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional: eigene Schlüssel für Push (sonst einmal erzeugt und in `DATA_DIR/vapid.json` gespeichert) |
 | `VAPID_SUBJECT` | optional: Kontakt für die Push-Dienste (Standard `mailto:hallo@billsplit.app`) |
+| `ADMIN_TOKEN` | optional: schaltet die Betriebsseite `/api/admin?token=…` frei (Nutzung, Kosten, Fehler, Datenbank-Download) |
 
 ## API
 

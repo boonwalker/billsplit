@@ -115,12 +115,31 @@ export function toParsedReceipt(out: ReceiptOutput): ParsedReceipt {
   };
 }
 
+/** Gets every request's token usage and every failure (see monitor.ts); set by the server. */
+export interface AiObserver {
+  call(usage: { model: string; inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number }): void;
+  failure(message: string): void;
+}
+let observer: AiObserver | null = null;
+export function observeAi(o: AiObserver | null): void {
+  observer = o;
+}
+
 /** Reads a receipt photo with Claude; a second reading fixes results that do not add up. */
 export async function parseReceiptImage(base64: string, mediaType: ReceiptMediaType): Promise<ParsedReceipt> {
   return readWithSumCheck((hint) => readOnce(base64, mediaType, hint));
 }
 
 async function readOnce(base64: string, mediaType: ReceiptMediaType, hint?: string): Promise<ParsedReceipt> {
+  try {
+    return await requestOnce(base64, mediaType, hint);
+  } catch (error) {
+    observer?.failure(error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
+async function requestOnce(base64: string, mediaType: ReceiptMediaType, hint?: string): Promise<ParsedReceipt> {
   sdk ??= await import("@anthropic-ai/sdk");
   const { default: AnthropicClient } = sdk;
   client ??= new AnthropicClient();
@@ -158,6 +177,14 @@ async function readOnce(base64: string, mediaType: ReceiptMediaType, hint?: stri
     }
     throw error;
   }
+
+  observer?.call({
+    model: response.model,
+    inputTokens: response.usage.input_tokens,
+    outputTokens: response.usage.output_tokens,
+    cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
+  });
 
   if (response.stop_reason === "refusal") {
     throw new ReceiptParseError("Das Bild wurde von der Belegerkennung abgelehnt.", 422);

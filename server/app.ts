@@ -2,8 +2,13 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { isAiConfigured, isSupportedMediaType, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
-import { limitsFromEnv, type Limits, type RateLimiter } from "./rateLimit.ts";
+import { timingSafeEqual } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { adminPage } from "./adminPage.ts";
+import type { Monitor } from "./monitor.ts";
+import { isAiConfigured, isSupportedMediaType, observeAi, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
+import { limitsFromEnv, RateLimiter, type Limits } from "./rateLimit.ts";
 import { DeviceLinks } from "./deviceLink.ts";
 import { HandoffBoard } from "./handoff.ts";
 import { isPushEndpoint, type PushService } from "./push.ts";
@@ -48,6 +53,10 @@ export interface AppOptions {
   trustProxy?: boolean;
   /** Push notifications; without it the app does not offer them. */
   push?: PushService;
+  /** Errors and AI usage for the admin page. */
+  monitor?: Monitor;
+  /** Opens the admin page (`/api/admin?token=…`); without it there is none. */
+  adminToken?: string;
 }
 
 function clientAddress(req: IncomingMessage, trustProxy: boolean): string {
@@ -141,6 +150,10 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const userStreams = new Map<string, Set<ServerResponse>>();
   const handoffs = new HandoffBoard();
   const deviceLinks = new DeviceLinks();
+  const monitor = options.monitor;
+  if (monitor) observeAi({ call: (usage) => monitor.aiCall(usage), failure: (message) => monitor.aiFailure(message) });
+  /** Error reports from the app, per client address (a broken page must not flood the log). */
+  const appErrors = new RateLimiter(30, 60 * 60 * 1000);
   const push = options.push;
   // Whatever needs someone (money arrived, a payment to confirm, …) goes to their devices.
   if (push) store.onNotice((participantId, notice) => void push.notify(participantId, notice));
@@ -251,6 +264,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     if (typeof body.image !== "string" || typeof body.mediaType !== "string" || !isSupportedMediaType(body.mediaType)) {
       throw new HttpError("Ungültige Anfrage: Bild fehlt oder Format wird nicht unterstützt.", 400);
     }
+    monitor?.receipt();
     sendJson(res, 200, await parseReceiptImage(body.image, body.mediaType));
   }
 
@@ -283,6 +297,56 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     // The app's own event stream: presence, and changes in any of the viewer's bills.
     if (parts[1] === "events" && parts.length === 2 && method === "GET") {
       return subscribeUser(req, res, requireViewer(req, url));
+    }
+
+    // Errors in the app (uncaught exceptions, crashed screens) for the admin page.
+    if (url.pathname === "/api/client-error" && method === "POST") {
+      const body = parse(
+        z.object({ message: z.string().max(1000), stack: z.string().max(4000).optional(), path: z.string().max(300).optional(), device: z.string().max(300).optional() }),
+        await readJson(req, 16 * 1024),
+      );
+      if (monitor && appErrors.take(clientAddress(req, trustProxy)).ok) {
+        monitor.error("app", `${body.message}${body.path ? ` (${body.path})` : ""}`, [body.device && `Gerät: ${body.device}`, body.stack].filter(Boolean).join("\n"));
+      }
+      return sendJson(res, 200, { ok: true });
+    }
+
+    // The operator's page: usage, cost and errors – and a copy of the data.
+    if (parts[1] === "admin" && method === "GET") {
+      const token = url.searchParams.get("token") ?? "";
+      const expected = options.adminToken ?? "";
+      const ok = expected.length >= 12 && token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+      if (!ok) throw new HttpError("Not found", 404);
+      if (parts.length === 2) {
+        const { days, errors } = monitor?.stats() ?? { days: [], errors: [] };
+        const html = adminPage({
+          days,
+          errors,
+          storage: store.storage,
+          version: (process.env.RAILWAY_GIT_COMMIT_SHA ?? "dev").slice(0, 7),
+          bills: store.billCount(),
+          backupUrl: store.storage === "memory" ? null : `/api/admin/backup?token=${encodeURIComponent(token)}`,
+        });
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" });
+        return void res.end(html);
+      }
+      if (parts[2] === "backup" && parts.length === 3) {
+        const dir = await mkdtemp(path.join(tmpdir(), "billsplit-export-"));
+        try {
+          const file = path.join(dir, store.storage === "sqlite" ? "billsplit.db" : "bills.json");
+          if (!(await store.exportTo(file))) throw new HttpError("Keine Daten.", 404);
+          const data = await readFile(file).catch(() => Buffer.alloc(0));
+          const day = new Date().toISOString().slice(0, 10);
+          res.writeHead(200, {
+            "content-type": "application/octet-stream",
+            "content-disposition": `attachment; filename="billsplit-${day}.${store.storage === "sqlite" ? "db" : "json"}"`,
+            "cache-control": "no-store",
+          });
+          return void res.end(data);
+        } finally {
+          await rm(dir, { recursive: true, force: true });
+        }
+      }
     }
 
     // Push notifications: the server's public key and the device's subscription.
@@ -490,6 +554,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         sendJson(res, error.status, { error: error.message });
       } else {
         console.error(`${req.method} ${url.pathname} failed`, error);
+        monitor?.error("server", `${req.method} ${url.pathname}: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
         sendJson(res, 500, { error: "Interner Serverfehler." });
       }
     }

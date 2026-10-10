@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
+import ErrorBoundary from "./components/ErrorBoundary";
 import HandoffPrompt from "./components/HandoffPrompt";
 import { useAppEvents } from "./lib/liveEvents";
 import { useRoute } from "./lib/router";
@@ -17,8 +18,10 @@ export default function App() {
   useAppEvents();
   return (
     <>
-      <Page />
-      <HandoffPrompt />
+      <ErrorBoundary>
+        <Page />
+        <HandoffPrompt />
+      </ErrorBoundary>
     </>
   );
 }

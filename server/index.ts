@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.ts";
+import { Monitor } from "./monitor.ts";
 import { isAiConfigured } from "./parseReceipt.ts";
 import { PushService } from "./push.ts";
 import { BillStore } from "./store.ts";
@@ -30,16 +31,21 @@ setInterval(() => void backup(), 6 * 60 * 60 * 1000).unref();
 const push = new PushService(path.dirname(DATA_FILE));
 await push.init();
 
-const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push }));
+// Errors and AI usage per day, for the admin page (/api/admin?token=ADMIN_TOKEN).
+const monitor = new Monitor(path.join(path.dirname(DATA_FILE), "monitor.json"));
+await monitor.load();
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN?.trim() || undefined;
+
+const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN }));
 
 server.listen(PORT, () => {
   console.log(
-    `billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage})`,
+    `billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${ADMIN_TOKEN ? "an" : "aus"})`,
   );
 });
 
 async function shutdown(): Promise<void> {
-  await store.flush();
+  await Promise.all([store.flush(), monitor.flush()]);
   store.close();
   process.exit(0);
 }

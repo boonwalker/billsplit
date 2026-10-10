@@ -81,6 +81,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - **Benachrichtigungen:** Der Kern ruft `notify(participantId, notice)` auf (bezahlt markiert, Ausgleich gesendet/
   bestätigt/abgelehnt/zurückgezogen); der Server schickt das per Web Push (`server/push.ts`, `public/sw.js`,
   `src/lib/push.ts`). VAPID-Schlüssel und Abos liegen in `DATA_DIR` (`vapid.json`, `push.json`).
+- **Monitoring:** `server/monitor.ts` (KI-Aufrufe, Tokens, Kosten, Fehler pro Tag → `monitor.json`), Betriebsseite
+  `server/adminPage.ts` unter `/api/admin?token=ADMIN_TOKEN`; die App meldet Fehler über `src/lib/errorReport.ts` und
+  `ErrorBoundary`.
 - **Gerät wechseln:** Einmal-Code (`server/deviceLink.ts`, Route `#/geraet/<code>`) bzw. Wiederherstellungs-Code
   (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
