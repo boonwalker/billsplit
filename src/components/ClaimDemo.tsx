@@ -84,18 +84,39 @@ export function useClaimDemo(billId: string, enabled: boolean, list: RefObject<H
   return { layout, ...state, stop: () => setLayout(null) };
 }
 
+/** The caption appears letter by letter, as if written with a pencil right now. */
+function Handwritten({ text }: { text: string }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    setShown(0);
+    const timer = window.setInterval(() => setShown((n) => (n >= text.length ? n : n + 1)), 42);
+    return () => window.clearInterval(timer);
+  }, [text]);
+  // All letters are laid out from the start (invisible ones too), so the bubble keeps its size.
+  return (
+    <span className="claim-demo-writing" aria-label={text}>
+      {[...text].map((char, i) => (
+        <span key={i} className={i < shown ? "on" : undefined}>
+          {char}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default function ClaimDemo({ layout, step, stage, otherName }: { layout: Layout; step: Step; stage: Stage; otherName: string }) {
   if (stage === "hidden") return null;
   const done = stage === "after";
   const tap = stage === "tap" && <span className="claim-demo-tap" />;
   const other = otherName.length > 10 ? `${otherName.slice(0, 9)}…` : otherName;
-  // A small card below the line explains the step; for the name steps it holds the chips.
-  const card = step === "tick" ? { x: layout.tick.x - 13, y: layout.tick.y + 18 } : layout[step];
+  // The speech bubble pops up below what is being tapped and points at it.
+  const target = layout[step];
+  const bubble = step === "tick" ? { x: Math.max(4, target.x - 22), y: target.y + 20 } : { x: Math.max(4, target.x - 6), y: target.y + 26 };
 
   return (
     <div className={`claim-demo step-${step}${done ? " after" : ""}`} aria-hidden="true">
       {step === "tick" && (
-        <span className="claim-demo-tick" style={{ left: layout.tick.x, top: layout.tick.y }}>
+        <span className="claim-demo-tick" style={{ left: target.x, top: target.y }}>
           <svg viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" />
             <path d="M7.5 12.5l3 3 6-6.5" pathLength="1" />
@@ -103,32 +124,32 @@ export default function ClaimDemo({ layout, step, stage, otherName }: { layout: 
           {tap}
         </span>
       )}
-      <div className="claim-demo-card" style={{ left: card.x, top: card.y } as CSSProperties}>
-        <span className="claim-demo-caption">{CAPTION[step]}</span>
-        {step === "share" && (
-          <span className="claim-demo-chips">
-            <span className={`claim-demo-chip${done ? " half" : ""}`}>
-              <i>✓</i>
-              {other} ×{done ? "½" : "1"}
-              {tap}
-            </span>
-            {done && (
-              <span className="claim-demo-chip mine">
-                <i>✓</i>Du ×½
-              </span>
-            )}
-            {done && <span className="claim-demo-note">geteilt</span>}
+      {step === "share" && (
+        <span className="claim-demo-chips" style={{ left: target.x, top: target.y }}>
+          <span className={`claim-demo-chip${done ? " half" : ""}`}>
+            <i>✓</i>
+            {other} ×{done ? "½" : "1"}
+            {tap}
           </span>
-        )}
-        {step === "offer" && (
-          <span className="claim-demo-chips">
-            <span className={`claim-demo-chip mine${done ? " offer" : ""}`}>
-              <i>✓</i>Du ×{done ? "½" : "1"}
-              {tap}
+          {done && (
+            <span className="claim-demo-chip mine">
+              <i>✓</i>Du ×½
             </span>
-            {done && <span className="claim-demo-note">½ wartet auf jemanden</span>}
+          )}
+          {done && <span className="claim-demo-note">geteilt</span>}
+        </span>
+      )}
+      {step === "offer" && (
+        <span className="claim-demo-chips" style={{ left: target.x, top: target.y }}>
+          <span className={`claim-demo-chip mine${done ? " offer" : ""}`}>
+            <i>✓</i>Du ×{done ? "½" : "1"}
+            {tap}
           </span>
-        )}
+          {done && <span className="claim-demo-note">½ wartet auf jemanden</span>}
+        </span>
+      )}
+      <div key={step} className="claim-demo-bubble" style={{ left: bubble.x, top: bubble.y } as CSSProperties}>
+        <Handwritten text={CAPTION[step]} />
       </div>
     </div>
   );

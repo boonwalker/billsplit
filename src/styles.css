@@ -3115,37 +3115,97 @@ input[aria-invalid="true"] {
   stroke-dashoffset: 0;
 }
 
-/* The explanation (and for the name steps the chips) in a small card below the line. */
-.claim-demo-card {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  max-width: calc(100% - 36px);
-  padding: 7px 10px 8px;
-  border-radius: 4px 14px 14px 14px;
-  background: var(--surface);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--claim) 25%, transparent), 0 10px 22px -10px rgb(0 0 0 / 0.45);
-  animation: claim-in 0.3s ease both;
-}
-
-.claim-demo-caption {
-  font-family: var(--font-body, inherit);
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
+/* Ghost name chips below the line, where the real ones are listed. */
 .claim-demo-chips {
+  position: absolute;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 8px;
+  max-width: calc(100% - 36px);
+  margin-top: -2px;
+  padding: 2px 6px 2px 0;
+  border-radius: 999px;
+  background: var(--paper);
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--claim);
   white-space: nowrap;
+  animation: claim-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+/* The explanation: a light comic speech bubble that pops up, written in pencil. */
+.claim-demo-bubble {
+  --bubble: #fffef6;
+  --outline: #2b2d2b;
+  position: absolute;
+  max-width: calc(100% - 24px);
+  padding: 6px 14px 7px;
+  border: 2px solid var(--outline);
+  border-radius: 18px 20px 17px 21px / 16px 18px 20px 17px;
+  background: var(--bubble);
+  box-shadow: 3px 3px 0 var(--outline);
+  transform-origin: 26px -10px;
+  animation: bubble-pop 0.5s cubic-bezier(0.25, 1.6, 0.45, 1) both;
+}
+
+/* The tail, pointing up at what is tapped: an outlined triangle with a filled one on top. */
+.claim-demo-bubble::before,
+.claim-demo-bubble::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.claim-demo-bubble::before {
+  top: -14px;
+  border-width: 0 6px 14px 9px;
+  border-bottom-color: var(--outline);
+}
+
+.claim-demo-bubble::after {
+  top: -9px;
+  left: 20px;
+  border-width: 0 4px 10px 6px;
+  border-bottom-color: var(--bubble);
+}
+
+@keyframes bubble-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08) rotate(1.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-1deg);
+  }
+}
+
+.claim-demo-writing {
+  display: block;
+  font-family: "Caveat", "Bradley Hand", "Segoe Print", cursive;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: #3f413f;
+  white-space: normal;
+  filter: url(#pencil-grain);
+}
+
+/* Each letter comes in as the pencil reaches it. */
+.claim-demo-writing span {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.claim-demo-writing span.on {
+  opacity: 1;
 }
 
 .claim-demo-chip {
