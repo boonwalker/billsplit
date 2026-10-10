@@ -19,6 +19,57 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 /** Surface gap between the two slices (in px along the ring). */
 const GAP = 3;
 
+const LABEL: Record<Slice, string> = { lent: "Du leihst", owed: "Du schuldest" };
+
+/**
+ * The two slices of a ring (lent green, owed orange) in a 200×200 view box, each shortened by
+ * a gap that shows the card behind; a slice with nothing in it is left out. Without anything
+ * open only the grey track is drawn.
+ */
+function RingSlices({
+  lent,
+  owed,
+  currency,
+  active = null,
+  onActive,
+}: {
+  lent: number;
+  owed: number;
+  currency: string;
+  active?: Slice | null;
+  onActive?: (slice: Slice | null) => void;
+}) {
+  const total = lent + owed;
+  if (total === 0) return <circle className="ring-track" cx="100" cy="100" r={RADIUS} />;
+  const slices: { key: Slice; value: number; offset: number }[] = [];
+  if (lent > 0) slices.push({ key: "lent", value: lent, offset: 0 });
+  if (owed > 0) slices.push({ key: "owed", value: owed, offset: (lent / total) * CIRCUMFERENCE });
+  const gap = slices.length > 1 ? GAP : 0;
+  return (
+    <>
+      {slices.map((s) => {
+        const length = Math.max(0, (s.value / total) * CIRCUMFERENCE - gap);
+        return (
+          <circle
+            key={s.key}
+            className={`ring-slice ${s.key}${active === s.key ? " active" : ""}${active && active !== s.key ? " dim" : ""}`}
+            cx="100"
+            cy="100"
+            r={RADIUS}
+            strokeDasharray={`${length} ${CIRCUMFERENCE - length}`}
+            strokeDashoffset={-(s.offset + gap / 2)}
+            onPointerEnter={onActive && ((e) => e.pointerType === "mouse" && onActive(s.key))}
+            onPointerLeave={onActive && ((e) => e.pointerType === "mouse" && onActive(null))}
+            onClick={onActive && (() => onActive(active === s.key ? null : s.key))}
+          >
+            <title>{`${LABEL[s.key]}: ${formatMoney(s.value, currency)} (${Math.round((s.value / total) * 100)} %)`}</title>
+          </circle>
+        );
+      })}
+    </>
+  );
+}
+
 /**
  * Ring chart of what is lent vs. owed over all bills; the net balance sits in the middle.
  * Tapping (or hovering) a slice shows that slice's amount in the middle instead.
@@ -29,43 +80,17 @@ function BalanceRing({ balances }: { balances: Balances }) {
   const total = lent + owed;
   const net = lent - owed;
   const share = (part: number) => (total ? Math.round((part / total) * 100) : 0);
-  // Both slices, each shortened by the gap; a slice with nothing in it is left out.
-  const slices: { key: Slice; value: number; offset: number }[] = [];
-  if (lent > 0) slices.push({ key: "lent", value: lent, offset: 0 });
-  if (owed > 0) slices.push({ key: "owed", value: owed, offset: (lent / total) * CIRCUMFERENCE });
-  const gap = slices.length > 1 ? GAP : 0;
-  const label: Record<Slice, string> = { lent: "Du leihst", owed: "Du schuldest" };
 
   return (
     <figure className="balance-ring">
       <div className="balance-ring-chart">
         <svg viewBox="0 0 200 200" role="img" aria-label={`Du leihst ${formatMoney(lent, currency)}, Du schuldest ${formatMoney(owed, currency)}`}>
-          {/* Only when nothing is open; otherwise the gaps between the slices show the card. */}
-          {total === 0 && <circle className="ring-track" cx="100" cy="100" r={RADIUS} />}
-          {slices.map((s) => {
-            const length = Math.max(0, (s.value / total) * CIRCUMFERENCE - gap);
-            return (
-              <circle
-                key={s.key}
-                className={`ring-slice ${s.key}${active === s.key ? " active" : ""}${active && active !== s.key ? " dim" : ""}`}
-                cx="100"
-                cy="100"
-                r={RADIUS}
-                strokeDasharray={`${length} ${CIRCUMFERENCE - length}`}
-                strokeDashoffset={-(s.offset + gap / 2)}
-                onPointerEnter={(e) => e.pointerType === "mouse" && setActive(s.key)}
-                onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
-                onClick={() => setActive((a) => (a === s.key ? null : s.key))}
-              >
-                <title>{`${label[s.key]}: ${formatMoney(s.value, currency)} (${share(s.value)} %)`}</title>
-              </circle>
-            );
-          })}
+          <RingSlices lent={lent} owed={owed} currency={currency} active={active} onActive={setActive} />
         </svg>
         <div className="balance-ring-centre" aria-live="polite">
           {active ? (
             <>
-              <small>{label[active]}</small>
+              <small>{LABEL[active]}</small>
               <b>{formatMoney(active === "lent" ? lent : owed, currency)}</b>
               <small>{share(active === "lent" ? lent : owed)} % von allem Offenen</small>
             </>
@@ -93,7 +118,7 @@ function BalanceRing({ balances }: { balances: Balances }) {
             onClick={() => setActive((a) => (a === key ? null : key))}
           >
             <i className={`swatch ${key}`} aria-hidden="true" />
-            <span>{label[key]}</span>
+            <span>{LABEL[key]}</span>
             <b>{formatMoney(key === "lent" ? lent : owed, currency)}</b>
           </button>
         ))}
@@ -107,38 +132,39 @@ function BalanceRing({ balances }: { balances: Balances }) {
   );
 }
 
-function PersonRow({ person, currency }: { person: PersonBalance; currency: string }) {
+/** One person as a small ring: what they owe me (green) and what I owe them (orange). */
+function PersonRing({ person, currency }: { person: PersonBalance; currency: string }) {
   const net = person.lent - person.owed;
   return (
-    <li className="person-balance">
-      <span className="avatar" aria-hidden="true">
-        {person.name.slice(0, 1).toUpperCase()}
-      </span>
-      <span className="person-balance-text">
-        <b>{person.name}</b>
-        <small className="muted">
-          {person.bills} {person.bills === 1 ? "Rechnung" : "Rechnungen"}
-          {person.lent > 0 && person.owed > 0 && (
-            <>
-              {" "}
-              · Dir geschuldet {formatMoney(person.lent, currency)} · Du schuldest {formatMoney(person.owed, currency)}
-            </>
-          )}
+    <li className="person-ring">
+      <div className="person-ring-chart">
+        <svg viewBox="0 0 200 200" role="img" aria-label={`${person.name}: Dir geschuldet ${formatMoney(person.lent, currency)}, Du schuldest ${formatMoney(person.owed, currency)}`}>
+          <RingSlices lent={person.lent} owed={person.owed} currency={currency} />
+        </svg>
+        <span className="person-ring-initial" aria-hidden="true">
+          {person.name.slice(0, 1).toUpperCase()}
+        </span>
+      </div>
+      <b className="person-ring-name">{person.name}</b>
+      {net === 0 ? (
+        <span className="list-paid small">✓ ausgeglichen</span>
+      ) : (
+        <>
+          <span className="person-ring-amount">
+            <i className={`swatch ${net > 0 ? "lent" : "owed"}`} aria-hidden="true" />
+            {formatMoney(Math.abs(net), currency)}
+          </span>
+          <small className="muted">{net > 0 ? "schuldet Dir" : "schuldest Du"}</small>
+        </>
+      )}
+      {person.lent > 0 && person.owed > 0 && (
+        <small className="muted person-ring-both">
+          +{formatMoney(person.lent, currency)} / −{formatMoney(person.owed, currency)}
         </small>
-      </span>
-      <span className="person-balance-amount">
-        {net === 0 ? (
-          <span className="list-paid">✓ ausgeglichen</span>
-        ) : (
-          <>
-            <b>
-              <i className={`swatch ${net > 0 ? "lent" : "owed"}`} aria-hidden="true" />
-              {formatMoney(Math.abs(net), currency)}
-            </b>
-            <small className="muted">{net > 0 ? "schuldet Dir" : "schuldest Du"}</small>
-          </>
-        )}
-      </span>
+      )}
+      <small className="muted person-ring-bills">
+        {person.bills} {person.bills === 1 ? "Rechnung" : "Rechnungen"}
+      </small>
     </li>
   );
 }
@@ -183,9 +209,9 @@ export default function Dashboard() {
               {b.people.length > 0 && (
                 <>
                   <h3 className="section-title">Mit wem Du wie stehst</h3>
-                  <ul className="card person-balances">
+                  <ul className="person-rings">
                     {b.people.map((p) => (
-                      <PersonRow key={p.name} person={p} currency={b.currency} />
+                      <PersonRing key={p.name} person={p} currency={b.currency} />
                     ))}
                   </ul>
                 </>
