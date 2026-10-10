@@ -347,10 +347,11 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
           <>
             {/* Split equally by default; the payer can still switch it off on the bill. */}
             <div className="row between shop-persons">
-              <span>Wie viele teilen sich den Einkauf?</span>
+              <span>
+                Wie viele teilen sich den Einkauf? <span className="shop-persons-hint">inklusive Dir</span>
+              </span>
               {personsStepper}
             </div>
-            <p className="muted small">inklusive Dir</p>
 
             <p className="shop-sum">
               Abgerechnet werden <b>{formatMoney(billedSum, currency)}</b>

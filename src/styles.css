@@ -651,6 +651,13 @@ input[aria-invalid="true"] {
   cursor: pointer;
 }
 
+.shop-persons-hint {
+  font-weight: 400;
+  font-size: 0.85em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .list-paid {
   color: var(--claim);
   font-weight: 600;
