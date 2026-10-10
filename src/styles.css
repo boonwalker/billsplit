@@ -3028,3 +3028,158 @@ input[aria-invalid="true"] {
   color: var(--muted);
   cursor: pointer;
 }
+
+/* Normal split: a short ghost demo of ticking, sharing and offering to share (see ClaimDemo). */
+.claim-demo {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.claim-demo-tick {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+}
+
+.claim-demo-tick svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.claim-demo-tick circle {
+  fill: var(--paper);
+  stroke: var(--ink-faint);
+  stroke-width: 2;
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+.claim-demo-tick path {
+  fill: none;
+  stroke: var(--claim);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.3s ease 0.1s;
+}
+
+.claim-demo.after .claim-demo-tick circle {
+  fill: color-mix(in srgb, var(--mint) 22%, var(--paper));
+  stroke: var(--claim);
+}
+
+.claim-demo.after .claim-demo-tick path {
+  stroke-dashoffset: 0;
+}
+
+/* The explanation (and for the name steps the chips) in a small card below the line. */
+.claim-demo-card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: calc(100% - 36px);
+  padding: 7px 10px 8px;
+  border-radius: 4px 14px 14px 14px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--claim) 25%, transparent), 0 10px 22px -10px rgb(0 0 0 / 0.45);
+  animation: claim-in 0.3s ease both;
+}
+
+.claim-demo-caption {
+  font-family: var(--font-body, inherit);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.claim-demo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--claim);
+  white-space: nowrap;
+}
+
+.claim-demo-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 2px;
+  border: 1px dashed color-mix(in srgb, var(--claim) 45%, transparent);
+  border-radius: 999px;
+}
+
+.claim-demo-chip i {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--claim);
+  color: var(--paper);
+  font-size: 0.6rem;
+  font-style: normal;
+}
+
+.claim-demo-chip.mine {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.claim-demo-chip.half,
+.claim-demo-chip.offer {
+  border-style: solid;
+  border-color: var(--claim);
+  animation: claim-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+.claim-demo-chip.offer {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--mint) 35%, transparent);
+}
+
+.claim-demo-note {
+  color: var(--muted);
+  font-weight: 400;
+  font-style: italic;
+  animation: claim-in 0.35s ease both;
+}
+
+/* The finger tapping the tick or the name. */
+.claim-demo-tap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  border: 2px solid var(--claim);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mint) 45%, transparent);
+  animation: claim-demo-tap 0.45s ease-out both;
+}
+
+@keyframes claim-demo-tap {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  35% {
+    opacity: 0.95;
+    transform: scale(0.75);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}

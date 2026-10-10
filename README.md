@@ -155,6 +155,11 @@ liegen nach `npm run dev`/`npm run build` unter `public/ocr` und werden selbst a
 
 Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder `localhost`).
 
+
+Beim ersten Öffnen einer Rechnung (ohne Gleichverteilung) führt eine kurze Animation auf den ersten Zeilen vor, wie
+man abhakt („Antippen = abhaken“), ein Stück mit jemandem teilt („Namen antippen = mitteilen“) und die Hälfte des
+eigenen Stücks zum Teilen anbietet („Eigenen Namen antippen = zum Teilen anbieten“). Sie läuft zweimal, einmal pro
+Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an der Rechnung.
 ### Live stellen (Railway)
 
 Das Repo enthält eine `railway.json` mit Build- und Startbefehl und Health-Check.

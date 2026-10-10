@@ -19,6 +19,7 @@ import {
   type PublicParticipant,
 } from "../lib/bill";
 import { formatMoney } from "../lib/money";
+import ClaimDemo, { useClaimDemo } from "./ClaimDemo";
 
 interface Props {
   snapshot: BillSnapshot;
@@ -390,6 +391,10 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
   const list = useRef<HTMLUListElement>(null);
   const [demo, endDemo] = useTapDemo(snapshot.id, Boolean(onToggleExcluded), list);
   const toggleExcluded = onToggleExcluded && ((itemId: string) => (endDemo(), onToggleExcluded(itemId)));
+  // Normal split: show once how ticking, sharing and offering to share works.
+  const claimDemo = useClaimDemo(snapshot.id, Boolean(onSetSlots && me) && !equal, list);
+  const setSlots = onSetSlots && ((itemId: string, slots: number[], splits: number[]) => (claimDemo.stop(), onSetSlots(itemId, slots, splits)));
+  const otherName = participants.find((p) => p.id !== me && p.name.trim())?.name.trim() ?? "Anna";
 
   return (
     <article className="receipt" aria-label="Digitale Rechnung">
@@ -425,6 +430,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
               ))}
             </svg>
           )}
+          {claimDemo.layout && <ClaimDemo layout={claimDemo.layout} step={claimDemo.step} stage={claimDemo.stage} otherName={otherName} />}
           <ul className="receipt-lines" ref={list}>
             {data.items.map((item, idx) => (
               <ReceiptLine
@@ -434,7 +440,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 participants={participants}
                 me={me}
                 currency={data.currency}
-                onSetSlots={onSetSlots}
+                onSetSlots={setSlots}
                 onToggleExcluded={toggleExcluded}
                 each={perPerson(item.total)}
                 people={people}
