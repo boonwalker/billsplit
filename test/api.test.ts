@@ -220,3 +220,14 @@ describe("moving to a new device", () => {
     expect((await call<{ bills: unknown[] }>(NEW, "GET", "/api/my-bills")).json.bills).toEqual([]);
   });
 });
+
+describe("several bills at once", () => {
+  it("returns every known bill as the device sees it, and null for unknown ones", async () => {
+    const mine = await call<{ bills: { id: string }[] }>(OWNER, "GET", "/api/my-bills");
+    const id = mine.json.bills[0].id;
+    const res = await call<{ bills: Record<string, BillSnapshot | null> }>(OWNER, "POST", "/api/bills/batch", { ids: [id, "unknown123"] });
+    expect(res.json.bills[id]).toMatchObject({ id, isOwner: true });
+    expect(res.json.bills.unknown123).toBeNull();
+    expect((await call(OWNER, "POST", "/api/bills/batch", { ids: ["../x"] })).status).toBe(400);
+  });
+});

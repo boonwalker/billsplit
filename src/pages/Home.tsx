@@ -3,7 +3,6 @@ import Header from "../components/Header";
 import { ownerStatus } from "../components/OwnerPanel";
 import { formatMoney } from "../lib/money";
 import { api } from "../lib/api";
-import { ApiError } from "../lib/apiError";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
@@ -20,28 +19,25 @@ export default function Home() {
   // for the others the paid status is brought up to date.
   useEffect(() => {
     let cancelled = false;
-    for (const b of loadRecent()) {
-      api
-        .getBill(b.id)
-        .then((snap) => {
-          if (snap.isOwner) {
+    const list = loadRecent();
+    api
+      .getBills(list.map((b) => b.id))
+      .then((snaps) => {
+        for (const b of list) {
+          const snap = snaps[b.id];
+          if (snap === null) forgetBill(b.id);
+          else if (!snap) continue;
+          else if (snap.isOwner) {
             const status = ownerStatus(snap);
-            if (status.settled === Boolean(b.settled) && status.missing === b.missing && status.currency === b.currency) return;
-            updateRecent(b.id, status);
-          } else {
-            if (!snap.me) return;
+            if (status.settled !== Boolean(b.settled) || status.missing !== b.missing || status.currency !== b.currency) updateRecent(b.id, status);
+          } else if (snap.me) {
             const markedPaid = Boolean(snap.myPayment?.markedPaidAt);
-            if (markedPaid === Boolean(b.markedPaid)) return;
-            updateRecent(b.id, { markedPaid });
+            if (markedPaid !== Boolean(b.markedPaid)) updateRecent(b.id, { markedPaid });
           }
-          if (!cancelled) setRecent(loadRecent());
-        })
-        .catch((e: unknown) => {
-          if (!(e instanceof ApiError && e.status === 404)) return; // offline etc.: keep it
-          forgetBill(b.id);
-          if (!cancelled) setRecent(loadRecent());
-        });
-    }
+        }
+        if (!cancelled) setRecent(loadRecent());
+      })
+      .catch(() => {}); // offline etc.: keep the list as it is
     return () => {
       cancelled = true;
     };

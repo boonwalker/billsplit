@@ -260,7 +260,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
 
     if (url.pathname === "/api/health" && method === "GET") {
       // Railway sets RAILWAY_GIT_COMMIT_SHA: shows which code version is live.
-      const version = (process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.RENDER_GIT_COMMIT ?? "dev").slice(0, 7);
+      const version = (process.env.RAILWAY_GIT_COMMIT_SHA ?? "dev").slice(0, 7);
       return sendJson(res, 200, { ok: true, ai: isAiConfigured(), version });
     }
     if (url.pathname === "/api/parse-receipt" && method === "POST") {
@@ -365,6 +365,15 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       const body = parse(z.object({ data: BillDataSchema, name: ParticipantNameSchema }), await readJson(req, MAX_JSON_BODY));
       const id = store.createBill(body.data, viewer, body.name);
       return sendJson(res, 201, store.snapshot(id, viewer));
+    }
+
+    // Several bills at once (home list, dashboard): one request instead of one per bill.
+    if (parts[1] === "bills" && parts[2] === "batch" && parts.length === 3 && method === "POST") {
+      const viewer = viewerId(req, url);
+      const body = parse(z.object({ ids: z.array(z.string().regex(/^[A-Za-z0-9_-]{6,40}$/)).max(100) }), await readJson(req, MAX_JSON_BODY));
+      const bills: Record<string, unknown> = {};
+      for (const id of new Set(body.ids)) bills[id] = store.has(id) ? store.snapshot(id, viewer) : null;
+      return sendJson(res, 200, { bills });
     }
 
     if (parts[1] === "bills" && parts[2]) {

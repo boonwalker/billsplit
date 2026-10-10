@@ -116,6 +116,7 @@ const view = (id: string): BillSnapshot => localStore().snapshot(id, me());
 export const localApi: Api = {
   createBill: (data, name) => call(() => view(localStore().create(newBillId(), data, me(), name))),
   getBill: (id) => call(() => view(id)),
+  getBills: (ids) => call(() => Object.fromEntries(ids.map((id) => [id, localStore().has(id) ? view(id) : null]))),
   updateBill: (id, data) => call(() => (localStore().updateData(id, me(), data), view(id))),
   join: (id, name) => call(() => (localStore().join(id, me(), name), view(id))),
   setClaims: (id, claims, splits) => call(() => (localStore().setClaims(id, me(), claims, splits), view(id))),

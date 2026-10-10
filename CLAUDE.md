@@ -55,7 +55,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 | Repo | `boonwalker/billsplit`, Branch `main` |
 | Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse empfohlen und gesetzt |
 
-`render.yaml` ist ein Überbleibsel (Render war zu teuer) und wird nicht benutzt. Der Auftraggeber nutzt die App vor
+Render wird nicht mehr benutzt (zu teuer, `render.yaml` ist entfernt). Der Auftraggeber nutzt die App vor
 allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenheiten haben Vorrang.
 
 ## Architektur in Kürze
@@ -145,9 +145,8 @@ Aus der Verbesserungsanalyse vom 10.10.2026, empfohlene Reihenfolge:
    Die wichtigsten Klick-Tests aus `e2e/` zu einem festen Test-Satz (z. B. `@playwright/test`) ausbauen.
 2. **Datensicherheit:** Backup von `bills.json` bzw. Umstieg auf SQLite auf dem Railway-Volume (aktuell wird die
    ganze JSON-Datei bei jeder Änderung neu geschrieben).
-3. Dashboard: ein Server-Endpunkt „meine Bilanz“ statt jede Rechnung einzeln zu laden.
-4. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen; `render.yaml` entfernen.
-5. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
+3. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen.
+4. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
    dem Auftraggeber klären, ob die Regel für „Dir“ auch für Du/Dein gelten soll.
 
 Erledigt am 10.10.2026: einheitlicher Ausgleich über bestätigte Zahlungen, Gerät übertragen/Wiederherstellungs-Code,

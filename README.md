@@ -252,6 +252,13 @@ Wer zuerst abhakt, muss nicht warten: Ein Tipp auf den eigenen Eintrag („Du ×
 Man zahlt sofort nur die Hälfte, die andere Hälfte bleibt offen. Die anderen sehen den Hinweis und übernehmen
 sie mit einem Tipp auf den Namen.
 
+### Erklär-Animation
+
+Beim ersten Öffnen einer Rechnung (ohne Gleichverteilung) führt eine kurze Animation auf den ersten Zeilen vor, wie
+man abhakt („Antippen = abhaken“), ein Stück mit jemandem teilt („Namen antippen = mit Anna teilen“, mit dem Namen einer Person aus der Rechnung) und die Hälfte des
+eigenen Stücks zum Teilen anbietet („Eigenen Namen antippen = Du willst mit jemandem teilen“). Sie läuft zweimal, einmal pro
+Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an der Rechnung.
+
 ## Technik
 
 | Teil | Umsetzung |
@@ -283,11 +290,6 @@ liegen nach `npm run dev`/`npm run build` unter `public/ocr` und werden selbst a
 
 Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder `localhost`).
 
-
-Beim ersten Öffnen einer Rechnung (ohne Gleichverteilung) führt eine kurze Animation auf den ersten Zeilen vor, wie
-man abhakt („Antippen = abhaken“), ein Stück mit jemandem teilt („Namen antippen = mit Anna teilen“, mit dem Namen einer Person aus der Rechnung) und die Hälfte des
-eigenen Stücks zum Teilen anbietet („Eigenen Namen antippen = Du willst mit jemandem teilen“). Sie läuft zweimal, einmal pro
-Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an der Rechnung.
 ### Live stellen (Railway)
 
 Das Repo enthält eine `railway.json` mit Build- und Startbefehl und Health-Check.
@@ -308,22 +310,9 @@ Arbeitsspeicher. Der Server läuft deshalb als einzelne gebündelte Datei (`node
 ca. 70 MB). Ist das Guthaben aufgebraucht, stoppt Railway den Dienst bis zum nächsten Monat. Die Daten auf dem
 Volume bleiben erhalten. Den Verbrauch zeigt Railway unter „Usage“.
 
-### Live stellen (Render)
-
-Das Repo enthält eine fertige `render.yaml`:
-
-1. Auf [render.com](https://render.com) ein Konto anlegen und GitHub verbinden.
-2. Im Dashboard **New → Blueprint** wählen und dieses Repo auswählen. Render liest `render.yaml` und legt den
-   Web Service samt 1-GB-Speicher (`/var/data`) in Frankfurt an.
-3. Wenn Render nach `ANTHROPIC_API_KEY` fragt: Schlüssel eintragen, um die KI-Belegerkennung zu nutzen, oder
-   leer lassen. Dann erkennt das Handy den Beleg selbst.
-4. Nach dem ersten Build ist die App unter `https://<name>.onrender.com` erreichbar. Die QR-Codes zeigen
-   automatisch auf diese Adresse. Jeder Push auf `main` wird automatisch neu ausgerollt.
-
 Hinweise:
-- Persistenter Speicher erfordert einen bezahlten Tarif (`plan: starter`). Ohne Speicher gehen die Rechnungen bei
-  jedem Neustart verloren.
-- Es darf nur **eine** Instanz laufen. Live-Updates und Rechnungen liegen im Speicher dieses Servers.
+- Es darf nur **eine** Instanz laufen (`railway.json` legt das fest): Live-Updates, Online-Zählung und die
+  Rechnungen im Arbeitsspeicher gehören zu diesem einen Server.
 - Missbrauchsschutz: Belegfotos sind pro Gerät/IP und Stunde (`RECEIPT_LIMIT_PER_HOUR`) und insgesamt pro Tag
   (`RECEIPT_LIMIT_PER_DAY`) begrenzt. Ist das Limit erreicht, liest das Handy den Beleg selbst. Neue Rechnungen
   sind pro Gerät/IP und Stunde begrenzt (`BILL_LIMIT_PER_HOUR`).
@@ -364,6 +353,7 @@ claude.ai-Artifact gedacht:
 | `POST` | `/api/parse-receipt` | Belegfoto → Positionen |
 | `POST` | `/api/bills` | Rechnung anlegen (Ersteller wird Rechnungssteller) |
 | `GET` | `/api/bills/:id` | Rechnung aus Sicht des Geräts |
+| `POST` | `/api/bills/batch` | Mehrere Rechnungen auf einmal (Startseite, Dashboard); `null` für unbekannte |
 | `GET` | `/api/bills/:id/events` | Live-Updates (Server-Sent Events) |
 | `PUT` | `/api/bills/:id` | Positionen bearbeiten (nur Rechnungssteller) |
 | `POST` | `/api/bills/:id/join` | Beitreten (QR-Code gescannt) |

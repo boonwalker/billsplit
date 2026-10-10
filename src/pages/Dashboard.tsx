@@ -192,13 +192,13 @@ export default function Dashboard() {
     return next;
   }, []);
 
-  /** Loads all bills on this device again (those that cannot be loaded, e.g. offline, are left out). */
+  /** Loads all bills on this device again, in one request (offline: none). */
   const load = useCallback(async () => {
     const [snaps] = await Promise.all([
-      Promise.all(loadRecent().map((b) => api.getBill(b.id).catch(() => null))),
+      api.getBills(loadRecent().map((b) => b.id)).catch(() => ({}) as Record<string, BillSnapshot | null>),
       loadNetwork().catch(() => null),
     ]);
-    const next = computeBalances(snaps.filter((s): s is BillSnapshot => s !== null));
+    const next = computeBalances(Object.values(snaps).filter((s): s is BillSnapshot => s !== null));
     setBalances(next);
     return next;
   }, [loadNetwork]);

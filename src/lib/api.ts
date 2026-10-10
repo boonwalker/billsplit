@@ -10,6 +10,8 @@ export { ApiError };
 export interface Api {
   createBill(data: BillData, name: string): Promise<BillSnapshot>;
   getBill(id: string): Promise<BillSnapshot>;
+  /** Several bills in one request (home list, dashboard); null for bills that no longer exist. */
+  getBills(ids: string[]): Promise<Record<string, BillSnapshot | null>>;
   updateBill(id: string, data: BillData): Promise<BillSnapshot>;
   join(id: string, name: string): Promise<BillSnapshot>;
   setClaims(id: string, claims: ItemClaims, splits: ItemClaims): Promise<BillSnapshot>;
@@ -90,6 +92,8 @@ const bill = (id: string) => `/api/bills/${encodeURIComponent(id)}`;
 const serverApi: Api = {
   createBill: (data, name) => request("POST", "/api/bills", { data, name }),
   getBill: (id) => request("GET", bill(id)),
+  getBills: async (ids) =>
+    ids.length ? (await request<{ bills: Record<string, BillSnapshot | null> }>("POST", "/api/bills/batch", { ids })).bills : {},
   updateBill: (id, data) => request("PUT", bill(id), { data }),
   join: (id, name) => request("POST", `${bill(id)}/join`, { name }),
   setClaims: (id, claims, splits) => request("PUT", `${bill(id)}/claims`, { claims, splits }),
