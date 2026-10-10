@@ -181,7 +181,8 @@ export default function ClaimDemo({ layout, step, stage, otherName }: { layout: 
           {done && <span className="claim-demo-note">wartest auf jemanden</span>}
         </span>
       )}
-      <div key={step} className="claim-demo-bubble" style={{ left: bubble.x, top: bubble.y } as CSSProperties}>
+      {/* Never wider than the receipt: Safari leaves traces of anything sticking out of the paper. */}
+      <div key={step} className="claim-demo-bubble" style={{ left: bubble.x, top: bubble.y, maxWidth: `calc(100% - ${bubble.x + 26}px)` } as CSSProperties}>
         <Handwritten text={CAPTION[step](other)} />
       </div>
     </div>

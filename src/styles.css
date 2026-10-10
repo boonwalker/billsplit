@@ -3112,8 +3112,10 @@ input[aria-invalid="true"] {
 /* Normal split: a short ghost demo of ticking, sharing and offering to share (see ClaimDemo). */
 .claim-demo {
   position: absolute;
-  inset: 0;
+  /* Room below the last line for a bubble, but nothing beyond the paper's sides. */
+  inset: 0 0 -90px;
   z-index: 4;
+  overflow: hidden;
   pointer-events: none;
 }
 
@@ -3181,7 +3183,6 @@ input[aria-invalid="true"] {
   --bubble: #fffef6;
   --outline: #2b2d2b;
   position: absolute;
-  max-width: calc(100% - 24px);
   padding: 6px 14px 7px;
   border: 2px solid var(--outline);
   border-radius: 18px 20px 17px 21px / 16px 18px 20px 17px;
