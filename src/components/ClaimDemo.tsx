@@ -69,7 +69,10 @@ export function useClaimDemo(billId: string, enabled: boolean, list: RefObject<H
     } catch {
       // Without storage the demo shows again next time.
     }
-    const lines = [...list.current.querySelectorAll<HTMLElement>("li[data-item]")];
+    // Only lines with a tick circle in front: open ones first, then lines one has ticked already.
+    // Lines others took completely (no circle) or that are crossed out never get a bubble.
+    const withTick = [...list.current.querySelectorAll<HTMLElement>("li[data-item]:not(.taken):not(.excluded):not(.equal)")];
+    const lines = [...withTick.filter((l) => !l.classList.contains("done")), ...withTick.filter((l) => l.classList.contains("done"))];
     if (!lines.length) return;
     const at = (i: number) => lines[Math.min(i, lines.length - 1)];
     // Starts once the first lines are on screen; only then it counts as shown.
