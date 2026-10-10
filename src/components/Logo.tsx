@@ -14,10 +14,10 @@ export function LogoMark({ size = 30 }: { size?: number }) {
   );
 }
 
-export function Wordmark() {
+export function Wordmark({ size }: { size?: number }) {
   return (
-    <span className="wordmark">
-      <LogoMark />
+    <span className="wordmark" style={size ? { fontSize: `${(size / 30) * 1.25}rem`, gap: `${(size / 30) * 8}px` } : undefined}>
+      <LogoMark size={size} />
       <span>
         bill<b>split</b>
       </span>

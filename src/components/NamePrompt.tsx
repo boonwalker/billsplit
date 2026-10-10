@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { LogoMark } from "./Logo";
+import { Wordmark } from "./Logo";
 
 interface Props {
   ownerName: string;
@@ -22,7 +22,7 @@ export default function NamePrompt({ ownerName, initialName = "", onSubmit, extr
         }}
       >
         <div className="sheet-logo" aria-hidden="true">
-          <LogoMark size={52} />
+          <Wordmark size={52} />
         </div>
         <h2>Wie heißt du?</h2>
         <p className="muted">
