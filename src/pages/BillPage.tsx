@@ -3,7 +3,7 @@ import DemoBar from "../components/DemoBar";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
 import OpenInApp from "../components/OpenInApp";
-import OwnerPanel, { EqualSplitToggle, isSettled, ownerSummary, TipSplit } from "../components/OwnerPanel";
+import OwnerPanel, { EqualSplitToggle, ownerStatus, ownerSummary, TipSplit } from "../components/OwnerPanel";
 import PayBar from "../components/PayBar";
 import QrCode from "../components/QrCode";
 import Receipt from "../components/Receipt";
@@ -85,10 +85,11 @@ export default function BillPage({ id }: { id: string }) {
     if (markedPaid !== null) updateRecent(id, { markedPaid });
   }, [markedPaid, id]);
   // … and for the payer whether everything has come back.
-  const settled = snapshot?.isOwner ? isSettled(snapshot) : null;
+  const status = snapshot?.isOwner ? ownerStatus(snapshot) : null;
   useEffect(() => {
-    if (settled !== null) updateRecent(id, { settled });
-  }, [settled, id]);
+    if (status) updateRecent(id, status);
+    // A new status object comes with every snapshot; only its values matter.
+  }, [status?.settled, status?.missing, status?.currency, id]);
 
   // An invalid bill does not stay in the list of bills.
   useEffect(() => {

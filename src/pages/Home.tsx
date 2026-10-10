@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
-import { isSettled } from "../components/OwnerPanel";
+import { ownerStatus } from "../components/OwnerPanel";
+import { formatMoney } from "../lib/money";
 import { api } from "../lib/api";
 import { ApiError } from "../lib/apiError";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
@@ -24,9 +25,9 @@ export default function Home() {
         .getBill(b.id)
         .then((snap) => {
           if (snap.isOwner) {
-            const settled = isSettled(snap);
-            if (settled === Boolean(b.settled)) return;
-            updateRecent(b.id, { settled });
+            const status = ownerStatus(snap);
+            if (status.settled === Boolean(b.settled) && status.missing === b.missing && status.currency === b.currency) return;
+            updateRecent(b.id, status);
           } else {
             if (!snap.me) return;
             const markedPaid = Boolean(snap.myPayment?.markedPaidAt);
@@ -186,7 +187,15 @@ export default function Home() {
                     <span className="muted small">
                       {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? (
                         <>
-                          du leihst{b.settled && <> · <span className="list-paid">✓ ausgeglichen</span></>}
+                          du leihst
+                          {b.settled ? (
+                            <>
+                              {" "}
+                              · <span className="list-paid">✓ ausgeglichen</span>
+                            </>
+                          ) : (
+                            b.missing !== undefined && b.missing > 0 && <> · {formatMoney(b.missing, b.currency ?? "EUR")}</>
+                          )}
                         </>
                       ) : b.markedPaid ? <span className="list-paid">✓ als bezahlt markiert</span> : "du schuldest"}
                     </span>

@@ -86,6 +86,11 @@ function time(iso: string): string {
 }
 
 /** The payer got everything back: friends joined and "Dir fehlen noch" is 0,00 €. */
+/** What the list of bills shows for the payer: still missing, or settled. */
+export function ownerStatus(snapshot: BillSnapshot): { settled: boolean; missing: number; currency: string } {
+  return { settled: isSettled(snapshot), missing: ownerSummary(snapshot).missing, currency: snapshot.data.currency };
+}
+
 export function isSettled(snapshot: BillSnapshot): boolean {
   return (snapshot.debtors ?? []).length > 0 && ownerSummary(snapshot).missing === 0;
 }

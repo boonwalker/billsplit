@@ -107,6 +107,9 @@ export interface RecentBill {
   markedPaid?: boolean;
   /** Payer only: friends joined and nothing is missing any more. */
   settled?: boolean;
+  /** Payer only: what is still missing ("Dir fehlen noch"), in cents of `currency`. */
+  missing?: number;
+  currency?: string;
 }
 
 export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, []);
