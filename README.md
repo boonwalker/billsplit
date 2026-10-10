@@ -144,7 +144,7 @@ beglichen.
 ### Kassenbon-Vorschau
 
 Solange der Rechnungssteller oben bei QR-Code und WhatsApp-Button ist, schiebt sich der obere Rand des digitalen
-Kassenbons (mit Zacken und Titel, „Deine digitale Rechnung ist fertig ↓“) hinter der unteren Leiste hoch ins Bild
+Kassenbons (mit Zacken und Titel, „Deine interaktive Rechnung ist fertig ↓“ – bzw. „digitale“ bei Gleichverteilung) hinter der unteren Leiste hoch ins Bild
 und zupft alle paar Sekunden kurz nach oben. Ein Tipp scrollt zur Rechnung; ist der Bon selbst sichtbar, verschwindet
 die Vorschau.
 

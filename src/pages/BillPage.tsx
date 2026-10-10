@@ -378,7 +378,7 @@ export default function BillPage({ id }: { id: string }) {
               </button>
             </div>
             <a className="scroll-hint" href="#receipt" onClick={(e) => (e.preventDefault(), document.getElementById("receipt")?.scrollIntoView({ behavior: "smooth" }))}>
-              Deine digitale Rechnung
+              Deine {equal ? "digitale" : "interaktive"} Rechnung
               <span aria-hidden="true">↓</span>
             </a>
           </section>
@@ -441,7 +441,8 @@ export default function BillPage({ id }: { id: string }) {
               ✦
             </span>
             <span className="receipt-peek-title">{snap.data.title || "Rechnung"}</span>
-            <span className="receipt-peek-hint">Deine digitale Rechnung ist fertig ↓</span>
+            {/* Everyone ticks their own lines: then it is the interactive bill. */}
+            <span className="receipt-peek-hint">Deine {equal ? "digitale" : "interaktive"} Rechnung ist fertig ↓</span>
           </span>
         </button>
       )}
