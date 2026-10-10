@@ -19,7 +19,7 @@ import {
   type PublicParticipant,
 } from "../lib/bill";
 import { formatMoney } from "../lib/money";
-import ClaimDemo, { useClaimDemo } from "./ClaimDemo";
+import ClaimDemo, { onceInView, useClaimDemo } from "./ClaimDemo";
 
 interface Props {
   snapshot: BillSnapshot;
@@ -359,7 +359,6 @@ function useTapDemo(billId: string, enabled: boolean, list: RefObject<HTMLUListE
     if (!enabled || !list.current) return;
     try {
       if (localStorage.getItem(TAP_DEMO_KEY(billId))) return;
-      localStorage.setItem(TAP_DEMO_KEY(billId), "1");
     } catch {
       // Without storage the demo simply shows again next time.
     }
@@ -376,7 +375,16 @@ function useTapDemo(billId: string, enabled: boolean, list: RefObject<HTMLUListE
         y: line.offsetTop + (row ? row.offsetTop + row.offsetHeight * 0.55 : line.offsetHeight / 2),
       };
     });
-    setDemo({ taps, width: wrap.offsetWidth });
+    const width = wrap.offsetWidth;
+    // Starts once the lines are on screen (the payer first sees the QR code).
+    return onceInView(lines[lines.length - 1], () => {
+      try {
+        localStorage.setItem(TAP_DEMO_KEY(billId), "1");
+      } catch {
+        // see above
+      }
+      setDemo({ taps, width });
+    });
   }, [billId, enabled, list]);
   return [demo, () => setDemo(null)] as const;
 }
