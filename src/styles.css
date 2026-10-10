@@ -453,6 +453,19 @@ select {
   background: var(--bg);
 }
 
+/* iOS Safari gives date fields an intrinsic width that pushes them out of their card. */
+input[type="date"] {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 input:focus,
 select:focus {
   outline: none;
@@ -700,6 +713,12 @@ input[aria-invalid="true"] {
 .capture-row {
   display: flex;
   gap: 10px;
+}
+
+.capture-row .btn {
+  flex: 1 1 0;
+  padding-inline: 10px;
+  white-space: nowrap;
 }
 
 .items-editor {

@@ -349,22 +349,23 @@ export default function Editor({ billId }: { billId?: string }) {
     <div className="page">
       <Header back={billId ? `/b/${billId}` : "/"} title={editing ? "Positionen bearbeiten" : "Rechnung prüfen"} />
       <main className="content">
-        {!editing && (
+        {error && <div className="alert">{error}</div>}
+
+        {/* Only needed when nothing was recognised: try another photo or screenshot. */}
+        {!editing && validItems.length === 0 && (
           <div className="capture-row">
             <label className="btn btn-primary grow">
-              📷 Foto aufnehmen
+              📷 Neues Foto
               <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => e.target.files?.[0] && scan(e.target.files[0])} />
             </label>
             <label className="btn btn-ghost grow">
-              Screenshot / Bild
+              Anderer Screenshot
               <input type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && scan(e.target.files[0])} />
             </label>
           </div>
         )}
 
-        {error && <div className="alert">{error}</div>}
-
-        {draft.engine && (
+        {draft.engine && validItems.length > 0 && (
           <p className="muted small">
             {draft.engine === "ai" ? "✨ Per KI erkannt" : "🔎 Per Texterkennung auf dem Gerät erkannt"} – bitte kurz prüfen.
           </p>
