@@ -120,6 +120,16 @@ Anfangsanimation zeigt das im Loop, bis der Beleg berührt wird: eine Zeile wird
 zweite angetippt und dann durchgestrichen, eine dritte gedrückt gehalten (ein Ring füllt sich um den Finger, „/2“
 erscheint, eine Comic-Sprechblase erklärt es). Die Animation nutzt nur Positionen mit einem Stück.
 
+### Dashboard
+
+Unter „Deine Rechnungen“ auf der Startseite führt „Dashboard · Deine Bilanz“ zu einer Übersicht über alle Rechnungen
+auf dem Gerät. Ein Ringdiagramm zeigt, wie viel Du insgesamt leihst (grün: was Freunde Dir aus Deinen Rechnungen noch
+schulden, bis Du es als erhalten markierst) und wie viel Du schuldest (orange: Dein Anteil an Rechnungen anderer, bis Du
+ihn als bezahlt markierst); in der Mitte steht die Bilanz, ein Tipp auf einen Ring-Teil oder die Legende zeigt dessen
+Betrag und Anteil. Darunter stehen die Einzelbilanzen mit jeder Person (über alle Rechnungen nach Namen
+zusammengefasst). Grün und Orange sind für Hell- und Dunkelmodus auf Farbenblindheit geprüft; bei mehreren Währungen
+gibt es je Währung eine eigene Übersicht.
+
 ### Originalbeleg
 
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten

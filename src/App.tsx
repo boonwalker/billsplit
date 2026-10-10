@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import HandoffPrompt from "./components/HandoffPrompt";
 import { useRoute } from "./lib/router";
 import BillPage from "./pages/BillPage";
+import Dashboard from "./pages/Dashboard";
 import Editor from "./pages/Editor";
 import Home from "./pages/Home";
 import OriginalReceipt from "./pages/OriginalReceipt";
@@ -38,6 +39,8 @@ function Page(): ReactNode {
       return <BillPage key={route.id} id={route.id} />;
     case "original":
       return <OriginalReceipt id={route.id} />;
+    case "dashboard":
+      return <Dashboard />;
     default:
       return <Home />;
   }

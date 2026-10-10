@@ -6,6 +6,7 @@ export type Route =
   | { name: "profile"; next?: string }
   | { name: "new" }
   | { name: "scan" }
+  | { name: "dashboard" }
   | { name: "bill"; id: string }
   | { name: "original"; id: string }
   | { name: "edit"; id: string };
@@ -21,6 +22,8 @@ export function parseHash(hash: string): Route {
       return { name: "new" };
     case "scan":
       return { name: "scan" };
+    case "dashboard":
+      return { name: "dashboard" };
     case "b":
       if (!second) return { name: "home" };
       if (third === "edit") return { name: "edit", id: second };

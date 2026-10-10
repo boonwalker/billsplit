@@ -213,6 +213,16 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+            {/* Over all bills: lent vs. owed, and the balance with every person. */}
+            <button type="button" className="btn btn-secondary dashboard-btn" onClick={() => navigate("/dashboard")}>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <g transform="rotate(-90 12 12)">
+                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeDasharray="29 50.3" />
+                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeDasharray="17.3 50.3" strokeDashoffset="-31" opacity="0.4" />
+                </g>
+              </svg>
+              Dashboard · Deine Bilanz
+            </button>
           </section>
         )}
 
