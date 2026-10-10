@@ -113,7 +113,7 @@ wie eine Papiertasche stehen nach einer Zwischensumme und lassen sich ebenso ant
 runter wischen scrollt. Alles Übrige wird durch die unten eingestellte Personenzahl geteilt. Die Fingerstriche sind
 sofort zu sehen und verblassen in den Durchstreich-Strich, angetippte Zeilen werden kurz „eingedrückt“. Artikel, die
 wahrscheinlich keine Gemeinschaftsausgabe sind (Drogerie, Haushalt, Vorräte wie Milch oder Gewürze – von der KI beim
-Lesen markiert, ergänzt um eine Stichwortliste), stehen oben. **Gedrückt halten** öffnet auch hier das „/“-Blatt (nur einen Teil aufteilen, siehe oben); ein Tipp direkt
+Lesen markiert, ergänzt um eine Stichwortliste), stehen oben. **Gedrückt halten** öffnet auch hier das „/“-Blatt (nur einen Teil in Rechnung stellen, siehe oben); ein Tipp direkt
 auf das „/2“ hebt es wieder auf, statt die Zeile zu streichen. Eine
 Anfangsanimation zeigt das im Loop, bis der Beleg berührt wird: eine Zeile wird mit dem Finger durchgestrichen, eine
 zweite angetippt und dann durchgestrichen, eine dritte gedrückt gehalten (ein Ring füllt sich um den Finger, „/2“

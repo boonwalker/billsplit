@@ -150,7 +150,7 @@ export default function ReceiptDemo({
             className="claim-demo-bubble hold-demo-bubble"
             style={{ left: Math.max(4, hold.x - 22), top: hold.bottom + 14, maxWidth: `calc(100% - ${Math.max(4, hold.x - 22) + 26}px)` }}
           >
-            <Handwritten text="Gedrückt halten = nur einen Teil aufteilen" />
+            <Handwritten text="Gedrückt halten = nur einen Teil in Rechnung stellen" />
           </div>
         </>
       )}
