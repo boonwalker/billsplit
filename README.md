@@ -130,6 +130,17 @@ Betrag und Anteil. Darunter stehen die Einzelbilanzen mit jeder Person als klein
 Kacheln (über alle Rechnungen nach Namen zusammengefasst; grün, was sie Dir schuldet, orange, was Du ihr schuldest). Grün und Orange sind für Hell- und Dunkelmodus auf Farbenblindheit geprüft; bei mehreren Währungen
 gibt es je Währung eine eigene Übersicht.
 
+**Ausgleichen mit einer Person:** Ein Tipp auf die Kachel einer Person mit offenen Beträgen zeigt alle offenen
+Beträge Rechnung für Rechnung und den Saldo (z. B. 36,90 € geschuldet − 13,11 € geliehen = 23,79 €). Schuldest Du
+unterm Strich etwas, öffnet „Ausgleich zahlen“ PayPal mit genau diesem Betrag (vorher in die Zwischenablage kopiert)
+bzw. die Überweisungs-/Wero-Daten. Erst nach „✓ Bezahlt – eintragen“ wird gebucht, und zwar in jeder einzelnen
+Rechnung: Dein Anteil in den Rechnungen der Person wird mit dem aktuellen Betrag als Zahlung vermerkt und als bezahlt
+markiert (die Person sieht das in der Rechnung), ihr Anteil in Deinen Rechnungen wird als erhalten markiert (sie sieht
+„… hat Deinen Anteil als erhalten markiert“). Vor dem Buchen werden alle Rechnungen neu geladen; hat sich ein Betrag
+geändert, wird nichts gebucht und die neue Aufstellung gezeigt. Schuldet die Person Dir unterm Strich etwas,
+trägst Du den Ausgleich ein, sobald das Geld da ist. Im Dashboard zählt ein als bezahlt markierter Anteil bereits als
+beglichen.
+
 ### Originalbeleg
 
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten

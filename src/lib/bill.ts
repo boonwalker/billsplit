@@ -124,6 +124,8 @@ export interface BillSnapshot {
   debtors?: Debtor[];
   /** Pay click of the requesting participant; markedPaidAt once they marked it as paid. */
   myPayment?: { at: string; amount: Cents; markedPaidAt?: string };
+  /** The payer confirmed this participant's share as received (also when it was offset against another bill). */
+  myReceived?: boolean;
   /** The photo or screenshot the bill was read from is stored and can be viewed. */
   hasReceiptImage?: boolean;
 }

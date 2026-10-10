@@ -199,6 +199,7 @@ export class BillCore {
       if (p.payClickedAt && p.payAmount !== undefined) {
         snap.myPayment = { at: p.payClickedAt, amount: p.payAmount, markedPaidAt: p.markedPaidAt };
       }
+      if (p.received) snap.myReceived = true;
     }
     if (isOwner) {
       snap.debtors = Object.entries(bill.participants)

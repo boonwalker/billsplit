@@ -1,6 +1,18 @@
-import { participantShare, type BillSnapshot } from "./bill";
+import { participantShare, type BillSnapshot, type PaymentInfo } from "./bill";
 import { ownerSummary } from "../components/OwnerPanel";
 import type { Cents } from "./money";
+
+/** One open amount between me and a person, in one bill. */
+export interface BalanceEntry {
+  billId: string;
+  title: string;
+  createdAt: string;
+  /** lent: they owe me (my bill) · owed: I owe them (their bill). */
+  direction: "lent" | "owed";
+  amount: Cents;
+  /** lent only: their participant id in my bill (to confirm their share as received). */
+  debtorId?: string;
+}
 
 /** What is open with one person across all bills, in one currency. */
 export interface PersonBalance {
@@ -11,11 +23,15 @@ export interface PersonBalance {
   owed: Cents;
   /** Number of bills with this person. */
   bills: number;
+  /** The open amounts bill by bill (lent and owed), newest first. */
+  entries: BalanceEntry[];
+  /** How they want to be paid: from their newest bill in which I owe them something. */
+  payment?: PaymentInfo;
 }
 
 export interface Balances {
   currency: string;
-  /** Still owed to me in total: everything the payer page shows as "Dir fehlen noch". */
+  /** Still owed to me in total. */
   lent: Cents;
   /** I still owe in total. */
   owed: Cents;
@@ -25,12 +41,31 @@ export interface Balances {
 }
 
 /**
- * Sums up the open amounts of all bills on this device, per currency. As payer, a friend's
- * share counts until it is confirmed as received; as guest, my share counts until I marked it
- * as paid. People are matched by name across bills.
+ * Open amount of a friend in my bill: their share, less what they settled. Confirmed as
+ * received counts with the amount of their pay click (or completely without one); marked as
+ * paid by them counts with the amount of their pay click. Whatever was added to their share
+ * afterwards stays open.
+ */
+function debtorOpen(d: NonNullable<BillSnapshot["debtors"]>[number]): Cents {
+  const settled = d.received ? (d.payAmount ?? d.amount) : d.markedPaidAt ? (d.payAmount ?? 0) : 0;
+  return Math.max(0, d.amount - settled);
+}
+
+/** My open amount in someone else's bill (0 once the payer confirmed it as received). */
+function myOpen(snap: BillSnapshot): Cents {
+  if (!snap.me || snap.myReceived) return 0;
+  const share = participantShare(snap.data, snap.participants, snap.me).total;
+  const paid = snap.myPayment?.markedPaidAt ? snap.myPayment.amount : 0;
+  return Math.max(0, share - paid);
+}
+
+/**
+ * Sums up the open amounts of all bills on this device, per currency, and keeps every amount
+ * with its bill, so that settling with a person can be booked bill by bill. People are matched
+ * by name across bills.
  */
 export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
-  const byCurrency = new Map<string, Balances & { byName: Map<string, PersonBalance> }>();
+  const byCurrency = new Map<string, Balances & { byName: Map<string, PersonBalance & { paymentAt?: string }> }>();
   const sheet = (currency: string) => {
     let b = byCurrency.get(currency);
     if (!b) {
@@ -44,7 +79,7 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
     const key = name.toLocaleLowerCase("de-DE");
     let p = b.byName.get(key);
     if (!p) {
-      p = { name, lent: 0, owed: 0, bills: 0 };
+      p = { name, lent: 0, owed: 0, bills: 0, entries: [] };
       b.byName.set(key, p);
     }
     return p;
@@ -52,22 +87,33 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
 
   for (const snap of snapshots) {
     const b = sheet(snap.data.currency);
+    const bill = { billId: snap.id, title: snap.data.title || "Rechnung", createdAt: snap.createdAt };
     if (snap.isOwner) {
       const { missing, unassigned } = ownerSummary(snap);
       for (const d of snap.debtors ?? []) {
         const p = person(b, d.name);
         p.bills++;
-        if (!d.received) p.lent += d.amount;
+        const open = debtorOpen(d);
+        if (open === 0) continue;
+        p.lent += open;
+        b.lent += open;
+        p.entries.push({ ...bill, direction: "lent", amount: open, debtorId: d.id });
       }
-      b.lent += missing;
-      b.unassigned += Math.min(missing, unassigned);
+      const rest = Math.min(missing, unassigned);
+      b.lent += rest;
+      b.unassigned += rest;
     } else if (snap.me) {
       const p = person(b, snap.ownerName);
       p.bills++;
-      if (snap.myPayment?.markedPaidAt) continue;
-      const due = participantShare(snap.data, snap.participants, snap.me).total;
-      p.owed += due;
-      b.owed += due;
+      const open = myOpen(snap);
+      if (open === 0) continue;
+      p.owed += open;
+      b.owed += open;
+      p.entries.push({ ...bill, direction: "owed", amount: open });
+      if (!p.paymentAt || snap.createdAt > p.paymentAt) {
+        p.payment = snap.data.payment;
+        p.paymentAt = snap.createdAt;
+      }
     }
   }
 
@@ -75,7 +121,9 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
     .map(({ byName, ...b }) => ({
       ...b,
       // Biggest open amounts first (either way), settled people last.
-      people: [...byName.values()].sort((x, y) => Math.abs(y.lent - y.owed) - Math.abs(x.lent - x.owed) || x.name.localeCompare(y.name, "de")),
+      people: [...byName.values()]
+        .map(({ paymentAt: _, ...p }) => ({ ...p, entries: p.entries.sort((x, y) => y.createdAt.localeCompare(x.createdAt)) }))
+        .sort((x, y) => Math.abs(y.lent - y.owed) - Math.abs(x.lent - x.owed) || x.name.localeCompare(y.name, "de")),
     }))
     .sort((x, y) => y.lent + y.owed - (x.lent + x.owed));
 }

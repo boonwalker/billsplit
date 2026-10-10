@@ -119,120 +119,129 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
           </strong>
         </div>
 
-        {myPayment && (
+        {/* The payer confirmed the share as received (e.g. offset in the dashboard): nothing to pay here. */}
+        {snapshot.myReceived && (
+          <p className="paybar-note paybar-copied">✓ {ownerName || "Der Rechnungssteller"} hat Deinen Anteil als erhalten markiert.</p>
+        )}
+
+        {!snapshot.myReceived && myPayment && (
           <p className="paybar-note">
             ✓ Bezahlung über {formatMoney(myPayment.amount, data.currency)} an {ownerName || "den Rechnungssteller"} gestartet
             {due > 0 && <> – durch deine neue Auswahl kommen {formatMoney(due, data.currency)} dazu</>}.
           </p>
         )}
 
-        {myPayment && nothing && action.kind !== "none" && (
-          <a
-            className="btn btn-done btn-large"
-            href={action.url}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => action.kind === "paypalMe" && copyText(centsToInput(myPayment.amount))}
-          >
-            PayPal erneut öffnen
-          </a>
-        )}
-        {myPayment && nothing && action.kind === "none" && others.length > 0 && (
-          <button type="button" className="btn btn-done btn-large" onClick={() => openSheet(others[0], false)}>
-            Zahlungsdaten erneut anzeigen
-          </button>
-        )}
-        {myPayment && nothing && (
-          <button
-            type="button"
-            className={`btn btn-large ${myPayment.markedPaidAt ? "btn-done btn-marked" : "btn-mark"}`}
-            aria-pressed={Boolean(myPayment.markedPaidAt)}
-            onClick={() => onMarkPaid(!myPayment.markedPaidAt)}
-          >
-            {myPayment.markedPaidAt ? "✓ Als bezahlt markiert" : "Als bezahlt markieren"}
-          </button>
-        )}
-        {myPayment?.markedPaidAt && nothing && (
-          <p className="paybar-note">{ownerName || "Der Rechnungssteller"} sieht das jetzt. Nochmal tippen macht es rückgängig.</p>
-        )}
-
-        {action.kind === "paypalMe" && !(myPayment && nothing) && !ready && (
-          <button
-            type="button"
-            className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
-            disabled={nothing}
-            onPointerDown={nothing ? undefined : clickPress}
-            onClick={() => {
-              prepareAmount();
-              clickRelease();
-            }}
-          >
-            {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
-          </button>
-        )}
-        {action.kind === "paypalMe" && !(myPayment && nothing) && ready && (
+        {!snapshot.myReceived && (
           <>
-            <p className="paybar-note paybar-copied">
-              {ready.copied ? (
-                <>
-                  ✓ {formatMoney(due, data.currency)} in die Zwischenablage kopiert –
-                  <span className="paybar-oneline" ref={oneLine}>
-                    in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.
-                  </span>
-                </>
-              ) : (
-                `Trag in PayPal ${formatMoney(due, data.currency)} ein.`
-              )}
-            </p>
-            <a className="btn btn-paypal btn-large" href={action.url} target="_blank" rel="noreferrer" onClick={onPay}>
-              Mit PayPal bezahlen · {formatMoney(due, data.currency)}
-            </a>
-          </>
-        )}
+            {myPayment && nothing && action.kind !== "none" && (
+              <a
+                className="btn btn-done btn-large"
+                href={action.url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => action.kind === "paypalMe" && copyText(centsToInput(myPayment.amount))}
+              >
+                PayPal erneut öffnen
+              </a>
+            )}
+            {myPayment && nothing && action.kind === "none" && others.length > 0 && (
+              <button type="button" className="btn btn-done btn-large" onClick={() => openSheet(others[0], false)}>
+                Zahlungsdaten erneut anzeigen
+              </button>
+            )}
+            {myPayment && nothing && (
+              <button
+                type="button"
+                className={`btn btn-large ${myPayment.markedPaidAt ? "btn-done btn-marked" : "btn-mark"}`}
+                aria-pressed={Boolean(myPayment.markedPaidAt)}
+                onClick={() => onMarkPaid(!myPayment.markedPaidAt)}
+              >
+                {myPayment.markedPaidAt ? "✓ Als bezahlt markiert" : "Als bezahlt markieren"}
+              </button>
+            )}
+            {myPayment?.markedPaidAt && nothing && (
+              <p className="paybar-note">{ownerName || "Der Rechnungssteller"} sieht das jetzt. Nochmal tippen macht es rückgängig.</p>
+            )}
 
-        {action.kind === "email" && !(myPayment && nothing) && (
-          <>
-            <a
-              className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
-              href={nothing ? undefined : action.url}
-              target="_blank"
-              rel="noreferrer"
-              aria-disabled={nothing}
-              onClick={(e) => (nothing ? e.preventDefault() : void payByEmail(action.email))}
-            >
-              {nothing ? "Hake deine Positionen ab" : <>In PayPal bezahlen · {formatMoney(due, data.currency)}</>}
-            </a>
-            {!nothing && (
-              <p className="paybar-note">
-                Sende {formatMoney(due, data.currency)} an <b>{action.email}</b> {copied && "(Adresse kopiert)"}
-              </p>
+            {action.kind === "paypalMe" && !(myPayment && nothing) && !ready && (
+              <button
+                type="button"
+                className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
+                disabled={nothing}
+                onPointerDown={nothing ? undefined : clickPress}
+                onClick={() => {
+                  prepareAmount();
+                  clickRelease();
+                }}
+              >
+                {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
+              </button>
+            )}
+            {action.kind === "paypalMe" && !(myPayment && nothing) && ready && (
+              <>
+                <p className="paybar-note paybar-copied">
+                  {ready.copied ? (
+                    <>
+                      ✓ {formatMoney(due, data.currency)} in die Zwischenablage kopiert –
+                      <span className="paybar-oneline" ref={oneLine}>
+                        in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.
+                      </span>
+                    </>
+                  ) : (
+                    `Trag in PayPal ${formatMoney(due, data.currency)} ein.`
+                  )}
+                </p>
+                <a className="btn btn-paypal btn-large" href={action.url} target="_blank" rel="noreferrer" onClick={onPay}>
+                  Mit PayPal bezahlen · {formatMoney(due, data.currency)}
+                </a>
+              </>
+            )}
+
+            {action.kind === "email" && !(myPayment && nothing) && (
+              <>
+                <a
+                  className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
+                  href={nothing ? undefined : action.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-disabled={nothing}
+                  onClick={(e) => (nothing ? e.preventDefault() : void payByEmail(action.email))}
+                >
+                  {nothing ? "Hake deine Positionen ab" : <>In PayPal bezahlen · {formatMoney(due, data.currency)}</>}
+                </a>
+                {!nothing && (
+                  <p className="paybar-note">
+                    Sende {formatMoney(due, data.currency)} an <b>{action.email}</b> {copied && "(Adresse kopiert)"}
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Without PayPal the main button opens the bank / Wero details. */}
+            {action.kind === "none" && others.length > 0 && !(myPayment && nothing) && (
+              <button
+                type="button"
+                className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
+                disabled={nothing}
+                onPointerDown={nothing ? undefined : clickPress}
+                onClick={() => {
+                  openSheet(others[0]);
+                  clickRelease();
+                }}
+              >
+                {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
+              </button>
+            )}
+            {/* With PayPal as the main way, bank transfer and Wero are offered below it. */}
+            {action.kind !== "none" && others.length > 0 && !nothing && (
+              <button type="button" className="link paybar-other" onClick={() => openSheet(others[0])}>
+                Lieber per {otherLabel}
+              </button>
+            )}
+            {action.kind === "none" && others.length === 0 && (
+              <p className="paybar-note">{ownerName || "Der Rechnungssteller"} hat keine Zahlungsdaten hinterlegt.</p>
             )}
           </>
-        )}
-
-        {/* Without PayPal the main button opens the bank / Wero details. */}
-        {action.kind === "none" && others.length > 0 && !(myPayment && nothing) && (
-          <button
-            type="button"
-            className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
-            disabled={nothing}
-            onPointerDown={nothing ? undefined : clickPress}
-            onClick={() => {
-              openSheet(others[0]);
-              clickRelease();
-            }}
-          >
-            {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
-          </button>
-        )}
-        {/* With PayPal as the main way, bank transfer and Wero are offered below it. */}
-        {action.kind !== "none" && others.length > 0 && !nothing && (
-          <button type="button" className="link paybar-other" onClick={() => openSheet(others[0])}>
-            Lieber per {otherLabel}
-          </button>
-        )}
-        {action.kind === "none" && others.length === 0 && (
-          <p className="paybar-note">{ownerName || "Der Rechnungssteller"} hat keine Zahlungsdaten hinterlegt.</p>
         )}
         {sheet && (
           <TransferSheet

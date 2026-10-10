@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Header from "../components/Header";
+import SettleSheet from "../components/SettleSheet";
 import { api } from "../lib/api";
 import { computeBalances, type Balances, type PersonBalance } from "../lib/balances";
 import type { BillSnapshot } from "../lib/bill";
 import { formatMoney } from "../lib/money";
-import { loadRecent } from "../lib/storage";
+import { loadOwnProfile, loadRecent } from "../lib/storage";
 
 /** Signed amount: "+12,30 €" / "−4,00 €". */
 function signed(cents: number, currency: string): string {
@@ -133,10 +134,13 @@ function BalanceRing({ balances }: { balances: Balances }) {
 }
 
 /** One person as a small ring: what they owe me (green) and what I owe them (orange). */
-function PersonRing({ person, currency }: { person: PersonBalance; currency: string }) {
+function PersonRing({ person, currency, onOpen }: { person: PersonBalance; currency: string; onOpen: () => void }) {
   const net = person.lent - person.owed;
+  const open = person.entries.length > 0;
   return (
-    <li className="person-ring">
+    <li className={`person-ring${open ? " open" : ""}`}>
+      {/* Tapping a person with open amounts opens the settlement (pay or confirm, bill by bill). */}
+      {open && <button type="button" className="person-ring-hit" aria-label={`Mit ${person.name} ausgleichen`} onClick={onOpen} />}
       <div className="person-ring-chart">
         <svg viewBox="0 0 200 200" role="img" aria-label={`${person.name}: Dir geschuldet ${formatMoney(person.lent, currency)}, Du schuldest ${formatMoney(person.owed, currency)}`}>
           <RingSlices lent={person.lent} owed={person.owed} currency={currency} />
@@ -165,6 +169,7 @@ function PersonRing({ person, currency }: { person: PersonBalance; currency: str
       <small className="muted person-ring-bills">
         {person.bills} {person.bills === 1 ? "Rechnung" : "Rechnungen"}
       </small>
+      {open && <span className="person-ring-action">{net < 0 ? "Ausgleich zahlen ›" : net > 0 ? "Ausgleich ansehen ›" : "Verrechnen ›"}</span>}
     </li>
   );
 }
@@ -172,17 +177,19 @@ function PersonRing({ person, currency }: { person: PersonBalance; currency: str
 /** Overview over all bills on this device: lent vs. owed, and the balance with every person. */
 export default function Dashboard() {
   const [balances, setBalances] = useState<Balances[] | null>(null);
+  const [settle, setSettle] = useState<{ person: PersonBalance; currency: string } | null>(null);
+
+  /** Loads all bills on this device again (those that cannot be loaded, e.g. offline, are left out). */
+  const load = useCallback(async () => {
+    const snaps = await Promise.all(loadRecent().map((b) => api.getBill(b.id).catch(() => null)));
+    const next = computeBalances(snaps.filter((s): s is BillSnapshot => s !== null));
+    setBalances(next);
+    return next;
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    // Bills that cannot be loaded (offline, deleted) are left out.
-    Promise.all(loadRecent().map((b) => api.getBill(b.id).catch(() => null))).then((snaps) => {
-      if (!cancelled) setBalances(computeBalances(snaps.filter((s): s is BillSnapshot => s !== null)));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void load();
+  }, [load]);
 
   return (
     <div className="page dashboard">
@@ -211,7 +218,7 @@ export default function Dashboard() {
                   <h3 className="section-title">Mit wem Du wie stehst</h3>
                   <ul className="person-rings">
                     {b.people.map((p) => (
-                      <PersonRing key={p.name} person={p} currency={b.currency} />
+                      <PersonRing key={p.name} person={p} currency={b.currency} onOpen={() => setSettle({ person: p, currency: b.currency })} />
                     ))}
                   </ul>
                 </>
@@ -220,6 +227,22 @@ export default function Dashboard() {
           ))
         )}
       </main>
+      {settle && (
+        <SettleSheet
+          person={settle.person}
+          currency={settle.currency}
+          myName={loadOwnProfile().name.trim()}
+          reload={async () => {
+            const key = settle.person.name.toLocaleLowerCase("de-DE");
+            const fresh = (await load()).find((b) => b.currency === settle.currency)?.people.find((p) => p.name.toLocaleLowerCase("de-DE") === key);
+            return fresh && fresh.entries.length > 0 ? fresh : null;
+          }}
+          onClose={(changed) => {
+            setSettle(null);
+            if (changed) void load();
+          }}
+        />
+      )}
     </div>
   );
 }
