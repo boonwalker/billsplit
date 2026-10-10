@@ -87,7 +87,8 @@ jemand fehlt.
 Vergessene Artikel, die nicht für alle waren, kann der Rechnungssteller in der Gleichverteilung noch **antippen**:
 Die Zeile wird eingedrückt, ploppt beim Loslassen wieder auf und wird durchgestrichen. Gestrichene Artikel bleiben
 auf dem Beleg sichtbar, zählen aber nicht mehr zur Summe; nochmal antippen nimmt sie wieder auf. Bei mehreren Stück
-streicht jedes Antippen eins mehr („2x“ → „1x“), nach dem letzten kommen alle zurück. Beim ersten Öffnen einer
+streicht jedes Antippen eins mehr („2x“ → „1x“), nach dem letzten kommen alle zurück. Genauso lassen sich Gebühren
+(z. B. „Kl. Papiertasche“) und das Trinkgeld streichen; Zwischensumme und Summe nicht. Beim ersten Öffnen einer
 solchen Rechnung führt eine kurze Animation auf zwei Zeilen vor, wie Antippen durchstreicht.
 
 ### Supermarkt-Einkäufe

@@ -212,6 +212,26 @@ export default function BillPage({ id }: { id: string }) {
     updateData({ ...snap.data, items });
   }
 
+  /** Equal split: the payer crosses a fee out (or brings it back). */
+  function toggleFee(feeId: string) {
+    const fees = (snap.data.fees ?? []).map((fee) => {
+      if (fee.id !== feeId) return fee;
+      if (!fee.excluded) return { ...fee, excluded: true };
+      const rest = { ...fee };
+      delete rest.excluded;
+      return rest;
+    });
+    replace({ ...snap, data: { ...snap.data, fees } });
+    updateData({ ...snap.data, fees });
+  }
+
+  /** … and the tip. */
+  function toggleTip() {
+    const data = { ...snap.data, tipExcluded: snap.data.tipExcluded ? undefined : true };
+    replace({ ...snap, data });
+    updateData(data);
+  }
+
   function pay() {
     api.pay(id).catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
   }
@@ -329,6 +349,8 @@ export default function BillPage({ id }: { id: string }) {
             onSetSlots={snap.me && !equal ? setSlots : undefined}
             onShowOriginal={snap.hasReceiptImage ? () => navigate(`/b/${id}/beleg`) : undefined}
             onToggleExcluded={snap.isOwner && equal ? toggleExcluded : undefined}
+            onToggleFee={snap.isOwner && equal ? toggleFee : undefined}
+            onToggleTip={snap.isOwner && equal ? toggleTip : undefined}
           />
         </div>
 

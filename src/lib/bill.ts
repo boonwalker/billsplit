@@ -24,6 +24,8 @@ export interface BillFee {
   name: string;
   /** Amount in cents; negative for a discount on the fees. */
   amount: Cents;
+  /** Crossed out by the payer: stays visible, but is not billed. */
+  excluded?: boolean;
 }
 
 /** Where friends send their money to. */
@@ -49,6 +51,8 @@ export interface BillData {
   tipPercent: number;
   /** Tip as a fixed amount (from the receipt or entered by the payer). */
   tipAmount?: Cents;
+  /** The payer crossed the tip out: it stays visible on the receipt, but is not billed. */
+  tipExcluded?: boolean;
   /**
    * Number of people (payer included) that tip and fees are split among, as expected by the payer.
    * Without it, everyone who joined the bill counts; with it, people who scan late are covered.
@@ -152,13 +156,20 @@ export function subtotal(items: BillItem[]): Cents {
 }
 
 /** The whole tip in cents. */
-export function tipTotal(data: BillData): Cents {
+/** The tip as it stands on the receipt (also when the payer crossed it out). */
+export function tipOnReceipt(data: BillData): Cents {
   if (data.tipAmount !== undefined && data.tipAmount > 0) return data.tipAmount;
   return Math.round((subtotal(billedItems(data)) * data.tipPercent) / 100);
 }
 
+/** The tip that is billed. */
+export function tipTotal(data: BillData): Cents {
+  return data.tipExcluded ? 0 : tipOnReceipt(data);
+}
+
+/** Fees that are billed (crossed-out ones are left out). */
 export function feesTotal(data: BillData): Cents {
-  return (data.fees ?? []).reduce((sum, f) => sum + f.amount, 0);
+  return (data.fees ?? []).reduce((sum, f) => sum + (f.excluded ? 0 : f.amount), 0);
 }
 
 /** Costs that everyone shares equally: tip plus fees. */

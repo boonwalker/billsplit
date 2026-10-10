@@ -13,7 +13,7 @@ import {
   subtotal,
   slotHolders,
   slotParts,
-  tipTotal,
+  tipOnReceipt,
   unitShare,
   type BillItem,
   type BillSnapshot,
@@ -30,6 +30,9 @@ interface Props {
   onShowOriginal?: () => void;
   /** Payer in equal split: crosses a line out (or brings it back) so it is not billed. */
   onToggleExcluded?: (itemId: string) => void;
+  /** … the same for a fee and for the tip. */
+  onToggleFee?: (feeId: string) => void;
+  onToggleTip?: () => void;
 }
 
 export function formatDate(iso: string): string {
@@ -311,14 +314,55 @@ function ReceiptLine({
   );
 }
 
-function FeeLine({ name, amount, currency, each, people }: { name: string; amount: number; currency: string; each?: number; people?: number }) {
+/**
+ * A fee or the tip below the subtotal. In the equal split the payer can tap it to cross it
+ * out (and back in), with the same press-in and pop as the item lines.
+ */
+function FeeLine({
+  name,
+  amount,
+  currency,
+  each,
+  people,
+  excluded,
+  onToggle,
+}: {
+  name: string;
+  amount: number;
+  currency: string;
+  each?: number;
+  people?: number;
+  excluded?: boolean;
+  onToggle?: () => void;
+}) {
+  const [holding, setHolding] = useState(false);
+  const cls = `fee-line${excluded ? " struck" : ""}${onToggle ? " strikable" : ""}${holding ? " holding" : ""}`;
+  const press = onToggle
+    ? {
+        onClick: onToggle,
+        onPointerDown: () => setHolding(true),
+        onPointerUp: () => setHolding(false),
+        onPointerLeave: () => setHolding(false),
+        onPointerCancel: () => setHolding(false),
+      }
+    : {};
   return (
     <>
-      <dt>{name}</dt>
-      <dd>
-        {each !== undefined && <span className="pencil rline-each">{formatMoney(each, currency)}</span>}
-        {formatMoney(amount, currency)}
-        {each !== undefined && <span className="pencil rline-div">/{people}</span>}
+      <dt
+        className={cls}
+        {...press}
+        role={onToggle ? "button" : undefined}
+        tabIndex={onToggle ? 0 : undefined}
+        aria-pressed={onToggle ? Boolean(excluded) : undefined}
+        aria-label={onToggle ? `${name}, ${formatMoney(amount, currency)} – ${excluded ? "gestrichen, antippen zum Wiederaufnehmen" : "antippen zum Streichen"}` : undefined}
+        onKeyDown={onToggle ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle()) : undefined}
+      >
+        <span className="fee-strike">{name}</span>
+      </dt>
+      <dd className={cls} {...press}>
+        {each !== undefined && !excluded && <span className="pencil rline-each">{formatMoney(each, currency)}</span>}
+        <span className="fee-strike">{formatMoney(amount, currency)}</span>
+        {each !== undefined && !excluded && <span className="pencil rline-div">/{people}</span>}
       </dd>
     </>
   );
@@ -408,7 +452,7 @@ function useTapDemo(billId: string, enabled: boolean, list: RefObject<HTMLUListE
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded }: Props) {
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onToggleFee, onToggleTip }: Props) {
   const { data, participants, me, ownerName } = snapshot;
   const billed = billedItems(data);
   const sub = subtotal(billed);
@@ -480,7 +524,8 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
 
         <div className="receipt-rule" aria-hidden="true" />
         <dl className="receipt-sums">
-          {sharedTotal(data) !== 0 && (
+          {/* Also when everything here is crossed out: the lines stay, struck through. */}
+          {((data.fees ?? []).length > 0 || hasTip(data)) && (
             <>
               <dt>Zwischensumme</dt>
               <dd>
@@ -489,15 +534,26 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 {equal && <span className="pencil rline-div">/{people}</span>}
               </dd>
               {(data.fees ?? []).map((fee) => (
-                <FeeLine key={fee.id} name={fee.name} amount={fee.amount} currency={data.currency} each={perPerson(fee.amount)} people={people} />
+                <FeeLine
+                  key={fee.id}
+                  name={fee.name}
+                  amount={fee.amount}
+                  currency={data.currency}
+                  each={perPerson(fee.amount)}
+                  people={people}
+                  excluded={fee.excluded}
+                  onToggle={onToggleFee && (() => onToggleFee(fee.id))}
+                />
               ))}
               {hasTip(data) && (
                 <FeeLine
                   name={`Trinkgeld${data.tipAmount ? "" : ` ${data.tipPercent} %`}`}
-                  amount={tipTotal(data)}
+                  amount={tipOnReceipt(data)}
                   currency={data.currency}
-                  each={perPerson(tipTotal(data))}
+                  each={perPerson(tipOnReceipt(data))}
                   people={people}
+                  excluded={data.tipExcluded}
+                  onToggle={onToggleTip}
                 />
               )}
             </>

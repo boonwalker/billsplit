@@ -4,7 +4,7 @@ import SupermarketSheet from "../components/SupermarketSheet";
 import { looksPersonal } from "../lib/personal";
 import TipControl, { tipCents, tipPersons, type TipValue } from "../components/TipControl";
 import { api } from "../lib/api";
-import { feesTotal, newItemId, subtotal, type BillData, type BillFee, type BillItem } from "../lib/bill";
+import { newItemId, subtotal, type BillData, type BillFee, type BillItem } from "../lib/bill";
 import { prepareImage } from "../lib/image";
 import { centsToInput, formatMoney, parseMoney } from "../lib/money";
 import { receiptSum, type ParsedReceipt, type ReceiptItem } from "../lib/receipt";
@@ -33,6 +33,8 @@ interface FeeRow {
   id: string;
   name: string;
   amount: string;
+  /** Kept from the bill: crossed out by the payer. */
+  excluded?: boolean;
 }
 
 interface Draft {
@@ -55,18 +57,21 @@ interface Draft {
   supermarket?: boolean;
   /** Kept from the bill when it is edited: the payer bills some items not or only partly. */
   partial?: boolean;
+  /** Kept from the bill when it is edited: the payer crossed the tip out. */
+  tipExcluded?: boolean;
 }
 
-const newFeeRow = (fee?: { id?: string; name: string; amount: number }): FeeRow => ({
+const newFeeRow = (fee?: { id?: string; name: string; amount: number; excluded?: boolean }): FeeRow => ({
   id: fee?.id ?? newItemId(),
   name: fee?.name ?? "",
   amount: fee ? centsToInput(fee.amount) : "",
+  excluded: fee?.excluded,
 });
 
 function feeRowToFee(row: FeeRow): BillFee | null {
   const amount = parseMoney(row.amount);
   if (!row.name.trim() || amount === null || amount === 0) return null;
-  return { id: row.id, name: row.name.trim(), amount };
+  return { id: row.id, name: row.name.trim(), amount, ...(row.excluded ? { excluded: true } : {}) };
 }
 
 const draftFees = (draft: Draft): BillFee[] => draft.fees.map(feeRowToFee).filter((f): f is BillFee => f !== null);
@@ -102,7 +107,7 @@ function draftFromData(data: BillData): Draft {
     currency: data.currency,
     tip: {
       ...(data.tipAmount
-        ? { mode: "total" as const, percent: "0", total: centsToInput(subtotal(data.items) + feesTotal(data) + data.tipAmount) }
+        ? { mode: "total" as const, percent: "0", total: centsToInput(subtotal(data.items) + (data.fees ?? []).reduce((s, f) => s + f.amount, 0) + data.tipAmount) }
         : { mode: "percent" as const, percent: String(data.tipPercent), total: "" }),
       persons: data.tipSplitCount ? String(data.tipSplitCount) : "",
     },
@@ -110,6 +115,7 @@ function draftFromData(data: BillData): Draft {
     equalSplit: data.equalSplit,
     supermarket: data.supermarket,
     partial: data.partial,
+    tipExcluded: data.tipExcluded,
     rows: data.items.map(newRow),
     fees: (data.fees ?? []).map(newFeeRow),
     delivery: (data.fees ?? []).length > 0,
@@ -145,6 +151,7 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     equalSplit: draft.equalSplit || undefined,
     supermarket: draft.supermarket || undefined,
     partial: draft.partial || undefined,
+    tipExcluded: draft.tipExcluded || undefined,
     fees: draftFees(draft).length ? draftFees(draft) : undefined,
   };
   if (draft.tip.mode === "total") {

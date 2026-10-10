@@ -3444,3 +3444,31 @@ input[aria-invalid="true"] {
   font-size: 1.25rem;
   line-height: 1;
 }
+
+/* Fees and tip below the subtotal: crossed out by the payer like an item line. */
+.fee-strike {
+  display: inline-block;
+  background: linear-gradient(var(--pencil), var(--pencil)) no-repeat 0 58% / 0% 2px;
+  transition:
+    background-size 0.45s ease 0.1s,
+    color 0.3s ease,
+    transform 0.32s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.fee-line.struck .fee-strike {
+  background-size: 100% 2px;
+  color: color-mix(in srgb, var(--ink) 50%, transparent);
+}
+
+.fee-line.strikable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.fee-line.strikable.holding .fee-strike {
+  transform: scale(0.93, 0.84);
+  transition-duration: 0.45s, 0.3s, 0.09s;
+}

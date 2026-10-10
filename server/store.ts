@@ -23,6 +23,7 @@ export const BillDataSchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/),
   tipPercent: z.number().min(0).max(100),
   tipAmount: z.number().int().min(0).max(MAX_CENTS).optional(),
+  tipExcluded: z.boolean().optional(),
   tipSplitCount: z.number().int().min(1).max(100).optional(),
   equalSplit: z.boolean().optional(),
   supermarket: z.boolean().optional(),
@@ -33,6 +34,7 @@ export const BillDataSchema = z.object({
         id: z.string().regex(/^[A-Za-z0-9_-]{1,24}$/),
         name: z.string().trim().min(1).max(80),
         amount: cents(),
+        excluded: z.boolean().optional(),
       }),
     )
     .max(10)

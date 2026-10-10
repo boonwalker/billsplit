@@ -156,6 +156,14 @@ describe("crossed-out lines", () => {
     expect(billTotal(struck)).toBe(1900);
     expect(participantShare({ ...struck, equalSplit: true }, [p("a", {}, true), p("b", {})], "b").total).toBe(950);
   });
+
+  it("leaves crossed-out fees and the tip out of the bill", () => {
+    const withFees: BillData = { ...data, tipPercent: 0, tipAmount: 300, fees: [{ id: "f", name: "Papiertasche", amount: 10 }] };
+    expect(sharedTotal(withFees)).toBe(310);
+    expect(sharedTotal({ ...withFees, fees: [{ id: "f", name: "Papiertasche", amount: 10, excluded: true }] })).toBe(300);
+    expect(sharedTotal({ ...withFees, tipExcluded: true })).toBe(10);
+    expect(billTotal({ ...withFees, tipExcluded: true })).toBe(3300 + 10);
+  });
 });
 
 describe("links", () => {
