@@ -57,6 +57,11 @@ interface Props {
   photoUrl?: string;
 }
 
+/** For the finished bill: lines crossed out completely move to the bottom, the rest keeps the receipt order. */
+export function struckLast(items: BillItem[]): BillItem[] {
+  return [...items.filter((i) => !i.excluded), ...items.filter((i) => i.excluded)];
+}
+
 /** Likely personal items first, otherwise in receipt order. */
 export function orderForMarking(items: BillItem[], isPersonal: (item: BillItem) => boolean): BillItem[] {
   return [...items.filter(isPersonal), ...items.filter((i) => !isPersonal(i))];
@@ -263,7 +268,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
     e.preventDefault();
     // A shopping trip is always split equally: everything not crossed out is shared by x people.
     // Marking lines splits the rest equally unless the payer switched that off above the receipt.
-    if (anyBilled) onDone(billed, step === "some" ? split : true, persons, step === "some", excludedFees);
+    if (anyBilled) onDone(step === "some" ? struckLast(billed) : billed, step === "some" ? split : true, persons, step === "some", excludedFees);
   };
 
   const personsStepper = (
@@ -542,6 +547,10 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
             </button>
             <button type="button" className="btn btn-secondary btn-large" onClick={() => setStep("some")}>
               Manches nicht
+            </button>
+            {/* Straight to the bill without the equal split: everyone ticks what they had. */}
+            <button type="button" className="btn btn-secondary btn-large" onClick={() => onDone(items, false, undefined, false, [])}>
+              Jeder selber abhaken
             </button>
           </>
         ) : (

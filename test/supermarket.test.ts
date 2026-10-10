@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMarks, orderForMarking } from "../src/components/SupermarketSheet";
+import { applyMarks, orderForMarking, struckLast } from "../src/components/SupermarketSheet";
 import { billedItem } from "../src/lib/bill";
 import { looksPersonal } from "../src/lib/personal";
 import { parseReceiptText } from "../src/lib/receipt";
@@ -31,6 +31,11 @@ describe("supermarket receipts", () => {
     // With units crossed out as well, the remaining ones are billed from the divided total.
     const [, nudeln] = applyMarks(items, { nudeln: { divisor: 2, units: 1 } });
     expect(billedItem(nudeln)).toEqual({ id: "nudeln", name: "Spaghetti", qty: 1, total: 65, fullTotal: 258, divisor: 2 });
+  });
+
+  it("moves lines crossed out completely to the bottom of the bill", () => {
+    const billed = applyMarks(items, { milch: { units: 1 }, nudeln: { units: 1 } });
+    expect(struckLast(billed).map((i) => i.id)).toEqual(["nudeln", "dusch", "milch"]);
   });
 
   it("lists items that are probably not shared first", () => {

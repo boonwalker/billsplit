@@ -101,8 +101,9 @@ Position wieder her. Kurzes Antippen hakt (bzw. streicht) wie gewohnt.
 ### Supermarkt-Einkäufe
 
 Die Erkennung merkt anhand des Geschäftsnamens und der Produkte, ob es ein Supermarkt- oder Drogerie-Einkauf ist.
-Dann fragt billsplit vor dem QR-Code, ob etwas nicht oder nur teilweise abgerechnet werden soll: „Alles aufteilen“
-oder „Manches nicht“. Bei „Manches nicht“ füllt der Beleg im Stil der digitalen Rechnung (mit Belegkopf) den
+Dann fragt billsplit vor dem QR-Code, ob etwas nicht oder nur teilweise abgerechnet werden soll: „Alles aufteilen“,
+„Manches nicht“ oder „Jeder selber abhaken“ (führt direkt zur fertigen Rechnung ohne Gleichverteilung).
+Komplett weggestrichene Positionen stehen auf der fertigen Rechnung ganz unten. Bei „Manches nicht“ füllt der Beleg im Stil der digitalen Rechnung (mit Belegkopf) den
 Bildschirm bis zum oberen Rand, ohne App-Kopfzeile; unten bleibt nur eine schmale Leiste mit Personenzahl, Summe, Zurück und „Rechnung
 erstellen“. Eine Zeile mit
 dem Finger **durchstreichen oder antippen** nimmt den Artikel aus der Rechnung, nochmal holt ihn zurück (bei
