@@ -231,3 +231,20 @@ describe("several bills at once", () => {
     expect((await call(OWNER, "POST", "/api/bills/batch", { ids: ["../x"] })).status).toBe(400);
   });
 });
+
+describe("from Safari into the home-screen app", () => {
+  it("merges the Safari identity into the app's with a one-time code", async () => {
+    const SAFARI = "anna-safari-key-0123456789";
+    const APP = "anna-app-key-0123456789";
+    const mine = await call<{ bills: { id: string }[] }>(OWNER, "GET", "/api/my-bills");
+    const billId = mine.json.bills[0].id;
+    await call(SAFARI, "POST", `/api/bills/${billId}/join`, { name: "Anna S." });
+    const link = await call<{ code: string }>(SAFARI, "POST", "/api/device-link", { profile: {} });
+    const merged = await call<{ merged: string[]; bills: { id: string }[]; profile: { name: string } }>(APP, "POST", "/api/merge-device", { code: link.json.code });
+    expect(merged.json.merged).toContain(billId);
+    expect(merged.json.bills.map((b) => b.id)).toContain(billId);
+    expect(merged.json.profile).toEqual({ name: "Anna S." });
+    expect((await call<BillSnapshot>(APP, "GET", `/api/bills/${billId}`)).json.me).not.toBeNull();
+    expect((await call(APP, "POST", "/api/merge-device", { code: link.json.code })).status).toBe(410);
+  });
+});

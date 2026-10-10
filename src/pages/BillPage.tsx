@@ -224,7 +224,7 @@ export default function BillPage({ id }: { id: string }) {
       >
         {DEMO && <DemoBar />}
         {/* iPhone: shared links open in Safari – offer the way into the home-screen app. */}
-        {inBrowser && <OpenInApp url={url} />}
+        {inBrowser && <OpenInApp url={url} carry />}
 
         {snap.isOwner && <QrHero snapshot={snap} url={url} />}
 
@@ -292,7 +292,7 @@ export default function BillPage({ id }: { id: string }) {
         <NamePrompt
           ownerName={snap.ownerName}
           initialName={loadProfile().name.trim()}
-          extra={inBrowser ? <OpenInApp url={url} /> : undefined}
+          extra={inBrowser ? <OpenInApp url={url} carry /> : undefined}
           onSubmit={(name) => {
             saveProfile({ ...loadProfile(), name });
             setAskName(false);

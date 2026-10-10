@@ -108,6 +108,69 @@ export class BillCore {
     return [...this.bills.values()].filter((b) => b.participants[participantId]).map((b) => b.id);
   }
 
+  /** The name a participant used most recently (to take it over on another device). */
+  nameOf(participantId: string): string | null {
+    const bills = [...this.bills.values()].filter((b) => b.participants[participantId]);
+    bills.sort((a, b) => b.participants[participantId].joinedAt.localeCompare(a.participants[participantId].joinedAt));
+    return bills[0]?.participants[participantId].name ?? null;
+  }
+
+  /**
+   * One person, two identities: on the iPhone, Safari and the home-screen app keep separate
+   * keys. Moves everything `fromId` did (joined bills, ticked units, payments, settlement
+   * payments) over to `intoId`. Where both are in the same bill, the units and marks are combined.
+   * Returns the bills that changed.
+   */
+  mergeParticipant(fromId: string, intoId: string): string[] {
+    if (fromId === intoId) return [];
+    const union = (a: ItemClaims = {}, b: ItemClaims = {}) => {
+      const out: ItemClaims = { ...a };
+      for (const [item, slots] of Object.entries(b)) out[item] = [...new Set([...(out[item] ?? []), ...slots])].sort((x, y) => x - y);
+      return out;
+    };
+    const changed: string[] = [];
+    for (const id of this.billsOf(fromId)) {
+      const bill = this.get(id);
+      const from = bill.participants[fromId];
+      const into = bill.participants[intoId];
+      const merged: StoredParticipant = into
+        ? {
+            ...from,
+            ...into,
+            claims: union(into.claims, from.claims),
+            splits: union(into.splits, from.splits),
+            payClickedAt: into.payClickedAt ?? from.payClickedAt,
+            payAmount: into.payAmount ?? from.payAmount,
+            markedPaidAt: into.markedPaidAt ?? from.markedPaidAt,
+            received: Boolean(into.received || from.received) || undefined,
+          }
+        : from;
+      // Keep the join order: the merged person takes the earlier of the two places.
+      const participants: Record<string, StoredParticipant> = {};
+      for (const [pid, p] of Object.entries(bill.participants)) {
+        if (pid === fromId || pid === intoId) {
+          if (!participants[intoId]) participants[intoId] = merged;
+        } else participants[pid] = p;
+      }
+      bill.participants = participants;
+      if (bill.ownerId === fromId) bill.ownerId = intoId;
+      changed.push(id);
+      this.changed(id);
+    }
+    for (const t of this.transfers.values()) {
+      const touches = t.fromId === fromId || t.toId === fromId || t.allocations.some((a) => a.debtorId === fromId || a.creditorId === fromId);
+      if (!touches) continue;
+      if (t.fromId === fromId) t.fromId = intoId;
+      if (t.toId === fromId) t.toId = intoId;
+      for (const a of t.allocations) {
+        if (a.debtorId === fromId) a.debtorId = intoId;
+        if (a.creditorId === fromId) a.creditorId = intoId;
+      }
+      this.transfersChanged(t.id);
+    }
+    return changed;
+  }
+
   /** The bills a participant takes part in, newest first (to rebuild the list on a new device). */
   myBills(participantId: string): MyBill[] {
     return [...this.bills.values()]

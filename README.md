@@ -234,6 +234,12 @@ steht „billsplit auf dem Home-Bildschirm? In der App öffnen“. Das kopiert d
 ein paar Minuten auf dem Server (zur Netzwerkadresse des Handys, nicht zum Link). Nur dann zeigt die App beim Öffnen
 „Aus Safari weitergeleitet – Kopierten Link öffnen“; iOS fragt einmal mit „Einfügen“ nach, dann ist man in der
 Rechnung. Ist iCloud Private Relay aktiv, haben Safari und App verschiedene Adressen und der Hinweis erscheint nicht.
+
+Weil Safari und App getrennte Speicher haben, wären es für billsplit zwei verschiedene Personen: Wer in Safari
+beigetreten ist und abgehakt oder bezahlt hat, fände das in der App nicht wieder. Deshalb nimmt „In der App öffnen“
+die Safari-Identität per Einmal-Code (10 Minuten gültig) im kopierten Link mit. Beim Öffnen in der App übernimmt
+billsplit alles, was in Safari entstanden ist – beigetretene Rechnungen, Häkchen, Zahlungen und Ausgleichszahlungen,
+bei derselben Rechnung zusammengeführt – samt Namen, falls die App noch keinen hat.
 Auf Android landen Links dank `handle_links`/`launch_handler` im Manifest bevorzugt direkt in der installierten App.
 
 ### Geteilte Positionen
@@ -297,7 +303,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
   gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
   abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
-  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code.
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme.
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait
@@ -414,6 +420,7 @@ claude.ai-Artifact gedacht:
 | `GET` | `/api/my-bills` | Rechnungen, an denen das Gerät teilnimmt (für die Übertragung auf ein neues Gerät) |
 | `POST` | `/api/device-link` | Einmal-Code für die Übertragung auf ein neues Gerät (10 Minuten gültig) |
 | `POST` | `/api/device-link/:code` | Code einlösen: Gerätekennung und Profil (nur einmal) |
+| `POST` | `/api/merge-device` | App übernimmt mit einem Einmal-Code aus Safari dessen Teilnahmen |
 | `GET` | `/api/push/key` | Öffentlicher VAPID-Schlüssel für Push-Benachrichtigungen |
 | `POST` | `/api/push/subscribe` / `/api/push/unsubscribe` | Push-Abo des Geräts eintragen / entfernen |
 

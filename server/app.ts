@@ -393,6 +393,19 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       }
     }
 
+    // Safari → home-screen app: the app takes over what the same person did in Safari (see mergeParticipant).
+    if (parts[1] === "merge-device" && parts.length === 2 && method === "POST") {
+      const viewer = requireViewer(req, url);
+      const body = parse(z.object({ code: z.string().regex(/^[A-Za-z0-9_-]{16,64}$/) }), await readJson(req, MAX_JSON_BODY));
+      const link = deviceLinks.claim(body.code);
+      if (!link) throw new HttpError("Die Übernahme aus Safari ist abgelaufen. Öffne den Link in Safari nochmal und tippe „In der App öffnen“.", 410);
+      const from = participantIdFromKey(link.key);
+      // The name may have been entered in Safari only after the code was made.
+      const name = store.nameOf(from);
+      const merged = store.mergeParticipant(from, viewer);
+      return sendJson(res, 200, { merged, bills: store.myBills(viewer), profile: { ...link.profile, ...(name ? { name } : {}) } });
+    }
+
     // Settling up across bills: open shares in the viewer's bills and settlement payments.
     if (parts[1] === "network" && parts.length === 2 && method === "GET") {
       return sendJson(res, 200, { edges: store.network(requireViewer(req, url)) });

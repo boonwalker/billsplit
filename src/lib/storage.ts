@@ -144,6 +144,14 @@ export function rememberBill(entry: RecentBill): void {
   write(RECENT_KEY, [entry, ...others].slice(0, 30));
 }
 
+/** Adds bills that are not in the list yet (newest first among them), keeping the others as they are. */
+export function addRecentBills(bills: RecentBill[]): void {
+  const known = loadRecent();
+  const fresh = bills.filter((b) => !known.some((k) => k.id === b.id));
+  if (!fresh.length) return;
+  write(RECENT_KEY, [...known, ...fresh].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30));
+}
+
 /** Updates a remembered bill in place (keeps its position in the list). */
 export function updateRecent(id: string, patch: Partial<RecentBill>): void {
   write(RECENT_KEY, loadRecent().map((b) => (b.id === id ? { ...b, ...patch } : b)));

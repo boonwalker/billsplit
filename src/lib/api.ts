@@ -36,6 +36,8 @@ export interface Api {
   myBills(key?: string): Promise<MyBill[]>;
   /** A one-time code (valid for a few minutes) that moves this device's key and profile to a new device. */
   createDeviceLink(profile: Profile): Promise<{ code: string; expiresAt: string }>;
+  /** The home-screen app takes over what this person did in Safari (code from Safari's device link). */
+  mergeDevice(code: string): Promise<{ merged: string[]; bills: MyBill[]; profile: Partial<Profile> }>;
   /** Trades such a code for the key and profile. */
   claimDeviceLink(code: string): Promise<{ key: string; profile: Partial<Profile> }>;
   /** Recipient: confirm / reject · payer: cancel a waiting settlement payment. */
@@ -120,6 +122,7 @@ const serverApi: Api = {
     (await request<{ bills: MyBill[] }>("GET", "/api/my-bills", undefined, key ? { headers: { "x-billsplit-key": key } } : undefined)).bills,
   createDeviceLink: (profile) => request("POST", "/api/device-link", { profile }),
   claimDeviceLink: (code) => request("POST", `/api/device-link/${encodeURIComponent(code)}`, {}),
+  mergeDevice: (code) => request("POST", "/api/merge-device", { code }),
   subscribeEvents(onBillChanged) {
     const source = new EventSource(`/api/events?key=${encodeURIComponent(deviceKey())}`);
     source.addEventListener("changed", (e) => {

@@ -149,6 +149,7 @@ export const localApi: Api = {
   // Moving to another device needs the server: in the demo everything stays in this browser.
   createDeviceLink: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
   claimDeviceLink: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
+  mergeDevice: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
   subscribeEvents: (onBillChanged) => localStore().listenAll(onBillChanged),
   subscribe(id, onSnapshot, onLive) {
     const push = () => {

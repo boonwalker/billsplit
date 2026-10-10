@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { billIdFromUrl } from "../lib/bill";
-import { deviceCodeFromUrl } from "../lib/deviceTransfer";
+import { deviceCodeFromUrl, mergeCodeFromUrl, mergeFromSafari } from "../lib/deviceTransfer";
 import { finishHandoff, handoffPending, isStandalone } from "../lib/handoff";
 import { navigate } from "../lib/router";
 
@@ -48,6 +48,9 @@ export default function HandoffPrompt() {
       setError("In der Zwischenablage ist kein billsplit-Link. Tippe in Safari nochmal auf „In der App öffnen“.");
       return;
     }
+    // Whatever was ticked or paid in Safari comes along (best effort: the bill opens anyway).
+    const merge = mergeCodeFromUrl(text);
+    if (merge) await mergeFromSafari(merge).catch(() => {});
     close();
     navigate(`/b/${id}`);
   }
