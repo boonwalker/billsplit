@@ -1117,6 +1117,12 @@ input[aria-invalid="true"] {
   color: var(--paper);
 }
 
+.btn-whatsapp {
+  width: 100%;
+  background: #25d366;
+  color: #08331a;
+}
+
 .qr-hero .row {
   width: 100%;
 }
