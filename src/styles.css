@@ -3419,3 +3419,15 @@ input[aria-invalid="true"] {
   background: var(--claim);
   color: #fff;
 }
+
+/* "Manches nicht": some units of a line crossed out – "3x" in pencil becomes "2x". */
+.rline.partly .rline-qty s {
+  text-decoration-color: var(--pencil);
+  text-decoration-thickness: 2px;
+  color: var(--ink-soft);
+}
+
+.rline-left {
+  font-size: 1.25rem;
+  line-height: 1;
+}

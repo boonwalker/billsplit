@@ -6,14 +6,28 @@ import InkLayer from "./InkLayer";
 import PhotoViewer from "./PhotoViewer";
 import { formatDate, PencilFilter } from "./Receipt";
 
-/** What the payer marked on a line: struck through (by a stroke or a tap) means not billed. */
+/**
+ * What the payer marked on a line: how many of its units are crossed out (by strokes or taps).
+ * A single item is all or nothing; of "3x Joghurt" one or two can go as well.
+ */
 export interface Mark {
-  struck?: boolean;
+  units?: number;
 }
 
-/** The items for the bill: struck lines stay visible but are excluded from billing. */
+const struckUnits = (item: BillItem, mark?: Mark) => Math.min(item.qty, mark?.units ?? 0);
+
+/**
+ * The items for the bill: fully struck lines stay visible but are excluded from billing;
+ * partly struck ones keep the remaining units (the receipt price is shown crossed out).
+ */
 export function applyMarks(items: BillItem[], marks: Record<string, Mark>): BillItem[] {
-  return items.map((item) => (marks[item.id]?.struck ? { ...item, excluded: true } : item));
+  return items.map((item) => {
+    const units = struckUnits(item, marks[item.id]);
+    if (units === 0) return item;
+    if (units >= item.qty) return { ...item, excluded: true };
+    const qty = item.qty - units;
+    return { ...item, qty, total: Math.round((item.total * qty) / item.qty), fullTotal: item.fullTotal ?? item.total };
+  });
 }
 
 interface Props {
@@ -110,15 +124,32 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
     return lines.reduce((best, el) => (distance(el) < distance(best) ? el : best)).dataset.item ?? null;
   }
 
-  /** Crosses lines out, or brings them back when they are crossed out already. */
+  /**
+   * Crosses lines out, or brings them back when they are crossed out already. Of a line with
+   * several units every stroke or tap takes one more; after the last one they all come back.
+   */
   function toggle(hit: BillItem[]) {
     if (!hit.length) return;
     const next = { ...marks };
-    for (const item of hit) next[item.id] = { struck: !marks[item.id]?.struck };
+    for (const item of hit) {
+      const units = struckUnits(item, marks[item.id]);
+      next[item.id] = { units: units >= item.qty ? 0 : units + 1 };
+    }
     setMarks(next);
+    if (hit.length === 1) {
+      const [item] = hit;
+      const units = struckUnits(item, next[item.id]);
+      setNotice(
+        units === 0
+          ? `${item.name} wird wieder abgerechnet.`
+          : units < item.qty
+            ? `${units} von ${item.qty} × ${item.name} ${units === 1 ? "wird" : "werden"} nicht abgerechnet – nochmal tippen streicht eins mehr.`
+            : `${item.name} wird nicht abgerechnet.`,
+      );
+      return;
+    }
     const names = hit.map((i) => i.name).join(", ");
-    const verb = hit.length > 1 ? "werden" : "wird";
-    setNotice(hit.every((i) => next[i.id].struck) ? `${names} ${verb} nicht abgerechnet.` : `${names} ${verb} wieder abgerechnet.`);
+    setNotice(hit.every((i) => struckUnits(i, next[i.id]) > 0) ? `${names} werden nicht abgerechnet.` : `${names} werden wieder abgerechnet.`);
   }
 
   /** A tap crosses the line out (or back in); it is pressed in and pops back up. */
@@ -221,7 +252,9 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                 )}
                 <ul className="receipt-lines" ref={list}>
                   {ordered.map((item, index) => {
-                    const mark = marks[item.id] ?? {};
+                    const units = struckUnits(item, marks[item.id]);
+                    const allStruck = units >= item.qty;
+                    const partly = units > 0 && !allStruck;
                     const heading =
                       personalCount > 0 && personalCount < ordered.length && (index === 0 || index === personalCount) ? (
                         <li className="rline-group" aria-hidden="true">
@@ -233,14 +266,19 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                         {heading}
                         <li
                           data-item={item.id}
-                          className={`rline${mark.struck ? " done" : ""}${pressed?.id === item.id ? " pressed" : ""}`}
+                          className={`rline${allStruck ? " done" : ""}${partly ? " partly" : ""}${pressed?.id === item.id ? " pressed" : ""}`}
                         >
                           {/* Re-keyed on every tap so the press animation starts again. */}
                           <div className="rline-main" key={pressed?.id === item.id ? pressed.n : 0}>
                             <span className="rline-text">
                               <span className="rline-name">
                                 <span className="rline-strike">
-                                  {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
+                                  {item.qty > 1 && (
+                                    <span className="rline-qty">
+                                      {partly ? <s>{item.qty}x</s> : `${item.qty}x`}
+                                      {partly && <span className="pencil rline-left"> {item.qty - units}x</span>}{" "}
+                                    </span>
+                                  )}
                                   {item.name}
                                 </span>
                               </span>
@@ -248,10 +286,11 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                             </span>
                             <span className="rline-dots" aria-hidden="true" />
                             <span className="rline-price">
-                              {formatMoney(item.total, currency)}
+                              {partly && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
+                              {formatMoney(partly ? Math.round((item.total * (item.qty - units)) / item.qty) : item.total, currency)}
                             </span>
                             {/* Every line that is not crossed out is shared by everyone. */}
-                            {split && !mark.struck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
+                            {split && !allStruck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
                           </div>
                         </li>
                       </Fragment>

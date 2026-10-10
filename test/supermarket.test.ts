@@ -11,10 +11,16 @@ const items = [
 
 describe("supermarket receipts", () => {
   it("keeps crossed-out lines on the receipt but out of the bill", () => {
-    const billed = applyMarks(items, { dusch: { struck: true }, milch: { struck: false } });
+    const billed = applyMarks(items, { dusch: { units: 1 }, milch: { units: 0 } });
     expect(billed.filter((i) => !i.excluded).map((i) => i.id)).toEqual(["milch", "nudeln"]);
     expect(billed[2]).toEqual({ ...items[2], excluded: true });
     expect(applyMarks(items, {})).toEqual(items);
+  });
+
+  it("crosses out only some units of a line with several", () => {
+    const [, nudeln] = applyMarks(items, { nudeln: { units: 1 } });
+    expect(nudeln).toEqual({ id: "nudeln", name: "Spaghetti", qty: 1, total: 129, fullTotal: 258 });
+    expect(applyMarks(items, { nudeln: { units: 2 } })[1].excluded).toBe(true);
   });
 
   it("lists items that are probably not shared first", () => {
