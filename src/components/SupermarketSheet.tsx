@@ -60,6 +60,8 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
   const [notice, setNotice] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
+  /** "Manches nicht": split the rest equally (default) or let everyone tick their own lines. */
+  const [split, setSplit] = useState(true);
   /** The line that was just tapped: it is pressed in and pops back up. */
   const [pressed, setPressed] = useState<{ id: string; n: number } | null>(null);
   const ordered = orderForMarking(items, isPersonal);
@@ -145,7 +147,8 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
   const submit = (e: FormEvent) => {
     e.preventDefault();
     // A shopping trip is always split equally: everything not crossed out is shared by x people.
-    if (anyBilled) onDone(billed, true, persons, step === "some");
+    // Marking lines splits the rest equally unless the payer switched that off above the receipt.
+    if (anyBilled) onDone(billed, step === "some" ? split : true, persons, step === "some");
   };
 
   const personsStepper = (
@@ -166,6 +169,19 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
       <form className="scribble" onSubmit={submit}>
         <PencilFilter />
         <div className="scribble-scroll ink-scroll">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={split}
+            className={`equal-toggle scribble-toggle${split ? " on" : ""}`}
+            onClick={() => setSplit((on) => !on)}
+          >
+            <span className="equal-toggle-text">
+              <b>Gleichverteilung</b>
+              <small>{split ? "Alles, was nicht gestrichen ist, wird gleichmäßig geteilt." : "Aus: Jeder hakt auf der Rechnung selbst ab, was er hatte."}</small>
+            </span>
+            <span className="switch" aria-hidden="true" />
+          </button>
           <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
             <div className="receipt-paper">
               <header className="receipt-head">
@@ -235,7 +251,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                               {formatMoney(item.total, currency)}
                             </span>
                             {/* Every line that is not crossed out is shared by everyone. */}
-                            {!mark.struck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
+                            {split && !mark.struck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
                           </div>
                         </li>
                       </Fragment>
@@ -275,6 +291,7 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
           )}
           <div className="scribble-controls">
             {/* "/ 4": what everything not crossed out is divided by – the head count for the equal split. */}
+            {split ? (
             <div className="divide-by" role="group" aria-label="Alles geteilt durch">
               {/* A pencilled "/" – a firm stroke with a fainter second pass. */}
               <svg className="divide-by-sign" viewBox="0 0 40 90" aria-hidden="true">
@@ -297,14 +314,19 @@ export default function SupermarketSheet({ items, currency, onDone, isPersonal =
                 </button>
               </div>
             </div>
+            ) : (
+              <p className="scribble-own">Jeder hakt ab, was er hatte.</p>
+            )}
             <div className="scribble-side">
               <p className="scribble-sum">
                 = {formatMoney(billedSum, currency)}
                 {billedSum !== fullSum && <small>statt {formatMoney(fullSum, currency)}</small>}
               </p>
-              <p className="scribble-each">
-                {persons ? `je ${formatMoney(Math.round(billedSum / persons), currency)} pro Person` : "Personenzahl wählen"}
-              </p>
+              {split && (
+                <p className="scribble-each">
+                  {persons ? `je ${formatMoney(Math.round(billedSum / persons), currency)} pro Person` : "Personenzahl wählen"}
+                </p>
+              )}
             </div>
           </div>
           <div className="scribble-actions">

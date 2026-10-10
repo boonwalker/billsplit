@@ -1839,16 +1839,18 @@ input[aria-invalid="true"] {
   padding: 0;
 }
 
-.scribble .receipt-paper {
-  padding-top: calc(env(safe-area-inset-top) + 8px);
-  border-radius: 0 0 2px 2px;
-  /* Only the bottom edge is torn; the top runs off the screen. */
-  -webkit-mask:
-    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tooth) * 2) var(--tooth) repeat-x,
-    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth) + 1px) no-repeat;
-  mask:
-    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(var(--tooth) * 2) var(--tooth) repeat-x,
-    linear-gradient(#000 0 0) top / 100% calc(100% - var(--tooth) + 1px) no-repeat;
+/* The equal-split switch at the top, then the receipt. */
+.scribble-toggle {
+  margin: calc(env(safe-area-inset-top) + 10px) 4px 10px;
+  width: calc(100% - 8px);
+}
+
+.scribble-own {
+  margin: 0;
+  max-width: 13em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
 }
 
 /* The receipt card as everywhere in the app, only larger lines for fingers. */
