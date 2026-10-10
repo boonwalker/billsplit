@@ -3,7 +3,7 @@ import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/pro
 import path from "node:path";
 import { z } from "zod";
 import type { BillData } from "../src/lib/bill.ts";
-import { BillCore, BillError, type StoredBill } from "../src/lib/billCore.ts";
+import { BillCore, BillError, type StoredBill, type StoredTransfer } from "../src/lib/billCore.ts";
 
 export { BillError as StoreError };
 
@@ -90,10 +90,15 @@ export class BillStore extends BillCore {
   async load(): Promise<void> {
     if (!this.file) return;
     try {
-      const raw = JSON.parse(await readFile(this.file, "utf8")) as StoredBill[];
+      // Older files hold just the list of bills; newer ones the settlement payments as well.
+      const raw = JSON.parse(await readFile(this.file, "utf8")) as StoredBill[] | { bills: StoredBill[]; transfers?: StoredTransfer[] };
+      const { bills, transfers = [] } = Array.isArray(raw) ? { bills: raw } : raw;
       const cutoff = Date.now() - RETENTION_MS;
-      for (const bill of raw) {
+      for (const bill of bills) {
         if (Date.parse(bill.createdAt) > cutoff) this.bills.set(bill.id, bill);
+      }
+      for (const t of transfers) {
+        if (Date.parse(t.createdAt) > cutoff) this.transfers.set(t.id, t);
       }
       await this.removeOrphanImages();
     } catch (error) {
@@ -111,6 +116,10 @@ export class BillStore extends BillCore {
     this.scheduleSave();
   }
 
+  protected override transfersChanged(): void {
+    this.scheduleSave();
+  }
+
   private scheduleSave(): void {
     if (!this.file || this.saveTimer) return;
     this.saveTimer = setTimeout(() => {
@@ -123,7 +132,7 @@ export class BillStore extends BillCore {
     if (!this.file) return;
     await mkdir(path.dirname(this.file), { recursive: true });
     const tmp = `${this.file}.tmp`;
-    await writeFile(tmp, JSON.stringify([...this.bills.values()]));
+    await writeFile(tmp, JSON.stringify({ bills: [...this.bills.values()], transfers: [...this.transfers.values()] }));
     await rename(tmp, this.file);
   }
 

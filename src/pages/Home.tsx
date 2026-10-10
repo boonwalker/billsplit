@@ -46,6 +46,15 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+  // Settlement payments sent to me that wait for my confirmation (shown on the dashboard button).
+  const [toConfirm, setToConfirm] = useState(0);
+  useEffect(() => {
+    if (!loadRecent().length) return;
+    api
+      .transfers()
+      .then((list) => setToConfirm(list.transfers.filter((t) => t.toId === list.me && t.status === "pending").length))
+      .catch(() => {});
+  }, []);
   const profile = loadOwnProfile();
   const ready = Boolean(profile.name.trim() && hasPaymentMethod(profile));
 
@@ -222,6 +231,7 @@ export default function Home() {
                 </g>
               </svg>
               Dashboard · Deine Bilanz
+              {toConfirm > 0 && <span className="badge">{toConfirm === 1 ? "1 Eingang bestätigen" : `${toConfirm} Eingänge bestätigen`}</span>}
             </button>
           </section>
         )}

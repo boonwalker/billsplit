@@ -62,7 +62,10 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
   const { data, participants, me, myPayment, ownerName } = snapshot;
   const share = me ? participantShare(data, participants, me) : { subtotal: 0, shared: 0, total: 0 };
   const alreadyPaid = myPayment?.amount ?? 0;
-  const due = Math.max(0, share.total - alreadyPaid);
+  // Covered by settlement payments (dashboard), confirmed or still waiting for the recipient.
+  const credit = snapshot.myCredit ? snapshot.myCredit.confirmed + snapshot.myCredit.pending : 0;
+  const due = Math.max(0, share.total - alreadyPaid - credit);
+  const coveredByCredit = credit > 0 && due === 0 && !myPayment;
   const action = payAction(data.payment, due, data.currency);
   const nothing = due <= 0;
   /** Bank transfer / Wero: shown in a sheet with copy buttons. */
@@ -124,6 +127,12 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
           <p className="paybar-note paybar-copied">✓ {ownerName || "Der Rechnungssteller"} hat Deinen Anteil als erhalten markiert.</p>
         )}
 
+        {snapshot.myCredit?.notes.map((note) => (
+          <p key={note} className="paybar-note">
+            ✓ {note}
+          </p>
+        ))}
+
         {!snapshot.myReceived && myPayment && (
           <p className="paybar-note">
             ✓ Bezahlung über {formatMoney(myPayment.amount, data.currency)} an {ownerName || "den Rechnungssteller"} gestartet
@@ -131,7 +140,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
           </p>
         )}
 
-        {!snapshot.myReceived && (
+        {!snapshot.myReceived && !coveredByCredit && (
           <>
             {myPayment && nothing && action.kind !== "none" && (
               <a

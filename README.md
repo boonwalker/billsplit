@@ -141,6 +141,28 @@ geändert, wird nichts gebucht und die neue Aufstellung gezeigt. Schuldet die Pe
 trägst Du den Ausgleich ein, sobald das Geld da ist. Im Dashboard zählt ein als bezahlt markierter Anteil bereits als
 beglichen.
 
+### Gesamtausgleich mit möglichst wenigen Zahlungen
+
+Oben im Dashboard (unter dem Ring) steht ein Zahlungsplan: „Alles ausgleichen mit einer Zahlung statt 3“. Er wird aus
+allen offenen Anteilen der Rechnungen berechnet, an denen Du teilnimmst (nur gemeinsame Rechnungen – andere bleiben
+privat):
+
+1. Mit jeder Person werden Schulden in beide Richtungen gegeneinander verrechnet.
+2. Was Du jemandem schuldest, wird entlang dessen eigener offener Schulden weitergereicht: Schuldest Du Andy 5 € und
+   Andy schuldet Katia 5 €, zahlst Du die 5 € direkt an Katia – eine Zahlung begleicht beides. Weitergereicht wird nur,
+   wenn dadurch kein zusätzlicher Empfänger entsteht.
+3. Alles an dieselbe Person wird zu einer Zahlung gebündelt.
+
+Jede geplante Zahlung listet genau, welche Anteile in welchen Rechnungen sie begleicht. Der Server prüft beim
+Eintragen, dass sie für alle Beteiligten aufgeht (niemand gewinnt oder verliert etwas) und nur offene Anteile aus
+Rechnungen des Zahlenden betrifft. Bezahlt wird per PayPal (Betrag vorher in der Zwischenablage), Überweisung oder
+Wero; nach „Gesendet“ wartet die Zahlung auf den Empfänger. Bis dahin gelten die Anteile als bezahlt (niemand zahlt
+doppelt), und alle Beteiligten sehen in ihren Rechnungen einen Hinweis („5,00 € per Ausgleich Niklas → Katia“).
+Der Empfänger bestätigt den Eingang im Dashboard (auf der Startseite steht dann „1 Eingang bestätigen“) – erst dann
+ist alles in allen Rechnungen beglichen; „Nicht erhalten“ gibt die Anteile wieder frei, und solange sie wartet, kann
+der Zahlende die Zahlung zurückziehen. Wer nur mittelbar beteiligt ist (Andy), sieht im Dashboard, was für ihn
+beglichen wurde. Der Empfänger sieht nur Anteile aus Rechnungen, an denen er selbst teilnimmt.
+
 ### Originalbeleg
 
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten

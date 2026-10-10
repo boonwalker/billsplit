@@ -109,6 +109,86 @@ export interface Debtor {
   received: boolean;
   /** The friend marked their share as paid. */
   markedPaidAt?: string;
+  /** Settled by settlement payments (see Transfer): confirmed by their recipient … */
+  credited?: Cents;
+  /** … and still waiting for that confirmation. */
+  creditPending?: Cents;
+  /** What those payments were, e.g. "4,00 € von Niklas an Katia gezahlt". */
+  creditNotes?: string[];
+}
+
+/** What settlement payments (Transfer) covered of a share: confirmed, waiting, and what they were. */
+export interface ShareCredit {
+  confirmed: Cents;
+  pending: Cents;
+  notes: string[];
+}
+
+/**
+ * Open part of a friend's share: the share, less what they settled in the bill (confirmed as
+ * received by the payer: with the amount of their pay click, or all of it without one;
+ * marked as paid by them: with the amount of their pay click), less what settlement payments
+ * covered (confirmed or still waiting). Whatever was added to the share afterwards stays open.
+ */
+export function openShare(
+  share: Cents,
+  state: { received?: boolean; payAmount?: Cents; markedPaidAt?: string },
+  credited: Cents = 0,
+): Cents {
+  const settled = state.received ? (state.payAmount ?? share) : state.markedPaidAt ? (state.payAmount ?? 0) : 0;
+  return Math.max(0, share - settled - credited);
+}
+
+/** One share a settlement payment covers: what `debtorId` owed `creditorId` (the payer) in a bill. */
+export interface TransferAllocation {
+  billId: string;
+  debtorId: string;
+  creditorId: string;
+  amount: Cents;
+}
+
+export type TransferStatus = "pending" | "confirmed" | "rejected" | "cancelled";
+
+/**
+ * A settlement payment: `fromId` sends `amount` to `toId` (outside the app, e.g. via PayPal),
+ * and that settles the listed shares in one or more bills – possibly shares between other
+ * people too (Niklas pays Katia what he owed Andy, which settles Andy's debt with Katia).
+ * For everyone involved the allocations add up to nothing gained or lost. Only the recipient
+ * confirms it; until then it waits (and the shares count as being paid).
+ */
+export interface Transfer {
+  id: string;
+  createdAt: string;
+  currency: string;
+  fromId: string;
+  fromName: string;
+  toId: string;
+  toName: string;
+  amount: Cents;
+  allocations: (TransferAllocation & { billTitle: string; debtorName: string; creditorName: string })[];
+  status: TransferStatus;
+  decidedAt?: string;
+}
+
+/** Settlement payments as seen by one device, with that device's participant id. */
+export interface TransferList {
+  me: string;
+  transfers: Transfer[];
+}
+
+/** An open share between two people in a bill the viewer takes part in (for settling up). */
+export interface NetworkEdge {
+  billId: string;
+  title: string;
+  createdAt: string;
+  currency: string;
+  debtorId: string;
+  debtorName: string;
+  creditorId: string;
+  creditorName: string;
+  amount: Cents;
+  /** How the creditor (payer of that bill) wants to be paid. */
+  payment: PaymentInfo;
 }
 
 export interface BillSnapshot {
@@ -126,6 +206,8 @@ export interface BillSnapshot {
   myPayment?: { at: string; amount: Cents; markedPaidAt?: string };
   /** The payer confirmed this participant's share as received (also when it was offset against another bill). */
   myReceived?: boolean;
+  /** What settlement payments covered of this participant's share. */
+  myCredit?: ShareCredit;
   /** The photo or screenshot the bill was read from is stored and can be viewed. */
   hasReceiptImage?: boolean;
 }

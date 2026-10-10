@@ -3946,3 +3946,123 @@ input[aria-invalid="true"] {
   font-weight: 700;
   color: var(--claim);
 }
+
+/* ───────── settling up with as few payments as possible ───────── */
+.plan-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.plan-card h4,
+.inbox-card h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.plan-card h4 small {
+  margin-left: 6px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.plan-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.plan-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-text small {
+  font-size: 0.78rem;
+}
+
+.plan-amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.plan-pay {
+  min-height: 38px;
+  padding: 6px 14px;
+}
+
+.plan-incoming {
+  margin: 0;
+}
+
+.pay-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pay-buttons-busy {
+  text-align: center;
+}
+
+.transfer-inbox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.inbox-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.inbox-card.incoming {
+  border-color: var(--claim);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mint) 45%, transparent);
+}
+
+.inbox-card.rejected h4 {
+  color: var(--danger);
+}
+
+.inbox-card p {
+  margin: 0;
+}
+
+.inbox-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.inbox-actions .btn {
+  flex: 1;
+}
+
+.debtor-credit {
+  font-size: 0.75rem;
+  color: var(--claim);
+}
+
+.dashboard-btn .badge {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--paypal);
+  color: var(--paypal-ink);
+  font-size: 0.75rem;
+}

@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import SettleSheet from "../components/SettleSheet";
+import { PlanCard, PlanPaySheet, TransferInbox } from "../components/SettlementPanel";
 import { api } from "../lib/api";
 import { computeBalances, type Balances, type PersonBalance } from "../lib/balances";
-import type { BillSnapshot } from "../lib/bill";
+import type { BillSnapshot, NetworkEdge, Transfer } from "../lib/bill";
+import { planSettlement, type PlannedTransfer } from "../lib/simplify";
 import { formatMoney } from "../lib/money";
 import { loadOwnProfile, loadRecent } from "../lib/storage";
 
@@ -180,12 +182,28 @@ export default function Dashboard() {
   const [settle, setSettle] = useState<{ person: PersonBalance; currency: string } | null>(null);
 
   /** Loads all bills on this device again (those that cannot be loaded, e.g. offline, are left out). */
+  /** Open shares in all my bills (for the plan) and the settlement payments that concern me. */
+  const [network, setNetwork] = useState<{ me: string; edges: NetworkEdge[]; transfers: Transfer[] } | null>(null);
+  const loadNetwork = useCallback(async () => {
+    const [edges, list] = await Promise.all([api.network(), api.transfers()]);
+    const next = { me: list.me, edges, transfers: list.transfers };
+    setNetwork(next);
+    return next;
+  }, []);
+
   const load = useCallback(async () => {
-    const snaps = await Promise.all(loadRecent().map((b) => api.getBill(b.id).catch(() => null)));
+    const [snaps] = await Promise.all([
+      Promise.all(loadRecent().map((b) => api.getBill(b.id).catch(() => null))),
+      loadNetwork().catch(() => null),
+    ]);
     const next = computeBalances(snaps.filter((s): s is BillSnapshot => s !== null));
     setBalances(next);
     return next;
-  }, []);
+  }, [loadNetwork]);
+
+  const [paying, setPaying] = useState<{ planned: PlannedTransfer; edges: NetworkEdge[]; me: string } | null>(null);
+  const plans = useMemo(() => (network ? planSettlement(network.me, network.edges) : []), [network]);
+  const myName = loadOwnProfile().name.trim();
 
   useEffect(() => {
     void load();
@@ -195,6 +213,7 @@ export default function Dashboard() {
     <div className="page dashboard">
       <Header back="/" title="Dashboard" />
       <main className="content">
+        {network && <TransferInbox me={network.me} transfers={network.transfers} onDecided={() => void load()} />}
         {balances === null ? (
           <div className="scanning creating" role="status">
             <div className="dots" aria-hidden="true">
@@ -213,6 +232,13 @@ export default function Dashboard() {
               <div className="card">
                 <BalanceRing balances={b} />
               </div>
+              {/* On top of the balance: settle everything with as few payments as possible. */}
+              {network &&
+                plans
+                  .filter((plan) => plan.currency === b.currency)
+                  .map((plan) => (
+                    <PlanCard key={plan.currency} plan={plan} onPay={(planned) => setPaying({ planned, edges: network.edges, me: network.me })} />
+                  ))}
               {b.people.length > 0 && (
                 <>
                   <h3 className="section-title">Mit wem Du wie stehst</h3>
@@ -227,11 +253,25 @@ export default function Dashboard() {
           ))
         )}
       </main>
+      {paying && (
+        <PlanPaySheet
+          planned={paying.planned}
+          me={paying.me}
+          edges={paying.edges}
+          myName={myName}
+          reload={async () => {
+            const fresh = await loadNetwork();
+            void load();
+            return fresh;
+          }}
+          onClose={() => setPaying(null)}
+        />
+      )}
       {settle && (
         <SettleSheet
           person={settle.person}
           currency={settle.currency}
-          myName={loadOwnProfile().name.trim()}
+          myName={myName}
           reload={async () => {
             const fresh = (await load()).find((b) => b.currency === settle.currency)?.people.find((p) => p.id === settle.person.id);
             return fresh && fresh.entries.length > 0 ? fresh : null;

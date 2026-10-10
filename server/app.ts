@@ -207,6 +207,35 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       }
     }
 
+    // Settling up across bills: open shares in the viewer's bills and settlement payments.
+    if (parts[1] === "network" && parts.length === 2 && method === "GET") {
+      return sendJson(res, 200, { edges: store.network(requireViewer(req, url)) });
+    }
+    if (parts[1] === "transfers") {
+      const viewer = requireViewer(req, url);
+      if (parts.length === 2 && method === "GET") return sendJson(res, 200, { me: viewer, transfers: store.listTransfers(viewer) });
+      if (parts.length === 2 && method === "POST") {
+        const id = z.string().min(1).max(32);
+        const cents = z.number().int().min(1).max(1_000_000_000);
+        const body = parse(
+          z.object({
+            toId: id,
+            amount: cents,
+            currency: z.string().min(1).max(8),
+            allocations: z.array(z.object({ billId: z.string().max(40), debtorId: id, creditorId: id, amount: cents })).min(1).max(200),
+          }),
+          await readJson(req, MAX_JSON_BODY),
+        );
+        const transferId = store.createTransfer(viewer, body);
+        return sendJson(res, 201, { id: transferId, me: viewer, transfers: store.listTransfers(viewer) });
+      }
+      const action = parts[3];
+      if (parts.length === 4 && method === "POST" && (action === "confirm" || action === "reject" || action === "cancel")) {
+        store.decideTransfer(viewer, parts[2], action);
+        return sendJson(res, 200, { me: viewer, transfers: store.listTransfers(viewer) });
+      }
+    }
+
     if (parts[1] === "bills" && parts.length === 2 && method === "POST") {
       const viewer = requireViewer(req, url);
       enforce(limits.billsPerClient, clientAddress(req, trustProxy), "Zu viele neue Rechnungen in kurzer Zeit. Versuch es später noch einmal.");

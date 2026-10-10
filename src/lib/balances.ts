@@ -1,4 +1,4 @@
-import { participantShare, type BillSnapshot, type PaymentInfo } from "./bill";
+import { openShare, participantShare, type BillSnapshot, type PaymentInfo } from "./bill";
 import { ownerSummary } from "../components/OwnerPanel";
 import type { Cents } from "./money";
 
@@ -49,16 +49,15 @@ export interface Balances {
  * afterwards stays open.
  */
 function debtorOpen(d: NonNullable<BillSnapshot["debtors"]>[number]): Cents {
-  const settled = d.received ? (d.payAmount ?? d.amount) : d.markedPaidAt ? (d.payAmount ?? 0) : 0;
-  return Math.max(0, d.amount - settled);
+  return openShare(d.amount, d, (d.credited ?? 0) + (d.creditPending ?? 0));
 }
 
 /** My open amount in someone else's bill (0 once the payer confirmed it as received). */
 function myOpen(snap: BillSnapshot): Cents {
   if (!snap.me || snap.myReceived) return 0;
   const share = participantShare(snap.data, snap.participants, snap.me).total;
-  const paid = snap.myPayment?.markedPaidAt ? snap.myPayment.amount : 0;
-  return Math.max(0, share - paid);
+  const credit = snap.myCredit ? snap.myCredit.confirmed + snap.myCredit.pending : 0;
+  return openShare(share, { payAmount: snap.myPayment?.amount, markedPaidAt: snap.myPayment?.markedPaidAt }, credit);
 }
 
 /**

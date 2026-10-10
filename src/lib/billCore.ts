@@ -1,5 +1,6 @@
 import {
   compactClaims,
+  openShare,
   participantShare,
   sanitizeClaims,
   sanitizeSplits,
@@ -8,8 +9,13 @@ import {
   type BillSnapshot,
   type Debtor,
   type ItemClaims,
+  type NetworkEdge,
   type PublicParticipant,
+  type ShareCredit,
+  type Transfer,
+  type TransferAllocation,
 } from "./bill";
+import { formatMoney } from "./money";
 
 /**
  * The rules of a shared bill, independent of where it is stored. Used by the
@@ -49,11 +55,29 @@ export interface StoredBill {
   participants: Record<string, StoredParticipant>;
 }
 
+/** A settlement payment as stored: names and titles are looked up when it is shown. */
+export interface StoredTransfer extends Omit<Transfer, "allocations"> {
+  allocations: TransferAllocation[];
+}
+
+export interface TransferInput {
+  toId: string;
+  amount: number;
+  currency: string;
+  allocations: TransferAllocation[];
+}
+
+const MAX_ALLOCATIONS = 200;
+
 export class BillCore {
   protected bills = new Map<string, StoredBill>();
+  protected transfers = new Map<string, StoredTransfer>();
 
   /** Called after every change; subclasses persist and notify subscribers. */
   protected changed(_billId: string): void {}
+
+  /** Called after a settlement payment was created or decided (in addition to `changed` for its bills). */
+  protected transfersChanged(): void {}
 
   protected get(billId: string): StoredBill {
     const bill = this.bills.get(billId);
@@ -178,6 +202,166 @@ export class BillCore {
     }));
   }
 
+  // ───────────── settlement payments (see Transfer) ─────────────
+
+  /** What settlement payments (waiting or confirmed) covered of a participant's share in a bill. */
+  protected credit(billId: string, participantId: string): ShareCredit {
+    const credit: ShareCredit = { confirmed: 0, pending: 0, notes: [] };
+    for (const t of this.transfers.values()) {
+      if (t.status !== "pending" && t.status !== "confirmed") continue;
+      for (const a of t.allocations) {
+        if (a.billId !== billId || a.debtorId !== participantId) continue;
+        if (t.status === "confirmed") credit.confirmed += a.amount;
+        else credit.pending += a.amount;
+        const money = formatMoney(a.amount, t.currency);
+        credit.notes.push(
+          `${money} per Ausgleich ${t.fromName} → ${t.toName}${t.status === "pending" ? ` (wartet auf Bestätigung von ${t.toName})` : " ✓"}`,
+        );
+      }
+    }
+    return credit;
+  }
+
+  private debtorCredit(billId: string, participantId: string): Pick<Debtor, "credited" | "creditPending" | "creditNotes"> {
+    const c = this.credit(billId, participantId);
+    return c.notes.length ? { credited: c.confirmed, creditPending: c.pending, creditNotes: c.notes } : {};
+  }
+
+  /** Open part of a participant's share (after payments, confirmations and settlement payments). */
+  private openOf(bill: StoredBill, participantId: string): number {
+    const p = bill.participants[participantId];
+    if (!p || participantId === bill.ownerId) return 0;
+    const share = participantShare(bill.data, this.publicParticipants(bill), participantId).total;
+    const c = this.credit(bill.id, participantId);
+    return openShare(share, p, c.confirmed + c.pending);
+  }
+
+  /** Open shares in all bills the viewer takes part in – the basis for settling up with as few payments as possible. */
+  network(viewerId: string): NetworkEdge[] {
+    const edges: NetworkEdge[] = [];
+    for (const id of this.bills.keys()) {
+      const bill = this.get(id);
+      if (!bill.participants[viewerId]) continue;
+      const owner = bill.participants[bill.ownerId];
+      for (const [pid, p] of Object.entries(bill.participants)) {
+        const amount = this.openOf(bill, pid);
+        if (amount <= 0) continue;
+        edges.push({
+          billId: bill.id,
+          title: bill.data.title,
+          createdAt: bill.createdAt,
+          currency: bill.data.currency,
+          debtorId: pid,
+          debtorName: p.name,
+          creditorId: bill.ownerId,
+          creditorName: owner?.name ?? "",
+          amount,
+          payment: bill.data.payment,
+        });
+      }
+    }
+    return edges;
+  }
+
+  /**
+   * Records a settlement payment the viewer made. Every allocation must be an open share in
+   * a bill the viewer takes part in, and together they must leave everyone even: the payer's
+   * settled debts exceed their settled claims by exactly the amount, the recipient's claims
+   * exceed their debts by it, and for everybody else both are equal.
+   */
+  createTransfer(viewerId: string, input: TransferInput): string {
+    const { toId, amount, currency, allocations } = input;
+    if (toId === viewerId) throw new BillError("Du kannst Dir nicht selbst etwas zahlen.", 400);
+    if (!Number.isInteger(amount) || amount <= 0) throw new BillError("Ungültiger Betrag.", 400);
+    if (!allocations.length || allocations.length > MAX_ALLOCATIONS) throw new BillError("Ungültige Verrechnung.", 400);
+
+    const perShare = new Map<string, number>();
+    const balance = new Map<string, number>();
+    const names = new Map<string, string>();
+    for (const a of allocations) {
+      if (!Number.isInteger(a.amount) || a.amount <= 0) throw new BillError("Ungültiger Betrag in der Verrechnung.", 400);
+      const bill = this.get(a.billId);
+      if (!bill.participants[viewerId]) throw new BillError("Verrechnen lässt sich nur mit Rechnungen, an denen Du teilnimmst.", 403);
+      if (bill.data.currency !== currency) throw new BillError("Die Rechnungen haben verschiedene Währungen.", 400);
+      if (a.creditorId !== bill.ownerId || a.debtorId === bill.ownerId || !bill.participants[a.debtorId]) {
+        throw new BillError("Ungültige Verrechnung.", 400);
+      }
+      const key = `${a.billId}:${a.debtorId}`;
+      perShare.set(key, (perShare.get(key) ?? 0) + a.amount);
+      if (perShare.get(key)! > this.openOf(bill, a.debtorId)) {
+        throw new BillError("Ein Betrag hat sich inzwischen geändert. Bitte lade die Übersicht neu.", 409);
+      }
+      balance.set(a.debtorId, (balance.get(a.debtorId) ?? 0) + a.amount);
+      balance.set(a.creditorId, (balance.get(a.creditorId) ?? 0) - a.amount);
+      names.set(a.debtorId, bill.participants[a.debtorId].name);
+      names.set(a.creditorId, bill.participants[a.creditorId].name);
+    }
+    for (const [person, value] of balance) {
+      const expected = person === viewerId ? amount : person === toId ? -amount : 0;
+      if (value !== expected) throw new BillError("Die Verrechnung geht nicht auf.", 400);
+    }
+    if (balance.get(viewerId) !== amount || balance.get(toId) !== -amount) throw new BillError("Die Verrechnung geht nicht auf.", 400);
+
+    const id = globalThis.crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    this.transfers.set(id, {
+      id,
+      createdAt: new Date().toISOString(),
+      currency,
+      fromId: viewerId,
+      fromName: names.get(viewerId) ?? "",
+      toId,
+      toName: names.get(toId) ?? "",
+      amount,
+      allocations: allocations.map(({ billId, debtorId, creditorId, amount }) => ({ billId, debtorId, creditorId, amount })),
+      status: "pending",
+    });
+    this.transfersTouched(id);
+    return id;
+  }
+
+  /** The recipient confirms or rejects a settlement payment; the payer can take it back while it waits. */
+  decideTransfer(viewerId: string, transferId: string, action: "confirm" | "reject" | "cancel"): void {
+    const t = this.transfers.get(transferId);
+    if (!t) throw new BillError("Diese Ausgleichszahlung gibt es nicht (mehr).", 404);
+    if (t.status !== "pending") throw new BillError("Diese Ausgleichszahlung ist schon abgeschlossen.", 409);
+    if (action === "cancel" ? viewerId !== t.fromId : viewerId !== t.toId) {
+      throw new BillError(action === "cancel" ? "Nur wer gezahlt hat, kann das zurückziehen." : "Nur der Empfänger kann das bestätigen.", 403);
+    }
+    t.status = action === "confirm" ? "confirmed" : action === "reject" ? "rejected" : "cancelled";
+    t.decidedAt = new Date().toISOString();
+    this.transfersTouched(transferId);
+  }
+
+  /**
+   * Settlement payments the viewer made, received or is part of (their share was settled),
+   * newest first – with only the shares from bills the viewer takes part in: the recipient
+   * learns nothing about bills between others.
+   */
+  listTransfers(viewerId: string): Transfer[] {
+    const name = (billId: string, pid: string) => this.bills.get(billId)?.participants[pid]?.name ?? "";
+    return [...this.transfers.values()]
+      .filter((t) => t.fromId === viewerId || t.toId === viewerId || t.allocations.some((a) => a.debtorId === viewerId || a.creditorId === viewerId))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 100)
+      .map((t) => ({
+        ...t,
+        allocations: t.allocations
+          .filter((a) => this.bills.get(a.billId)?.participants[viewerId])
+          .map((a) => ({
+          ...a,
+          billTitle: this.bills.get(a.billId)?.data.title ?? "Rechnung",
+          debtorName: name(a.billId, a.debtorId),
+          creditorName: name(a.billId, a.creditorId),
+          })),
+      }));
+  }
+
+  private transfersTouched(transferId: string): void {
+    const t = this.transfers.get(transferId);
+    for (const billId of new Set(t?.allocations.map((a) => a.billId))) if (this.bills.has(billId)) this.changed(billId);
+    this.transfersChanged();
+  }
+
   /** The bill as seen by one device. Payment details of friends are only visible to the payer. */
   snapshot(billId: string, viewerId: string | null): BillSnapshot {
     const bill = this.get(billId);
@@ -200,6 +384,8 @@ export class BillCore {
         snap.myPayment = { at: p.payClickedAt, amount: p.payAmount, markedPaidAt: p.markedPaidAt };
       }
       if (p.received) snap.myReceived = true;
+      const credit = this.credit(billId, me);
+      if (credit.notes.length) snap.myCredit = credit;
     }
     if (isOwner) {
       snap.debtors = Object.entries(bill.participants)
@@ -214,6 +400,7 @@ export class BillCore {
             payAmount: p.payAmount,
             received: Boolean(p.received),
             markedPaidAt: p.markedPaidAt,
+            ...this.debtorCredit(billId, id),
           }),
         );
     }

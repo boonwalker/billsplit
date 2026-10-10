@@ -99,7 +99,11 @@ export function ownerSummary(snapshot: BillSnapshot) {
   const total = billTotal(snapshot.data);
   const own = snapshot.me ? participantShare(snapshot.data, snapshot.participants, snapshot.me).total : 0;
   const debtors = snapshot.debtors ?? [];
-  const received = debtors.filter((d) => d.received).reduce((s, d) => s + (d.payAmount ?? d.amount), 0);
+  // Confirmed as received, plus what confirmed settlement payments covered (never more than the share).
+  const received = debtors.reduce(
+    (s, d) => s + Math.min(d.amount, (d.received ? (d.payAmount ?? d.amount) : 0) + (d.credited ?? 0)),
+    0,
+  );
   return { total, own, received, missing: Math.max(0, total - own - received), unassigned: unassignedAmount(snapshot.data, snapshot.participants) };
 }
 
@@ -134,6 +138,10 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
                   <span className="debtor-status">
                     {d.received
                       ? "Zahlungseingang bestätigt"
+                      : d.amount > 0 && (d.credited ?? 0) >= d.amount
+                        ? "per Ausgleich beglichen"
+                        : d.amount > 0 && (d.credited ?? 0) + (d.creditPending ?? 0) >= d.amount
+                          ? "Ausgleich gesendet – bestätige ihn im Dashboard"
                       : d.markedPaidAt
                         ? `hat um ${time(d.markedPaidAt)} als bezahlt markiert`
                         : d.payClickedAt
@@ -143,6 +151,12 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
                           : "ist beigetreten · wählt noch aus …"}
                     {changed && <> · Auswahl jetzt {formatMoney(d.amount, currency)}</>}
                   </span>
+                  {/* Settled (partly) by settlement payments from the dashboard. */}
+                  {d.creditNotes?.map((note) => (
+                    <span key={note} className="debtor-credit">
+                      {note}
+                    </span>
+                  ))}
                 </span>
                 {d.payAmount !== undefined && <span className="debtor-amount">{formatMoney(d.payAmount, currency)}</span>}
                 {d.payClickedAt && (

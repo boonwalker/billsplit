@@ -1,5 +1,5 @@
 import { ApiError } from "./apiError";
-import type { BillData, BillSnapshot, ItemClaims } from "./bill";
+import type { BillData, BillSnapshot, ItemClaims, NetworkEdge, TransferAllocation, TransferList } from "./bill";
 import { checkForUpdate } from "./updates";
 import { DEMO } from "./demo";
 import { localApi } from "./localApi";
@@ -21,6 +21,14 @@ export interface Api {
   setReceived(id: string, participantId: string, received: boolean): Promise<BillSnapshot>;
   /** A friend marks their own share as paid. */
   markPaid(id: string, paid: boolean): Promise<BillSnapshot>;
+  /** Open shares in all bills this device takes part in (for settling up). */
+  network(): Promise<NetworkEdge[]>;
+  /** Settlement payments this device made, received or is part of. */
+  transfers(): Promise<TransferList>;
+  /** Records a settlement payment this device made; it waits for the recipient's confirmation. */
+  createTransfer(input: { toId: string; amount: number; currency: string; allocations: TransferAllocation[] }): Promise<TransferList>;
+  /** Recipient: confirm / reject · payer: cancel a waiting settlement payment. */
+  decideTransfer(id: string, action: "confirm" | "reject" | "cancel"): Promise<TransferList>;
   /** Live updates of one bill; returns an unsubscribe function. */
   subscribe(id: string, onSnapshot: (s: BillSnapshot) => void, onLive: (live: boolean) => void): () => void;
 }
@@ -86,6 +94,10 @@ const serverApi: Api = {
   pay: (id) => request("POST", `${bill(id)}/pay`, {}, { keepalive: true }),
   setReceived: (id, participantId, received) => request("POST", `${bill(id)}/received`, { participantId, received }),
   markPaid: (id, paid) => request("POST", `${bill(id)}/paid`, { paid }),
+  network: async () => (await request<{ edges: NetworkEdge[] }>("GET", "/api/network")).edges,
+  transfers: () => request("GET", "/api/transfers"),
+  createTransfer: (input) => request("POST", "/api/transfers", input),
+  decideTransfer: (id, action) => request("POST", `/api/transfers/${encodeURIComponent(id)}/${action}`, {}),
   subscribe(id, onSnapshot, onLive) {
     // EventSource cannot send headers, so the device key goes into the query.
     const source = new EventSource(`${bill(id)}/events?key=${encodeURIComponent(deviceKey())}`);

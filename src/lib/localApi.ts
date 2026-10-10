@@ -1,11 +1,12 @@
 import type { Api } from "./api";
 import { ApiError } from "./apiError";
 import type { BillSnapshot } from "./bill";
-import { BillCore, BillError, type StoredBill } from "./billCore";
+import { BillCore, BillError, type StoredBill, type StoredTransfer } from "./billCore";
 import { PERSONA_EVENT } from "./demo";
 import { deviceKey } from "./storage";
 
 const BILLS_KEY = "billsplit.demo.bills";
+const TRANSFERS_KEY = "billsplit.demo.transfers";
 
 /** Bills kept in this browser (demo build). Tabs of the same browser stay in sync. */
 class LocalStore extends BillCore {
@@ -15,7 +16,7 @@ class LocalStore extends BillCore {
     super();
     this.reload();
     window.addEventListener("storage", (e) => {
-      if (e.key !== BILLS_KEY) return;
+      if (e.key !== BILLS_KEY && e.key !== TRANSFERS_KEY) return;
       this.reload();
       this.notifyAll();
     });
@@ -27,6 +28,8 @@ class LocalStore extends BillCore {
     try {
       const raw = JSON.parse(localStorage.getItem(BILLS_KEY) ?? "[]") as StoredBill[];
       this.bills = new Map(raw.map((b) => [b.id, b]));
+      const transfers = JSON.parse(localStorage.getItem(TRANSFERS_KEY) ?? "[]") as StoredTransfer[];
+      this.transfers = new Map(transfers.map((t) => [t.id, t]));
     } catch {
       // storage unavailable – keep what is in memory
     }
@@ -39,6 +42,14 @@ class LocalStore extends BillCore {
       // ignore – the demo keeps working in memory
     }
     for (const fn of this.listeners.get(billId) ?? []) fn();
+  }
+
+  protected override transfersChanged(): void {
+    try {
+      localStorage.setItem(TRANSFERS_KEY, JSON.stringify([...this.transfers.values()]));
+    } catch {
+      // ignore – see above
+    }
   }
 
   private notifyAll(): void {
@@ -116,6 +127,10 @@ export const localApi: Api = {
   pay: (id) => call(() => ({ amount: localStore().recordPayClick(id, me()) })),
   setReceived: (id, participantId, received) => call(() => (localStore().setReceived(id, me(), participantId, received), view(id))),
   markPaid: (id, paid) => call(() => (localStore().setMarkedPaid(id, me(), paid), view(id))),
+  network: () => call(() => localStore().network(me())),
+  transfers: () => call(() => ({ me: me(), transfers: localStore().listTransfers(me()) })),
+  createTransfer: (input) => call(() => (localStore().createTransfer(me(), input), { me: me(), transfers: localStore().listTransfers(me()) })),
+  decideTransfer: (id, action) => call(() => (localStore().decideTransfer(me(), id, action), { me: me(), transfers: localStore().listTransfers(me()) })),
   subscribe(id, onSnapshot, onLive) {
     const push = () => {
       if (localStore().has(id)) onSnapshot(view(id));
