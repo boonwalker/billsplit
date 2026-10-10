@@ -24,20 +24,21 @@ const owner = (debtors: { name: string; amount: number; item: string; received?:
   ownerName: "Niklas",
   participants: [
     { id: "me", name: "Niklas", isOwner: true, claims: { a: [0] } },
-    ...debtors.map((d, i) => ({ id: `d${i}`, name: d.name, isOwner: false, claims: { [d.item]: [0] } })),
+    ...debtors.map((d) => ({ id: `d-${d.name.toLowerCase()}`, name: d.name, isOwner: false, claims: { [d.item]: [0] } })),
   ],
   me: "me",
   isOwner: true,
-  debtors: debtors.map((d, i) => ({ id: `d${i}`, name: d.name, joinedAt: "", amount: d.amount, received: Boolean(d.received) })),
+  debtors: debtors.map((d) => ({ id: `d-${d.name.toLowerCase()}`, name: d.name, joinedAt: "", amount: d.amount, received: Boolean(d.received) })),
 });
 
-const guest = (ownerName: string, markedPaid = false): BillSnapshot => ({
+/** In someone else's bill; their participant id is the one they have in every bill. */
+const guest = (ownerName: string, markedPaid = false, ownerId = `d-${ownerName.trim().toLowerCase()}`): BillSnapshot => ({
   id: "g",
   createdAt: "",
   data: data(),
   ownerName,
   participants: [
-    { id: "o", name: ownerName, isOwner: true, claims: {} },
+    { id: ownerId, name: ownerName, isOwner: true, claims: {} },
     { id: "me", name: "Niklas", isOwner: false, claims: { b: [0] } },
   ],
   me: "me",
@@ -46,7 +47,7 @@ const guest = (ownerName: string, markedPaid = false): BillSnapshot => ({
 });
 
 describe("balances over all bills", () => {
-  it("adds up what is lent and owed, per person by name", () => {
+  it("adds up what is lent and owed, per person (by participant id, not by name)", () => {
     // Owner paid 24 €, has the pizza himself; Anna owes the pasta, Ben already paid the wine.
     const [eur] = computeBalances([
       owner([
@@ -74,7 +75,7 @@ describe("balances over all bills", () => {
     const [eur] = computeBalances([owner([{ name: "Anna", amount: 800, item: "b" }]), { ...guest("Anna"), id: "g2" }]);
     const anna = eur.people[0];
     expect(anna.entries.map((e) => [e.billId, e.direction, e.amount, e.debtorId])).toEqual([
-      ["o", "lent", 800, "d0"],
+      ["o", "lent", 800, "d-anna"],
       ["g2", "owed", 800, undefined],
     ]);
     expect(netOf(anna)).toBe(0);
@@ -91,5 +92,13 @@ describe("balances over all bills", () => {
     const marked = owner([{ name: "Anna", amount: 800, item: "b" }]);
     marked.debtors![0] = { ...marked.debtors![0], payAmount: 800, markedPaidAt: "x" };
     expect(computeBalances([marked])[0].people[0].lent).toBe(0);
+  });
+
+  it("keeps two people with the same name apart", () => {
+    const [eur] = computeBalances([guest("Anna", false, "anna-1"), { ...guest("Anna", false, "anna-2"), id: "g2" }]);
+    expect(eur.people.map((p) => [p.id, p.owed])).toEqual([
+      ["anna-1", 800],
+      ["anna-2", 800],
+    ]);
   });
 });

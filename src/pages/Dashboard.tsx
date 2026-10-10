@@ -218,7 +218,7 @@ export default function Dashboard() {
                   <h3 className="section-title">Mit wem Du wie stehst</h3>
                   <ul className="person-rings">
                     {b.people.map((p) => (
-                      <PersonRing key={p.name} person={p} currency={b.currency} onOpen={() => setSettle({ person: p, currency: b.currency })} />
+                      <PersonRing key={p.id} person={p} currency={b.currency} onOpen={() => setSettle({ person: p, currency: b.currency })} />
                     ))}
                   </ul>
                 </>
@@ -233,8 +233,7 @@ export default function Dashboard() {
           currency={settle.currency}
           myName={loadOwnProfile().name.trim()}
           reload={async () => {
-            const key = settle.person.name.toLocaleLowerCase("de-DE");
-            const fresh = (await load()).find((b) => b.currency === settle.currency)?.people.find((p) => p.name.toLocaleLowerCase("de-DE") === key);
+            const fresh = (await load()).find((b) => b.currency === settle.currency)?.people.find((p) => p.id === settle.person.id);
             return fresh && fresh.entries.length > 0 ? fresh : null;
           }}
           onClose={(changed) => {

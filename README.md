@@ -127,7 +127,7 @@ auf dem Gerät. Ein Ringdiagramm zeigt, wie viel Du insgesamt leihst (grün: was
 schulden, bis Du es als erhalten markierst) und wie viel Du schuldest (orange: Dein Anteil an Rechnungen anderer, bis Du
 ihn als bezahlt markierst); in der Mitte steht die Bilanz, ein Tipp auf einen Ring-Teil oder die Legende zeigt dessen
 Betrag und Anteil. Darunter stehen die Einzelbilanzen mit jeder Person als kleine Ringe in
-Kacheln (über alle Rechnungen nach Namen zusammengefasst; grün, was sie Dir schuldet, orange, was Du ihr schuldest). Grün und Orange sind für Hell- und Dunkelmodus auf Farbenblindheit geprüft; bei mehreren Währungen
+Kacheln (über alle Rechnungen zusammengefasst – zugeordnet über die Gerätekennung der Person, nicht über den Namen, sodass zwei Annas nie verrechnet werden; grün, was die Person Dir schuldet, orange, was Du ihr schuldest). Grün und Orange sind für Hell- und Dunkelmodus auf Farbenblindheit geprüft; bei mehreren Währungen
 gibt es je Währung eine eigene Übersicht.
 
 **Ausgleichen mit einer Person:** Ein Tipp auf die Kachel einer Person mit offenen Beträgen zeigt alle offenen

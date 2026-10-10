@@ -16,6 +16,8 @@ export interface BalanceEntry {
 
 /** What is open with one person across all bills, in one currency. */
 export interface PersonBalance {
+  /** Their participant id: the same in every bill they joined from the same device. */
+  id: string;
   name: string;
   /** They still owe me (from bills I paid). */
   lent: Cents;
@@ -61,26 +63,26 @@ function myOpen(snap: BillSnapshot): Cents {
 
 /**
  * Sums up the open amounts of all bills on this device, per currency, and keeps every amount
- * with its bill, so that settling with a person can be booked bill by bill. People are matched
- * by name across bills.
+ * with its bill, so that settling with a person can be booked bill by bill.
  */
 export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
-  const byCurrency = new Map<string, Balances & { byName: Map<string, PersonBalance & { paymentAt?: string }> }>();
+  const byCurrency = new Map<string, Balances & { byId: Map<string, PersonBalance & { paymentAt?: string }> }>();
   const sheet = (currency: string) => {
     let b = byCurrency.get(currency);
     if (!b) {
-      b = { currency, lent: 0, owed: 0, unassigned: 0, people: [], byName: new Map() };
+      b = { currency, lent: 0, owed: 0, unassigned: 0, people: [], byId: new Map() };
       byCurrency.set(currency, b);
     }
     return b;
   };
-  const person = (b: ReturnType<typeof sheet>, rawName: string) => {
+  // People are matched by their participant id (derived from their device), never by name:
+  // two friends called Anna stay apart, so a settlement is never booked with the wrong one.
+  const person = (b: ReturnType<typeof sheet>, id: string, rawName: string) => {
     const name = rawName.trim() || "Unbekannt";
-    const key = name.toLocaleLowerCase("de-DE");
-    let p = b.byName.get(key);
+    let p = b.byId.get(id);
     if (!p) {
-      p = { name, lent: 0, owed: 0, bills: 0, entries: [] };
-      b.byName.set(key, p);
+      p = { id, name, lent: 0, owed: 0, bills: 0, entries: [] };
+      b.byId.set(id, p);
     }
     return p;
   };
@@ -91,7 +93,7 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
     if (snap.isOwner) {
       const { missing, unassigned } = ownerSummary(snap);
       for (const d of snap.debtors ?? []) {
-        const p = person(b, d.name);
+        const p = person(b, d.id, d.name);
         p.bills++;
         const open = debtorOpen(d);
         if (open === 0) continue;
@@ -103,7 +105,8 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
       b.lent += rest;
       b.unassigned += rest;
     } else if (snap.me) {
-      const p = person(b, snap.ownerName);
+      const payer = snap.participants.find((x) => x.isOwner);
+      const p = person(b, payer?.id ?? `owner:${snap.id}`, snap.ownerName);
       p.bills++;
       const open = myOpen(snap);
       if (open === 0) continue;
@@ -118,10 +121,10 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
   }
 
   return [...byCurrency.values()]
-    .map(({ byName, ...b }) => ({
+    .map(({ byId, ...b }) => ({
       ...b,
       // Biggest open amounts first (either way), settled people last.
-      people: [...byName.values()]
+      people: [...byId.values()]
         .map(({ paymentAt: _, ...p }) => ({ ...p, entries: p.entries.sort((x, y) => y.createdAt.localeCompare(x.createdAt)) }))
         .sort((x, y) => Math.abs(y.lent - y.owed) - Math.abs(x.lent - x.owed) || x.name.localeCompare(y.name, "de")),
     }))
