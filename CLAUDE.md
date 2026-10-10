@@ -31,9 +31,11 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 110 Tests, alle grün).
-2. Bei UI-/Ablaufänderungen: `npm run build` und passende Klick-Tests aus `e2e/` laufen lassen, Screenshots ansehen
-   (siehe `e2e/README.md`).
+1. `npm run typecheck` und `npm test` (aktuell 117 Tests, alle grün).
+2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
+   `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
+   aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
+   Klick-Test in `e2e/specs`. Die CI (`.github/workflows/ci.yml`) prüft dasselbe bei jedem Push.
 3. README anpassen, wenn sich Verhalten ändert (Abschnitte sind nach Funktionen gegliedert).
 4. Commit und Push auf `main`.
 5. **Demo-Artifact aktualisieren:** `npm run build:demo`, dann das Artifact
@@ -145,10 +147,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 
 Aus der Verbesserungsanalyse vom 10.10.2026, empfohlene Reihenfolge:
 
-1. **CI:** GitHub Action mit `typecheck` + `test` bei jedem Push; Railway erst nach grüner CI deployen lassen.
-   Die wichtigsten Klick-Tests aus `e2e/` zu einem festen Test-Satz (z. B. `@playwright/test`) ausbauen.
-2. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen.
-3. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
+1. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen.
+2. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
    dem Auftraggeber klären, ob die Regel für „Dir“ auch für Du/Dein gelten soll.
 
 Erledigt am 10.10.2026: einheitlicher Ausgleich über bestätigte Zahlungen, Gerät übertragen/Wiederherstellungs-Code,

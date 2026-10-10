@@ -282,6 +282,7 @@ npm install
 cp .env.example .env      # optional: ANTHROPIC_API_KEY für die KI-Belegerkennung
 npm run dev               # Vite (http://localhost:5173) + API-Server (Port 8787)
 npm test                  # Unit- und API-Tests
+npm run test:e2e          # Klick-Tests (Playwright/Chromium), vorher `npm run build`
 npm run build && npm start  # Produktion: ein Node-Prozess liefert App + API aus
 ```
 
@@ -289,6 +290,17 @@ Ohne `ANTHROPIC_API_KEY` läuft die Belegerkennung komplett im Browser (Tesserac
 liegen nach `npm run dev`/`npm run build` unter `public/ocr` und werden selbst ausgeliefert.
 
 Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder `localhost`).
+
+### Tests und CI
+
+- `npm test`: Unit- und API-Tests (vitest, `test/`).
+- `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
+  gebauten Server mit leerem Datenordner: Rechnung beitreten, abhaken, per PayPal zahlen, „erhalten“; Mehrfach-
+  Positionen; Gesamtausgleich mit Bestätigung; Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code.
+  Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
+- **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
+  Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait
+  for CI“ einschalten.
 
 ### Live stellen (Railway)
 

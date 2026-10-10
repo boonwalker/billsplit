@@ -1,5 +1,8 @@
 # Klick-Tests (Playwright, Chromium)
 
+**Fester Test-Satz:** `e2e/specs/*.e2e.ts`, ausgeführt mit `npm run test:e2e` (nach `npm run build`) und in der CI.
+Die Skripte unten sind zusätzliche Prüfwerkzeuge.
+
 Hier liegen die Skripte, mit denen während der Entwicklung jede Änderung in einem echten Browser (iPhone-große
 Ansicht, 390 × 844, deutsch) durchgeklickt wurde. Sie geben Beobachtungen auf der Konsole aus und legen Screenshots
 ab – sie sind **Werkzeuge zum Nachprüfen**, noch kein automatischer Test-Satz mit Soll/Ist-Vergleich (das steht im
