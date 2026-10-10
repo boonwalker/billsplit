@@ -25,6 +25,14 @@ describe("supermarket receipts", () => {
     expect(applyMarks(items, { nudeln: { units: 2 } })[1].excluded).toBe(true);
   });
 
+  it("bills only a part of a line after a long press", () => {
+    const [milch] = applyMarks(items, { milch: { divisor: 2 } });
+    expect(milch).toEqual({ ...items[0], fullTotal: 119, divisor: 2, total: 60 });
+    // With units crossed out as well, the remaining ones are billed from the divided total.
+    const [, nudeln] = applyMarks(items, { nudeln: { divisor: 2, units: 1 } });
+    expect(billedItem(nudeln)).toEqual({ id: "nudeln", name: "Spaghetti", qty: 1, total: 65, fullTotal: 258, divisor: 2 });
+  });
+
   it("lists items that are probably not shared first", () => {
     expect(orderForMarking(items, (i) => looksPersonal(i.name)).map((i) => i.id)).toEqual(["milch", "dusch", "nudeln"]);
     for (const name of ["Balea Duschgel", "Zewa Küchenrolle", "Jodsalz", "Gewürzmischung", "Vollmilch 3,5%"]) expect(looksPersonal(name)).toBe(true);

@@ -1,7 +1,10 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { billedItems, type BillFee, type BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
+import { vibrate } from "../lib/haptics";
 import { formatMoney } from "../lib/money";
+import { Handwritten } from "./ClaimDemo";
+import DivisorSheet from "./DivisorSheet";
 import InkLayer from "./InkLayer";
 import PhotoViewer from "./PhotoViewer";
 import { FeeLine, formatDate, PencilFilter } from "./Receipt";
@@ -12,6 +15,8 @@ import { FeeLine, formatDate, PencilFilter } from "./Receipt";
  */
 export interface Mark {
   units?: number;
+  /** Long press: only 1/divisor of the line goes into the split (the payer takes the rest). */
+  divisor?: number;
 }
 
 const struckUnits = (item: BillItem, mark?: Mark) => Math.min(item.qty, mark?.units ?? 0);
@@ -21,7 +26,10 @@ const struckUnits = (item: BillItem, mark?: Mark) => Math.min(item.qty, mark?.un
  * of partly struck ones only the remaining units are billed (the receipt keeps all of them).
  */
 export function applyMarks(items: BillItem[], marks: Record<string, Mark>): BillItem[] {
-  return items.map((item) => {
+  return items.map((original) => {
+    const divisor = marks[original.id]?.divisor ?? 1;
+    const item =
+      divisor > 1 ? { ...original, fullTotal: original.total, divisor, total: Math.round(original.total / divisor) } : original;
     const units = struckUnits(item, marks[item.id]);
     if (units === 0) return item;
     if (units >= item.qty) return { ...item, excluded: true };
@@ -59,8 +67,17 @@ interface DemoSpots {
   strikeY: number;
   /** Lines the tap demo alternates between: where the finger taps, then the line gets crossed out. */
   taps: { x: number; y: number }[];
+  /** The line the long press is shown on: where the finger rests, and the line's bottom for the bubble. */
+  hold: { id: string; x: number; y: number; bottom: number };
   width: number;
 }
+
+/** When the long-press demo runs: after the first round of strike and taps, before two more. */
+const HOLD_DEMO_AT = 9200;
+const HOLD_PRESS_MS = 1100;
+const HOLD_SHOWN_MS = 4000;
+/** One round of the strike and tap demos (the CSS animations run once per round). */
+const DEMO_ROUND_MS = 9200;
 
 /**
  * Asked after a supermarket receipt was recognised: is anything not (or only partly)
@@ -77,11 +94,16 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
   const [showPhoto, setShowPhoto] = useState(false);
   /** "Manches nicht": split the rest equally (default) or let everyone tick their own lines. */
   const [split, setSplit] = useState(true);
+  /** The line whose settings are open after a long press. */
+  const [divisorFor, setDivisorFor] = useState<string | null>(null);
   /** The line that was just tapped: it is pressed in and pops back up. */
   const [pressed, setPressed] = useState<{ id: string; n: number } | null>(null);
   const ordered = orderForMarking(items, isPersonal);
   const personalCount = ordered.filter(isPersonal).length;
   const [demo, setDemo] = useState<DemoSpots | null>(null);
+  /** 0, 2, 3: strike and tap demos · 1: the long press · 4: done. */
+  const [demoRound, setDemoRound] = useState(0);
+  const [holdStage, setHoldStage] = useState<"press" | "after" | null>(null);
   const list = useRef<HTMLUListElement>(null);
 
   // The notice floats over the receipt for a moment, then gets out of the way.
@@ -121,8 +143,40 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
       const name = line.querySelector<HTMLElement>(".rline-strike");
       return { x: line.offsetLeft + (name?.offsetLeft ?? 0) + Math.min((name?.offsetWidth ?? 80) / 2, 70), y: centre(line) };
     });
-    setDemo({ strikeY: centre(lines[0]), taps, width: wrap.offsetWidth });
+    // The long press on a line of its own where possible (the fourth one, else the last).
+    const holdLine = all.length > 3 ? all[3] : all[all.length - 1];
+    const holdName = holdLine.querySelector<HTMLElement>(".rline-strike");
+    const hold = {
+      id: holdLine.dataset.item ?? "",
+      x: holdLine.offsetLeft + (holdName?.offsetLeft ?? 0) + Math.min((holdName?.offsetWidth ?? 80) / 2, 70),
+      y: centre(holdLine),
+      bottom: holdLine.offsetTop + holdLine.offsetHeight,
+    };
+    setDemo({ strikeY: centre(lines[0]), taps, hold, width: wrap.offsetWidth });
   }, [step, items]);
+
+  // The demos in order: strike and taps, the long press once, then strike and taps twice more.
+  const demoReady = step === "some" && demo !== null && !touched;
+  useEffect(() => {
+    if (!demoReady) return;
+    const at = (ms: number, run: () => void) => window.setTimeout(run, ms);
+    const end = HOLD_DEMO_AT + HOLD_PRESS_MS + HOLD_SHOWN_MS;
+    const timers = [
+      at(HOLD_DEMO_AT, () => {
+        setDemoRound(1);
+        setHoldStage("press");
+      }),
+      at(HOLD_DEMO_AT + HOLD_PRESS_MS, () => setHoldStage("after")),
+      at(end, () => {
+        setHoldStage(null);
+        setDemoRound(2);
+      }),
+      at(end + DEMO_ROUND_MS, () => setDemoRound(3)),
+      at(end + 2 * DEMO_ROUND_MS, () => setDemoRound(4)),
+    ];
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [demoReady]);
+  const holdDemo = demoReady && holdStage ? holdStage : null;
 
   /** The line under a vertical position (the nearest one when written between lines). */
   function lineAt(y: number): string | null {
@@ -163,13 +217,32 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
     setNotice(hit.every((i) => struckUnits(i, next[i.id]) > 0) ? `${names} werden nicht abgerechnet.` : `${names} werden wieder abgerechnet.`);
   }
 
-  /** A tap crosses the line out (or back in); it is pressed in and pops back up. */
-  function tap(point: InkPoint) {
+  /** The line under a touch point. */
+  function itemAt(point: InkPoint): BillItem | undefined {
     const line = [...(list.current?.querySelectorAll<HTMLElement>("li[data-item]") ?? [])].find((el) => {
       const r = el.getBoundingClientRect();
       return point.y >= r.top - 6 && point.y <= r.bottom + 6;
     });
-    const item = line && items.find((i) => i.id === line.dataset.item);
+    return line ? items.find((i) => i.id === line.dataset.item) : undefined;
+  }
+
+  /** Long press: open the settings of the line – bill only a part of it. */
+  function hold(point: InkPoint) {
+    const item = itemAt(point);
+    if (!item) return;
+    vibrate([12]);
+    setPressed((p) => ({ id: item.id, n: (p?.n ?? 0) + 1 }));
+    setDivisorFor(item.id);
+  }
+
+  function setDivisor(item: BillItem, divisor: number) {
+    setMarks((m) => ({ ...m, [item.id]: { ...m[item.id], divisor: divisor > 1 ? divisor : undefined } }));
+    setNotice(divisor > 1 ? `${item.name}: nur 1/${divisor} wird aufgeteilt, den Rest trägst Du.` : `${item.name} wird wieder ganz aufgeteilt.`);
+  }
+
+  /** A tap crosses the line out (or back in); it is pressed in and pops back up. */
+  function tap(point: InkPoint) {
+    const item = itemAt(point);
     if (!item) return;
     setPressed((p) => ({ id: item.id, n: (p?.n ?? 0) + 1 }));
     toggle([item]);
@@ -240,9 +313,9 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                 <span>{currency}</span>
               </div>
               <div className="receipt-lines-wrap">
-                <InkLayer onInk={readInk} onTap={tap} onStart={() => setTouched(true)} />
-                {demo && !touched && (
-                  <svg className="ink-demo" width={demo.width} height="100%" aria-hidden="true">
+                <InkLayer onInk={readInk} onTap={tap} onLongPress={hold} onStart={() => setTouched(true)} />
+                {demo && !touched && demoRound !== 1 && demoRound < 4 && (
+                  <svg key={demoRound} className="ink-demo" width={demo.width} height="100%" aria-hidden="true">
                     <path
                       className="ink-demo-strike"
                       pathLength={1}
@@ -261,11 +334,34 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                     ))}
                   </svg>
                 )}
+                {/* Long press: the finger rests on a line, "/2" appears – only half of it is split. */}
+                {demo && holdDemo === "press" && (
+                  <svg className="hold-demo" style={{ left: demo.hold.x - 26, top: demo.hold.y - 26 }} width="52" height="52" aria-hidden="true">
+                    <circle className="hold-demo-dot" cx="26" cy="26" r="15" />
+                    <circle className="hold-demo-ring" cx="26" cy="26" r="22" pathLength={1} />
+                  </svg>
+                )}
+                {demo && holdDemo === "after" && (
+                  <div
+                    className="claim-demo-bubble hold-demo-bubble"
+                    style={{
+                      left: Math.max(4, demo.hold.x - 22),
+                      top: demo.hold.bottom + 14,
+                      maxWidth: `calc(100% - ${Math.max(4, demo.hold.x - 22) + 26}px)`,
+                    }}
+                  >
+                    <Handwritten text="Gedrückt halten = nur einen Teil aufteilen" />
+                  </div>
+                )}
                 <ul className="receipt-lines" ref={list}>
                   {ordered.map((item, index) => {
                     const units = struckUnits(item, marks[item.id]);
                     const allStruck = units >= item.qty;
                     const partly = units > 0 && !allStruck;
+                    // The demo shows "/2" on its line for a moment without marking it.
+                    const divisor = marks[item.id]?.divisor ?? (holdDemo === "after" && demo?.hold.id === item.id ? 2 : 1);
+                    const base = divisor > 1 ? Math.round(item.total / divisor) : item.total;
+                    const price = partly ? Math.round((base * (item.qty - units)) / item.qty) : base;
                     const heading =
                       personalCount > 0 && personalCount < ordered.length && (index === 0 || index === personalCount) ? (
                         <li className="rline-group" aria-hidden="true">
@@ -277,7 +373,9 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                         {heading}
                         <li
                           data-item={item.id}
-                          className={`rline${allStruck ? " done" : ""}${partly ? " partly" : ""}${pressed?.id === item.id ? " pressed" : ""}`}
+                          className={`rline${allStruck ? " done" : ""}${partly ? " partly" : ""}${divisor > 1 ? " repriced" : ""}${
+                            pressed?.id === item.id ? " pressed" : ""
+                          }${holdDemo === "press" && demo?.hold.id === item.id ? " demo-holding" : ""}`}
                         >
                           {/* Re-keyed on every tap so the press animation starts again. */}
                           <div className="rline-main" key={pressed?.id === item.id ? pressed.n : 0}>
@@ -292,13 +390,14 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                                   )}
                                   {item.name}
                                 </span>
+                                {divisor > 1 && <span className="pencil rline-divisor">/{divisor}</span>}
                               </span>
                               {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
                             </span>
                             <span className="rline-dots" aria-hidden="true" />
                             <span className="rline-price">
-                              {partly && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
-                              {formatMoney(partly ? Math.round((item.total * (item.qty - units)) / item.qty) : item.total, currency)}
+                              {(partly || divisor > 1) && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
+                              {formatMoney(price, currency)}
                             </span>
                             {/* Every line that is not crossed out is shared by everyone. */}
                             {split && !allStruck && <span className="pencil rline-div">/{persons ?? "x"}</span>}
@@ -347,6 +446,20 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
             </div>
           </article>
         </div>
+        {divisorFor &&
+          (() => {
+            const item = items.find((i) => i.id === divisorFor);
+            return (
+              item && (
+                <DivisorSheet
+                  item={{ ...item, divisor: marks[item.id]?.divisor }}
+                  currency={currency}
+                  onApply={(d) => setDivisor(item, d)}
+                  onClose={() => setDivisorFor(null)}
+                />
+              )
+            );
+          })()}
         {showPhoto && photoUrl && <PhotoViewer src={photoUrl} alt="Originalbeleg" onClose={() => setShowPhoto(false)} />}
 
         <footer className="scribble-foot">

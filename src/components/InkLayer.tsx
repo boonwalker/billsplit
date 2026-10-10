@@ -8,10 +8,15 @@ interface Props {
   onStart?: () => void;
   /** A tap (touch without drawing) at this viewport position, e.g. on a price or a drawing. */
   onTap?: (point: InkPoint) => void;
+  /** The finger rested on one spot for a moment (long press). */
+  onLongPress?: (point: InkPoint) => void;
 }
 
 /** Movement up to which a touch counts as a tap, not as a stroke. */
 const TAP_SLOP = 8;
+
+/** How long the finger has to rest for a long press. */
+const LONG_PRESS_MS = 480;
 
 /** Pause after the last stroke before it is read. */
 const IDLE_MS = 800;
@@ -19,13 +24,21 @@ const IDLE_MS = 800;
 const FADE_MS = 900;
 
 /** A transparent sheet over the receipt lines to write on with a finger, drawn like pencil. */
-export default function InkLayer({ onInk, onStart, onTap }: Props) {
+export default function InkLayer({ onInk, onStart, onTap, onLongPress }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const strokes = useRef<Stroke[]>([]);
   const drawing = useRef(false);
   const timer = useRef<number | null>(null);
   const fading = useRef<{ strokes: Stroke[]; start: number }[]>([]);
   const frame = useRef<number | null>(null);
+  const holdTimer = useRef<number | null>(null);
+  /** The current touch turned into a long press: it is neither a stroke nor a tap. */
+  const held = useRef(false);
+
+  function stopHold() {
+    if (holdTimer.current) window.clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  }
 
   // Match the canvas to its size on screen (sharp lines on retina displays).
   useEffect(() => {
@@ -43,6 +56,7 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
       observer.disconnect();
       if (timer.current) window.clearTimeout(timer.current);
       if (frame.current) cancelAnimationFrame(frame.current);
+      stopHold();
     };
   }, []);
 
@@ -93,18 +107,40 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
     e.currentTarget.setPointerCapture(e.pointerId);
     if (timer.current) window.clearTimeout(timer.current);
     drawing.current = true;
+    held.current = false;
     onStart?.();
-    strokes.current.push([{ x: e.clientX, y: e.clientY }]);
+    const start = { x: e.clientX, y: e.clientY };
+    strokes.current.push([start]);
     redraw();
+    if (onLongPress) {
+      stopHold();
+      holdTimer.current = window.setTimeout(() => {
+        holdTimer.current = null;
+        if (!drawing.current) return;
+        held.current = true;
+        drawing.current = false;
+        strokes.current.pop();
+        redraw();
+        onLongPress(start);
+      }, LONG_PRESS_MS);
+    }
   }
 
   function move(e: ReactPointerEvent<HTMLCanvasElement>) {
     if (!drawing.current) return;
-    strokes.current[strokes.current.length - 1].push({ x: e.clientX, y: e.clientY });
+    const stroke = strokes.current[strokes.current.length - 1];
+    stroke.push({ x: e.clientX, y: e.clientY });
+    // Moving the finger makes it a stroke, not a long press.
+    if (Math.hypot(e.clientX - stroke[0].x, e.clientY - stroke[0].y) > TAP_SLOP) stopHold();
     redraw();
   }
 
   function up() {
+    stopHold();
+    if (held.current) {
+      held.current = false;
+      return;
+    }
     if (!drawing.current) return;
     drawing.current = false;
     const stroke = strokes.current[strokes.current.length - 1];
@@ -130,6 +166,7 @@ export default function InkLayer({ onInk, onStart, onTap }: Props) {
    * allows vertical panning): it was not a stroke, so drop it.
    */
   function cancel() {
+    stopHold();
     if (!drawing.current) return;
     drawing.current = false;
     strokes.current.pop();

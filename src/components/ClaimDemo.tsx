@@ -123,7 +123,7 @@ export function useClaimDemo(billId: string, enabled: boolean, list: RefObject<H
 }
 
 /** The caption appears letter by letter, as if written with a pencil right now. */
-function Handwritten({ text }: { text: string }) {
+export function Handwritten({ text }: { text: string }) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     setShown(0);
