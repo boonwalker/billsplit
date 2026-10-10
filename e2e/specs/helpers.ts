@@ -72,3 +72,15 @@ export async function followPaypal(page: Page, name: RegExp): Promise<string> {
   await popup.close();
   return href;
 }
+
+/** The app goes to the background (e.g. to PayPal) and comes back. */
+export async function leaveAndReturn(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const set = (state: string) => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => state });
+      document.dispatchEvent(new Event("visibilitychange"));
+    };
+    set("hidden");
+    set("visible");
+  });
+}

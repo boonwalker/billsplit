@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useOneLine } from "../lib/useOneLine";
 import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
 import { centsToInput, formatMoney } from "../lib/money";
@@ -49,9 +49,31 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
   const reference = `billsplit · ${data.title}${myName ? ` · ${myName}` : ""}`.slice(0, 140);
   const otherLabel = others.map((m) => (m === "bank" ? "Überweisung" : "Wero")).join(" oder ");
 
+  /**
+   * Back from PayPal (or the banking app): ask right away whether the money went out, instead
+   * of relying on the friend to find "Als bezahlt markieren" – which is easily forgotten.
+   */
+  const away = useRef<"no" | "leaving" | "away">("no");
+  const [askPaid, setAskPaid] = useState(false);
+  const leaving = () => (away.current = "leaving");
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        if (away.current === "leaving") away.current = "away";
+      } else if (away.current === "away") {
+        away.current = "no";
+        setAskPaid(true);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+  const asking = askPaid && Boolean(myPayment) && !myPayment?.markedPaidAt && nothing && !snapshot.myReceived;
+
   /** Opens the transfer details (and notes the pay click, as the PayPal button does). */
   function openSheet(method: OtherMethod, record = true) {
     if (record && !nothing) onPay();
+    leaving();
     setSheet(method);
   }
 
@@ -69,6 +91,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
 
   async function payByEmail(email: string) {
     onPay();
+    leaving();
     try {
       await navigator.clipboard.writeText(email);
       setCopied(true);
@@ -114,7 +137,30 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
           </p>
         )}
 
-        {!snapshot.myReceived && !coveredByCredit && (
+        {asking && myPayment && (
+          <div className="paybar-ask" role="alertdialog" aria-label="Hast Du bezahlt?">
+            <p>
+              Hast Du {formatMoney(myPayment.amount, data.currency)} an {ownerName || "den Rechnungssteller"} gesendet?
+            </p>
+            <div className="paybar-ask-actions">
+              <button
+                type="button"
+                className="btn btn-mark"
+                onClick={() => {
+                  onMarkPaid(true);
+                  setAskPaid(false);
+                }}
+              >
+                ✓ Ja, gesendet
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setAskPaid(false)}>
+                Noch nicht
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!snapshot.myReceived && !coveredByCredit && !asking && (
           <>
             {myPayment && nothing && action.kind !== "none" && (
               <a
@@ -122,7 +168,10 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                 href={action.url}
                 target="_blank"
                 rel="noreferrer"
-                onClick={() => action.kind === "paypalMe" && copyText(centsToInput(myPayment.amount))}
+                onClick={() => {
+                  if (action.kind === "paypalMe") copyText(centsToInput(myPayment.amount));
+                  leaving();
+                }}
               >
                 PayPal erneut öffnen
               </a>
@@ -174,7 +223,16 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                     `Trag in PayPal ${formatMoney(due, data.currency)} ein.`
                   )}
                 </p>
-                <a className="btn btn-paypal btn-large" href={action.url} target="_blank" rel="noreferrer" onClick={onPay}>
+                <a
+                  className="btn btn-paypal btn-large"
+                  href={action.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => {
+                    onPay();
+                    leaving();
+                  }}
+                >
                   Mit PayPal bezahlen · {formatMoney(due, data.currency)}
                 </a>
               </>
@@ -235,7 +293,14 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
             currency={data.currency}
             ownerName={ownerName}
             reference={reference}
-            onClose={() => setSheet(null)}
+            onClose={() => {
+              setSheet(null);
+              // Copied the details and paid in the banking app meanwhile? Ask once the sheet is closed.
+              if (away.current !== "no") {
+                away.current = "no";
+                setAskPaid(true);
+              }
+            }}
           />
         )}
       </div>

@@ -31,6 +31,8 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
    bei allen.
 3. Unten steht der eigene Anteil. „Anteil begleichen“ öffnet die PayPal-App bzw. -Website mit Empfänger und
    Betrag. Nach dem Login muss man nur noch bestätigen.
+   Kommt man danach in die App zurück, fragt sie gleich „Hast Du 11,80 € an Niklas gesendet?“ – ein Tipp auf
+   „✓ Ja, gesendet“ markiert den Anteil als bezahlt (auch nach Überweisung oder Wero).
 
 Freunde sehen die Schuldnerliste des Rechnungsstellers nicht. Wer was abgehakt hat, sehen sie dagegen schon.
 

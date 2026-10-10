@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createBill, followPaypal, key, phone } from "./helpers";
+import { createBill, followPaypal, key, leaveAndReturn, phone } from "./helpers";
 
 test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungssteller hakt „erhalten“ an", async ({ browser }) => {
   const niklas = { key: key("niklas"), name: "Niklas", paypal: "nik" };
@@ -28,7 +28,11 @@ test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungsste
   await expect(anna.locator(".paybar-copied")).toContainText("9,50 € in die Zwischenablage kopiert");
   expect(await anna.evaluate(() => navigator.clipboard.readText())).toBe("9,50");
   expect(await followPaypal(anna, /Mit PayPal bezahlen · 9,50/)).toBe("https://www.paypal.com/paypalme/nik/9.50EUR");
-  await anna.getByRole("button", { name: "Als bezahlt markieren" }).click();
+  // Back from PayPal, the app asks right away whether the money went out.
+  await leaveAndReturn(anna);
+  const ask = anna.locator(".paybar-ask");
+  await expect(ask).toContainText("Hast Du 9,50 € an Niklas gesendet?");
+  await ask.getByRole("button", { name: "✓ Ja, gesendet" }).click();
   await expect(anna.getByRole("button", { name: "✓ Als bezahlt markiert" })).toBeVisible();
 
   // The payer checks PayPal and ticks "erhalten"; Anna sees it.

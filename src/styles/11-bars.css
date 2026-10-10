@@ -157,3 +157,35 @@
   font-weight: 700;
   opacity: 1;
 }
+
+/* Back from PayPal: "Hast Du … gesendet?" right in the bar. */
+.paybar-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--mint) 22%, transparent);
+  animation: paybar-ask-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.paybar-ask p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.paybar-ask-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.paybar-ask-actions .btn {
+  flex: 1;
+}
+
+@keyframes paybar-ask-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
