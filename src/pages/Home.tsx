@@ -7,7 +7,7 @@ import { ApiError } from "../lib/apiError";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
-import { clearDraft, forgetBill, loadOwnProfile, loadRecent, updateRecent, type RecentBill } from "../lib/storage";
+import { clearDraft, forgetBill, hasPaymentMethod, loadOwnProfile, loadRecent, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
@@ -47,7 +47,7 @@ export default function Home() {
     };
   }, []);
   const profile = loadOwnProfile();
-  const ready = Boolean(profile.name.trim() && (profile.paypalMe.trim() || profile.paypalEmail.trim()));
+  const ready = Boolean(profile.name.trim() && hasPaymentMethod(profile));
 
   function onPhoto(file: File | undefined) {
     if (!file) return;
@@ -111,7 +111,7 @@ export default function Home() {
               </span>
               <span className="action-text">
                 <b>Rechnung fotografieren</b>
-                <small>Einmalig: Name &amp; PayPal hinterlegen</small>
+                <small>Einmalig: Name &amp; Zahlungsweg hinterlegen</small>
               </span>
             </button>
           )}

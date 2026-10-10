@@ -31,7 +31,7 @@ beforeAll(async () => {
       limits: {
         receiptPerClient: new RateLimiter(10, hour),
         receiptTotal: new RateLimiter(100, hour),
-        billsPerClient: new RateLimiter(8, hour),
+        billsPerClient: new RateLimiter(10, hour),
       },
     }),
   );
@@ -140,6 +140,17 @@ describe("bills API", () => {
     expect(res.json.data.fees).toEqual([{ id: "f1", name: "Liefergebühr", amount: 299 }]);
   });
 
+  it("accepts bank transfer and Wero details, but no broken IBAN", async () => {
+    const ok = await call<BillSnapshot>(OWNER, "POST", "/api/bills", {
+      data: { ...data, payment: { iban: "DE89370400440532013000", holder: "Niklas Bocket", wero: "+49 170 1234567" } },
+      name: "Niklas",
+    });
+    expect(ok.status).toBe(201);
+    expect(ok.json.data.payment.iban).toBe("DE89370400440532013000");
+    const bad = await call(OWNER, "POST", "/api/bills", { data: { ...data, payment: { iban: "kein-iban" } }, name: "Niklas" });
+    expect(bad.status).toBe(400);
+  });
+
   it("accepts a fixed tip", async () => {
     const res = await call<BillSnapshot>(OWNER, "POST", "/api/bills", { data: { ...data, tipAmount: 300 }, name: "Niklas" });
     expect(res.status).toBe(201);
@@ -176,10 +187,10 @@ describe("bills API", () => {
   });
 
   it("limits how many bills one client creates", async () => {
-    // The limit in this setup is 8 bills per hour and client.
+    // The limit in this setup is 10 bills per hour and client.
     const statuses: number[] = [];
     let retryAfter = 0;
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 11; i++) {
       const res = await fetch(`${base}/api/bills`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-billsplit-key": OWNER },
@@ -189,7 +200,7 @@ describe("bills API", () => {
       if (res.status === 429) retryAfter = Number(res.headers.get("retry-after"));
     }
     expect(statuses.at(-1)).toBe(429);
-    expect(statuses.filter((st) => st === 201).length).toBeLessThanOrEqual(8);
+    expect(statuses.filter((st) => st === 201).length).toBeLessThanOrEqual(10);
     expect(retryAfter).toBeGreaterThan(0);
   });
 });

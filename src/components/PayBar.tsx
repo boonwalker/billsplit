@@ -3,7 +3,8 @@ import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
 import { centsToInput, formatMoney } from "../lib/money";
 import { copyText } from "../lib/clipboard";
 import { clickPress, clickRelease } from "../lib/haptics";
-import { payAction } from "../lib/payment";
+import { otherMethods, payAction, type OtherMethod } from "../lib/payment";
+import TransferSheet from "./TransferSheet";
 
 interface Props {
   snapshot: BillSnapshot;
@@ -24,6 +25,18 @@ export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
   const due = Math.max(0, share.total - alreadyPaid);
   const action = payAction(data.payment, due, data.currency);
   const nothing = due <= 0;
+  /** Bank transfer / Wero: shown in a sheet with copy buttons. */
+  const others = otherMethods(data.payment);
+  const [sheet, setSheet] = useState<OtherMethod | null>(null);
+  const myName = participants.find((p) => p.id === me)?.name ?? "";
+  const reference = `billsplit · ${data.title}${myName ? ` · ${myName}` : ""}`.slice(0, 140);
+  const otherLabel = others.map((m) => (m === "bank" ? "Überweisung" : "Wero")).join(" oder ");
+
+  /** Opens the transfer details (and notes the pay click, as the PayPal button does). */
+  function openSheet(method: OtherMethod, record = true) {
+    if (record && !nothing) onPay();
+    setSheet(method);
+  }
 
   /**
    * PayPal often drops the amount from the PayPal.Me link (it opens with only the
@@ -83,6 +96,11 @@ export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
           >
             PayPal erneut öffnen
           </a>
+        )}
+        {myPayment && nothing && action.kind === "none" && others.length > 0 && (
+          <button type="button" className="btn btn-done btn-large" onClick={() => openSheet(others[0], false)}>
+            Zahlungsdaten erneut anzeigen
+          </button>
         )}
         {myPayment && nothing && (
           <button
@@ -145,7 +163,42 @@ export default function PayBar({ snapshot, onPay, onMarkPaid }: Props) {
           </>
         )}
 
-        {action.kind === "none" && <p className="paybar-note">{ownerName || "Der Rechnungssteller"} hat keine PayPal-Daten hinterlegt.</p>}
+        {/* Without PayPal the main button opens the bank / Wero details. */}
+        {action.kind === "none" && others.length > 0 && !(myPayment && nothing) && (
+          <button
+            type="button"
+            className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
+            disabled={nothing}
+            onPointerDown={nothing ? undefined : clickPress}
+            onClick={() => {
+              openSheet(others[0]);
+              clickRelease();
+            }}
+          >
+            {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
+          </button>
+        )}
+        {/* With PayPal as the main way, bank transfer and Wero are offered below it. */}
+        {action.kind !== "none" && others.length > 0 && !nothing && (
+          <button type="button" className="link paybar-other" onClick={() => openSheet(others[0])}>
+            Lieber per {otherLabel}
+          </button>
+        )}
+        {action.kind === "none" && others.length === 0 && (
+          <p className="paybar-note">{ownerName || "Der Rechnungssteller"} hat keine Zahlungsdaten hinterlegt.</p>
+        )}
+        {sheet && (
+          <TransferSheet
+            payment={data.payment}
+            methods={others}
+            initial={sheet}
+            amount={nothing ? (myPayment?.amount ?? share.total) : due}
+            currency={data.currency}
+            ownerName={ownerName}
+            reference={reference}
+            onClose={() => setSheet(null)}
+          />
+        )}
       </div>
     </div>
   );

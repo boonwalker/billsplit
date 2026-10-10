@@ -54,6 +54,12 @@ export const BillDataSchema = z.object({
   payment: z.object({
     paypalMe: z.string().max(40).optional(),
     paypalEmail: z.string().max(120).optional(),
+    iban: z
+      .string()
+      .regex(/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/)
+      .optional(),
+    holder: z.string().trim().max(70).optional(),
+    wero: z.string().trim().max(120).optional(),
   }),
 });
 

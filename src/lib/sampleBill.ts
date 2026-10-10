@@ -1,6 +1,7 @@
 import { newItemId, type BillData } from "./bill";
 import { personaDeviceKey } from "./demo";
 import { localStore, newBillId } from "./localApi";
+import { paymentFromProfile } from "./payment";
 import { loadOwnProfile, rememberBill } from "./storage";
 
 /**
@@ -16,7 +17,7 @@ export function createSampleBill(): string {
     date: new Date().toISOString().slice(0, 10),
     currency: "EUR",
     tipPercent: 10,
-    payment: { paypalMe: profile.paypalMe || undefined, paypalEmail: profile.paypalEmail || undefined },
+    payment: paymentFromProfile(profile),
     items: [
       { id: ids.pizza, name: "Pizza Margherita", qty: 1, total: 950 },
       { id: ids.bier, name: "Bier 0,5l", qty: 3, total: 1350 },

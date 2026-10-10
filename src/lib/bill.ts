@@ -30,6 +30,11 @@ export interface PaymentInfo {
   paypalMe?: string;
   /** PayPal e-mail address, shown as fallback for a manual transfer. */
   paypalEmail?: string;
+  /** Bank transfer (any bank, e.g. Trade Republic): IBAN without spaces and the account holder. */
+  iban?: string;
+  holder?: string;
+  /** Wero: the mobile number or e-mail address the payer's Wero is registered with. */
+  wero?: string;
 }
 
 /** The bill itself as recognized from the receipt and reviewed by the payer. */

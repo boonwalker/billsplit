@@ -55,6 +55,11 @@ export interface Profile {
   name: string;
   paypalMe: string;
   paypalEmail: string;
+  /** Bank transfer: IBAN and account holder (defaults to the profile name). */
+  iban?: string;
+  holder?: string;
+  /** Wero: mobile number or e-mail address. */
+  wero?: string;
 }
 
 const PROFILE_KEY = "billsplit.profile";
@@ -81,10 +86,15 @@ export function saveProfile(p: Profile): boolean {
   return write(PROFILE_KEY, p);
 }
 
+/** Whether the profile has at least one way to get paid (PayPal, bank transfer or Wero). */
+export function hasPaymentMethod(p: Profile): boolean {
+  return Boolean(p.paypalMe.trim() || p.paypalEmail.trim() || p.iban?.trim() || p.wero?.trim());
+}
+
 /** Creating a bill needs a name and a way to get paid. */
 export function profileReady(): boolean {
   const p = loadProfile();
-  return Boolean(p.name.trim() && (p.paypalMe.trim() || p.paypalEmail.trim()));
+  return Boolean(p.name.trim() && hasPaymentMethod(p));
 }
 
 let memoryKey: string | null = null;

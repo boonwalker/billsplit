@@ -49,6 +49,15 @@ der Betrag nur noch eingefügt werden. Zwei Tipps, weil iOS das Kopieren verwirf
 > „Geld senden“ und kopiert die Adresse. Den Betrag muss der Freund dann selbst eintragen. Deshalb fragt das Profil
 > beides ab.
 
+### Überweisung und Wero
+
+Neben PayPal kann der Bezahler im Profil eine **IBAN** (jede Bank, auch Trade Republic, N26 oder Revolut; die
+Prüfziffer wird kontrolliert) und eine **Wero**-Handynummer bzw. -E-Mail hinterlegen. Banking-Apps lassen sich nicht
+mit vorausgefüllter Überweisung öffnen, deshalb zeigt billsplit Empfänger, IBAN, Betrag und Verwendungszweck
+(„billsplit · Titel · Name“) bzw. die Wero-Nummer mit je einem Kopier-Knopf. Hat der Bezahler PayPal hinterlegt,
+bleibt „Anteil begleichen“ der PayPal-Weg und darunter steht „Lieber per Überweisung oder Wero“; ohne PayPal öffnet
+„Anteil begleichen“ direkt die Überweisungsdaten. Danach geht es wie gewohnt mit „Als bezahlt markieren“ weiter.
+
 ### Trinkgeld
 
 Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen. Sonst fragt billsplit vor dem Erstellen des

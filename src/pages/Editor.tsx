@@ -11,6 +11,7 @@ import { receiptSum, type ParsedReceipt, type ReceiptItem } from "../lib/receipt
 import { recognizeReceipt } from "../lib/recognize";
 import { navigate } from "../lib/router";
 import { clearDraft, loadDraft, loadProfile, profileReady, rememberBill, saveDraft } from "../lib/storage";
+import { paymentFromProfile } from "../lib/payment";
 
 /** Photo taken on the home screen, handed over to the editor (files can't go through the URL). */
 let pendingPhoto: File | null = null;
@@ -122,10 +123,6 @@ function rowToItem(row: Row): BillItem | null {
   return { id: row.id, name: row.name.trim(), qty, total, ...(row.excluded ? { excluded: true } : {}) };
 }
 
-function paymentFromProfile(): BillData["payment"] {
-  const p = loadProfile();
-  return { paypalMe: p.paypalMe || undefined, paypalEmail: p.paypalEmail || undefined };
-}
 
 function toBillData(draft: Draft, items: BillItem[]): BillData {
   const base = {
@@ -133,7 +130,7 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     date: draft.date,
     currency: draft.currency,
     items,
-    payment: paymentFromProfile(),
+    payment: paymentFromProfile(loadProfile()),
     tipSplitCount: tipPersons(draft.tip),
     equalSplit: draft.equalSplit || undefined,
     supermarket: draft.supermarket || undefined,

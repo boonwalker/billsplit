@@ -14,8 +14,19 @@ import { isIosBrowser } from "../lib/handoff";
 import { confirmScan, knock } from "../lib/haptics";
 import { formatMoney } from "../lib/money";
 import { navigate } from "../lib/router";
-import { forgetBill, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
+import { paymentFromProfile, samePayment } from "../lib/payment";
+import { forgetBill, hasPaymentMethod, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
+
+/** "(paypal.me/niklas, Überweisung, Wero)" – what the QR code passes on. */
+function paymentSummary(payment: BillData["payment"]): string {
+  const parts = [
+    payment.paypalMe ? `paypal.me/${payment.paypalMe}` : payment.paypalEmail,
+    payment.iban && "Überweisung",
+    payment.wero && "Wero",
+  ].filter(Boolean);
+  return parts.length ? ` (${parts.join(", ")})` : "";
+}
 
 /** Opens WhatsApp itself with the message ready to send (the web address on desktops). */
 function whatsappLink(text: string): string {
@@ -81,10 +92,9 @@ export default function BillPage({ id }: { id: string }) {
     if (!snapshot?.isOwner || syncedPayment.current) return;
     syncedPayment.current = true;
     const profile = loadOwnProfile();
-    const payment = { paypalMe: profile.paypalMe || undefined, paypalEmail: profile.paypalEmail || undefined };
-    if (!payment.paypalMe && !payment.paypalEmail) return;
-    const current = snapshot.data.payment;
-    if (current.paypalMe === payment.paypalMe && current.paypalEmail === payment.paypalEmail) return;
+    if (!hasPaymentMethod(profile)) return;
+    const payment = paymentFromProfile(profile);
+    if (samePayment(snapshot.data.payment, payment)) return;
     api
       .updateBill(id, { ...snapshot.data, payment })
       .then(replace)
@@ -249,8 +259,8 @@ export default function BillPage({ id }: { id: string }) {
             <h2>Lass deine Freunde scannen</h2>
             <QrCode value={url} label="QR-Code zur Rechnung" />
             <p className="muted small">
-              Enthält die Rechnung und deine PayPal-Daten
-              {snap.data.payment.paypalMe ? ` (paypal.me/${snap.data.payment.paypalMe})` : snap.data.payment.paypalEmail ? ` (${snap.data.payment.paypalEmail})` : ""}.
+              Enthält die Rechnung und deine Zahlungsdaten
+              {paymentSummary(snap.data.payment)}.
             </p>
             {DEMO && (
               <p className="demo-note">
