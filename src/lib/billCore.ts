@@ -265,7 +265,8 @@ export class BillCore {
       this.notify(bill.ownerId, {
         title: `${p.name} hat bezahlt`,
         body: `${formatMoney(amount, bill.data.currency)} für „${bill.data.title}“ – bitte prüfe den Eingang.`,
-        path: `/b/${billId}`,
+        // Straight to that friend in the list below the receipt, to check the money and tick "erhalten".
+        path: `/b/${billId}?an=${participantId}`,
       });
     }
   }
@@ -444,19 +445,19 @@ export class BillCore {
       this.notify(fromId, {
         title: `${t.toName} hat Deinen Ausgleich eingetragen`,
         body: `${money} als erhalten – Deine Anteile bei ${t.toName} sind beglichen.`,
-        path: "/dashboard",
+        path: `/dashboard?zahlung=${id}`,
       });
     } else if (amount === 0) {
       this.notify(toId, {
         title: `${t.fromName} möchte gegenseitig verrechnen`,
         body: "Eure offenen Beträge gleichen sich genau aus – bitte bestätige das im Dashboard.",
-        path: "/dashboard",
+        path: `/dashboard?zahlung=${id}`,
       });
     } else {
       this.notify(toId, {
         title: `${t.fromName} hat Dir ${money} gesendet`,
         body: "Bestätige den Eingang im Dashboard, sobald das Geld da ist.",
-        path: "/dashboard",
+        path: `/dashboard?zahlung=${id}`,
       });
     }
     return id;
@@ -492,7 +493,7 @@ export class BillCore {
               ? `${t.toName} hat die Verrechnung abgelehnt`
               : `${t.toName} hat ${money} nicht erhalten`,
         body: action === "confirm" ? "Die Anteile sind in allen Rechnungen beglichen." : "Die Anteile sind wieder offen.",
-        path: "/dashboard",
+        path: `/dashboard?zahlung=${t.id}`,
       });
     }
   }

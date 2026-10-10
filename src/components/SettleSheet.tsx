@@ -4,6 +4,7 @@ import type { NetworkEdge } from "../lib/bill";
 import { formatMoney } from "../lib/money";
 import { sameAllocations, settlementWith } from "../lib/settle";
 import PayButtons from "./PayButtons";
+import { BillEntry } from "./SettlementPanel";
 
 interface Props {
   /** The person's participant id and name. */
@@ -15,6 +16,8 @@ interface Props {
   /** Loads the open shares again (to check nothing changed before recording). */
   reload: () => Promise<{ me: string; edges: NetworkEdge[] }>;
   onClose: (changed: boolean) => void;
+  /** Opens a bill at the place of a participant's share. */
+  onOpenBill?: (billId: string, participantId: string) => void;
 }
 
 type Stage = "review" | "booking" | "done";
@@ -27,7 +30,7 @@ type Stage = "review" | "booking" | "done";
  * - It evens out exactly: offset both sides; they confirm.
  * Until it is confirmed the shares count as paid in every bill (nobody pays twice).
  */
-export default function SettleSheet({ person, currency, me, edges: shownEdges, myName, reload, onClose }: Props) {
+export default function SettleSheet({ person, currency, me, edges: shownEdges, myName, reload, onClose, onOpenBill }: Props) {
   const [edges, setEdges] = useState(shownEdges);
   const [stage, setStage] = useState<Stage>("review");
   const [notice, setNotice] = useState<string | null>(null);
@@ -106,16 +109,13 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
             {/* Bill by bill, so every euro can be traced to its bill. */}
             <ul className="settle-entries">
               {s.edges.map((e) => (
-                <li key={`${e.billId}:${e.debtorId}`}>
-                  <span>
-                    <b>{e.title}</b>
-                    <small className="muted">{e.debtorId === me ? `Du schuldest ${person.name}` : `${person.name} schuldet Dir`}</small>
-                  </span>
-                  <span className="settle-amount">
-                    {e.debtorId === me ? "−" : "+"}
-                    {fmt(e.amount)}
-                  </span>
-                </li>
+                <BillEntry
+                  key={`${e.billId}:${e.debtorId}`}
+                  title={e.title}
+                  text={e.debtorId === me ? `Du schuldest ${person.name}` : `${person.name} schuldet Dir`}
+                  amount={`${e.debtorId === me ? "−" : "+"}${fmt(e.amount)}`}
+                  onOpen={onOpenBill && (() => onOpenBill(e.billId, e.debtorId))}
+                />
               ))}
             </ul>
             {s.edges.length > 0 && (

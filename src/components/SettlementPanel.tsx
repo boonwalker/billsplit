@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { api } from "../lib/api";
 import type { NetworkEdge, Transfer, TransferAllocation } from "../lib/bill";
 import { formatMoney } from "../lib/money";
@@ -9,6 +9,33 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const RECENT_MS = 14 * DAY_MS;
 /** Confirmed payments of my own stay visible a little while (then they are just settled). */
 const CONFIRMED_MS = 3 * DAY_MS;
+
+/** One share in a list: bill, who owes whom, the amount – and a tap opens that bill at its place. */
+export function BillEntry({ title, text, amount, onOpen }: { title: string; text: string; amount: ReactNode; onOpen?: () => void }) {
+  const content = (
+    <>
+      <span>
+        <b>{title}</b>
+        <small className="muted">{text}</small>
+      </span>
+      <span className="settle-amount">{amount}</span>
+    </>
+  );
+  return (
+    <li>
+      {onOpen ? (
+        <button type="button" className="settle-entry" onClick={onOpen} aria-label={`${title}: ${text} – Rechnung öffnen`}>
+          {content}
+          <span className="settle-entry-go" aria-hidden="true">
+            ›
+          </span>
+        </button>
+      ) : (
+        content
+      )}
+    </li>
+  );
+}
 
 /** One settled share in words, from my point of view. */
 function describe(a: TransferAllocation, me: string, edges: Map<string, NetworkEdge>) {
@@ -78,6 +105,7 @@ export function PlanPaySheet({
   myName,
   reload,
   onClose,
+  onOpenBill,
 }: {
   planned: PlannedTransfer;
   me: string;
@@ -85,6 +113,8 @@ export function PlanPaySheet({
   myName: string;
   reload: () => Promise<{ me: string; edges: NetworkEdge[] }>;
   onClose: () => void;
+  /** Opens a bill at the place of a participant's share. */
+  onOpenBill?: (billId: string, participantId: string) => void;
 }) {
   const [planned, setPlanned] = useState(shown);
   const [stage, setStage] = useState<"pay" | "booking" | "done">("pay");
@@ -146,16 +176,18 @@ export function PlanPaySheet({
               {planned.allocations.map((a) => {
                 const d = describe(a, me, byShare);
                 return (
-                  <li key={`${a.billId}:${a.debtorId}`}>
-                    <span>
-                      <b>{d.title}</b>
-                      <small className="muted">{d.text}</small>
-                    </span>
-                    <span className="settle-amount">
-                      {d.sign}
-                      {fmt(a.amount)}
-                    </span>
-                  </li>
+                  <BillEntry
+                    key={`${a.billId}:${a.debtorId}`}
+                    title={d.title}
+                    text={d.text}
+                    amount={
+                      <>
+                        {d.sign}
+                        {fmt(a.amount)}
+                      </>
+                    }
+                    onOpen={onOpenBill && (() => onOpenBill(a.billId, a.debtorId))}
+                  />
                 );
               })}
             </ul>
@@ -192,7 +224,21 @@ export function PlanPaySheet({
  * Settlement payments that concern me: received ones to confirm, my own that wait (can be
  * taken back), and ones that settled my share on my behalf or through me.
  */
-export function TransferInbox({ me, transfers, onDecided }: { me: string; transfers: Transfer[]; onDecided: () => void }) {
+export function TransferInbox({
+  me,
+  transfers,
+  onDecided,
+  onOpenBill,
+  focus,
+}: {
+  me: string;
+  transfers: Transfer[];
+  onDecided: () => void;
+  /** Opens a bill at the place of a participant's share. */
+  onOpenBill?: (billId: string, participantId: string) => void;
+  /** A payment to bring into view (opened from a notification). */
+  focus?: string;
+}) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const now = Date.now();
@@ -222,15 +268,13 @@ export function TransferInbox({ me, transfers, onDecided }: { me: string; transf
 
   const lines = (t: Transfer) =>
     t.allocations.map((a) => (
-      <li key={`${a.billId}:${a.debtorId}`}>
-        <span>
-          <b>{a.billTitle}</b>
-          <small className="muted">
-            {a.debtorId === me ? "Dein Anteil" : `Anteil von ${a.debtorName}`} bei {a.creditorId === me ? "Dir" : a.creditorName}
-          </small>
-        </span>
-        <span className="settle-amount">{fmt(t, a.amount)}</span>
-      </li>
+      <BillEntry
+        key={`${a.billId}:${a.debtorId}`}
+        title={a.billTitle}
+        text={`${a.debtorId === me ? "Dein Anteil" : `Anteil von ${a.debtorName}`} bei ${a.creditorId === me ? "Dir" : a.creditorName}`}
+        amount={fmt(t, a.amount)}
+        onOpen={onOpenBill && (() => onOpenBill(a.billId, a.debtorId))}
+      />
     ));
 
   return (
@@ -239,7 +283,7 @@ export function TransferInbox({ me, transfers, onDecided }: { me: string; transf
       {incoming.map((t) =>
         t.amount === 0 ? (
           // An offset: what we owe each other cancels out exactly.
-          <div key={t.id} className="card inbox-card incoming">
+          <div key={t.id} data-transfer={t.id} className={`card inbox-card incoming${focus === t.id ? " focus-flash" : ""}`}>
             <h4>{t.fromName} möchte gegenseitig verrechnen</h4>
             <p className="muted small">Eure offenen Beträge gleichen sich genau aus – ohne dass jemand etwas zahlt:</p>
             <ul className="settle-entries">{lines(t)}</ul>
@@ -253,7 +297,7 @@ export function TransferInbox({ me, transfers, onDecided }: { me: string; transf
             </div>
           </div>
         ) : (
-          <div key={t.id} className="card inbox-card incoming">
+          <div key={t.id} data-transfer={t.id} className={`card inbox-card incoming${focus === t.id ? " focus-flash" : ""}`}>
             <h4>
               {t.fromName} hat Dir {fmt(t, t.amount)} gesendet
             </h4>
@@ -271,7 +315,7 @@ export function TransferInbox({ me, transfers, onDecided }: { me: string; transf
         ),
       )}
       {outgoing.map((t) => (
-        <div key={t.id} className={`card inbox-card ${t.status}`}>
+        <div key={t.id} data-transfer={t.id} className={`card inbox-card ${t.status}${focus === t.id ? " focus-flash" : ""}`}>
           {t.status === "pending" ? (
             <>
               <h4>{t.amount === 0 ? `Verrechnung mit ${t.toName} · wartet auf Bestätigung` : `${fmt(t, t.amount)} an ${t.toName} · wartet auf Bestätigung`}</h4>
@@ -301,7 +345,7 @@ export function TransferInbox({ me, transfers, onDecided }: { me: string; transf
         const mine = t.allocations.filter((a) => a.debtorId === me || a.creditorId === me);
         const settledMine = mine.filter((a) => a.debtorId === me).reduce((s, a) => s + a.amount, 0);
         return (
-          <div key={t.id} className="card inbox-card involved">
+          <div key={t.id} data-transfer={t.id} className={`card inbox-card involved${focus === t.id ? " focus-flash" : ""}`}>
             <h4>
               {t.fromName} hat {fmt(t, t.amount)} an {t.toName} gezahlt
               {t.status === "pending" ? " (noch nicht bestätigt)" : " ✓"}

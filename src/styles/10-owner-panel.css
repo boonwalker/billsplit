@@ -138,3 +138,18 @@
 .hint.muted {
   color: var(--muted);
 }
+
+/* Opened from a notification or a list: this friend's row lights up once. */
+.debtor.focus-flash {
+  animation: focus-flash 2.4s ease-out;
+}
+
+@keyframes focus-flash {
+  0%,
+  40% {
+    box-shadow: 0 0 0 3px var(--mint);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}

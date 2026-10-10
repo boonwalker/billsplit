@@ -6,9 +6,14 @@ export type Route =
   | { name: "profile"; next?: string }
   | { name: "new" }
   | { name: "scan" }
-  | { name: "dashboard" }
+  /** transfer: a settlement payment to bring into view (from a notification). */
+  | { name: "dashboard"; transfer?: string }
   | { name: "device"; code: string }
-  | { name: "bill"; id: string }
+  /**
+   * focus: a participant whose place on the bill to show (the payer's list of friends, or the
+   * friend's own share) · back: where "Zurück" leads (e.g. "dashboard" when opened from a list).
+   */
+  | { name: "bill"; id: string; focus?: string; back?: string }
   | { name: "original"; id: string }
   | { name: "edit"; id: string };
 
@@ -24,14 +29,14 @@ export function parseHash(hash: string): Route {
     case "scan":
       return { name: "scan" };
     case "dashboard":
-      return { name: "dashboard" };
+      return { name: "dashboard", transfer: params.get("zahlung") ?? undefined };
     case "geraet":
       return second ? { name: "device", code: second } : { name: "home" };
     case "b":
       if (!second) return { name: "home" };
       if (third === "edit") return { name: "edit", id: second };
       if (third === "beleg") return { name: "original", id: second };
-      return { name: "bill", id: second };
+      return { name: "bill", id: second, focus: params.get("an") ?? undefined, back: params.get("zurueck") ?? undefined };
     default:
       return { name: "home" };
   }
@@ -74,3 +79,13 @@ export function useRoute(): Route {
   }, []);
   return route;
 }
+
+/** Path to a bill that opens at a participant's place, with "Zurück" leading to `back`. */
+export function billPath(id: string, focus?: string, back?: string): string {
+  const params = new URLSearchParams();
+  if (focus) params.set("an", focus);
+  if (back) params.set("zurueck", back);
+  const query = params.toString();
+  return `/b/${id}${query ? `?${query}` : ""}`;
+}
+

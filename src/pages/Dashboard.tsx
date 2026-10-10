@@ -9,6 +9,8 @@ import type { BillSnapshot, NetworkEdge, Transfer } from "../lib/bill";
 import { useBillChanges } from "../lib/liveEvents";
 import { planSettlement, type PlannedTransfer } from "../lib/simplify";
 import { formatMoney } from "../lib/money";
+import { rememberDashboard, takeDashboard, type DashboardView } from "../lib/dashboardReturn";
+import { billPath, navigate } from "../lib/router";
 import { loadOwnProfile, loadRecent } from "../lib/storage";
 
 /** Signed amount: "+12,30 €" / "−4,00 €". */
@@ -178,8 +180,11 @@ function PersonRing({ person, currency, onOpen }: { person: PersonBalance; curre
   );
 }
 
-/** Overview over all bills on this device: lent vs. owed, and the balance with every person. */
-export default function Dashboard() {
+/**
+ * Overview over all bills on this device: lent vs. owed, and the balance with every person.
+ * focusTransfer: a settlement payment to bring into view (opened from a notification).
+ */
+export default function Dashboard({ focusTransfer }: { focusTransfer?: string }) {
   const [balances, setBalances] = useState<Balances[] | null>(null);
   const [settle, setSettle] = useState<{ person: PersonBalance; currency: string } | null>(null);
 
@@ -220,11 +225,49 @@ export default function Dashboard() {
     void load();
   }, [load]);
 
+  /** A share in one of the lists opens its bill at that place; "Zurück" comes back to the same list. */
+  const openBill = (view: DashboardView) => (billId: string, participantId: string) => {
+    rememberDashboard(view);
+    navigate(billPath(billId, participantId, "dashboard"));
+  };
+
+  // Back from such a bill: the list that was open, at the same place.
+  const restore = useRef(takeDashboard());
+  useEffect(() => {
+    const back = restore.current;
+    if (!back || !balances || !network) return;
+    restore.current = null;
+    const { view } = back;
+    if (view.kind === "settle") {
+      const person = balances.find((b) => b.currency === view.currency)?.people.find((p) => p.id === view.personId);
+      if (person) setSettle({ person, currency: view.currency });
+    } else if (view.kind === "plan") {
+      const planned = plans.find((p) => p.currency === view.currency)?.transfers.find((t) => t.toId === view.toId);
+      if (planned) setPaying({ planned, edges: network.edges, me: network.me });
+    }
+    window.requestAnimationFrame(() => window.scrollTo(0, back.scrollY));
+  }, [balances, network, plans]);
+
+  // Opened from a notification: the payment in question, highlighted.
+  useEffect(() => {
+    if (!focusTransfer || !network) return;
+    const card = document.querySelector(`[data-transfer="${CSS.escape(focusTransfer)}"]`);
+    card?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusTransfer, network]);
+
   return (
     <div className="page dashboard">
       <Header back="/" title="Dashboard" />
       <main className="content">
-        {network && <TransferInbox me={network.me} transfers={network.transfers} onDecided={() => void load()} />}
+        {network && (
+          <TransferInbox
+            me={network.me}
+            transfers={network.transfers}
+            onDecided={() => void load()}
+            onOpenBill={openBill({ kind: "page" })}
+            focus={focusTransfer}
+          />
+        )}
         <PushSetting variant="prompt" />
         {balances === null ? (
           <div className="scanning creating" role="status">
@@ -277,6 +320,7 @@ export default function Dashboard() {
             return fresh;
           }}
           onClose={() => setPaying(null)}
+          onOpenBill={openBill({ kind: "plan", toId: paying.planned.toId, currency: paying.planned.currency })}
         />
       )}
       {settle && network && (
@@ -295,6 +339,7 @@ export default function Dashboard() {
             setSettle(null);
             if (changed) void load();
           }}
+          onOpenBill={openBill({ kind: "settle", personId: settle.person.id, currency: settle.currency })}
         />
       )}
     </div>

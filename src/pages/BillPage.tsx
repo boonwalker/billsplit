@@ -23,7 +23,12 @@ import { paymentFromProfile, samePayment } from "../lib/payment";
 import { forgetBill, hasPaymentMethod, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
 
-export default function BillPage({ id }: { id: string }) {
+/**
+ * focus: open at a participant's place – the payer sees that friend in the list below the
+ * receipt (to check the amount and tick "erhalten"), a friend sees the end of the receipt with
+ * their share. back: where "Zurück" leads (the list it was opened from).
+ */
+export default function BillPage({ id, focus, back }: { id: string; focus?: string; back?: string }) {
   const { snapshot, error, notFound, live, setMyClaims, replace } = useLiveBill(id);
   const [askName, setAskName] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -55,6 +60,27 @@ export default function BillPage({ id }: { id: string }) {
     };
   }, [snapshot !== null]);
   const joining = useRef(false);
+
+  // Opened from a notification or a list: straight to the place where something is to be done.
+  const focused = useRef<string | null>(null);
+  const ready = snapshot !== null;
+  useEffect(() => {
+    if (!focus || !ready || focused.current === focus) return;
+    focused.current = focus;
+    const timer = window.setTimeout(() => {
+      const row = document.querySelector<HTMLElement>(`.debtor[data-id="${CSS.escape(focus)}"]`);
+      if (row) {
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+        row.classList.add("focus-flash");
+        window.setTimeout(() => row.classList.remove("focus-flash"), 2600);
+        return;
+      }
+      // A friend's own share: the end of the receipt with the sums (the bar shows the amount).
+      const el = scroller.current;
+      el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [focus, ready]);
 
   // Opening the bill (by scanning the QR code) joins it with the profile name.
   useEffect(() => {
@@ -214,7 +240,7 @@ export default function BillPage({ id }: { id: string }) {
     // Only the middle scrolls: the bar at the bottom stays put (iOS moves fixed bars around while scrolling).
     <div className={`page bill-page ${snap.isOwner ? "owner" : "guest"}`}>
       <Header
-        back="/"
+        back={back ? `/${back}` : "/"}
         title={snap.data.title}
         action={<LiveBadge live={live} online={snap.online} />}
       />

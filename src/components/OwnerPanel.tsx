@@ -129,7 +129,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
           {debtors.map((d) => {
             const changed = d.payAmount !== undefined && d.payAmount !== d.amount;
             return (
-              <li key={d.id} className={`debtor${d.received ? " received" : ""}${d.payClickedAt ? " announced" : ""}`}>
+              <li key={d.id} data-id={d.id} className={`debtor${d.received ? " received" : ""}${d.payClickedAt ? " announced" : ""}`}>
                 <span className="avatar" aria-hidden="true">
                   {d.name.slice(0, 1).toUpperCase()}
                 </span>

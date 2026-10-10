@@ -40,7 +40,7 @@ describe("push notifications", () => {
     await new Promise((r) => setTimeout(r, 10));
 
     expect(sent.map(([host]) => host).sort()).toEqual(["fcm.googleapis.com", "web.push.apple.com"]);
-    expect(JSON.parse(sent[0][1])).toMatchObject({ title: expect.stringContaining("Niklas hat Dir 9,00"), path: "/dashboard" });
+    expect(JSON.parse(sent[0][1])).toMatchObject({ title: expect.stringContaining("Niklas hat Dir 9,00"), path: expect.stringMatching(/^\/dashboard\?zahlung=/) });
     expect(push.has("katia", sub("web.push.apple.com").endpoint)).toBe(true);
     expect(push.has("katia", sub("fcm.googleapis.com").endpoint)).toBe(false);
   });

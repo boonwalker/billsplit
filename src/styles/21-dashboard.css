@@ -349,3 +349,43 @@
   font-weight: 700;
   color: var(--claim);
 }
+
+/* A share in a list opens its bill: the whole row is the button. */
+.settle-entries li:has(> .settle-entry) {
+  padding: 0;
+}
+
+.settle-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settle-entry > span:first-child {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settle-entry:active {
+  opacity: 0.6;
+}
+
+.settle-entry-go {
+  color: var(--muted);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.inbox-card.focus-flash {
+  animation: focus-flash 2.4s ease-out;
+}

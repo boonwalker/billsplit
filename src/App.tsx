@@ -42,11 +42,11 @@ function Page(): ReactNode {
         </Suspense>
       );
     case "bill":
-      return <BillPage key={route.id} id={route.id} />;
+      return <BillPage key={route.id} id={route.id} focus={route.focus} back={route.back} />;
     case "original":
       return <OriginalReceipt id={route.id} />;
     case "dashboard":
-      return <Dashboard />;
+      return <Dashboard key={route.transfer ?? ""} focusTransfer={route.transfer} />;
     case "device":
       return <DeviceLink code={route.code} />;
     default:

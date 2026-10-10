@@ -132,6 +132,11 @@ Betrag und Anteil. Darunter stehen die Einzelbilanzen mit jeder Person als klein
 Kacheln (über alle Rechnungen zusammengefasst – zugeordnet über die Gerätekennung der Person, nicht über den Namen, sodass zwei Annas nie verrechnet werden; grün, was die Person Dir schuldet, orange, was Du ihr schuldest). Grün und Orange sind für Hell- und Dunkelmodus auf Farbenblindheit geprüft; bei mehreren Währungen
 gibt es je Währung eine eigene Übersicht.
 
+**Rechnungen in den Listen:** In allen Aufstellungen des Dashboards (Ausgleich mit einer Person, Zahlungsplan,
+Eingänge) öffnet ein Tipp auf eine Rechnung diese direkt an der Stelle mit dem Betrag – beim eigenen Beleg bei der
+Person in der Freundesliste, beim fremden am Ende des Belegs mit dem eigenen Anteil. „Zurück“ führt wieder zur Liste,
+die vorher offen war.
+
 **Ausgleichen mit einer Person:** Ein Tipp auf die Kachel einer Person mit offenen Beträgen zeigt alle offenen
 Beträge Rechnung für Rechnung und den Saldo (z. B. 36,90 € geschuldet − 12,84 € geliehen = 24,06 €). Alles wird als
 **eine Ausgleichszahlung** eingetragen – derselbe Mechanismus wie beim Gesamtausgleich (siehe unten), also nie halb:
@@ -198,7 +203,9 @@ billsplit kann per Push Bescheid sagen, wenn etwas auf einen wartet – auch wen
 - „Anna hat bezahlt“ (in Deiner Rechnung als bezahlt markiert – bitte Eingang prüfen)
 - „Niklas hat die Zahlung zurückgezogen“
 
-Ein Tipp auf die Benachrichtigung öffnet das Dashboard bzw. die Rechnung. Einschalten lässt es sich im Dashboard
+Ein Tipp auf die Benachrichtigung führt direkt dorthin, wo als Nächstes etwas zu tun ist: bei „Anna hat bezahlt“ in
+die Rechnung, heruntergescrollt zu Anna in der Freundesliste (kurz hervorgehoben), um den Eingang zu prüfen und
+„erhalten“ anzuhaken; bei Ausgleichszahlungen ins Dashboard zur betreffenden Zahlung. Einschalten lässt es sich im Dashboard
 („Benachrichtigen, wenn Geld eingeht?“, einmalig) und jederzeit im Profil. Auf dem iPhone geht das nur in der App vom
 Home-Bildschirm (iOS 16.4 oder neuer); in Safari steht dort ein Hinweis. Technisch: Web Push mit einem Service Worker
 (`public/sw.js`, er speichert nichts zwischen) und VAPID-Schlüsseln, die der Server beim ersten Start erzeugt und
