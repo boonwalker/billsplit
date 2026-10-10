@@ -41,8 +41,23 @@
 
 
 .shop-persons {
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 4px 0 0;
   font-weight: 600;
+  text-align: center;
+}
+
+/* "Alles aufteilen": the same pencilled "/ N" as on the receipt to cross out, centred. */
+.shop-divide {
+  justify-content: center;
+  gap: 8px;
+}
+
+.shop-sheet .shop-sum {
+  text-align: center;
 }
 
 .shop-sum {
@@ -75,4 +90,10 @@
 
 .empty-emoji {
   font-size: 3rem;
+}
+
+/* On the sheet (not on paper) the pencil stroke takes the text colour, so it shows in dark mode too. */
+.shop-divide .divide-by-sign {
+  color: var(--text);
+  opacity: 0.75;
 }

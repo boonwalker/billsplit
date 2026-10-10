@@ -18,6 +18,8 @@ export interface Row {
   /** Kept from the bill: crossed out by the payer (completely or some units). */
   excluded?: boolean;
   struck?: number;
+  /** Kept from the bill: listed among "Vielleicht nicht für alle?". */
+  maybePersonal?: boolean;
 }
 
 export interface FeeRow {
@@ -74,6 +76,7 @@ export const newRow = (item?: ReceiptItem & { id?: string }): Row => ({
   total: item ? centsToInput(item.total) : "",
   excluded: item?.excluded,
   struck: item?.struck,
+  maybePersonal: item?.maybePersonal,
 });
 
 export function emptyDraft(): Draft {
@@ -127,6 +130,7 @@ export function rowToItem(row: Row): BillItem | null {
     ...(row.excluded ? { excluded: true } : {}),
     // A changed quantity may leave nothing to cross out partly any more.
     ...(row.struck && row.struck < qty ? { struck: row.struck } : {}),
+    ...(row.maybePersonal ? { maybePersonal: true } : {}),
   };
 }
 

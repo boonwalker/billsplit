@@ -16,6 +16,8 @@ export interface BillItem {
   excluded?: boolean;
   /** Some of the units crossed out by the payer (1 … qty − 1): only the rest is billed. */
   struck?: number;
+  /** Supermarket, "Alles aufteilen": probably not a shared expense – listed first for the payer, ready to cross out. */
+  maybePersonal?: boolean;
 }
 
 /** A fee on the bill (delivery, service, …). Fees are shared equally per person, like the tip. */

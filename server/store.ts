@@ -51,6 +51,7 @@ export const BillDataSchema = z.object({
         divisor: z.number().int().min(2).max(99).optional(),
         excluded: z.boolean().optional(),
         struck: z.number().int().min(1).max(998).optional(),
+        maybePersonal: z.boolean().optional(),
       }),
     )
     .min(1)

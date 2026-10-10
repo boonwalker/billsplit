@@ -622,3 +622,13 @@
   font-weight: 400;
   color: var(--ink-soft);
 }
+
+/* Supermarket, "Alles aufteilen" (payer): "Vielleicht nicht für alle?" above the likely personal items. */
+.receipt-lines .rline-group {
+  padding: 12px 4px 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  list-style: none;
+}

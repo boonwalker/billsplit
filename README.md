@@ -106,7 +106,10 @@ Das gibt es nur mit Gleichverteilung – bei „Jeder selber abhaken“ hakt jed
 
 Die Erkennung merkt anhand des Geschäftsnamens und der Produkte, ob es ein Supermarkt- oder Drogerie-Einkauf ist.
 Dann fragt billsplit vor dem QR-Code, ob etwas nicht oder nur teilweise abgerechnet werden soll: „Alles aufteilen“,
-„Manches nicht“ oder „Jeder selber abhaken“ (führt direkt zur fertigen Rechnung ohne Gleichverteilung).
+„Manches nicht“ oder „Jeder selber abhaken“ (führt direkt zur fertigen Rechnung ohne Gleichverteilung). Bei
+„Alles aufteilen“ wählt man mit demselben Bleistift-„/ N“ wie auf dem Beleg, durch wie viele geteilt wird; darunter
+steht, was abgerechnet wird. Auf der fertigen Rechnung stehen dann für den Rechnungssteller die Artikel, die
+wahrscheinlich nicht für alle sind, oben unter „Vielleicht nicht für alle?“ – zum nachträglichen Antippen und Streichen.
 Komplett weggestrichene Positionen stehen auf der fertigen Rechnung ganz unten. Bei „Manches nicht“ füllt der Beleg im Stil der digitalen Rechnung (mit Belegkopf) den
 Bildschirm bis zum oberen Rand, ohne App-Kopfzeile; unten bleibt nur eine schmale Leiste mit Personenzahl, Summe, Zurück und „Rechnung
 erstellen“. Eine Zeile mit

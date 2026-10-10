@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import {
   billedItem,
   billedItems,
@@ -527,6 +527,16 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
   const total = billTotal(data);
   const assigned = billed.filter((i) => isFullyAssigned(i, participants)).length;
   const equal = Boolean(data.equalSplit);
+  // Supermarket, "Alles aufteilen": for the payer, what is probably not for everyone is listed first.
+  const maybePersonal = snapshot.isOwner && equal && data.items.some((i) => i.maybePersonal) && data.items.some((i) => !i.maybePersonal);
+  const groupHeading = (idx: number) => {
+    if (!maybePersonal) return null;
+    const item = data.items[idx];
+    const before = data.items[idx - 1];
+    if (item.maybePersonal && (!before || !before.maybePersonal)) return <li className="rline-group" aria-hidden="true">Vielleicht nicht für alle?</li>;
+    if (!item.maybePersonal && before?.maybePersonal) return <li className="rline-group" aria-hidden="true">Für alle</li>;
+    return null;
+  };
   const people = splitHeadCount(data, participants);
   const perPerson = (amount: number) => (equal ? Math.round(amount / people) : undefined);
   const list = useRef<HTMLUListElement>(null);
@@ -563,6 +573,8 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
           {claimDemo.layout && !equal && <ClaimDemo layout={claimDemo.layout} step={claimDemo.step} stage={claimDemo.stage} otherName={otherName} />}
           <ul className="receipt-lines" ref={list}>
             {data.items.map((item, idx) => (
+              <Fragment key={item.id}>
+                {groupHeading(idx)}
               <ReceiptLine
                 key={item.id}
                 item={item}
@@ -577,6 +589,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 each={perPerson(billedItem(item).total)}
                 people={people}
               />
+              </Fragment>
             ))}
           </ul>
         </div>

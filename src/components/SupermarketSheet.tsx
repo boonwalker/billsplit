@@ -5,6 +5,7 @@ import { vibrate } from "../lib/haptics";
 import { formatMoney } from "../lib/money";
 import DivisorSheet from "./DivisorSheet";
 import InkLayer from "./InkLayer";
+import DivideBy from "./DivideBy";
 import PhotoViewer from "./PhotoViewer";
 import ReceiptDemo, { demoLayout, useDemoLoop, type DemoLayout } from "./ReceiptDemo";
 import { FeeLine, formatDate, PencilFilter } from "./Receipt";
@@ -224,20 +225,10 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
     e.preventDefault();
     // A shopping trip is always split equally: everything not crossed out is shared by x people.
     // Marking lines splits the rest equally unless the payer switched that off above the receipt.
-    if (anyBilled) onDone(step === "some" ? struckLast(billed) : billed, step === "some" ? split : true, persons, step === "some", excludedFees);
+    // "Alles aufteilen": what is probably not for everyone comes first on the bill, ready to be crossed out.
+    const all = () => orderForMarking(billed, isPersonal).map((i) => (isPersonal(i) ? { ...i, maybePersonal: true } : i));
+    if (anyBilled) onDone(step === "some" ? struckLast(billed) : all(), step === "some" ? split : true, persons, step === "some", excludedFees);
   };
-
-  const personsStepper = (
-    <div className="stepper-mini" role="group" aria-label="Personen, die sich den Einkauf teilen">
-      <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
-        −
-      </button>
-      <span>{persons ?? "?"}</span>
-      <button type="button" onClick={() => setPersons((n) => Math.min(100, (n ?? 1) + 1))} aria-label="Eine Person mehr">
-        +
-      </button>
-    </div>
-  );
 
   // "Manches nicht": the whole screen becomes the receipt paper to scribble on.
   if (step === "some") {
@@ -395,28 +386,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
           <div className="scribble-controls">
             {/* "/ 4": what everything not crossed out is divided by – the head count for the equal split. */}
             {split ? (
-            <div className="divide-by" role="group" aria-label="Alles geteilt durch">
-              {/* A pencilled "/" – a firm stroke with a fainter second pass. */}
-              <svg className="divide-by-sign" viewBox="0 0 40 90" aria-hidden="true">
-                <path d="M33 5 C 28 28, 19 55, 7 86" />
-                <path d="M35 9 C 29 33, 21 58, 10 84" className="divide-by-sign-thin" />
-              </svg>
-              <span className="divide-by-value" aria-live="polite">
-                {persons ?? "?"}
-              </span>
-              <div className="divide-by-arrows">
-                <button type="button" onClick={() => setPersons((n) => Math.min(100, (n ?? 1) + 1))} aria-label="Eine Person mehr">
-                  <svg viewBox="0 0 40 20" aria-hidden="true">
-                    <path d="M4 16 C 12 10, 16 6, 20 3 C 25 7, 30 11, 36 16" />
-                  </svg>
-                </button>
-                <button type="button" onClick={() => setPersons((n) => (n && n > 2 ? n - 1 : undefined))} aria-label="Eine Person weniger">
-                  <svg viewBox="0 0 40 20" aria-hidden="true">
-                    <path d="M4 4 C 12 10, 16 14, 20 17 C 25 13, 30 9, 36 4" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+              <DivideBy value={persons} onChange={setPersons} />
             ) : (
               <p className="scribble-own">Jeder hakt ab, was er hatte.</p>
             )}
@@ -449,10 +419,8 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
 
   return (
     <div className="sheet-backdrop">
-      <form className="sheet" onSubmit={submit}>
-        <div className="sheet-emoji" aria-hidden="true">
-          🛒
-        </div>
+      <form className="sheet shop-sheet" onSubmit={submit}>
+        <PencilFilter />
         <h2>Supermarkt-Einkauf</h2>
 
         {step === "ask" ? (
@@ -475,12 +443,11 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
         ) : (
           <>
             {/* Split equally by default; the payer can still switch it off on the bill. */}
-            <div className="row between shop-persons">
-              <span>
-                Wie viele teilen sich den Einkauf? <span className="shop-persons-hint">inklusive Dir</span>
-              </span>
-              {personsStepper}
-            </div>
+            <p className="shop-persons">
+              Wie viele teilen sich den Einkauf?
+              <span className="shop-persons-hint">inklusive Dir</span>
+            </p>
+            <DivideBy value={persons} onChange={setPersons} label="Personen, die sich den Einkauf teilen" className="shop-divide" />
 
             <p className="shop-sum">
               Abgerechnet werden <b>{formatMoney(billedSum, currency)}</b>
