@@ -101,7 +101,9 @@ function ReceiptLine({
   const done = excluded || isFullyAssigned(item, participants);
   // Pressed in while the finger rests on the line, pops back up on release.
   const [holding, setHolding] = useState(false);
-  const shared = [...holders.keys()].some((slot) => slotParts(item.id, slot, participants, holders) > 1);
+  // "geteilt" only once a unit really has two holders; an offered half nobody joined yet is still waiting.
+  const shared = [...holders.values()].some((ids) => ids.length > 1);
+  const waitingForSomeone = [...holders.keys()].some((slot) => holders.get(slot)?.length === 1 && slotParts(item.id, slot, participants, holders) > 1);
   const freeSlots = Array.from({ length: item.qty }, (_, slot) => slot).filter((slot) => !holders.has(slot));
   const others = claimants
     .filter((p) => p.id !== me)
@@ -269,6 +271,7 @@ function ReceiptLine({
             );
           })}
           {shared && <li className="shared-note">geteilt</li>}
+          {waitingForSomeone && <li className="shared-note">wartet auf jemanden</li>}
         </ul>
       )}
       {canEdit && myWaiting && (

@@ -132,7 +132,7 @@ export default function ClaimDemo({ layout, step, stage, otherName }: { layout: 
             {tap}
           </span>
           {done && (
-            <span className="claim-demo-chip mine">
+            <span className="claim-demo-chip mine half">
               <i>✓</i>Du ×½
             </span>
           )}
