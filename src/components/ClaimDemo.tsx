@@ -33,7 +33,7 @@ const KEY = (billId: string) => `billsplit.claimDemo.${billId}`;
 const CAPTION: Record<Step, string> = {
   tick: "Antippen = abhaken",
   share: "Namen antippen = mitteilen",
-  offer: "Eigenen Namen antippen = zum Teilen anbieten",
+  offer: "Eigenen Namen antippen = hab ich mir geteilt!",
 };
 
 /** Runs once per bill and device; `stop` ends it early (e.g. as soon as the user taps a line). */
