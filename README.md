@@ -141,6 +141,13 @@ geändert, wird nichts gebucht und die neue Aufstellung gezeigt. Schuldet die Pe
 trägst Du den Ausgleich ein, sobald das Geld da ist. Im Dashboard zählt ein als bezahlt markierter Anteil bereits als
 beglichen.
 
+### Kassenbon-Vorschau
+
+Solange der Rechnungssteller oben bei QR-Code und WhatsApp-Button ist, schiebt sich der obere Rand des digitalen
+Kassenbons (mit Zacken und Titel, „Deine digitale Rechnung ist fertig ↓“) hinter der unteren Leiste hoch ins Bild
+und zupft alle paar Sekunden kurz nach oben. Ein Tipp scrollt zur Rechnung; ist der Bon selbst sichtbar, verschwindet
+die Vorschau.
+
 ### Live-Anzeige und Echtzeit
 
 Solange die App im Vordergrund ist, hält sie eine Verbindung zum Server offen. Darüber zählt das Gerät als online:

@@ -47,6 +47,10 @@ export default function BillPage({ id }: { id: string }) {
   const [divisorFor, setDivisorFor] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const fitEditLabel = useOneLine();
+  /** Payer at the top (QR code, WhatsApp): the receipt peeks up from behind the bar. */
+  const [receiptInView, setReceiptInView] = useState(true);
+  const [ownerBarHeight, setOwnerBarHeight] = useState(0);
+  const ownerBar = useRef<HTMLDivElement>(null);
   /** Height of the friend's pay bar: the receipt can always be scrolled up above it. */
   const [payBarHeight, setPayBarHeight] = useState<number | null>(null);
   // Hides the payer's bar at the end of the page (with some slack, so it does not flicker),
@@ -67,6 +71,25 @@ export default function BillPage({ id }: { id: string }) {
       el.removeEventListener("scroll", check);
       observer.disconnect();
     };
+  }, [snapshot !== null]);
+  // Whether the receipt is on screen (above the payer's bar) – otherwise it peeks up from below.
+  useEffect(() => {
+    const root = scroller.current;
+    const target = document.getElementById("receipt");
+    if (!root || !target || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => setReceiptInView(entry.isIntersecting), {
+      root,
+      rootMargin: `0px 0px -${ownerBarHeight}px 0px`,
+    });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [snapshot !== null, ownerBarHeight]);
+  useEffect(() => {
+    const el = ownerBar.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setOwnerBarHeight(el.offsetHeight));
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [snapshot !== null]);
   const joining = useRef(false);
 
@@ -404,8 +427,26 @@ export default function BillPage({ id }: { id: string }) {
       </main>
       </div>
 
+      {/* The finished receipt peeks up from behind the bar: the interactive bill is ready below. */}
+      {snap.isOwner && summary && !receiptInView && !atEnd && (
+        <button
+          type="button"
+          className="receipt-peek"
+          style={{ bottom: Math.max(0, ownerBarHeight - 26) }}
+          onClick={() => document.getElementById("receipt")?.scrollIntoView({ behavior: "smooth" })}
+          aria-label="Zur digitalen Rechnung"
+        >
+          <span className="receipt-peek-paper">
+            <span className="receipt-peek-star" aria-hidden="true">
+              ✦
+            </span>
+            <span className="receipt-peek-title">{snap.data.title || "Rechnung"}</span>
+            <span className="receipt-peek-hint">Deine digitale Rechnung ist fertig ↓</span>
+          </span>
+        </button>
+      )}
       {snap.isOwner && summary && (
-        <div className={`ownerbar${atEnd ? " away" : ""}`} aria-hidden={atEnd}>
+        <div className={`ownerbar${atEnd ? " away" : ""}`} aria-hidden={atEnd} ref={ownerBar}>
           <div className="ownerbar-inner">
             <span>
               Dir fehlen noch
