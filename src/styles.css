@@ -789,7 +789,7 @@ input[aria-invalid="true"] {
 
 .tip-mode {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   padding: 4px;
   border-radius: 14px;
@@ -803,6 +803,10 @@ input[aria-invalid="true"] {
   border-radius: 10px;
   background: transparent;
   font-weight: 600;
+  /* Three tabs side by side on a phone: each label stays on one line. */
+  padding: 0 4px;
+  font-size: 0.92rem;
+  white-space: nowrap;
   cursor: pointer;
 }
 

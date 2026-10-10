@@ -107,7 +107,7 @@ function draftFromData(data: BillData): Draft {
     currency: data.currency,
     tip: {
       ...(data.tipAmount
-        ? { mode: "total" as const, percent: "0", total: centsToInput(subtotal(data.items) + (data.fees ?? []).reduce((s, f) => s + f.amount, 0) + data.tipAmount) }
+        ? { mode: "amount" as const, percent: "0", total: "", amount: centsToInput(data.tipAmount) }
         : { mode: "percent" as const, percent: String(data.tipPercent), total: "" }),
       persons: data.tipSplitCount ? String(data.tipSplitCount) : "",
     },
@@ -154,7 +154,7 @@ function toBillData(draft: Draft, items: BillItem[]): BillData {
     tipExcluded: draft.tipExcluded || undefined,
     fees: draftFees(draft).length ? draftFees(draft) : undefined,
   };
-  if (draft.tip.mode === "total") {
+  if (draft.tip.mode === "total" || draft.tip.mode === "amount") {
     const amount = tipCents(draft.tip, subtotal(items), (base.fees ?? []).reduce((s, f) => s + f.amount, 0));
     return { ...base, tipPercent: 0, tipAmount: amount > 0 ? amount : undefined };
   }
@@ -170,7 +170,7 @@ function restoreDraft(): Draft {
     ...empty,
     ...saved,
     // Drafts from older versions may carry a tip mode that no longer exists.
-    tip: saved.tip?.mode === "percent" || saved.tip?.mode === "total" ? { ...empty.tip, ...saved.tip } : empty.tip,
+    tip: saved.tip?.mode === "percent" || saved.tip?.mode === "total" || saved.tip?.mode === "amount" ? { ...empty.tip, ...saved.tip } : empty.tip,
     tipOnReceipt: saved.tipOnReceipt ?? false,
     fees: saved.fees ?? [],
     delivery: saved.delivery ?? false,
@@ -538,9 +538,11 @@ export default function Editor({ billId }: { billId?: string }) {
               void publish(toBillData(draft, items));
             }}
           >
-            <div className="sheet-emoji" aria-hidden="true">
-              {draft.delivery ? "🛵" : "🙌"}
-            </div>
+            {!draft.delivery && (
+              <div className="sheet-emoji" aria-hidden="true">
+                🙌
+              </div>
+            )}
 
             {draft.delivery && (
               <>
@@ -599,7 +601,7 @@ export default function Editor({ billId }: { billId?: string }) {
                 className="btn btn-ghost"
                 onClick={() => {
                   const items = askTip;
-                  const noTip: Draft = { ...draft, tip: { ...draft.tip, mode: "percent", percent: "0", total: "" } };
+                  const noTip: Draft = { ...draft, tip: { ...draft.tip, mode: "percent", percent: "0", total: "", amount: "" } };
                   setDraft(noTip);
                   setAskTip(null);
                   void publish(toBillData(noTip, items));

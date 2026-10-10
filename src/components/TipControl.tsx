@@ -1,8 +1,11 @@
 import { useId } from "react";
 import { formatMoney, parseMoney, type Cents } from "../lib/money";
 
-/** "total" = the payer enters what they paid in the end; the tip is the difference to the bill. */
-export type TipMode = "percent" | "total";
+/**
+ * "amount" = the tip itself, e.g. 5 €; "total" = the payer enters what they paid in the end and
+ * the tip is the difference to the bill.
+ */
+export type TipMode = "amount" | "percent" | "total";
 
 export interface TipValue {
   mode: TipMode;
@@ -10,6 +13,8 @@ export interface TipValue {
   percent: string;
   /** Raw input of the final amount paid incl. tip, e.g. "50,00". */
   total: string;
+  /** Raw input of the tip itself, e.g. "5,00" (missing in drafts from older versions). */
+  amount?: string;
   /** Expected number of people incl. the payer; empty = count who scans the QR code. */
   persons: string;
 }
@@ -24,6 +29,7 @@ const PERCENT_PRESETS = ["5", "10", "15"];
 
 /** Tip in cents that the given input adds to a bill with this subtotal and these fees. */
 export function tipCents(tip: TipValue, sub: Cents, fees: Cents = 0): Cents {
+  if (tip.mode === "amount") return Math.max(0, parseMoney(tip.amount ?? "") ?? 0);
   if (tip.mode === "total") return Math.max(0, (parseMoney(tip.total) ?? 0) - sub - fees);
   const pct = Math.min(100, Math.max(0, Number(tip.percent.replace(",", ".")) || 0));
   return Math.round((sub * pct) / 100);
@@ -52,6 +58,9 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
   return (
     <div className="tip-control">
       <div className="tip-mode" role="radiogroup" aria-label="Trinkgeld angeben als">
+        <button type="button" role="radio" aria-checked={value.mode === "amount"} className={value.mode === "amount" ? "on" : ""} onClick={() => set({ mode: "amount" })}>
+          absolut
+        </button>
         <button type="button" role="radio" aria-checked={value.mode === "percent"} className={value.mode === "percent" ? "on" : ""} onClick={() => set({ mode: "percent" })}>
           in Prozent
         </button>
@@ -60,7 +69,19 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
         </button>
       </div>
 
-      {value.mode === "percent" ? (
+      {value.mode === "amount" ? (
+        <label className="tip-field wide">
+          <input
+            id={`${uid}-amount`}
+            inputMode="decimal"
+            aria-label="Trinkgeld als Betrag"
+            value={value.amount ?? ""}
+            placeholder="0,00"
+            onChange={(e) => set({ amount: e.target.value.replace(/[^\d.,]/g, "") })}
+          />
+          <span>{currency === "EUR" ? "€" : currency}</span>
+        </label>
+      ) : value.mode === "percent" ? (
         <div className="chips">
           {PERCENT_PRESETS.map((p) => (
             <button key={p} type="button" className={`chip${value.percent === p ? " active" : ""}`} onClick={() => set({ percent: p })}>

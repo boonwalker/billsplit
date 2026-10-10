@@ -61,8 +61,8 @@ bleibt „Anteil begleichen“ der PayPal-Weg und darunter steht „Lieber per �
 ### Trinkgeld
 
 Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen. Sonst fragt billsplit vor dem Erstellen des
-QR-Codes nach: in Prozent oder als Endbetrag, also was du insgesamt bezahlt hast. Das Trinkgeld ist dann die
-Differenz zum Rechnungsbetrag.
+QR-Codes nach: absolut (der Trinkgeldbetrag selbst), in Prozent oder als Endbetrag, also was Du insgesamt bezahlt
+hast. Beim Endbetrag ist das Trinkgeld die Differenz zum Rechnungsbetrag.
 
 Das Trinkgeld wird gleichmäßig pro Person verteilt. Gezählt wird automatisch, wer der Rechnung per QR-Code
 beigetreten ist, plus der Rechnungssteller. Optional gibt der Rechnungssteller eine erwartete Personenzahl an,
