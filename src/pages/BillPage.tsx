@@ -375,7 +375,9 @@ export default function BillPage({ id }: { id: string }) {
             onShowOriginal={snap.hasReceiptImage ? () => navigate(`/b/${id}/beleg`) : undefined}
             onToggleExcluded={snap.isOwner && equal ? toggleExcluded : undefined}
             onToggleFee={snap.isOwner && equal ? toggleFee : undefined}
-            onEditDivisor={snap.isOwner ? setDivisorFor : undefined}
+            // Only in the equal split: in "Jeder selber abhaken" everyone ticks what they had.
+            onEditDivisor={snap.isOwner && equal ? setDivisorFor : undefined}
+            onResetDivisor={snap.isOwner && equal ? (itemId) => applyDivisor(itemId, 1) : undefined}
             onToggleTip={snap.isOwner && equal ? toggleTip : undefined}
           />
         </div>

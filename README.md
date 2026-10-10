@@ -97,7 +97,8 @@ Zeile streicht sie ebenso. Beim ersten Öffnen einer solchen Rechnung läuft die
 Hält der Bezahler eine Position auf der Rechnung gedrückt, öffnet sich ein Blatt mit großem Bleistift-„/“ und Pfeilen
 (/1 bis /5): Vom Liter Milch geht dann z. B. nur die Hälfte in die Aufteilung, die andere Hälfte trägt er selbst. Auf
 dem Beleg steht „/2“ hinter dem Namen und der Belegpreis klein durchgestrichen über dem berechneten Teil; /1 stellt die
-Position wieder her. Kurzes Antippen hakt (bzw. streicht) wie gewohnt.
+Position wieder her, ebenso ein Tipp direkt auf das „/2“. Kurzes Antippen anderswo auf der Zeile streicht wie gewohnt.
+Das gibt es nur mit Gleichverteilung – bei „Jeder selber abhaken“ hakt jeder ab, was er hatte.
 
 ### Supermarkt-Einkäufe
 

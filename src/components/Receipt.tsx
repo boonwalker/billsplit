@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import {
   billedItem,
   billedItems,
@@ -34,6 +34,8 @@ interface Props {
   onToggleExcluded?: (itemId: string) => void;
   /** Payer: a line was held – open its settings (bill only a part). */
   onEditDivisor?: (itemId: string) => void;
+  /** Payer: a tap right on the pencilled "/2" bills the whole line again. */
+  onResetDivisor?: (itemId: string) => void;
   /** … the same for a fee and for the tip. */
   onToggleFee?: (feeId: string) => void;
   onToggleTip?: () => void;
@@ -83,6 +85,7 @@ function ReceiptLine({
   onSetSlots,
   onToggleExcluded,
   onLongPress,
+  onResetDivisor,
   each,
   people = 1,
 }: {
@@ -99,6 +102,8 @@ function ReceiptLine({
   onToggleExcluded?: (itemId: string) => void;
   /** Payer: holding the line opens its settings (bill only a part of it). */
   onLongPress?: () => void;
+  /** Payer: a tap right on the "/2" takes it back (instead of crossing the line out). */
+  onResetDivisor?: () => void;
 }) {
   const holders = slotHolders(item.id, participants);
   const mine = me ? participants.find((p) => p.id === me) : undefined;
@@ -185,11 +190,21 @@ function ReceiptLine({
     endPress();
   }
 
-  function toggle() {
+  function toggle(e: ReactMouseEvent<HTMLButtonElement>) {
     // The click that ends a long press only closes it.
     if (longPressed.current) {
       longPressed.current = false;
       return;
+    }
+    // Right on the "/2" (a little room around it, but not the whole line): bill the whole line again.
+    const mark = item.divisor && onResetDivisor ? e.currentTarget.querySelector(".rline-divisor") : null;
+    if (mark) {
+      const r = mark.getBoundingClientRect();
+      const slop = 8;
+      if (e.clientX >= r.left - slop && e.clientX <= r.right + slop && e.clientY >= r.top - slop && e.clientY <= r.bottom + slop) {
+        onResetDivisor!();
+        return;
+      }
     }
     if (!interactive) return;
     if (Date.now() - swiped.current < 600) return;
@@ -505,7 +520,7 @@ function useTapDemo(billId: string, enabled: boolean, canHold: boolean, list: Re
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onEditDivisor, onToggleFee, onToggleTip }: Props) {
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onEditDivisor, onResetDivisor, onToggleFee, onToggleTip }: Props) {
   const { data, participants, me, ownerName } = snapshot;
   const billed = billedItems(data);
   const sub = subtotal(billed);
@@ -558,6 +573,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 onSetSlots={setSlots}
                 onToggleExcluded={toggleExcluded}
                 onLongPress={editDivisor && !item.excluded ? () => editDivisor(item.id) : undefined}
+                onResetDivisor={onResetDivisor && (() => (endDemo(), onResetDivisor(item.id)))}
                 each={perPerson(billedItem(item).total)}
                 people={people}
               />

@@ -115,10 +115,13 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
   }
 
   // Place the demos on the lines once the paper is laid out; they loop until the paper is touched.
+  // Without the equal split everyone ticks their own lines: no long press, so the demo leaves it out.
   useLayoutEffect(() => {
     if (step !== "some" || !list.current) return;
-    setDemo(demoLayout(list.current));
-  }, [step, items]);
+    const layout = demoLayout(list.current);
+    if (layout && !split) delete layout.hold;
+    setDemo(layout);
+  }, [step, items, split]);
   const { phase: demoPhase, round: demoRound } = useDemoLoop(demo, step === "some" && !touched);
 
   /** The line under a vertical position (the nearest one when written between lines). */
@@ -271,7 +274,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                 <span>{currency}</span>
               </div>
               <div className="receipt-lines-wrap">
-                <InkLayer onInk={readInk} onTap={tap} onLongPress={hold} onStart={() => setTouched(true)} />
+                <InkLayer onInk={readInk} onTap={tap} onLongPress={split ? hold : undefined} onStart={() => setTouched(true)} />
                 {demo && !touched && <ReceiptDemo layout={demo} phase={demoPhase} round={demoRound} />}
                 <ul className="receipt-lines" ref={list}>
                   {ordered.map((item, index) => {
