@@ -1,9 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import type { BillData } from "../src/lib/bill.ts";
-import { BillCore, BillError, type Notice, type StoredBill, type StoredTransfer } from "../src/lib/billCore.ts";
+import { BillCore, BillError, type Notice } from "../src/lib/billCore.ts";
+import { dailyBackup, openPersistence, type Persistence } from "./persistence.ts";
 
 export { BillError as StoreError };
 
@@ -79,32 +80,52 @@ export function participantIdFromKey(key: string): string {
 /** data: the bill itself changed · presence: only who of its people is online. */
 export type ChangeListener = (billId: string, kind: "data" | "presence") => void;
 
-/** Server-side bill store: the shared rules plus a JSON file and change notifications. */
+/** Server-side bill store: the shared rules plus storage on disk (see persistence.ts) and change notifications. */
 export class BillStore extends BillCore {
   private listeners = new Set<ChangeListener>();
   private saveTimer: NodeJS.Timeout | null = null;
+  private persistence: Persistence | null = null;
+  /** Bills and settlement payments changed since the last save (only those are written). */
+  private dirtyBills = new Set<string>();
+  private dirtyTransfers = new Set<string>();
 
-  constructor(private readonly file: string | null) {
+  /** file: the bills file (`bills.json`); the database and backups go next to it. null: memory only (tests). */
+  constructor(
+    private readonly file: string | null,
+    private readonly options: { sqlite?: boolean } = {},
+  ) {
     super();
+  }
+
+  /** How the data is stored ("sqlite", "json" or "memory"). */
+  get storage(): string {
+    return this.persistence?.kind ?? "memory";
   }
 
   async load(): Promise<void> {
     if (!this.file) return;
-    try {
-      // Older files hold just the list of bills; newer ones the settlement payments as well.
-      const raw = JSON.parse(await readFile(this.file, "utf8")) as StoredBill[] | { bills: StoredBill[]; transfers?: StoredTransfer[] };
-      const { bills, transfers = [] } = Array.isArray(raw) ? { bills: raw } : raw;
-      const cutoff = Date.now() - RETENTION_MS;
-      for (const bill of bills) {
-        if (Date.parse(bill.createdAt) > cutoff) this.bills.set(bill.id, bill);
-      }
-      for (const t of transfers) {
-        if (Date.parse(t.createdAt) > cutoff) this.transfers.set(t.id, t);
-      }
-      await this.removeOrphanImages();
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
+    this.persistence = await openPersistence(this.file, this.options);
+    const cutoff = new Date(Date.now() - RETENTION_MS).toISOString();
+    await this.persistence.prune(cutoff);
+    const { bills, transfers } = await this.persistence.load();
+    for (const bill of bills) if (bill.createdAt > cutoff) this.bills.set(bill.id, bill);
+    for (const t of transfers) if (t.createdAt > cutoff) this.transfers.set(t.id, t);
+    await this.removeOrphanImages();
+  }
+
+  /** Today's backup in `backups/` next to the data (if there is none yet); keeps two weeks. */
+  async backup(): Promise<string | null> {
+    if (!this.file || !this.persistence) return null;
+    await this.flush();
+    return dailyBackup(this.persistence, path.join(path.dirname(this.file), "backups"));
+  }
+
+  /** A consistent copy of all data, e.g. to download it (see the admin endpoint). */
+  async exportTo(file: string): Promise<boolean> {
+    if (!this.persistence) return false;
+    await this.flush();
+    await this.persistence.copyTo(file);
+    return true;
   }
 
   onChange(listener: ChangeListener): () => void {
@@ -126,6 +147,7 @@ export class BillStore extends BillCore {
 
   protected override changed(billId: string): void {
     for (const l of this.listeners) l(billId, "data");
+    this.dirtyBills.add(billId);
     this.scheduleSave();
   }
 
@@ -144,7 +166,8 @@ export class BillStore extends BillCore {
     for (const billId of this.billsOf(participantId)) for (const l of this.listeners) l(billId, "presence");
   }
 
-  protected override transfersChanged(): void {
+  protected override transfersChanged(transferId: string): void {
+    this.dirtyTransfers.add(transferId);
     this.scheduleSave();
   }
 
@@ -152,16 +175,36 @@ export class BillStore extends BillCore {
     if (!this.file || this.saveTimer) return;
     this.saveTimer = setTimeout(() => {
       this.saveTimer = null;
-      void this.flush();
+      void this.flush().catch((error: unknown) => console.error("Speichern fehlgeschlagen", error));
     }, 500);
   }
 
   async flush(): Promise<void> {
-    if (!this.file) return;
-    await mkdir(path.dirname(this.file), { recursive: true });
-    const tmp = `${this.file}.tmp`;
-    await writeFile(tmp, JSON.stringify({ bills: [...this.bills.values()], transfers: [...this.transfers.values()] }));
-    await rename(tmp, this.file);
+    const persistence = this.persistence;
+    if (!persistence || (!this.dirtyBills.size && !this.dirtyTransfers.size)) return;
+    const billIds = [...this.dirtyBills];
+    const transferIds = [...this.dirtyTransfers];
+    this.dirtyBills.clear();
+    this.dirtyTransfers.clear();
+    try {
+      await persistence.save(
+        {
+          bills: billIds.map((id) => this.bills.get(id)).filter((b) => b !== undefined),
+          removedBills: billIds.filter((id) => !this.bills.has(id)),
+          transfers: transferIds.map((id) => this.transfers.get(id)).filter((t) => t !== undefined),
+        },
+        () => ({ bills: [...this.bills.values()], transfers: [...this.transfers.values()] }),
+      );
+    } catch (error) {
+      // Try again with the next change (or the next flush).
+      for (const id of billIds) this.dirtyBills.add(id);
+      for (const id of transferIds) this.dirtyTransfers.add(id);
+      throw error;
+    }
+  }
+
+  close(): void {
+    this.persistence?.close();
   }
 
   /** Receipt photos live next to the bills file; without a file (tests) in memory. */

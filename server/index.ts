@@ -22,6 +22,10 @@ const TRUST_PROXY = process.env.TRUST_PROXY === "1" || Boolean(process.env.RAILW
 
 const store = new BillStore(DATA_FILE);
 await store.load();
+// One backup per day next to the data (checked every few hours, kept for two weeks).
+const backup = () => store.backup().catch((error: unknown) => console.error("Backup fehlgeschlagen", error));
+void backup();
+setInterval(() => void backup(), 6 * 60 * 60 * 1000).unref();
 // Push keys and subscriptions live next to the bills (on the volume).
 const push = new PushService(path.dirname(DATA_FILE));
 await push.init();
@@ -30,12 +34,13 @@ const server = createServer(createApp(store, path.join(root, "dist"), { trustPro
 
 server.listen(PORT, () => {
   console.log(
-    `billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${DATA_FILE})`,
+    `billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage})`,
   );
 });
 
 async function shutdown(): Promise<void> {
   await store.flush();
+  store.close();
   process.exit(0);
 }
 process.on("SIGINT", () => void shutdown());

@@ -267,7 +267,7 @@ Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an
 | Belegerkennung | Claude (Vision + Structured Outputs) auf dem Server. Fallback: Tesseract.js lokal im Browser |
 | Live-Sync | Node-Server mit Server-Sent Events. Jede Änderung wird sofort an alle Teilnehmer gepusht |
 | Identität | Jedes Gerät hat einen zufälligen geheimen Schlüssel. Andere sehen nur dessen Hash als Teilnehmer-ID |
-| Daten | `data/bills.json` auf dem Server, Belegfotos in `data/receipts/`. Rechnungen werden nach 60 Tagen gelöscht |
+| Daten | SQLite-Datenbank `billsplit.db` (eingebautes `node:sqlite`, nur geänderte Rechnungen werden geschrieben), Belegfotos in `receipts/`, tägliche Sicherung in `backups/` (14 Tage). Rechnungen werden nach 60 Tagen gelöscht |
 | QR-Code | `qrcode`, Scanner in der App mit `jsQR` |
 | Schriften | Space Grotesk & JetBrains Mono, selbst gehostet (keine Google-Fonts-Anfragen) |
 
@@ -317,6 +317,21 @@ Hinweise:
   (`RECEIPT_LIMIT_PER_DAY`) begrenzt. Ist das Limit erreicht, liest das Handy den Beleg selbst. Neue Rechnungen
   sind pro Gerät/IP und Stunde begrenzt (`BILL_LIMIT_PER_HOUR`).
 
+### Daten und Backups
+
+Alles liegt im Datenordner (auf Railway das Volume):
+
+| Datei | Inhalt |
+| --- | --- |
+| `billsplit.db` | Rechnungen und Ausgleichszahlungen (SQLite). Eine ältere `bills.json` wird beim ersten Start übernommen und als `bills.json.imported` aufbewahrt. Hat die Node-Version kein SQLite, bleibt es bei `bills.json` |
+| `backups/billsplit-JJJJ-MM-TT.db` | eine Sicherung pro Tag (beim Start und alle 6 Stunden geprüft), die letzten 14 Tage |
+| `receipts/` | Belegfotos (nicht in den Backups) |
+| `vapid.json`, `push.json` | Push-Schlüssel und -Abos |
+
+Zurückspielen: Dienst stoppen, die gewünschte Sicherung als `billsplit.db` in den Datenordner kopieren (vorhandene
+`billsplit.db-wal`/`-shm` löschen), Dienst starten. Eine Kopie zum Herunterladen gibt es über die Admin-Seite (siehe
+„Monitoring“).
+
 ### Demo ohne Server
 
 ```bash
@@ -338,7 +353,7 @@ claude.ai-Artifact gedacht:
 | `ANTHROPIC_API_KEY` | aktiviert die KI-Belegerkennung |
 | `BILLSPLIT_MODEL` | anderes Claude-Modell (Standard: `claude-opus-5-5`) |
 | `PORT` | Port des Servers (Standard 8787) |
-| `DATA_DIR` | Ordner für `bills.json` und die Belegfotos (Standard `data`) |
+| `DATA_DIR` | Ordner für Datenbank, Belegfotos, Backups und Push-Schlüssel (Standard `data`; auf Railway das Volume) |
 | `TRUST_PROXY` | `1` hinter einem Reverse-Proxy: Client-Adresse aus `X-Forwarded-For` lesen |
 | `RECEIPT_LIMIT_PER_HOUR` | Belegfotos pro Gerät/IP und Stunde (Standard 10) |
 | `RECEIPT_LIMIT_PER_DAY` | Belegfotos insgesamt pro Tag (Standard 300) |

@@ -88,7 +88,7 @@ export class BillCore {
   protected changed(_billId: string): void {}
 
   /** Called after a settlement payment was created or decided (in addition to `changed` for its bills). */
-  protected transfersChanged(): void {}
+  protected transfersChanged(_transferId: string): void {}
 
   /** Tells a participant about something that needs them (the server sends it as a push notification). */
   protected notify(_participantId: string, _notice: Notice): void {}
@@ -461,7 +461,7 @@ export class BillCore {
   private transfersTouched(transferId: string): void {
     const t = this.transfers.get(transferId);
     for (const billId of new Set(t?.allocations.map((a) => a.billId))) if (this.bills.has(billId)) this.changed(billId);
-    this.transfersChanged();
+    this.transfersChanged(transferId);
   }
 
   /** The bill as seen by one device. Payment details of friends are only visible to the payer. */

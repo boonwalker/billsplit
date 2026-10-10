@@ -45,7 +45,7 @@ class LocalStore extends BillCore {
     for (const fn of this.allListeners) fn(billId);
   }
 
-  protected override transfersChanged(): void {
+  protected override transfersChanged(_transferId: string): void {
     try {
       localStorage.setItem(TRANSFERS_KEY, JSON.stringify([...this.transfers.values()]));
     } catch {

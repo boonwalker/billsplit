@@ -61,7 +61,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 ## Architektur in Kürze
 
 - **Stack:** React 19 + TypeScript + Vite (PWA), Node-HTTP-Server ohne Framework (`server/app.ts`, Validierung mit
-  zod), vitest. Server wird mit esbuild zu `dist-server/index.js` gebündelt (wenig RAM auf Railway).
+  zod), vitest. Daten in SQLite (`node:sqlite`, `server/persistence.ts`; Fallback JSON), alles im Speicher gehalten,
+  geschrieben werden nur geänderte Rechnungen; tägliche Backups in `DATA_DIR/backups`. Server wird mit esbuild zu `dist-server/index.js` gebündelt (wenig RAM auf Railway).
 - **Geld immer in ganzen Cent** (`src/lib/money.ts`), nie Fließkomma-Euro.
 - **`src/lib/billCore.ts`** enthält alle fachlichen Regeln (Beitreten, Abhaken, Bezahlen, Ausgleichszahlungen,
   Snapshot pro Betrachter). Server (`server/store.ts`, JSON-Datei) und Demo (`src/lib/localApi.ts`, localStorage)
@@ -143,10 +144,8 @@ Aus der Verbesserungsanalyse vom 10.10.2026, empfohlene Reihenfolge:
 
 1. **CI:** GitHub Action mit `typecheck` + `test` bei jedem Push; Railway erst nach grüner CI deployen lassen.
    Die wichtigsten Klick-Tests aus `e2e/` zu einem festen Test-Satz (z. B. `@playwright/test`) ausbauen.
-2. **Datensicherheit:** Backup von `bills.json` bzw. Umstieg auf SQLite auf dem Railway-Volume (aktuell wird die
-   ganze JSON-Datei bei jeder Änderung neu geschrieben).
-3. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen.
-4. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
+2. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen.
+3. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
    dem Auftraggeber klären, ob die Regel für „Dir“ auch für Du/Dein gelten soll.
 
 Erledigt am 10.10.2026: einheitlicher Ausgleich über bestätigte Zahlungen, Gerät übertragen/Wiederherstellungs-Code,
