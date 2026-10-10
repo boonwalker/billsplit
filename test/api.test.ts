@@ -31,7 +31,7 @@ beforeAll(async () => {
       limits: {
         receiptPerClient: new RateLimiter(10, hour),
         receiptTotal: new RateLimiter(100, hour),
-        billsPerClient: new RateLimiter(5, hour),
+        billsPerClient: new RateLimiter(8, hour),
       },
     }),
   );
@@ -146,6 +146,29 @@ describe("bills API", () => {
     expect(res.json.data.tipAmount).toBe(300);
   });
 
+  it("accepts large amounts, e.g. a luxury dinner in dirhams", async () => {
+    const res = await call<BillSnapshot>(OWNER, "POST", "/api/bills", {
+      data: {
+        ...data,
+        currency: "AED",
+        items: [
+          { id: "steak", name: "Golden Ottoman", qty: 2, total: 550_000 },
+          { id: "wine", name: "Petrus 2009", qty: 4, total: 39_600_000 },
+        ],
+        fees: [{ id: "f1", name: "Service Charge", amount: 4_000_000 }],
+        tipAmount: 2_500_000,
+      },
+      name: "Niklas",
+    });
+    expect(res.status).toBe(201);
+    const tooHigh = await call<{ error: string }>(OWNER, "POST", "/api/bills", {
+      data: { ...data, items: [{ id: "x", name: "Insel", qty: 1, total: 2_000_000_000 }] },
+      name: "Niklas",
+    });
+    expect(tooHigh.status).toBe(400);
+    expect(tooHigh.json.error).toBe("Ein Betrag ist zu hoch.");
+  });
+
   it("rejects invalid input and unknown bills", async () => {
     expect((await call(OWNER, "POST", "/api/bills", { data: { ...data, items: [] }, name: "N" })).status).toBe(400);
     expect((await call(OWNER, "GET", "/api/bills/doesnotexist")).status).toBe(404);
@@ -153,10 +176,10 @@ describe("bills API", () => {
   });
 
   it("limits how many bills one client creates", async () => {
-    // The limit in this setup is 5 bills per hour and client.
+    // The limit in this setup is 8 bills per hour and client.
     const statuses: number[] = [];
     let retryAfter = 0;
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 9; i++) {
       const res = await fetch(`${base}/api/bills`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-billsplit-key": OWNER },
@@ -166,7 +189,7 @@ describe("bills API", () => {
       if (res.status === 429) retryAfter = Number(res.headers.get("retry-after"));
     }
     expect(statuses.at(-1)).toBe(429);
-    expect(statuses.filter((st) => st === 201).length).toBeLessThanOrEqual(5);
+    expect(statuses.filter((st) => st === 201).length).toBeLessThanOrEqual(8);
     expect(retryAfter).toBeGreaterThan(0);
   });
 });

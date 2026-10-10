@@ -86,7 +86,16 @@ async function readJson(req: IncomingMessage, limit: number): Promise<unknown> {
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
-  if (!result.success) throw new HttpError("Ungültige Anfrage.", 400);
+  if (!result.success) {
+    // Say what is wrong where it helps the user fix it.
+    const issue = result.error.issues[0];
+    const field = String(issue?.path.at(-1) ?? "");
+    if (issue?.code === "too_big" && ["total", "amount", "tipAmount", "fullTotal"].includes(field)) {
+      throw new HttpError("Ein Betrag ist zu hoch.", 400);
+    }
+    if (issue?.code === "too_big" && field === "name") throw new HttpError("Eine Bezeichnung ist zu lang.", 400);
+    throw new HttpError("Ungültige Anfrage.", 400);
+  }
   return result.data;
 }
 

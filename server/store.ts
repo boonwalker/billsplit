@@ -10,12 +10,19 @@ export { BillError as StoreError };
 /** Bills are deleted this long after creation. */
 const RETENTION_MS = 60 * 24 * 60 * 60 * 1000;
 
+/**
+ * Largest amount in cents (10 million in the bill's currency). Generous on purpose: bills in
+ * currencies like AED or JPY, or the odd luxury dinner, quickly reach six or seven figures.
+ */
+const MAX_CENTS = 1_000_000_000;
+const cents = () => z.number().int().min(-MAX_CENTS).max(MAX_CENTS);
+
 export const BillDataSchema = z.object({
   title: z.string().trim().max(80),
   date: z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/),
   currency: z.string().regex(/^[A-Z]{3}$/),
   tipPercent: z.number().min(0).max(100),
-  tipAmount: z.number().int().min(0).max(10_000_000).optional(),
+  tipAmount: z.number().int().min(0).max(MAX_CENTS).optional(),
   tipSplitCount: z.number().int().min(1).max(100).optional(),
   equalSplit: z.boolean().optional(),
   supermarket: z.boolean().optional(),
@@ -25,7 +32,7 @@ export const BillDataSchema = z.object({
       z.object({
         id: z.string().regex(/^[A-Za-z0-9_-]{1,24}$/),
         name: z.string().trim().min(1).max(80),
-        amount: z.number().int().min(-1_000_000).max(1_000_000),
+        amount: cents(),
       }),
     )
     .max(10)
@@ -36,8 +43,8 @@ export const BillDataSchema = z.object({
         id: z.string().regex(/^[A-Za-z0-9_-]{1,24}$/),
         name: z.string().trim().min(1).max(120),
         qty: z.number().int().min(1).max(999),
-        total: z.number().int().min(-10_000_000).max(10_000_000),
-        fullTotal: z.number().int().min(-10_000_000).max(10_000_000).optional(),
+        total: cents(),
+        fullTotal: cents().optional(),
         divisor: z.number().int().min(2).max(99).optional(),
         excluded: z.boolean().optional(),
       }),
