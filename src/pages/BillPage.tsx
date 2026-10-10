@@ -192,16 +192,20 @@ export default function BillPage({ id }: { id: string }) {
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."));
   }
 
-  /** Equal split: the payer crosses a forgotten line out (or brings it back); it is then not billed. */
+  /**
+   * Equal split: the payer crosses a forgotten line out (or brings it back); it is then not
+   * billed. Of a line with several units every tap crosses out one more, after the last one
+   * they all come back.
+   */
   function toggleExcluded(itemId: string) {
     const items = snap.data.items.map((item) => {
       if (item.id !== itemId) return item;
-      if (item.excluded) {
-        const rest = { ...item };
-        delete rest.excluded;
-        return rest;
-      }
-      return { ...item, excluded: true };
+      const rest = { ...item };
+      delete rest.excluded;
+      delete rest.struck;
+      if (item.excluded) return rest;
+      const struck = (item.struck ?? 0) + 1;
+      return struck >= item.qty ? { ...rest, excluded: true } : { ...rest, struck };
     });
     // Show the stroke right away; the server's answer follows.
     replace({ ...snap, data: { ...snap.data, items } });

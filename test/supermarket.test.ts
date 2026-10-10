@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyMarks, orderForMarking } from "../src/components/SupermarketSheet";
+import { billedItem } from "../src/lib/bill";
 import { looksPersonal } from "../src/lib/personal";
 import { parseReceiptText } from "../src/lib/receipt";
 
@@ -19,7 +20,8 @@ describe("supermarket receipts", () => {
 
   it("crosses out only some units of a line with several", () => {
     const [, nudeln] = applyMarks(items, { nudeln: { units: 1 } });
-    expect(nudeln).toEqual({ id: "nudeln", name: "Spaghetti", qty: 1, total: 129, fullTotal: 258 });
+    expect(nudeln).toEqual({ id: "nudeln", name: "Spaghetti", qty: 2, total: 258, struck: 1 });
+    expect(billedItem(nudeln)).toEqual({ id: "nudeln", name: "Spaghetti", qty: 1, total: 129 });
     expect(applyMarks(items, { nudeln: { units: 2 } })[1].excluded).toBe(true);
   });
 

@@ -24,8 +24,9 @@ interface Row {
   name: string;
   qty: string;
   total: string;
-  /** Kept from the bill: crossed out by the payer. */
+  /** Kept from the bill: crossed out by the payer (completely or some units). */
   excluded?: boolean;
+  struck?: number;
 }
 
 interface FeeRow {
@@ -76,6 +77,7 @@ const newRow = (item?: ReceiptItem & { id?: string }): Row => ({
   qty: String(item?.qty ?? 1),
   total: item ? centsToInput(item.total) : "",
   excluded: item?.excluded,
+  struck: item?.struck,
 });
 
 function emptyDraft(): Draft {
@@ -120,7 +122,15 @@ function rowToItem(row: Row): BillItem | null {
   const total = parseMoney(row.total);
   const qty = parseInt(row.qty, 10);
   if (!row.name.trim() || total === null || !(qty >= 1)) return null;
-  return { id: row.id, name: row.name.trim(), qty, total, ...(row.excluded ? { excluded: true } : {}) };
+  return {
+    id: row.id,
+    name: row.name.trim(),
+    qty,
+    total,
+    ...(row.excluded ? { excluded: true } : {}),
+    // A changed quantity may leave nothing to cross out partly any more.
+    ...(row.struck && row.struck < qty ? { struck: row.struck } : {}),
+  };
 }
 
 

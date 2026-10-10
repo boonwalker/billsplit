@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import {
+  billedItem,
   billedItems,
   billTotal,
   claimCost,
@@ -98,6 +99,9 @@ function ReceiptLine({
   const myUnits = mySlots.length;
   const claimants = participants.filter((p) => (p.claims[item.id] ?? []).length > 0);
   const excluded = Boolean(item.excluded);
+  // Some units crossed out by the payer: "3x" becomes "2x" in pencil, only the rest is billed.
+  const struckUnits = excluded ? 0 : Math.min(item.qty - 1, item.struck ?? 0);
+  const billedTotal = billedItem(item).total;
   const done = excluded || isFullyAssigned(item, participants);
   // Pressed in while the finger rests on the line, pops back up on release.
   const [holding, setHolding] = useState(false);
@@ -166,7 +170,7 @@ function ReceiptLine({
   return (
     <li
       data-item={item.id}
-      className={`rline${done ? " done" : ""}${takenByOthers ? " taken" : ""}${excluded ? " excluded" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${
+      className={`rline${done ? " done" : ""}${takenByOthers ? " taken" : ""}${excluded ? " excluded" : ""}${struckUnits > 0 ? " partly" : ""}${myUnits > 0 ? " mine" : ""}${flash ? " flash" : ""}${
         each !== undefined || excluded ? " equal" : ""
       }${onToggleExcluded ? " strikable" : ""}${holding ? " holding" : ""}`}
       style={{ animationDelay: `${180 + index * 70}ms` }}
@@ -196,7 +200,12 @@ function ReceiptLine({
           <span className="rline-name">
             {/* Inline so the strike-through runs through every wrapped line, not between them. */}
             <span className="rline-strike">
-              {item.qty > 1 && <span className="rline-qty">{item.qty}x </span>}
+              {item.qty > 1 && (
+                <span className="rline-qty">
+                  {struckUnits > 0 ? <s>{item.qty}x</s> : `${item.qty}x`}
+                  {struckUnits > 0 && <span className="pencil rline-left"> {item.qty - struckUnits}x</span>}{" "}
+                </span>
+              )}
               {item.name}
             </span>
             {item.divisor && <span className="pencil rline-divisor">/{item.divisor}</span>}
@@ -211,7 +220,8 @@ function ReceiptLine({
         )}
         <span className="rline-price">
           {item.fullTotal !== undefined && <s className="rline-full">{formatMoney(item.fullTotal, currency)}</s>}
-          {formatMoney(item.total, currency)}
+          {struckUnits > 0 && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
+          {formatMoney(billedTotal, currency)}
         </span>
         {each !== undefined && !excluded && <span className="pencil rline-div">/{people}</span>}
       </button>
@@ -461,7 +471,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 currency={data.currency}
                 onSetSlots={setSlots}
                 onToggleExcluded={toggleExcluded}
-                each={perPerson(item.total)}
+                each={perPerson(billedItem(item).total)}
                 people={people}
               />
             ))}

@@ -14,6 +14,8 @@ export interface BillItem {
   divisor?: number;
   /** Crossed out by the payer: stays visible on the receipt, but is not billed. */
   excluded?: boolean;
+  /** Some of the units crossed out by the payer (1 … qty − 1): only the rest is billed. */
+  struck?: number;
 }
 
 /** A fee on the bill (delivery, service, …). Fees are shared equally per person, like the tip. */
@@ -130,9 +132,19 @@ export interface ShareSummary {
   total: Cents;
 }
 
-/** The lines that are actually billed (crossed-out ones are left out). */
+/** A line as it is billed: with units crossed out, only the remaining ones at their share of the price. */
+export function billedItem(item: BillItem): BillItem {
+  const struck = Math.min(item.qty - 1, item.struck ?? 0);
+  if (struck <= 0) return item;
+  const qty = item.qty - struck;
+  const rest = { ...item, qty, total: Math.round((item.total * qty) / item.qty) };
+  delete rest.struck;
+  return rest;
+}
+
+/** The lines that are actually billed (crossed-out ones are left out, partly crossed-out ones reduced). */
 export function billedItems(data: Pick<BillData, "items">): BillItem[] {
-  return data.items.filter((item) => !item.excluded);
+  return data.items.filter((item) => !item.excluded).map(billedItem);
 }
 
 export function subtotal(items: BillItem[]): Cents {

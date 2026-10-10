@@ -3421,6 +3421,18 @@ input[aria-invalid="true"] {
   color: #fff;
 }
 
+/* Partly crossed out: the receipt price small above the billed one, so the name keeps its room. */
+.rline.partly .rline-price {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.rline.partly .rline-price .rline-full {
+  margin: 0 0 1px;
+}
+
 /* "Manches nicht": some units of a line crossed out – "3x" in pencil becomes "2x". */
 .rline.partly .rline-qty s {
   text-decoration-color: var(--pencil);

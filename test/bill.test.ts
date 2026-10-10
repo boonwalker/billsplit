@@ -145,6 +145,19 @@ describe("claims", () => {
   });
 });
 
+describe("crossed-out lines", () => {
+  it("bills only the units of a line that are not crossed out", () => {
+    const struck: BillData = {
+      ...data,
+      tipPercent: 0,
+      items: [{ ...data.items[0], excluded: true }, { ...data.items[1], struck: 1 }, data.items[2]],
+    };
+    // Pizza out, 2 of 3 beers (900), tiramisu (1000).
+    expect(billTotal(struck)).toBe(1900);
+    expect(participantShare({ ...struck, equalSplit: true }, [p("a", {}, true), p("b", {})], "b").total).toBe(950);
+  });
+});
+
 describe("links", () => {
   it("puts bill id and recipient into the QR link", () => {
     const url = billUrl("AbCdEf123", "https://billsplit.app/#/old", { paypalMe: "niklas" });

@@ -18,15 +18,14 @@ const struckUnits = (item: BillItem, mark?: Mark) => Math.min(item.qty, mark?.un
 
 /**
  * The items for the bill: fully struck lines stay visible but are excluded from billing;
- * partly struck ones keep the remaining units (the receipt price is shown crossed out).
+ * of partly struck ones only the remaining units are billed (the receipt keeps all of them).
  */
 export function applyMarks(items: BillItem[], marks: Record<string, Mark>): BillItem[] {
   return items.map((item) => {
     const units = struckUnits(item, marks[item.id]);
     if (units === 0) return item;
     if (units >= item.qty) return { ...item, excluded: true };
-    const qty = item.qty - units;
-    return { ...item, qty, total: Math.round((item.total * qty) / item.qty), fullTotal: item.fullTotal ?? item.total };
+    return { ...item, struck: units };
   });
 }
 
