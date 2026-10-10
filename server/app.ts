@@ -6,6 +6,7 @@ import { isAiConfigured, isSupportedMediaType, parseReceiptImage, ReceiptParseEr
 import { limitsFromEnv, type Limits, type RateLimiter } from "./rateLimit.ts";
 import { DeviceLinks } from "./deviceLink.ts";
 import { HandoffBoard } from "./handoff.ts";
+import { isPushEndpoint, type PushService } from "./push.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
 
 /** Base64 of a downscaled receipt photo is well below this. */
@@ -45,6 +46,8 @@ export interface AppOptions {
   limits?: Limits;
   /** Behind a reverse proxy (Render, Fly, …) the client address is in X-Forwarded-For. */
   trustProxy?: boolean;
+  /** Push notifications; without it the app does not offer them. */
+  push?: PushService;
 }
 
 function clientAddress(req: IncomingMessage, trustProxy: boolean): string {
@@ -138,6 +141,9 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const userStreams = new Map<string, Set<ServerResponse>>();
   const handoffs = new HandoffBoard();
   const deviceLinks = new DeviceLinks();
+  const push = options.push;
+  // Whatever needs someone (money arrived, a payment to confirm, …) goes to their devices.
+  if (push) store.onNotice((participantId, notice) => void push.notify(participantId, notice));
 
   store.onChange((billId, kind) => {
     for (const sub of subscribers.get(billId) ?? []) {
@@ -277,6 +283,27 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     // The app's own event stream: presence, and changes in any of the viewer's bills.
     if (parts[1] === "events" && parts.length === 2 && method === "GET") {
       return subscribeUser(req, res, requireViewer(req, url));
+    }
+
+    // Push notifications: the server's public key and the device's subscription.
+    if (parts[1] === "push") {
+      if (parts[2] === "key" && method === "GET") return sendJson(res, 200, { publicKey: push?.publicKey ?? null });
+      if (!push) throw new HttpError("Benachrichtigungen sind auf diesem Server nicht eingerichtet.", 404);
+      const viewer = requireViewer(req, url);
+      if (parts[2] === "subscribe" && method === "POST") {
+        const body = parse(
+          z.object({ endpoint: z.string().url().max(1000), keys: z.object({ p256dh: z.string().max(200), auth: z.string().max(100) }) }),
+          await readJson(req, MAX_JSON_BODY),
+        );
+        if (!isPushEndpoint(body.endpoint)) throw new HttpError("Unbekannter Push-Dienst.", 400);
+        push.subscribe(viewer, { endpoint: body.endpoint, keys: body.keys });
+        return sendJson(res, 200, { ok: true });
+      }
+      if (parts[2] === "unsubscribe" && method === "POST") {
+        const body = parse(z.object({ endpoint: z.string().max(1000) }), await readJson(req, MAX_JSON_BODY));
+        push.unsubscribe(viewer, body.endpoint);
+        return sendJson(res, 200, { ok: true });
+      }
     }
 
     // Moving to a new device (see deviceLink.ts) and the bills to show there.

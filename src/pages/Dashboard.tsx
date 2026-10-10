@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Header from "../components/Header";
+import PushSetting from "../components/PushSetting";
 import SettleSheet from "../components/SettleSheet";
 import { PlanCard, PlanPaySheet, TransferInbox } from "../components/SettlementPanel";
 import { api } from "../lib/api";
@@ -224,6 +225,7 @@ export default function Dashboard() {
       <Header back="/" title="Dashboard" />
       <main className="content">
         {network && <TransferInbox me={network.me} transfers={network.transfers} onDecided={() => void load()} />}
+        <PushSetting variant="prompt" />
         {balances === null ? (
           <div className="scanning creating" role="status">
             <div className="dots" aria-hidden="true">

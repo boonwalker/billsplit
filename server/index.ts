@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.ts";
 import { isAiConfigured } from "./parseReceipt.ts";
+import { PushService } from "./push.ts";
 import { BillStore } from "./store.ts";
 
 try {
@@ -21,8 +22,11 @@ const TRUST_PROXY = process.env.TRUST_PROXY === "1" || Boolean(process.env.RAILW
 
 const store = new BillStore(DATA_FILE);
 await store.load();
+// Push keys and subscriptions live next to the bills (on the volume).
+const push = new PushService(path.dirname(DATA_FILE));
+await push.init();
 
-const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY }));
+const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push }));
 
 server.listen(PORT, () => {
   console.log(

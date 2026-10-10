@@ -31,7 +31,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 100 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 110 Tests, alle grün).
 2. Bei UI-/Ablaufänderungen: `npm run build` und passende Klick-Tests aus `e2e/` laufen lassen, Screenshots ansehen
    (siehe `e2e/README.md`).
 3. README anpassen, wenn sich Verhalten ändert (Abschnitte sind nach Funktionen gegliedert).
@@ -73,6 +73,15 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Gerät hat in allen Rechnungen dieselbe ID (Grundlage für Dashboard und Ausgleich, nie über Namen zuordnen).
 - **Live:** SSE pro Rechnung (`/api/bills/:id/events`) und app-weit (`/api/events`, Ereignisse `data`/`presence`).
   Online-Zählung im Arbeitsspeicher mit 12 s Karenz → **nur eine Server-Instanz** möglich.
+- **Ausgleichszahlungen** sind der einzige Weg, über Rechnungen hinweg auszugleichen – Gesamtausgleich (Planer) und
+  Ausgleich mit einer Person (`SettleSheet`, `src/lib/settle.ts`) erzeugen beide eine Zahlung über
+  `createTransfer`: vom Zahler (wartet auf Bestätigung), vom Empfänger mit `fromId` (sofort bestätigt) oder mit
+  Betrag 0 als gegenseitige Verrechnung (Gegenseite bestätigt).
+- **Benachrichtigungen:** Der Kern ruft `notify(participantId, notice)` auf (bezahlt markiert, Ausgleich gesendet/
+  bestätigt/abgelehnt/zurückgezogen); der Server schickt das per Web Push (`server/push.ts`, `public/sw.js`,
+  `src/lib/push.ts`). VAPID-Schlüssel und Abos liegen in `DATA_DIR` (`vapid.json`, `push.json`).
+- **Gerät wechseln:** Einmal-Code (`server/deviceLink.ts`, Route `#/geraet/<code>`) bzw. Wiederherstellungs-Code
+  (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
   max. 2000 px Kantenlänge). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
 - **Seiten:** `Home`, `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“), `BillPage` (fertige
@@ -101,8 +110,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - **Lange Drücken („/2“)** nur für den Rechnungssteller und nicht im Modus „Jeder selber abhaken“; ein präziser Tipp
   auf „/2“ hebt den Teiler auf, statt die Zeile zu streichen.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit
-  `ps aux | grep "[d]ist-server/index.js" | awk '{print $2}' | xargs -r kill` – **nicht** `pkill -f …` (beendet die
-  eigene Shell). Temporäre vitest-Tests in `test/` anlegen (`vitest --root /` hängt).
+  `ps -eo pid,comm,args | awk '$2=="node" && /dist-server/ {print $1}' | xargs -r kill` – **nicht** `pkill -f …` und
+  nicht `grep` auf die Kommandozeile im selben Befehl wie den Teststart (trifft die eigene Shell). Temporäre vitest-Tests in `test/` anlegen (`vitest --root /` hängt).
 - **Diagramm-Farben** (Dashboard) sind auf Farbenblindheit geprüft: hell `--lent #0f7a4d` / `--owed #f76707`,
   dunkel `#22a86a` / `#e8590c`. Nicht ohne erneute Prüfung ändern.
 
@@ -136,14 +145,10 @@ Aus der Verbesserungsanalyse vom 10.10.2026, empfohlene Reihenfolge:
    Die wichtigsten Klick-Tests aus `e2e/` zu einem festen Test-Satz (z. B. `@playwright/test`) ausbauen.
 2. **Datensicherheit:** Backup von `bills.json` bzw. Umstieg auf SQLite auf dem Railway-Volume (aktuell wird die
    ganze JSON-Datei bei jeder Änderung neu geschrieben).
-3. **Einheitlicher Ausgleich:** Den Ausgleich mit einer Person (`SettleSheet`, bucht direkt Rechnung für Rechnung,
-   ohne Bestätigung, ggf. halb) auf dieselben bestätigten Ausgleichszahlungen umstellen wie den Gesamtausgleich.
-4. **Gerät übertragen / Schlüssel sichern** (z. B. per QR-Code) – sonst gehen bei Gerätewechsel oder gelöschtem
-   Safari-Speicher alle Rechnungen verloren.
-5. **Web-Push** für „Eingang bestätigen“ und neue Zahlungen.
-6. Dashboard: ein Server-Endpunkt „meine Bilanz“ statt jede Rechnung einzeln zu laden.
-7. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen; `render.yaml` entfernen.
-8. Kleinigkeiten: PayPal-Hinweis in `PayButtons.tsx` (Ausgleichs-Fenster) noch einzeilig im alten Wortlaut;
-   Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
-   dem Auftraggeber klären, ob die Regel für „Dir“ auch für Du/Dein gelten soll; README-Abschnitt „Ausgleichen mit
-   einer Person“ und API-Tabelle bei Änderungen nachziehen.
+3. Dashboard: ein Server-Endpunkt „meine Bilanz“ statt jede Rechnung einzeln zu laden.
+4. Aufräumen: `styles.css` (~4.200 Zeilen), `Editor.tsx`, `BillPage.tsx` aufteilen; `render.yaml` entfernen.
+5. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
+   dem Auftraggeber klären, ob die Regel für „Dir“ auch für Du/Dein gelten soll.
+
+Erledigt am 10.10.2026: einheitlicher Ausgleich über bestätigte Zahlungen, Gerät übertragen/Wiederherstellungs-Code,
+Web-Push, zweizeiliger PayPal-Hinweis im Ausgleichs-Fenster.

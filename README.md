@@ -187,6 +187,22 @@ ist alles in allen Rechnungen beglichen; „Nicht erhalten“ gibt die Anteile w
 der Zahlende die Zahlung zurückziehen. Wer nur mittelbar beteiligt ist (Andy), sieht im Dashboard, was für ihn
 beglichen wurde. Der Empfänger sieht nur Anteile aus Rechnungen, an denen er selbst teilnimmt.
 
+### Benachrichtigungen
+
+billsplit kann per Push Bescheid sagen, wenn etwas auf einen wartet – auch wenn die App zu ist:
+
+- „Niklas hat Dir 8,00 € gesendet“ (bitte Eingang bestätigen) bzw. „Niklas möchte gegenseitig verrechnen“
+- „Katia hat 8,00 € erhalten ✓“ / „… nicht erhalten“ / „Katia hat Deinen Ausgleich eingetragen“
+- „Anna hat bezahlt“ (in Deiner Rechnung als bezahlt markiert – bitte Eingang prüfen)
+- „Niklas hat die Zahlung zurückgezogen“
+
+Ein Tipp auf die Benachrichtigung öffnet das Dashboard bzw. die Rechnung. Einschalten lässt es sich im Dashboard
+(„Benachrichtigen, wenn Geld eingeht?“, einmalig) und jederzeit im Profil. Auf dem iPhone geht das nur in der App vom
+Home-Bildschirm (iOS 16.4 oder neuer); in Safari steht dort ein Hinweis. Technisch: Web Push mit einem Service Worker
+(`public/sw.js`, er speichert nichts zwischen) und VAPID-Schlüsseln, die der Server beim ersten Start erzeugt und
+neben den Rechnungen ablegt (`vapid.json`, Abos in `push.json`); gesendet wird nur an die Push-Dienste von Apple,
+Google, Mozilla und Microsoft.
+
 ### Gerät wechseln und sichern
 
 Rechnungen, Bilanz und Ausgleichszahlungen hängen an der Gerätekennung (einem geheimen Schlüssel im Browser-Speicher).
@@ -338,6 +354,8 @@ claude.ai-Artifact gedacht:
 | `RECEIPT_LIMIT_PER_HOUR` | Belegfotos pro Gerät/IP und Stunde (Standard 10) |
 | `RECEIPT_LIMIT_PER_DAY` | Belegfotos insgesamt pro Tag (Standard 300) |
 | `BILL_LIMIT_PER_HOUR` | Neue Rechnungen pro Gerät/IP und Stunde (Standard 30) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional: eigene Schlüssel für Push (sonst einmal erzeugt und in `DATA_DIR/vapid.json` gespeichert) |
+| `VAPID_SUBJECT` | optional: Kontakt für die Push-Dienste (Standard `mailto:hallo@billsplit.app`) |
 
 ## API
 
@@ -363,6 +381,8 @@ claude.ai-Artifact gedacht:
 | `GET` | `/api/my-bills` | Rechnungen, an denen das Gerät teilnimmt (für die Übertragung auf ein neues Gerät) |
 | `POST` | `/api/device-link` | Einmal-Code für die Übertragung auf ein neues Gerät (10 Minuten gültig) |
 | `POST` | `/api/device-link/:code` | Code einlösen: Gerätekennung und Profil (nur einmal) |
+| `GET` | `/api/push/key` | Öffentlicher VAPID-Schlüssel für Push-Benachrichtigungen |
+| `POST` | `/api/push/subscribe` / `/api/push/unsubscribe` | Push-Abo des Geräts eintragen / entfernen |
 
 Geräte authentifizieren sich mit dem Header `x-billsplit-key`. Bei den Event-Streams wird er als Query-Parameter `key`
 übergeben, weil `EventSource` keine eigenen Header unterstützt.

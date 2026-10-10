@@ -4272,3 +4272,41 @@ input[aria-invalid="true"] {
 .device-card h3 {
   margin: 0;
 }
+
+/* ───────────────────────── notifications ───────────────────────── */
+
+.push-prompt {
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.push-prompt h4,
+.push-prompt p {
+  margin: 0;
+}
+
+.push-section {
+  margin-top: 22px;
+}
+
+.push-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.push-switch span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.push-switch input {
+  width: auto;
+  min-height: 0;
+  flex: none;
+  transform: scale(1.3);
+  accent-color: var(--claim);
+}

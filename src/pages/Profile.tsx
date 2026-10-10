@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import DeviceTransfer from "../components/DeviceTransfer";
 import Header from "../components/Header";
+import PushSetting from "../components/PushSetting";
 import { DEMO } from "../lib/demo";
 import { formatIban, isValidEmail, isValidIban, isValidWero, normalizeIban, normalizePaypalMe } from "../lib/payment";
 import { navigate } from "../lib/router";
@@ -174,6 +175,11 @@ export default function Profile({ next }: { next?: string }) {
         </form>
 
         {/* Not while setting up the profile for a first bill, and not in the demo (no server). */}
+        {!next && !DEMO && (
+          <section className="stack push-section">
+            <PushSetting variant="setting" />
+          </section>
+        )}
         {!next && !DEMO && (
           <section className="stack device-section">
             <h3 className="section-title">Gerät wechseln &amp; sichern</h3>

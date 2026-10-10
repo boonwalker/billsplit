@@ -48,7 +48,9 @@ eigene Shell).
 | „/2“-Teiler (gedrückt halten) | `hold*`, `divisor`, `undiv`, `billdiv` |
 | Erklär-Animationen und Sprechblasen | `claimdemo`, `ownerdemo`, `billdemo`, `loop`, `tail`, `demo*` |
 | PayBar, PayPal, Überweisung/Wero | `bar`, `paybar`, `copy*`, `transfer`, `oneline` |
-| Dashboard, Ausgleich, Eingangsbestätigung | `dash`, `settle`, `settled`, `triangle`, `inbox`, `tri-debug` |
+| Dashboard, Ausgleich, Eingangsbestätigung | `dash`, `settle` (zahlen / erhalten / gegenseitig verrechnen), `settled`, `triangle`, `inbox`, `tri-debug` |
+| Gerät übertragen, Wiederherstellungs-Code | `device` |
+| Push-Benachrichtigungen (Service Worker, Schalter, Zustellung) | `push` |
 | Live-Anzeige, Kassenbon-Vorschau | `live`, `tickserver`, `peek`, `peek2` |
 | Safari → Home-Bildschirm-App, WhatsApp | `handoff`, `wa` |
 | Scan, Originalbeleg, Profil, Startseite | `scanview`, `screenshot`, `original*`, `origlink`, `profile`, `home`, `icons` |
