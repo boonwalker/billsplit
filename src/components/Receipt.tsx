@@ -157,7 +157,8 @@ function ReceiptLine({
   const myWaiting = mine ? waiting(mine).length > 0 : false;
   const othersWaiting = participants.filter((p) => p.id !== me && waiting(p).length > 0);
 
-  const fill = Math.min(1, myUnits / item.qty);
+  // How much of the line is mine: a shared unit fills the circle only halfway.
+  const fill = Math.min(1, (me ? unitShare(item, participants, me) : 0) / item.qty);
 
   return (
     <li

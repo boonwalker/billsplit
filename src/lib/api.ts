@@ -28,9 +28,10 @@ export interface Api {
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function request<T>(method: string, path: string, body?: unknown, init?: RequestInit): Promise<T> {
-  // A sleeping server (e.g. Railway "Serverless") answers the first request with 502/503
-  // or not at all while it wakes up; reads are simply tried again a few times.
-  const attempts = method === "GET" ? 4 : 1;
+  // A sleeping or just redeploying server (Railway) answers with 502/503 or not at all for a
+  // moment; reads and PUTs (which set a whole state, so repeating them is harmless) are
+  // simply tried again a few times.
+  const attempts = method === "GET" || method === "PUT" ? 4 : 1;
   let res: Response | null = null;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
@@ -52,7 +53,13 @@ async function request<T>(method: string, path: string, body?: unknown, init?: R
   }
   if (!res) throw new ApiError("Keine Verbindung zum Server.", 0);
   const json = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
-  if (!res.ok || json === null) throw new ApiError(json?.error ?? `Fehler (HTTP ${res.status}).`, res.status);
+  if (!res.ok || json === null) {
+    const unavailable = res.status === 502 || res.status === 503 || res.status === 504;
+    const fallback = unavailable
+      ? "Der Server ist gerade kurz nicht erreichbar (vermutlich ein Update). Bitte gleich nochmal tippen."
+      : `Fehler (HTTP ${res.status}).`;
+    throw new ApiError(json?.error ?? fallback, res.status);
+  }
   return json;
 }
 

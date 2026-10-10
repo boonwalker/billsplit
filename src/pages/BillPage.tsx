@@ -296,6 +296,12 @@ export default function BillPage({ id }: { id: string }) {
         )}
 
         {(error || actionError) && <div className="alert">{actionError ?? error}</div>}
+        {/* Also right above the bar, where the finger is – the alert at the top is often scrolled away. */}
+        {(error || actionError) && (
+          <p className="bill-toast" role="alert" key={actionError ?? error ?? ""}>
+            {actionError ?? error}
+          </p>
+        )}
 
         <div id="receipt" className="receipt-anchor">
           {snap.isOwner && <EqualSplitToggle snapshot={snap} onUpdateData={updateData} />}
