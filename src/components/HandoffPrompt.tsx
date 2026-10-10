@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { billIdFromUrl } from "../lib/bill";
+import { deviceCodeFromUrl } from "../lib/deviceTransfer";
 import { finishHandoff, handoffPending, isStandalone } from "../lib/handoff";
 import { navigate } from "../lib/router";
 
@@ -38,6 +39,11 @@ export default function HandoffPrompt() {
       return;
     }
     const id = billIdFromUrl(text);
+    const device = deviceCodeFromUrl(text);
+    if (device) {
+      close();
+      return navigate(`/geraet/${device}`);
+    }
     if (!id) {
       setError("In der Zwischenablage ist kein billsplit-Link. Tippe in Safari nochmal auf „In der App öffnen“.");
       return;

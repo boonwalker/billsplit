@@ -108,6 +108,21 @@ export function deviceKey(): string {
   return memoryKey;
 }
 
+/** Device keys are random (two UUIDs); anything else cannot be one. */
+export const isDeviceKey = (key: string) => /^[A-Za-z0-9_-]{16,128}$/.test(key);
+
+/**
+ * Takes over the identity of another device – when moving to a new phone (QR code) or
+ * restoring with the recovery code: its key, its profile (if given) and its bills.
+ */
+export function adoptDevice(key: string, profile: Partial<Profile> | null, bills: RecentBill[]): void {
+  requestPersistence();
+  memoryKey = key;
+  write(DEVICE_KEY, key);
+  if (profile) write(PROFILE_KEY, { name: "", paypalMe: "", paypalEmail: "", ...profile });
+  write(RECENT_KEY, bills.slice(0, 30));
+}
+
 export interface RecentBill {
   id: string;
   title: string;

@@ -1,9 +1,9 @@
 import { ApiError } from "./apiError";
-import type { BillData, BillSnapshot, ItemClaims, NetworkEdge, TransferAllocation, TransferList } from "./bill";
+import type { BillData, BillSnapshot, ItemClaims, MyBill, NetworkEdge, TransferAllocation, TransferList } from "./bill";
 import { checkForUpdate } from "./updates";
 import { DEMO } from "./demo";
 import { localApi } from "./localApi";
-import { deviceKey } from "./storage";
+import { deviceKey, type Profile } from "./storage";
 
 export { ApiError };
 
@@ -30,6 +30,12 @@ export interface Api {
    * or, with `fromId`, one it received (confirmed right away).
    */
   createTransfer(input: { toId: string; fromId?: string; amount: number; currency: string; allocations: TransferAllocation[] }): Promise<TransferList>;
+  /** The bills this device – or the device with `key` – takes part in (to rebuild the list on a new device). */
+  myBills(key?: string): Promise<MyBill[]>;
+  /** A one-time code (valid for a few minutes) that moves this device's key and profile to a new device. */
+  createDeviceLink(profile: Profile): Promise<{ code: string; expiresAt: string }>;
+  /** Trades such a code for the key and profile. */
+  claimDeviceLink(code: string): Promise<{ key: string; profile: Partial<Profile> }>;
   /** Recipient: confirm / reject · payer: cancel a waiting settlement payment. */
   decideTransfer(id: string, action: "confirm" | "reject" | "cancel"): Promise<TransferList>;
   /**
@@ -106,6 +112,10 @@ const serverApi: Api = {
   transfers: () => request("GET", "/api/transfers"),
   createTransfer: (input) => request("POST", "/api/transfers", input),
   decideTransfer: (id, action) => request("POST", `/api/transfers/${encodeURIComponent(id)}/${action}`, {}),
+  myBills: async (key) =>
+    (await request<{ bills: MyBill[] }>("GET", "/api/my-bills", undefined, key ? { headers: { "x-billsplit-key": key } } : undefined)).bills,
+  createDeviceLink: (profile) => request("POST", "/api/device-link", { profile }),
+  claimDeviceLink: (code) => request("POST", `/api/device-link/${encodeURIComponent(code)}`, {}),
   subscribeEvents(onBillChanged) {
     const source = new EventSource(`/api/events?key=${encodeURIComponent(deviceKey())}`);
     source.addEventListener("changed", (e) => {

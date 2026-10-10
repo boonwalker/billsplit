@@ -4,6 +4,7 @@ import { useAppEvents } from "./lib/liveEvents";
 import { useRoute } from "./lib/router";
 import BillPage from "./pages/BillPage";
 import Dashboard from "./pages/Dashboard";
+import DeviceLink from "./pages/DeviceLink";
 import Editor from "./pages/Editor";
 import Home from "./pages/Home";
 import OriginalReceipt from "./pages/OriginalReceipt";
@@ -43,6 +44,8 @@ function Page(): ReactNode {
       return <OriginalReceipt id={route.id} />;
     case "dashboard":
       return <Dashboard />;
+    case "device":
+      return <DeviceLink code={route.code} />;
     default:
       return <Home />;
   }

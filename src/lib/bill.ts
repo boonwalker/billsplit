@@ -178,6 +178,15 @@ export interface TransferList {
   transfers: Transfer[];
 }
 
+/** A bill a device takes part in (to rebuild the list of bills on a new device). */
+export interface MyBill {
+  id: string;
+  title: string;
+  createdAt: string;
+  role: "owner" | "guest";
+  currency: string;
+}
+
 /** An open share between two people in a bill the viewer takes part in (for settling up). */
 export interface NetworkEdge {
   billId: string;

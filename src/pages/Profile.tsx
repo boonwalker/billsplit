@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
+import DeviceTransfer from "../components/DeviceTransfer";
 import Header from "../components/Header";
+import { DEMO } from "../lib/demo";
 import { formatIban, isValidEmail, isValidIban, isValidWero, normalizeIban, normalizePaypalMe } from "../lib/payment";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
@@ -170,6 +172,14 @@ export default function Profile({ next }: { next?: string }) {
 
           <button className="btn btn-primary btn-large">{next === "new" ? "Weiter zur Kamera" : next === "sample" ? "Weiter zur Beispielrechnung" : "Speichern"}</button>
         </form>
+
+        {/* Not while setting up the profile for a first bill, and not in the demo (no server). */}
+        {!next && !DEMO && (
+          <section className="stack device-section">
+            <h3 className="section-title">Gerät wechseln &amp; sichern</h3>
+            <DeviceTransfer />
+          </section>
+        )}
       </main>
     </div>
   );

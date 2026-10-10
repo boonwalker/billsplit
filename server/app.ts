@@ -4,6 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 import { isAiConfigured, isSupportedMediaType, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
 import { limitsFromEnv, type Limits, type RateLimiter } from "./rateLimit.ts";
+import { DeviceLinks } from "./deviceLink.ts";
 import { HandoffBoard } from "./handoff.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
 
@@ -136,6 +137,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   /** Per device: the app's own event stream (changes in any of its bills). */
   const userStreams = new Map<string, Set<ServerResponse>>();
   const handoffs = new HandoffBoard();
+  const deviceLinks = new DeviceLinks();
 
   store.onChange((billId, kind) => {
     for (const sub of subscribers.get(billId) ?? []) {
@@ -275,6 +277,29 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     // The app's own event stream: presence, and changes in any of the viewer's bills.
     if (parts[1] === "events" && parts.length === 2 && method === "GET") {
       return subscribeUser(req, res, requireViewer(req, url));
+    }
+
+    // Moving to a new device (see deviceLink.ts) and the bills to show there.
+    if (parts[1] === "my-bills" && parts.length === 2 && method === "GET") {
+      return sendJson(res, 200, { bills: store.myBills(requireViewer(req, url)) });
+    }
+    if (parts[1] === "device-link" && method === "POST") {
+      if (parts.length === 2) {
+        requireViewer(req, url);
+        const key = (req.headers["x-billsplit-key"] as string | undefined) ?? url.searchParams.get("key")!;
+        const text = z.string().max(140).optional();
+        const body = parse(
+          z.object({ profile: z.object({ name: text, paypalMe: text, paypalEmail: text, iban: text, holder: text, wero: text }) }),
+          await readJson(req, MAX_JSON_BODY),
+        );
+        const profile = Object.fromEntries(Object.entries(body.profile).filter((e): e is [string, string] => typeof e[1] === "string"));
+        return sendJson(res, 201, deviceLinks.create({ key, profile }));
+      }
+      if (parts.length === 3) {
+        const link = deviceLinks.claim(parts[2]);
+        if (!link) throw new HttpError("Dieser Code ist abgelaufen oder wurde schon benutzt. Lass Dir auf dem alten Gerät einen neuen zeigen.", 410);
+        return sendJson(res, 200, link);
+      }
     }
 
     // Settling up across bills: open shares in the viewer's bills and settlement payments.

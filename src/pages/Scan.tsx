@@ -2,6 +2,7 @@ import jsQR from "jsqr";
 import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import { billIdFromUrl } from "../lib/bill";
+import { deviceCodeFromUrl } from "../lib/deviceTransfer";
 import { confirmScan } from "../lib/haptics";
 import { navigate } from "../lib/router";
 
@@ -32,10 +33,11 @@ export default function Scan() {
         const code = jsQR(img.data, img.width, img.height, { inversionAttempts: "dontInvert" });
         if (code?.data) {
           const id = billIdFromUrl(code.data);
-          if (id) {
+          const device = deviceCodeFromUrl(code.data);
+          if (id || device) {
             stopped = true;
             confirmScan();
-            navigate(`/b/${id}`, { replace: true });
+            navigate(id ? `/b/${id}` : `/geraet/${device}`, { replace: true });
             return;
           }
           setHint("Das ist kein billsplit-QR-Code.");
@@ -65,6 +67,7 @@ export default function Scan() {
   }, []);
 
   const manualId = billIdFromUrl(manual);
+  const manualDevice = deviceCodeFromUrl(manual);
 
   return (
     <div className="page scan-page">
@@ -89,14 +92,15 @@ export default function Scan() {
           onSubmit={(e) => {
             e.preventDefault();
             if (manualId) navigate(`/b/${manualId}`);
+            else if (manualDevice) navigate(`/geraet/${manualDevice}`);
           }}
         >
           <label className="field">
             <span>Oder Link einfügen</span>
             <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="https://…/#/b/…" />
           </label>
-          <button className="btn btn-secondary" disabled={!manualId}>
-            Rechnung öffnen
+          <button className="btn btn-secondary" disabled={!manualId && !manualDevice}>
+            {manualDevice ? "Gerät übernehmen" : "Rechnung öffnen"}
           </button>
         </form>
       </main>

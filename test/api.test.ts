@@ -204,3 +204,19 @@ describe("bills API", () => {
     expect(retryAfter).toBeGreaterThan(0);
   });
 });
+
+describe("moving to a new device", () => {
+  it("hands the key and profile to the new device once and lists its bills", async () => {
+    // The owner created bills in the tests above (new ones would hit the rate limit here).
+    const link = await call<{ code: string }>(OWNER, "POST", "/api/device-link", { profile: { name: "Niklas", paypalMe: "niklas" } });
+    expect(link.status).toBe(201);
+    const NEW = "new-phone-key-0123456789";
+    const claimed = await call<{ key: string; profile: { name: string } }>(NEW, "POST", `/api/device-link/${link.json.code}`);
+    expect(claimed.json).toEqual({ key: OWNER, profile: { name: "Niklas", paypalMe: "niklas" } });
+    expect((await call(NEW, "POST", `/api/device-link/${link.json.code}`)).status).toBe(410);
+    const mine = await call<{ bills: { id: string; role: string }[] }>(claimed.json.key, "GET", "/api/my-bills");
+    expect(mine.json.bills.length).toBeGreaterThan(0);
+    expect(mine.json.bills).toContainEqual(expect.objectContaining({ role: "owner", title: "Trattoria" }));
+    expect((await call<{ bills: unknown[] }>(NEW, "GET", "/api/my-bills")).json.bills).toEqual([]);
+  });
+});

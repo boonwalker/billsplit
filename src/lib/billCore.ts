@@ -9,6 +9,7 @@ import {
   type BillSnapshot,
   type Debtor,
   type ItemClaims,
+  type MyBill,
   type NetworkEdge,
   type PublicParticipant,
   type ShareCredit,
@@ -105,6 +106,20 @@ export class BillCore {
   /** Ids of the bills a participant takes part in. */
   billsOf(participantId: string): string[] {
     return [...this.bills.values()].filter((b) => b.participants[participantId]).map((b) => b.id);
+  }
+
+  /** The bills a participant takes part in, newest first (to rebuild the list on a new device). */
+  myBills(participantId: string): MyBill[] {
+    return [...this.bills.values()]
+      .filter((b) => b.participants[participantId])
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map((b) => ({
+        id: b.id,
+        title: b.data.title,
+        createdAt: b.createdAt,
+        role: b.ownerId === participantId ? "owner" : "guest",
+        currency: b.data.currency,
+      }));
   }
 
   protected get(billId: string): StoredBill {

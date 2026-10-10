@@ -187,6 +187,24 @@ ist alles in allen Rechnungen beglichen; „Nicht erhalten“ gibt die Anteile w
 der Zahlende die Zahlung zurückziehen. Wer nur mittelbar beteiligt ist (Andy), sieht im Dashboard, was für ihn
 beglichen wurde. Der Empfänger sieht nur Anteile aus Rechnungen, an denen er selbst teilnimmt.
 
+### Gerät wechseln und sichern
+
+Rechnungen, Bilanz und Ausgleichszahlungen hängen an der Gerätekennung (einem geheimen Schlüssel im Browser-Speicher).
+Damit sie bei einem neuen Handy oder gelöschtem Browser-Speicher nicht verloren gehen, gibt es im Profil unter
+„Gerät wechseln & sichern“:
+
+- **Auf neues Gerät übertragen:** zeigt einen QR-Code, der 10 Minuten und nur einmal gilt. Auf dem neuen Gerät in
+  billsplit „QR-Code scannen“ (oder den kopierten Link unter „Oder Link einfügen“ einfügen) und „Übernehmen“
+  tippen. Das neue Gerät bekommt Gerätekennung, Profil und alle Rechnungen (die Liste kommt vom Server, ist also
+  vollständig); das alte funktioniert weiter. Wird der Link in Safari geöffnet, bietet die Seite „In der App öffnen“
+  an, denn Safari und Home-Bildschirm-App haben getrennte Speicher.
+- **Wiederherstellungs-Code anzeigen:** die Gerätekennung selbst, zum Kopieren in einen Passwort-Manager. Mit
+  „Wiederherstellungs-Code eingeben“ holt man die Rechnungen auf jedes Gerät zurück, auch wenn das alte weg ist.
+  Wer den Code hat, kann in Deinem Namen abhaken und Zahlungen bestätigen – deshalb steht ein Hinweis dabei.
+
+Rechnungen, die vorher auf dem neuen Gerät lagen, werden dabei ersetzt (die Seite sagt das vorher). In der Demo gibt
+es die Übertragung nicht.
+
 ### Originalbeleg
 
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten
@@ -342,6 +360,9 @@ claude.ai-Artifact gedacht:
 | `GET` | `/api/network` | Offene Anteile aller eigenen Rechnungen (Grundlage für den Zahlungsplan) |
 | `GET`/`POST` | `/api/transfers` | Eigene Ausgleichszahlungen abrufen / neue eintragen |
 | `POST` | `/api/transfers/:id/(confirm\|reject\|cancel)` | Eingang bestätigen bzw. ablehnen (Empfänger) oder zurückziehen (Zahler) |
+| `GET` | `/api/my-bills` | Rechnungen, an denen das Gerät teilnimmt (für die Übertragung auf ein neues Gerät) |
+| `POST` | `/api/device-link` | Einmal-Code für die Übertragung auf ein neues Gerät (10 Minuten gültig) |
+| `POST` | `/api/device-link/:code` | Code einlösen: Gerätekennung und Profil (nur einmal) |
 
 Geräte authentifizieren sich mit dem Header `x-billsplit-key`. Bei den Event-Streams wird er als Query-Parameter `key`
 übergeben, weil `EventSource` keine eigenen Header unterstützt.
