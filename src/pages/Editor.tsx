@@ -193,7 +193,8 @@ export default function Editor({ billId }: { billId?: string }) {
   /** Items waiting for the tip / head count questions before the QR code is created. */
   const [askTip, setAskTip] = useState<BillItem[] | null>(null);
   const [loaded, setLoaded] = useState(!editing);
-  const [busy, setBusy] = useState<{ message: string; progress?: number } | null>(null);
+  /** scan: reading the receipt (with the photo) · create: making or saving the bill (just dots). */
+  const [busy, setBusy] = useState<{ message: string; progress?: number; create?: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   /** Width / height of the photo, so its preview can be as large as possible without bars. */
@@ -221,7 +222,7 @@ export default function Editor({ billId }: { billId?: string }) {
   useEffect(() => () => void (preview && URL.revokeObjectURL(preview)), [preview]);
 
   async function publish(data: BillData) {
-    setBusy({ message: "Rechnung wird erstellt …" });
+    setBusy({ message: "billsplit generiert die interaktive Rechnung", create: true });
     try {
       const snap = await api.createBill(data, loadProfile().name.trim() || "Ich");
       // Keep the photo the bill was read from, so everyone can check it later.
@@ -326,7 +327,7 @@ export default function Editor({ billId }: { billId?: string }) {
       return;
     }
     const data = toBillData(draft, validItems);
-    setBusy({ message: "Wird gespeichert …" });
+    setBusy({ message: "Wird gespeichert …", create: true });
     try {
       await api.updateBill(billId, data);
       navigate(`/b/${billId}`, { replace: true });
@@ -334,6 +335,25 @@ export default function Editor({ billId }: { billId?: string }) {
       setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
       setBusy(null);
     }
+  }
+
+  // After "Rechnung erstellen": never the scan screen, only the dots and a line of text.
+  if (busy?.create) {
+    return (
+      <div className="page">
+        <Header back="/" />
+        <main className="content center-v">
+          <div className="scanning creating" role="status">
+            <div className="dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </div>
+            <p className="scan-msg">{busy.message}</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   if (busy) {
