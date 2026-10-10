@@ -3587,3 +3587,10 @@ input[aria-invalid="true"] {
   white-space: nowrap;
   overflow: hidden;
 }
+
+/* Examples under the supermarket question, on a line of their own and a little smaller. */
+.shop-examples {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.88em;
+}
