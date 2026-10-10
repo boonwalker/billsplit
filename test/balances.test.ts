@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { computeBalances } from "../src/lib/balances";
-import { netOf, sameEntries } from "../src/lib/settle";
 import type { BillData, BillSnapshot } from "../src/lib/bill";
 
 const data = (over: Partial<BillData> = {}): BillData => ({
@@ -78,10 +77,8 @@ describe("balances over all bills", () => {
       ["o", "lent", 800, "d-anna"],
       ["g2", "owed", 800, undefined],
     ]);
-    expect(netOf(anna)).toBe(0);
+    expect(anna.lent - anna.owed).toBe(0);
     expect(anna.payment).toEqual({ paypalMe: "nik" });
-    expect(sameEntries(anna.entries, [...anna.entries].reverse())).toBe(true);
-    expect(sameEntries(anna.entries, [{ ...anna.entries[0], amount: 801 }, anna.entries[1]])).toBe(false);
   });
 
   it("counts only what was added after paying, and nothing once the payer confirmed it", () => {

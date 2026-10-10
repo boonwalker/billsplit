@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BillStore, StoreError } from "../server/store";
 import type { BillData } from "../src/lib/bill";
+import { sameAllocations, settlementWith } from "../src/lib/settle";
 
 const bill = (title: string, items: [string, number][]): BillData => ({
   title,
@@ -104,5 +105,83 @@ describe("settlement payments", () => {
     expect(() => store.decideTransfer(andy, id, "cancel")).toThrow(StoreError);
     store.decideTransfer(me, id, "cancel");
     expect(() => store.decideTransfer(katia, id, "confirm")).toThrow(/abgeschlossen/);
+  });
+
+  it("lets the recipient record money that arrived outside the app – confirmed right away", () => {
+    const { store, me, andy, pizzeria } = setup();
+    const notices: [string, string][] = [];
+    store.onNotice((pid, n) => notices.push([pid, n.title]));
+    // Andy records that I paid him the 5 € for the pizza.
+    store.createTransfer(andy, { fromId: me, toId: andy, amount: 500, currency: "EUR", allocations: [{ billId: pizzeria, debtorId: me, creditorId: andy, amount: 500 }] });
+    expect(store.listTransfers(me)[0]).toMatchObject({ status: "confirmed", recordedByRecipient: true, fromName: "Niklas", toName: "Andy" });
+    expect(store.snapshot(pizzeria, andy).debtors?.[0]).toMatchObject({ credited: 500, creditPending: 0 });
+    expect(notices).toEqual([[me, "Andy hat Deinen Ausgleich eingetragen"]]);
+    // Only for money to oneself, and never as an offset of nothing.
+    expect(() => store.createTransfer(andy, { fromId: me, toId: "katia", amount: 300, currency: "EUR", allocations: [] })).toThrow(/an Dich/);
+  });
+
+  it("offsets debts that cancel out exactly once the other side agrees", () => {
+    const store = new BillStore(null);
+    const [me, anna] = ["me", "anna"];
+    const mine = store.createBill(bill("Bar", [["wine", 700]]), me, "Niklas");
+    store.join(mine, anna, "Anna");
+    store.setClaims(mine, anna, { wine: [0] });
+    const hers = store.createBill(bill("Café", [["cake", 700]]), anna, "Anna");
+    store.join(hers, me, "Niklas");
+    store.setClaims(hers, me, { cake: [0] });
+    const notices: [string, string][] = [];
+    store.onNotice((pid, n) => notices.push([pid, n.title]));
+    const id = store.createTransfer(me, {
+      toId: anna,
+      amount: 0,
+      currency: "EUR",
+      allocations: [
+        { billId: hers, debtorId: me, creditorId: anna, amount: 700 },
+        { billId: mine, debtorId: anna, creditorId: me, amount: 700 },
+      ],
+    });
+    expect(store.network(me)).toEqual([]);
+    expect(notices).toEqual([[anna, "Niklas möchte gegenseitig verrechnen"]]);
+    store.decideTransfer(anna, id, "confirm");
+    expect(notices[1]).toEqual([me, "Anna hat die Verrechnung bestätigt ✓"]);
+    // A zero payment that settles only one side does not add up.
+    expect(() =>
+      store.createTransfer(me, { toId: anna, amount: 0, currency: "EUR", allocations: [{ billId: hers, debtorId: me, creditorId: anna, amount: 1 }] }),
+    ).toThrow();
+  });
+
+  it("tells the people involved what needs them", () => {
+    const { store, me, andy, katia, pizzeria, kino } = setup();
+    const notices: [string, string][] = [];
+    store.onNotice((pid, n) => notices.push([pid, n.title.replace(/\s/g, " ")]));
+    store.recordPayClick(pizzeria, me);
+    store.setMarkedPaid(pizzeria, me, true);
+    store.setMarkedPaid(pizzeria, me, true);
+    const id = store.createTransfer(me, { toId: katia, amount: 300, currency: "EUR", allocations: [{ billId: kino, debtorId: me, creditorId: katia, amount: 300 }] });
+    store.decideTransfer(katia, id, "reject");
+    expect(notices).toEqual([
+      [andy, "Niklas hat bezahlt"],
+      [katia, "Niklas hat Dir 3,00 € gesendet"],
+      [me, "Katia hat 3,00 € nicht erhalten"],
+    ]);
+  });
+
+  it("settles everything with one person in one payment, from their side or mine", () => {
+    const { store, me, andy, pizzeria } = setup();
+    // Andy also owes me 2 € from my bill.
+    const mine = store.createBill(bill("Eis", [["eis", 200]]), me, "Niklas");
+    store.join(mine, andy, "Andy");
+    store.setClaims(mine, andy, { eis: [0] });
+    const s = settlementWith(me, andy, store.network(me), "EUR");
+    expect([s.owed, s.lent, s.net]).toEqual([500, 200, -300]);
+    expect(s.payment).toEqual({ paypalMe: "pizzeria" });
+    expect(s.edges.map((e) => e.billId).sort()).toEqual([mine, pizzeria].sort());
+    // Andy sees the same from his side and records the 3 € he got from me.
+    const his = settlementWith(andy, me, store.network(andy), "EUR");
+    expect(his.net).toBe(300);
+    expect(sameAllocations(his.allocations, s.allocations)).toBe(true);
+    store.createTransfer(andy, { fromId: me, toId: andy, amount: his.net, currency: "EUR", allocations: his.allocations });
+    expect(settlementWith(me, andy, store.network(me), "EUR").edges).toEqual([]);
+    expect(sameAllocations(s.allocations, [{ ...s.allocations[0], amount: 1 }, s.allocations[1]])).toBe(false);
   });
 });

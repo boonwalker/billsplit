@@ -7,13 +7,18 @@ const srv = spawn("node", ["dist-server/index.js"], { cwd: ROOT, env: { ...proce
 await wait(1500);
 const call = (path, key, method, body) => fetch(`http://localhost:3270${path}`, { method, headers: { "content-type": "application/json", "x-billsplit-key": key }, body: body && JSON.stringify(body) }).then((r) => r.json());
 const ME = "mekey-1234567890abcdefghij", ANNA = "annakey-1234567890abcdefgh", BEN = "benkey-1234567890abcdefghi";
-const items = [{ id: "a", name: "Pizza", qty: 1, total: 1290 }, { id: "b", name: "Pasta", qty: 1, total: 1150 }, { id: "c", name: "Wein", qty: 1, total: 2400 }];
+const items = [{ id: "a", name: "Pizza", qty: 1, total: 1290 }, { id: "b", name: "Pasta", qty: 1, total: 1150 }, { id: "c", name: "Wein", qty: 1, total: 2400 }, { id: "d", name: "Bier", qty: 1, total: 500 }];
+const CARL = "carlkey-1234567890abcdefgh";
 const pay = { paypalMe: "x" };
 // 1: I paid, Anna has pasta, Ben has wine (not yet)
 const b1 = (await call("/api/bills", ME, "POST", { name: "Niklas", data: { title: "Trattoria", date: "2026-10-09", currency: "EUR", items, tipPercent: 10, payment: pay } })).id;
 await call(`/api/bills/${b1}/claims`, ME, "PUT", { claims: { a: [0] } });
 await call(`/api/bills/${b1}/join`, ANNA, "POST", { name: "Anna" }); await call(`/api/bills/${b1}/claims`, ANNA, "PUT", { claims: { b: [0] } });
 await call(`/api/bills/${b1}/join`, BEN, "POST", { name: "Ben" }); await call(`/api/bills/${b1}/claims`, BEN, "PUT", { claims: { c: [0] } });
+await call(`/api/bills/${b1}/join`, CARL, "POST", { name: "Carl" }); await call(`/api/bills/${b1}/claims`, CARL, "PUT", { claims: { d: [0] } });
+// 4: Ben paid; I owe him exactly what he owes me (his wine incl. his part of the tip: 25,34 €)
+const b4 = (await call("/api/bills", BEN, "POST", { name: "Ben", data: { title: "Biergarten", date: "2026-10-06", currency: "EUR", items: [{ id: "x", name: "Brezn & Bier", qty: 1, total: 2534 }], tipPercent: 0, payment: pay } })).id;
+await call(`/api/bills/${b4}/join`, ME, "POST", { name: "Niklas" }); await call(`/api/bills/${b4}/claims`, ME, "PUT", { claims: { x: [0] } });
 // 2: Anna paid, I had the pizza
 const b2 = (await call("/api/bills", ANNA, "POST", { name: "Anna", data: { title: "Sushi Bar", date: "2026-10-08", currency: "EUR", items, tipPercent: 0, payment: pay } })).id;
 await call(`/api/bills/${b2}/join`, ME, "POST", { name: "Niklas" }); await call(`/api/bills/${b2}/claims`, ME, "PUT", { claims: { a: [0], c: [0] } });
@@ -24,6 +29,7 @@ const recent = [
   { id: b1, title: "Trattoria", role: "owner", createdAt: "2026-10-09T18:00:00Z" },
   { id: b2, title: "Sushi Bar", role: "guest", createdAt: "2026-10-08T18:00:00Z" },
   { id: b3, title: "Café", role: "guest", createdAt: "2026-10-07T18:00:00Z" },
+  { id: b4, title: "Biergarten", role: "guest", createdAt: "2026-10-06T18:00:00Z" },
 ];
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE", permissions: ["clipboard-read", "clipboard-write"] });
@@ -31,35 +37,68 @@ await ctx.addInitScript(([k, r]) => { localStorage.setItem("billsplit.deviceKey"
 const p = await ctx.newPage();
 await p.goto("http://localhost:3270/#/dashboard"); await p.waitForSelector(".person-ring"); await wait(800);
 const tile = (n) => p.locator(".person-ring").filter({ hasText: n });
-// Anna: I owe 36,90 in her bill, she owes 13,11 in mine
+const sheet = () => p.locator(".settle-sheet").innerText().then((t) => t.replace(/\n/g, " | "));
+const friend = async (key, name) => {
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE" });
+  await c.addInitScript(([k, n]) => { localStorage.setItem("billsplit.deviceKey", JSON.stringify(k)); localStorage.setItem("billsplit.profile", JSON.stringify({ name: n, paypalMe: "", paypalEmail: "" })); }, [key, name]);
+  const page = await c.newPage(); await page.goto("http://localhost:3270/#/dashboard"); await wait(1200); return page;
+};
+
+// 1) Anna: I owe her on balance → pay, she confirms
 await tile("Anna").locator(".person-ring-hit").click(); await wait(300);
-console.log("sheet:", (await p.locator(".settle-sheet").innerText()).replace(/\n/g, " | "));
+console.log("anna sheet:", await sheet());
 await p.locator(".settle-sheet").screenshot({ path: `${SP}/shots/settle-anna.png` });
-await p.getByRole("button", { name: /Ausgleich zahlen/ }).click(); await wait(200);
+await p.getByRole("button", { name: /an Anna zahlen/ }).click(); await wait(300);
+console.log("copied note:", (await p.locator(".settle-copied").innerText()).replace(/\n/g, " / "));
+await p.locator(".settle-sheet").screenshot({ path: `${SP}/shots/settle-copied.png` });
 const link = p.getByRole("link", { name: /Mit PayPal bezahlen/ });
-console.log("paypal url:", await link.getAttribute("href"));
-const [popup] = await Promise.all([ctx.waitForEvent("page"), link.click()]); await popup.close();
-await wait(300);
-console.log("question:", await p.locator(".settle-question").innerText());
-await p.getByRole("button", { name: /Bezahlt – in/ }).click();
+const [popup] = await Promise.all([ctx.waitForEvent("page"), link.click()]); await popup.close(); await wait(300);
+await p.getByRole("button", { name: /Gesendet – Anna bestätigen lassen/ }).click();
 await p.waitForSelector(".settle-done", { timeout: 10000 });
-console.log("done:", (await p.locator(".settle-sheet").innerText()).replace(/\n/g, " | "));
+console.log("anna done:", await sheet());
 await p.getByRole("button", { name: "Fertig" }).click(); await wait(1200);
-console.log("anna tile after:", (await tile("Anna").innerText()).replace(/\n/g, " | "));
-// verify in the bills
+console.log("my inbox:", (await p.locator(".transfer-inbox").innerText()).replace(/\n/g, " | "));
+console.log("anna tile after:", (await tile("Anna").count()) ? (await tile("Anna").innerText()).replace(/\n/g, " | ") : "(none)");
+const anna = await friend(ANNA, "Anna");
+console.log("anna inbox:", (await anna.locator(".transfer-inbox").innerText()).replace(/\n/g, " | "));
+await anna.getByRole("button", { name: "✓ Erhalten" }).click(); await wait(1000);
 const s2 = await call(`/api/bills/${b2}`, ANNA, "GET");
-console.log("Anna's bill, Niklas:", JSON.stringify(s2.debtors.find((d) => d.name === "Niklas"), ["amount", "payAmount", "markedPaidAt", "received"]));
-const s1 = await call(`/api/bills/${b1}`, ME, "GET");
-console.log("my bill, Anna:", JSON.stringify(s1.debtors.find((d) => d.name === "Anna"), ["amount", "received"]));
-const s1a = await call(`/api/bills/${b1}`, ANNA, "GET");
-console.log("Anna sees my bill: myReceived", s1a.myReceived);
-// Lisa: stale check – my share changes while paying
+console.log("Anna's bill, Niklas:", JSON.stringify(s2.debtors.find((d) => d.name === "Niklas"), ["credited", "creditPending", "creditNotes"]));
+await wait(800);
+console.log("my inbox after confirm:", (await p.locator(".transfer-inbox").innerText()).replace(/\n/g, " | "));
+
+// 2) Carl owes me → I record it as received
+await tile("Carl").locator(".person-ring-hit").click(); await wait(300);
+console.log("carl sheet:", await sheet());
+await p.getByRole("button", { name: /erhalten – eintragen/ }).click(); await p.waitForSelector(".settle-done");
+console.log("carl done:", await sheet());
+await p.getByRole("button", { name: "Fertig" }).click(); await wait(800);
+const carl = await friend(CARL, "Carl");
+console.log("carl inbox:", (await carl.locator(".transfer-inbox").innerText()).replace(/\n/g, " | "));
+const s1c = await call(`/api/bills/${b1}`, CARL, "GET");
+console.log("Carl in my bill:", JSON.stringify(s1c.myCredit));
+
+// 3) Ben: evens out exactly → offset, Ben agrees
+await tile("Ben").locator(".person-ring-hit").click(); await wait(300);
+console.log("ben sheet:", await sheet());
+await p.locator(".settle-sheet").screenshot({ path: `${SP}/shots/settle-ben.png` });
+await p.getByRole("button", { name: "Gegenseitig verrechnen" }).click(); await p.waitForSelector(".settle-done");
+console.log("ben done:", await sheet());
+await p.getByRole("button", { name: "Fertig" }).click(); await wait(800);
+const ben = await friend(BEN, "Ben");
+console.log("ben inbox:", (await ben.locator(".transfer-inbox").innerText()).replace(/\n/g, " | "));
+await ben.locator(".transfer-inbox").screenshot({ path: `${SP}/shots/settle-ben-inbox.png` });
+await ben.getByRole("button", { name: "✓ Einverstanden" }).click(); await wait(1000);
+const s4 = await call(`/api/bills/${b4}`, BEN, "GET");
+console.log("Ben's bill, Niklas:", JSON.stringify(s4.debtors[0], ["credited", "creditNotes"]));
+
+// 4) Lisa: stale check – my share changes while paying
 await tile("Lisa").locator(".person-ring-hit").click(); await wait(300);
-await p.getByRole("button", { name: /Ausgleich zahlen/ }).click(); await wait(200);
+await p.getByRole("button", { name: /an Lisa zahlen/ }).click(); await wait(200);
 const [pop2] = await Promise.all([ctx.waitForEvent("page"), p.getByRole("link", { name: /Mit PayPal bezahlen/ }).click()]); await pop2.close();
 await call(`/api/bills/${b3}/claims`, ME, "PUT", { claims: { b: [0], a: [0] } });
-await p.getByRole("button", { name: /Bezahlt – in/ }).click(); await wait(1500);
-console.log("stale:", (await p.locator(".settle-sheet .alert").innerText()), "| total now:", await p.locator(".settle-total").innerText());
-const s3 = await call(`/api/bills/${b3}`, "lisakey-1234567890abcdefgh", "GET");
-console.log("Lisa's bill untouched:", JSON.stringify(s3.debtors[0], ["markedPaidAt", "payAmount"]));
+await p.getByRole("button", { name: /Gesendet – Lisa/ }).click(); await wait(1500);
+console.log("stale:", await p.locator(".settle-sheet .alert").innerText(), "| total now:", await p.locator(".settle-total").innerText());
+const list = await call(`/api/transfers`, "lisakey-1234567890abcdefgh", "GET");
+console.log("Lisa transfers:", list.transfers.length);
 await browser.close(); srv.kill();

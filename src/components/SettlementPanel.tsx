@@ -5,7 +5,10 @@ import { formatMoney } from "../lib/money";
 import { planSettlement, type PlannedTransfer, type SettlementPlan } from "../lib/simplify";
 import PayButtons from "./PayButtons";
 
-const RECENT_MS = 14 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const RECENT_MS = 14 * DAY_MS;
+/** Confirmed payments of my own stay visible a little while (then they are just settled). */
+const CONFIRMED_MS = 3 * DAY_MS;
 
 /** One settled share in words, from my point of view. */
 function describe(a: TransferAllocation, me: string, edges: Map<string, NetworkEdge>) {
@@ -195,7 +198,11 @@ export function TransferInbox({ me, transfers, onDecided }: { me: string; transf
   const now = Date.now();
   const recent = (t: Transfer) => now - Date.parse(t.decidedAt ?? t.createdAt) < RECENT_MS;
   const incoming = transfers.filter((t) => t.toId === me && t.status === "pending");
-  const outgoing = transfers.filter((t) => t.fromId === me && (t.status === "pending" || (t.status === "rejected" && recent(t))));
+  const outgoing = transfers.filter(
+    (t) =>
+      t.fromId === me &&
+      (t.status === "pending" || (t.status === "rejected" && recent(t)) || (t.status === "confirmed" && now - Date.parse(t.decidedAt ?? t.createdAt) < CONFIRMED_MS)),
+  );
   const involved = transfers.filter((t) => t.fromId !== me && t.toId !== me && t.status !== "cancelled" && t.status !== "rejected" && recent(t));
   if (!incoming.length && !outgoing.length && !involved.length) return null;
   const fmt = (t: Transfer, c: number) => formatMoney(c, t.currency);
@@ -229,37 +236,63 @@ export function TransferInbox({ me, transfers, onDecided }: { me: string; transf
   return (
     <section className="transfer-inbox">
       {error && <p className="alert">{error}</p>}
-      {incoming.map((t) => (
-        <div key={t.id} className="card inbox-card incoming">
-          <h4>
-            {t.fromName} hat Dir {fmt(t, t.amount)} gesendet
-          </h4>
-          <p className="muted small">Bestätige den Eingang, wenn das Geld da ist – dann wird es in diesen Rechnungen eingetragen:</p>
-          <ul className="settle-entries">{lines(t)}</ul>
-          <div className="inbox-actions">
-            <button type="button" className="btn btn-primary" disabled={busy === t.id} onClick={() => decide(t, "confirm")}>
-              ✓ Erhalten
-            </button>
-            <button type="button" className="btn btn-ghost" disabled={busy === t.id} onClick={() => decide(t, "reject")}>
-              Nicht erhalten
-            </button>
+      {incoming.map((t) =>
+        t.amount === 0 ? (
+          // An offset: what we owe each other cancels out exactly.
+          <div key={t.id} className="card inbox-card incoming">
+            <h4>{t.fromName} möchte gegenseitig verrechnen</h4>
+            <p className="muted small">Eure offenen Beträge gleichen sich genau aus – ohne dass jemand etwas zahlt:</p>
+            <ul className="settle-entries">{lines(t)}</ul>
+            <div className="inbox-actions">
+              <button type="button" className="btn btn-primary" disabled={busy === t.id} onClick={() => decide(t, "confirm")}>
+                ✓ Einverstanden
+              </button>
+              <button type="button" className="btn btn-ghost" disabled={busy === t.id} onClick={() => decide(t, "reject")}>
+                Ablehnen
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        ) : (
+          <div key={t.id} className="card inbox-card incoming">
+            <h4>
+              {t.fromName} hat Dir {fmt(t, t.amount)} gesendet
+            </h4>
+            <p className="muted small">Bestätige den Eingang, wenn das Geld da ist – dann wird es in diesen Rechnungen eingetragen:</p>
+            <ul className="settle-entries">{lines(t)}</ul>
+            <div className="inbox-actions">
+              <button type="button" className="btn btn-primary" disabled={busy === t.id} onClick={() => decide(t, "confirm")}>
+                ✓ Erhalten
+              </button>
+              <button type="button" className="btn btn-ghost" disabled={busy === t.id} onClick={() => decide(t, "reject")}>
+                Nicht erhalten
+              </button>
+            </div>
+          </div>
+        ),
+      )}
       {outgoing.map((t) => (
         <div key={t.id} className={`card inbox-card ${t.status}`}>
           {t.status === "pending" ? (
             <>
-              <h4>
-                {fmt(t, t.amount)} an {t.toName} · wartet auf Bestätigung
-              </h4>
+              <h4>{t.amount === 0 ? `Verrechnung mit ${t.toName} · wartet auf Bestätigung` : `${fmt(t, t.amount)} an ${t.toName} · wartet auf Bestätigung`}</h4>
               <button type="button" className="link" disabled={busy === t.id} onClick={() => decide(t, "cancel")}>
-                Doch nicht gezahlt – zurückziehen
+                {t.amount === 0 ? "Verrechnung zurückziehen" : "Doch nicht gezahlt – zurückziehen"}
               </button>
             </>
+          ) : t.status === "confirmed" ? (
+            <h4>
+              ✓{" "}
+              {t.amount === 0
+                ? `${t.toName} hat die Verrechnung bestätigt – alles ausgeglichen.`
+                : t.recordedByRecipient
+                  ? `${t.toName} hat ${fmt(t, t.amount)} von Dir als erhalten eingetragen – alles ausgeglichen.`
+                  : `${t.toName} hat ${fmt(t, t.amount)} erhalten – alles ausgeglichen.`}
+            </h4>
           ) : (
             <h4>
-              {t.toName} hat {fmt(t, t.amount)} als nicht erhalten markiert – die Anteile sind wieder offen.
+              {t.amount === 0
+                ? `${t.toName} hat die Verrechnung abgelehnt – die Beträge sind wieder offen.`
+                : `${t.toName} hat ${fmt(t, t.amount)} als nicht erhalten markiert – die Anteile sind wieder offen.`}
             </h4>
           )}
         </div>

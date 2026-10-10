@@ -131,15 +131,22 @@ Kacheln (über alle Rechnungen zusammengefasst – zugeordnet über die Gerätek
 gibt es je Währung eine eigene Übersicht.
 
 **Ausgleichen mit einer Person:** Ein Tipp auf die Kachel einer Person mit offenen Beträgen zeigt alle offenen
-Beträge Rechnung für Rechnung und den Saldo (z. B. 36,90 € geschuldet − 13,11 € geliehen = 23,79 €). Schuldest Du
-unterm Strich etwas, öffnet „Ausgleich zahlen“ PayPal mit genau diesem Betrag (vorher in die Zwischenablage kopiert)
-bzw. die Überweisungs-/Wero-Daten. Erst nach „✓ Bezahlt – eintragen“ wird gebucht, und zwar in jeder einzelnen
-Rechnung: Dein Anteil in den Rechnungen der Person wird mit dem aktuellen Betrag als Zahlung vermerkt und als bezahlt
-markiert (die Person sieht das in der Rechnung), ihr Anteil in Deinen Rechnungen wird als erhalten markiert (sie sieht
-„… hat Deinen Anteil als erhalten markiert“). Vor dem Buchen werden alle Rechnungen neu geladen; hat sich ein Betrag
-geändert, wird nichts gebucht und die neue Aufstellung gezeigt. Schuldet die Person Dir unterm Strich etwas,
-trägst Du den Ausgleich ein, sobald das Geld da ist. Im Dashboard zählt ein als bezahlt markierter Anteil bereits als
-beglichen.
+Beträge Rechnung für Rechnung und den Saldo (z. B. 36,90 € geschuldet − 12,84 € geliehen = 24,06 €). Alles wird als
+**eine Ausgleichszahlung** eingetragen – derselbe Mechanismus wie beim Gesamtausgleich (siehe unten), also nie halb:
+
+- **Du schuldest unterm Strich etwas:** „Betrag an … zahlen“ öffnet PayPal mit genau diesem Betrag (vorher in die
+  Zwischenablage kopiert) bzw. die Überweisungs-/Wero-Daten. Nach „✓ Gesendet – … bestätigen lassen“ wartet die
+  Zahlung auf die Person; bis dahin gelten die Anteile als bezahlt, nach ihrer Bestätigung sind sie in allen
+  Rechnungen beglichen.
+- **Die Person schuldet Dir unterm Strich etwas:** Sobald das Geld da ist, trägst Du es mit „✓ Betrag erhalten –
+  eintragen“ ein. Das gilt sofort als bestätigt (Du bist ja der Empfänger); die Person sieht es im Dashboard.
+- **Es gleicht sich genau aus:** „Gegenseitig verrechnen“ schlägt die Verrechnung vor, die Person bestätigt sie im
+  Dashboard („✓ Einverstanden“).
+
+Vor dem Eintragen werden die offenen Beträge neu geladen; hat sich einer geändert, wird nichts eingetragen und die
+neue Aufstellung gezeigt. In den Rechnungen steht bei den betroffenen Anteilen ein Hinweis (z. B. „24,06 € per
+Ausgleich Niklas → Anna ✓“ oder „25,34 € gegenseitig verrechnet (Niklas ↔ Ben) ✓“). Eigene Ausgleichszahlungen
+bleiben nach der Bestätigung noch drei Tage im Dashboard sichtbar („✓ Anna hat 24,06 € erhalten“).
 
 ### Kassenbon-Vorschau
 

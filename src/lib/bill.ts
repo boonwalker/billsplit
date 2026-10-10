@@ -168,6 +168,8 @@ export interface Transfer {
   allocations: (TransferAllocation & { billTitle: string; debtorName: string; creditorName: string })[];
   status: TransferStatus;
   decidedAt?: string;
+  /** The recipient recorded it (money that arrived outside the app); it was confirmed right away. */
+  recordedByRecipient?: boolean;
 }
 
 /** Settlement payments as seen by one device, with that device's participant id. */

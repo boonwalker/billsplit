@@ -290,7 +290,8 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         const body = parse(
           z.object({
             toId: id,
-            amount: cents,
+            fromId: id.optional(),
+            amount: z.number().int().min(0).max(1_000_000_000),
             currency: z.string().min(1).max(8),
             allocations: z.array(z.object({ billId: z.string().max(40), debtorId: id, creditorId: id, amount: cents })).min(1).max(200),
           }),

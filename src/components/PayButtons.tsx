@@ -4,6 +4,7 @@ import { copyText } from "../lib/clipboard";
 import { clickPress, clickRelease } from "../lib/haptics";
 import { centsToInput, formatMoney, type Cents } from "../lib/money";
 import { otherMethods, payAction, type OtherMethod } from "../lib/payment";
+import { useOneLine } from "../lib/useOneLine";
 import TransferSheet from "./TransferSheet";
 
 interface Props {
@@ -29,6 +30,7 @@ export default function PayButtons({ payment, amount, currency, recipient, refer
   const [stage, setStage] = useState<"pay" | "copied" | "confirm">("pay");
   const [copied, setCopied] = useState(false);
   const [transfer, setTransfer] = useState<OtherMethod | null>(null);
+  const oneLine = useOneLine();
   const action = payAction(payment, amount, currency);
   const others = otherMethods(payment);
   const fmt = (c: Cents) => formatMoney(c, currency);
@@ -55,7 +57,16 @@ export default function PayButtons({ payment, amount, currency, recipient, refer
       {stage === "copied" && action.kind === "paypalMe" && (
         <>
           <p className="paybar-note settle-copied">
-            {copied ? `✓ ${fmt(amount)} in die Zwischenablage kopiert – in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.` : `Trag in PayPal ${fmt(amount)} ein.`}
+            {copied ? (
+              <>
+                ✓ {fmt(amount)} in die Zwischenablage kopiert –
+                <span className="paybar-oneline" ref={oneLine}>
+                  in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.
+                </span>
+              </>
+            ) : (
+              `Trag in PayPal ${fmt(amount)} ein.`
+            )}
           </p>
           <a className="btn btn-paypal btn-large" href={action.url} target="_blank" rel="noreferrer" onClick={() => setStage("confirm")}>
             Mit PayPal bezahlen · {fmt(amount)}

@@ -3,7 +3,7 @@ import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/pro
 import path from "node:path";
 import { z } from "zod";
 import type { BillData } from "../src/lib/bill.ts";
-import { BillCore, BillError, type StoredBill, type StoredTransfer } from "../src/lib/billCore.ts";
+import { BillCore, BillError, type Notice, type StoredBill, type StoredTransfer } from "../src/lib/billCore.ts";
 
 export { BillError as StoreError };
 
@@ -110,6 +110,18 @@ export class BillStore extends BillCore {
   onChange(listener: ChangeListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  // ───── notices for one person (the server sends them as push notifications) ─────
+  private noticeListeners = new Set<(participantId: string, notice: Notice) => void>();
+
+  onNotice(listener: (participantId: string, notice: Notice) => void): () => void {
+    this.noticeListeners.add(listener);
+    return () => this.noticeListeners.delete(listener);
+  }
+
+  protected override notify(participantId: string, notice: Notice): void {
+    for (const l of this.noticeListeners) l(participantId, notice);
   }
 
   protected override changed(billId: string): void {

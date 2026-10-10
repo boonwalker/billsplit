@@ -1,15 +1,19 @@
 import { useState } from "react";
-import type { PersonBalance } from "../lib/balances";
+import { api } from "../lib/api";
+import type { NetworkEdge } from "../lib/bill";
 import { formatMoney } from "../lib/money";
-import { bookSettlement, netOf, sameEntries } from "../lib/settle";
+import { sameAllocations, settlementWith } from "../lib/settle";
 import PayButtons from "./PayButtons";
 
 interface Props {
-  person: PersonBalance;
+  /** The person's participant id and name. */
+  person: { id: string; name: string };
   currency: string;
+  me: string;
+  edges: NetworkEdge[];
   myName: string;
-  /** Loads the current open amounts with this person again (null when they are all settled). */
-  reload: () => Promise<PersonBalance | null>;
+  /** Loads the open shares again (to check nothing changed before recording). */
+  reload: () => Promise<{ me: string; edges: NetworkEdge[] }>;
   onClose: (changed: boolean) => void;
 }
 
@@ -17,37 +21,51 @@ type Stage = "review" | "booking" | "done";
 
 /**
  * Settling up with one person across all bills: every open amount bill by bill, the net
- * amount, the way to pay it (PayPal, bank transfer, Wero) and – once paid – booking it in
- * each bill: my shares in their bills as paid, their shares in mine as received.
+ * amount and – in one settlement payment, like the overall plan – booking all of it at once:
+ * - I owe them: pay (PayPal, bank transfer, Wero), then it waits for them to confirm it.
+ * - They owe me: once the money is there, I record it (confirmed right away, they are told).
+ * - It evens out exactly: offset both sides; they confirm.
+ * Until it is confirmed the shares count as paid in every bill (nobody pays twice).
  */
-export default function SettleSheet({ person: shown, currency, myName, reload, onClose }: Props) {
-  const [person, setPerson] = useState(shown);
+export default function SettleSheet({ person, currency, me, edges: shownEdges, myName, reload, onClose }: Props) {
+  const [edges, setEdges] = useState(shownEdges);
   const [stage, setStage] = useState<Stage>("review");
-  const [progress, setProgress] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
-  const net = netOf(person);
-  const pay = -net;
-  const bills = new Set(person.entries.map((e) => e.billId)).size;
+  const [booked, setBooked] = useState<{ net: number } | null>(null);
+  const s = settlementWith(me, person.id, edges, currency);
+  const { net } = s;
+  const bills = new Set(s.edges.map((e) => e.billId)).size;
   const fmt = (c: number) => formatMoney(c, currency);
   const inBills = bills === 1 ? "der Rechnung" : `allen ${bills} Rechnungen`;
 
-  /** Books everything – but only if the amounts are still the ones that were paid / shown. */
+  /** Records the settlement – but only if the open amounts are still the ones shown (and paid). */
   async function book() {
     setNotice(null);
     setStage("booking");
     try {
-      const current = await reload();
-      if (!current || !sameEntries(current.entries, person.entries)) {
-        if (current) setPerson(current);
-        setNotice("Die Beträge haben sich gerade geändert. Bitte prüfe die neue Aufstellung – noch wurde nichts eingetragen.");
+      const fresh = await reload();
+      const now = settlementWith(fresh.me, person.id, fresh.edges, currency);
+      if (!sameAllocations(now.allocations, s.allocations)) {
+        setEdges(fresh.edges);
+        setNotice(
+          now.edges.length
+            ? "Die Beträge haben sich gerade geändert. Bitte prüfe die neue Aufstellung – noch wurde nichts eingetragen."
+            : `Mit ${person.name} ist inzwischen alles ausgeglichen – noch wurde nichts eingetragen.`,
+        );
         setStage("review");
-        if (!current) onClose(true);
         return;
       }
-      await bookSettlement(person.entries, setProgress);
+      await api.createTransfer({
+        toId: net > 0 ? me : person.id,
+        ...(net > 0 ? { fromId: person.id } : {}),
+        amount: Math.abs(net),
+        currency,
+        allocations: s.allocations,
+      });
+      setBooked({ net });
       setStage("done");
     } catch (e) {
-      setNotice(`${e instanceof Error ? e.message : "Das Eintragen ist fehlgeschlagen."} Bereits Eingetragenes bleibt – bitte nochmal versuchen.`);
+      setNotice(`${e instanceof Error ? e.message : "Das Eintragen ist fehlgeschlagen."} Es wurde nichts eingetragen.`);
       setStage("review");
     }
   }
@@ -59,13 +77,26 @@ export default function SettleSheet({ person: shown, currency, myName, reload, o
       <div className="sheet settle-sheet" role="dialog" aria-label={`Mit ${person.name} ausgleichen`}>
         <h2>Mit {person.name} ausgleichen</h2>
 
-        {stage === "done" ? (
+        {stage === "done" && booked ? (
           <>
-            <p className="settle-done">✓ In {inBills} eingetragen.</p>
-            <p className="muted small">
-              {person.owed > 0 && <>{person.name} sieht in den eigenen Rechnungen, dass Du bezahlt hast. </>}
-              {person.lent > 0 && <>In Deinen Rechnungen ist der Anteil von {person.name} als erhalten markiert.</>}
-            </p>
+            {booked.net < 0 ? (
+              <>
+                <p className="settle-done">✓ Eingetragen – wartet auf die Bestätigung von {person.name}.</p>
+                <p className="muted small">
+                  Bis dahin gelten Deine Anteile als bezahlt. Bestätigt {person.name} den Eingang, ist alles in {inBills} beglichen.
+                </p>
+              </>
+            ) : booked.net > 0 ? (
+              <>
+                <p className="settle-done">✓ In {inBills} als erhalten eingetragen.</p>
+                <p className="muted small">{person.name} sieht im Dashboard und in den Rechnungen, dass alles beglichen ist.</p>
+              </>
+            ) : (
+              <>
+                <p className="settle-done">✓ Verrechnung vorgeschlagen – wartet auf die Bestätigung von {person.name}.</p>
+                <p className="muted small">Bis dahin gelten die Beträge als verrechnet.</p>
+              </>
+            )}
             <button type="button" className="btn btn-primary btn-large" onClick={() => onClose(true)}>
               Fertig
             </button>
@@ -74,52 +105,53 @@ export default function SettleSheet({ person: shown, currency, myName, reload, o
           <>
             {/* Bill by bill, so every euro can be traced to its bill. */}
             <ul className="settle-entries">
-              {person.entries.map((e) => (
-                <li key={`${e.billId}-${e.direction}`}>
+              {s.edges.map((e) => (
+                <li key={`${e.billId}:${e.debtorId}`}>
                   <span>
                     <b>{e.title}</b>
-                    <small className="muted">{e.direction === "owed" ? `Du schuldest ${person.name}` : `${person.name} schuldet Dir`}</small>
+                    <small className="muted">{e.debtorId === me ? `Du schuldest ${person.name}` : `${person.name} schuldet Dir`}</small>
                   </span>
                   <span className="settle-amount">
-                    {e.direction === "owed" ? "−" : "+"}
+                    {e.debtorId === me ? "−" : "+"}
                     {fmt(e.amount)}
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="settle-total">
-              {net < 0 ? (
-                <>
-                  Du zahlst {person.name} <b>{fmt(pay)}</b>
-                </>
-              ) : net > 0 ? (
-                <>
-                  {person.name} zahlt Dir <b>{fmt(net)}</b>
-                </>
-              ) : (
-                <>Gleicht sich genau aus</>
-              )}
-            </p>
+            {s.edges.length > 0 && (
+              <p className="settle-total">
+                {net < 0 ? (
+                  <>
+                    Du zahlst {person.name} <b>{fmt(-net)}</b>
+                  </>
+                ) : net > 0 ? (
+                  <>
+                    {person.name} zahlt Dir <b>{fmt(net)}</b>
+                  </>
+                ) : (
+                  <>Gleicht sich genau aus</>
+                )}
+              </p>
+            )}
 
             {notice && <p className="alert">{notice}</p>}
-            {stage === "booking" && progress > 0 && <p className="muted small">Wird eingetragen … ({progress} von {person.entries.length})</p>}
 
-            {/* I pay: only after paying is it booked in the bills. */}
-            {net < 0 && (
+            {/* I pay: recorded only after paying; then it waits for them to confirm it. */}
+            {s.edges.length > 0 && net < 0 && (
               <PayButtons
-                payment={person.payment ?? {}}
-                amount={pay}
+                payment={s.payment ?? {}}
+                amount={-net}
                 currency={currency}
                 recipient={person.name}
                 reference={reference}
-                confirmLabel={`✓ Bezahlt – in ${inBills} eintragen`}
+                confirmLabel={`✓ Gesendet – ${person.name} bestätigen lassen`}
                 onConfirm={book}
                 busy={stage === "booking"}
               />
             )}
 
-            {/* They pay me (or it evens out): confirm once the money is there. */}
-            {net > 0 && stage === "review" && (
+            {/* They pay me: record it once the money is there. */}
+            {s.edges.length > 0 && net > 0 && stage === "review" && (
               <>
                 <p className="muted small">{person.name} sieht den Ausgleich im eigenen Dashboard. Sobald das Geld da ist, trag es hier ein.</p>
                 <button type="button" className="btn btn-primary btn-large" onClick={book}>
@@ -127,11 +159,15 @@ export default function SettleSheet({ person: shown, currency, myName, reload, o
                 </button>
               </>
             )}
-            {net === 0 && stage === "review" && (
-              <button type="button" className="btn btn-primary btn-large" onClick={book}>
-                Gegenseitig verrechnen
-              </button>
+            {s.edges.length > 0 && net === 0 && stage === "review" && (
+              <>
+                <p className="muted small">Ihr schuldet Euch gegenseitig gleich viel. {person.name} bestätigt die Verrechnung im Dashboard.</p>
+                <button type="button" className="btn btn-primary btn-large" onClick={book}>
+                  Gegenseitig verrechnen
+                </button>
+              </>
             )}
+            {stage === "booking" && net >= 0 && <p className="muted small">Wird eingetragen …</p>}
 
             {stage !== "booking" && (
               <button type="button" className="btn btn-ghost" onClick={() => onClose(false)}>

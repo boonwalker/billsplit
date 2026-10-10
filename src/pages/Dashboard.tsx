@@ -182,7 +182,6 @@ export default function Dashboard() {
   const [balances, setBalances] = useState<Balances[] | null>(null);
   const [settle, setSettle] = useState<{ person: PersonBalance; currency: string } | null>(null);
 
-  /** Loads all bills on this device again (those that cannot be loaded, e.g. offline, are left out). */
   /** Open shares in all my bills (for the plan) and the settlement payments that concern me. */
   const [network, setNetwork] = useState<{ me: string; edges: NetworkEdge[]; transfers: Transfer[] } | null>(null);
   const loadNetwork = useCallback(async () => {
@@ -192,6 +191,7 @@ export default function Dashboard() {
     return next;
   }, []);
 
+  /** Loads all bills on this device again (those that cannot be loaded, e.g. offline, are left out). */
   const load = useCallback(async () => {
     const [snaps] = await Promise.all([
       Promise.all(loadRecent().map((b) => api.getBill(b.id).catch(() => null))),
@@ -277,14 +277,17 @@ export default function Dashboard() {
           onClose={() => setPaying(null)}
         />
       )}
-      {settle && (
+      {settle && network && (
         <SettleSheet
           person={settle.person}
           currency={settle.currency}
+          me={network.me}
+          edges={network.edges}
           myName={myName}
           reload={async () => {
-            const fresh = (await load()).find((b) => b.currency === settle.currency)?.people.find((p) => p.id === settle.person.id);
-            return fresh && fresh.entries.length > 0 ? fresh : null;
+            const fresh = await loadNetwork();
+            void load();
+            return fresh;
           }}
           onClose={(changed) => {
             setSettle(null);

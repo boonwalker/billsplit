@@ -62,12 +62,22 @@ export interface StoredTransfer extends Omit<Transfer, "allocations"> {
 
 export interface TransferInput {
   toId: string;
+  /** Who paid; the viewer unless the recipient records a payment they received (it is confirmed then). */
+  fromId?: string;
   amount: number;
   currency: string;
   allocations: TransferAllocation[];
 }
 
 const MAX_ALLOCATIONS = 200;
+
+/** A message for one person's devices (sent as a push notification by the server). */
+export interface Notice {
+  title: string;
+  body: string;
+  /** Where tapping it leads, as an app route (e.g. "/dashboard"). */
+  path: string;
+}
 
 export class BillCore {
   protected bills = new Map<string, StoredBill>();
@@ -78,6 +88,9 @@ export class BillCore {
 
   /** Called after a settlement payment was created or decided (in addition to `changed` for its bills). */
   protected transfersChanged(): void {}
+
+  /** Tells a participant about something that needs them (the server sends it as a push notification). */
+  protected notify(_participantId: string, _notice: Notice): void {}
 
   /** Whether a participant has the app open right now (the server tracks open connections). */
   protected isOnline(_participantId: string): boolean {
@@ -166,8 +179,17 @@ export class BillCore {
     const bill = this.get(billId);
     if (participantId === bill.ownerId) throw new BillError("Du hast die Rechnung selbst bezahlt.", 400);
     const p = this.participant(bill, participantId);
+    const before = p.markedPaidAt;
     p.markedPaidAt = paid ? new Date().toISOString() : undefined;
     this.changed(billId);
+    if (paid && !before) {
+      const amount = p.payAmount ?? participantShare(bill.data, this.publicParticipants(bill), participantId).total;
+      this.notify(bill.ownerId, {
+        title: `${p.name} hat bezahlt`,
+        body: `${formatMoney(amount, bill.data.currency)} für „${bill.data.title}“ – bitte prüfe den Eingang.`,
+        path: `/b/${billId}`,
+      });
+    }
   }
 
   setReceived(billId: string, requesterId: string, debtorId: string, received: boolean): void {
@@ -229,9 +251,8 @@ export class BillCore {
         if (t.status === "confirmed") credit.confirmed += a.amount;
         else credit.pending += a.amount;
         const money = formatMoney(a.amount, t.currency);
-        credit.notes.push(
-          `${money} per Ausgleich ${t.fromName} → ${t.toName}${t.status === "pending" ? ` (wartet auf Bestätigung von ${t.toName})` : " ✓"}`,
-        );
+        const how = t.amount === 0 ? `gegenseitig verrechnet (${t.fromName} ↔ ${t.toName})` : `per Ausgleich ${t.fromName} → ${t.toName}`;
+        credit.notes.push(`${money} ${how}${t.status === "pending" ? ` (wartet auf Bestätigung von ${t.toName})` : " ✓"}`);
       }
     }
     return credit;
@@ -279,15 +300,20 @@ export class BillCore {
   }
 
   /**
-   * Records a settlement payment the viewer made. Every allocation must be an open share in
-   * a bill the viewer takes part in, and together they must leave everyone even: the payer's
-   * settled debts exceed their settled claims by exactly the amount, the recipient's claims
-   * exceed their debts by it, and for everybody else both are equal.
+   * Records a settlement payment the viewer made – or, with `fromId`, one the viewer received
+   * (then it counts as confirmed right away: only the recipient confirms anyway). Every
+   * allocation must be an open share in a bill the viewer takes part in, and together they must
+   * leave everyone even: the payer's settled debts exceed their settled claims by exactly the
+   * amount, the recipient's claims exceed their debts by it, and for everybody else both are
+   * equal. An amount of 0 offsets debts that cancel out exactly; the other side confirms it.
    */
   createTransfer(viewerId: string, input: TransferInput): string {
     const { toId, amount, currency, allocations } = input;
-    if (toId === viewerId) throw new BillError("Du kannst Dir nicht selbst etwas zahlen.", 400);
-    if (!Number.isInteger(amount) || amount <= 0) throw new BillError("Ungültiger Betrag.", 400);
+    const fromId = input.fromId ?? viewerId;
+    const received = fromId !== viewerId;
+    if (received && toId !== viewerId) throw new BillError("Eintragen kannst Du nur Zahlungen an Dich.", 403);
+    if (toId === fromId) throw new BillError("Du kannst Dir nicht selbst etwas zahlen.", 400);
+    if (!Number.isInteger(amount) || amount < 0 || (amount === 0 && received)) throw new BillError("Ungültiger Betrag.", 400);
     if (!allocations.length || allocations.length > MAX_ALLOCATIONS) throw new BillError("Ungültige Verrechnung.", 400);
 
     const perShare = new Map<string, number>();
@@ -312,25 +338,49 @@ export class BillCore {
       names.set(a.creditorId, bill.participants[a.creditorId].name);
     }
     for (const [person, value] of balance) {
-      const expected = person === viewerId ? amount : person === toId ? -amount : 0;
+      const expected = person === fromId ? amount : person === toId ? -amount : 0;
       if (value !== expected) throw new BillError("Die Verrechnung geht nicht auf.", 400);
     }
-    if (balance.get(viewerId) !== amount || balance.get(toId) !== -amount) throw new BillError("Die Verrechnung geht nicht auf.", 400);
+    // Both sides must be part of it (also when an offset of 0 leaves them even).
+    if (!balance.has(fromId) || !balance.has(toId)) throw new BillError("Die Verrechnung geht nicht auf.", 400);
 
     const id = globalThis.crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-    this.transfers.set(id, {
+    const now = new Date().toISOString();
+    const t: StoredTransfer = {
       id,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
       currency,
-      fromId: viewerId,
-      fromName: names.get(viewerId) ?? "",
+      fromId,
+      fromName: names.get(fromId) ?? "",
       toId,
       toName: names.get(toId) ?? "",
       amount,
       allocations: allocations.map(({ billId, debtorId, creditorId, amount }) => ({ billId, debtorId, creditorId, amount })),
-      status: "pending",
-    });
+      status: received ? "confirmed" : "pending",
+      ...(received ? { decidedAt: now, recordedByRecipient: true } : {}),
+    };
+    this.transfers.set(id, t);
     this.transfersTouched(id);
+    const money = formatMoney(amount, currency);
+    if (received) {
+      this.notify(fromId, {
+        title: `${t.toName} hat Deinen Ausgleich eingetragen`,
+        body: `${money} als erhalten – Deine Anteile bei ${t.toName} sind beglichen.`,
+        path: "/dashboard",
+      });
+    } else if (amount === 0) {
+      this.notify(toId, {
+        title: `${t.fromName} möchte gegenseitig verrechnen`,
+        body: "Eure offenen Beträge gleichen sich genau aus – bitte bestätige das im Dashboard.",
+        path: "/dashboard",
+      });
+    } else {
+      this.notify(toId, {
+        title: `${t.fromName} hat Dir ${money} gesendet`,
+        body: "Bestätige den Eingang im Dashboard, sobald das Geld da ist.",
+        path: "/dashboard",
+      });
+    }
     return id;
   }
 
@@ -345,6 +395,28 @@ export class BillCore {
     t.status = action === "confirm" ? "confirmed" : action === "reject" ? "rejected" : "cancelled";
     t.decidedAt = new Date().toISOString();
     this.transfersTouched(transferId);
+    const money = formatMoney(t.amount, t.currency);
+    const offset = t.amount === 0;
+    if (action === "cancel") {
+      this.notify(t.toId, {
+        title: offset ? `${t.fromName} hat die Verrechnung zurückgezogen` : `${t.fromName} hat die Zahlung zurückgezogen`,
+        body: offset ? "Die Beträge sind wieder offen." : `${money} – die Anteile sind wieder offen.`,
+        path: "/dashboard",
+      });
+    } else {
+      this.notify(t.fromId, {
+        title:
+          action === "confirm"
+            ? offset
+              ? `${t.toName} hat die Verrechnung bestätigt ✓`
+              : `${t.toName} hat ${money} erhalten ✓`
+            : offset
+              ? `${t.toName} hat die Verrechnung abgelehnt`
+              : `${t.toName} hat ${money} nicht erhalten`,
+        body: action === "confirm" ? "Die Anteile sind in allen Rechnungen beglichen." : "Die Anteile sind wieder offen.",
+        path: "/dashboard",
+      });
+    }
   }
 
   /**

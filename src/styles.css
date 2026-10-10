@@ -4064,6 +4064,10 @@ input[aria-invalid="true"] {
   color: var(--danger);
 }
 
+.inbox-card.confirmed h4 {
+  color: var(--claim);
+}
+
 .inbox-card p {
   margin: 0;
 }

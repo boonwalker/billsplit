@@ -25,8 +25,11 @@ export interface Api {
   network(): Promise<NetworkEdge[]>;
   /** Settlement payments this device made, received or is part of. */
   transfers(): Promise<TransferList>;
-  /** Records a settlement payment this device made; it waits for the recipient's confirmation. */
-  createTransfer(input: { toId: string; amount: number; currency: string; allocations: TransferAllocation[] }): Promise<TransferList>;
+  /**
+   * Records a settlement payment this device made (it waits for the recipient's confirmation) –
+   * or, with `fromId`, one it received (confirmed right away).
+   */
+  createTransfer(input: { toId: string; fromId?: string; amount: number; currency: string; allocations: TransferAllocation[] }): Promise<TransferList>;
   /** Recipient: confirm / reject · payer: cancel a waiting settlement payment. */
   decideTransfer(id: string, action: "confirm" | "reject" | "cancel"): Promise<TransferList>;
   /**
