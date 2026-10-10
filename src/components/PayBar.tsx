@@ -145,9 +145,15 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
         {action.kind === "paypalMe" && !(myPayment && nothing) && ready && (
           <>
             <p className="paybar-note paybar-copied">
-              {ready.copied
-                ? `✓ ${formatMoney(due, data.currency)} kopiert – in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.`
-                : `Trag in PayPal ${formatMoney(due, data.currency)} ein.`}
+              {ready.copied ? (
+                <>
+                  ✓ {formatMoney(due, data.currency)} in die Zwischenablage kopiert –
+                  <br />
+                  in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.
+                </>
+              ) : (
+                `Trag in PayPal ${formatMoney(due, data.currency)} ein.`
+              )}
             </p>
             <a className="btn btn-paypal btn-large" href={action.url} target="_blank" rel="noreferrer" onClick={onPay}>
               Mit PayPal bezahlen · {formatMoney(due, data.currency)}
