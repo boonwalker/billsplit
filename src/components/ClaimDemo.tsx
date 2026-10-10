@@ -96,6 +96,11 @@ export function useClaimDemo(billId: string, enabled: boolean, list: RefObject<H
     }
   }, [billId, enabled, list]);
 
+  // Switching to the equal split (nothing to tick any more) ends a running demo at once.
+  useEffect(() => {
+    if (!enabled) setLayout(null);
+  }, [enabled]);
+
   useEffect(() => {
     if (!layout) return;
     const timers: number[] = [];

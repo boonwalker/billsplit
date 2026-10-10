@@ -503,7 +503,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
               ))}
             </svg>
           )}
-          {claimDemo.layout && <ClaimDemo layout={claimDemo.layout} step={claimDemo.step} stage={claimDemo.stage} otherName={otherName} />}
+          {claimDemo.layout && !equal && <ClaimDemo layout={claimDemo.layout} step={claimDemo.step} stage={claimDemo.stage} otherName={otherName} />}
           <ul className="receipt-lines" ref={list}>
             {data.items.map((item, idx) => (
               <ReceiptLine
