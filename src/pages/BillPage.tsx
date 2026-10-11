@@ -5,6 +5,7 @@ import QrHero from "../components/bill/QrHero";
 import ReceiptPeek from "../components/bill/ReceiptPeek";
 import DemoBar from "../components/DemoBar";
 import InstallHint from "../components/InstallHint";
+import GestureHelp from "../components/GestureHelp";
 import ProfileWizard from "../components/ProfileWizard";
 import DivisorSheet from "../components/DivisorSheet";
 import Header from "../components/Header";
@@ -24,6 +25,7 @@ import { navigate } from "../lib/router";
 import { paymentFromProfile, samePayment } from "../lib/payment";
 import { forgetBill, hasPaymentMethod, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
+import { scrollBehavior } from "../lib/motion";
 
 /**
  * focus: open at a participant's place – the payer sees that friend in the list below the
@@ -89,14 +91,14 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
     const timer = window.setTimeout(() => {
       const row = document.querySelector<HTMLElement>(`.debtor[data-id="${CSS.escape(focus)}"]`);
       if (row) {
-        row.scrollIntoView({ behavior: "smooth", block: "center" });
+        row.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
         row.classList.add("focus-flash");
         window.setTimeout(() => row.classList.remove("focus-flash"), 2600);
         return;
       }
       // A friend's own share: the end of the receipt with the sums (the bar shows the amount).
       const el = scroller.current;
-      el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      el?.scrollTo({ top: el.scrollHeight, behavior: scrollBehavior() });
     }, 400);
     return () => window.clearTimeout(timer);
   }, [focus, ready]);
@@ -286,8 +288,9 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
             <p>
               <b>{snap.ownerName}</b> hat bezahlt.{" "}
               {equal
-                ? "Die Rechnung wird gleichmäßig auf alle verteilt – du musst nichts abhaken."
-                : "Hake ab, was du hattest – alle sehen live, wer was übernimmt."}
+                ? "Die Rechnung wird gleichmäßig auf alle verteilt – Du musst nichts abhaken."
+                : "Hake ab, was Du hattest – alle sehen live, wer was übernimmt."}
+              {!equal && snap.me && <GestureHelp mode="claim" />}
             </p>
           </section>
         )}
@@ -303,9 +306,11 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         <div id="receipt" className="receipt-anchor">
           {snap.isOwner && <EqualSplitToggle snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && (sharedTotal(snap.data) !== 0 || equal) && <TipSplit snapshot={snap} onUpdateData={updateData} />}
-          {snap.isOwner && !equal && <p className="receipt-instruction">Hake deine eigenen Positionen ab:</p>}
+          {snap.isOwner && !equal && <p className="receipt-instruction">Hake Deine eigenen Positionen ab: <GestureHelp mode="claim" /></p>}
           {snap.isOwner && equal && (
-            <p className="receipt-instruction">Etwas war nicht für alle? Tippe es an, um es zu streichen – nochmal tippen holt es zurück.</p>
+            <p className="receipt-instruction">
+              Etwas war nicht für alle? Tippe es an, um es zu streichen – nochmal tippen holt es zurück. <GestureHelp mode="strike" />
+            </p>
           )}
           <Receipt
             snapshot={snap}

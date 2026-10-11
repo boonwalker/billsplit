@@ -12,6 +12,7 @@ import { formatMoney } from "../lib/money";
 import { rememberDashboard, takeDashboard, type DashboardView } from "../lib/dashboardReturn";
 import { billPath, navigate } from "../lib/router";
 import { loadOwnProfile, loadRecent } from "../lib/storage";
+import { scrollBehavior } from "../lib/motion";
 
 /** Signed amount: "+12,30 €" / "−4,00 €". */
 function signed(cents: number, currency: string): string {
@@ -252,7 +253,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
   useEffect(() => {
     if (!focusTransfer || !network) return;
     const card = document.querySelector(`[data-transfer="${CSS.escape(focusTransfer)}"]`);
-    card?.scrollIntoView({ behavior: "smooth", block: "center" });
+    card?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
   }, [focusTransfer, network]);
 
   return (

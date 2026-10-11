@@ -26,6 +26,7 @@ test("Gesamtausgleich: eine Zahlung an Katia begleicht auch Andys Schuld – Kat
   const plan = page.locator(".plan-card");
   await expect(plan).toContainText("Alles ausgleichen mit einer Zahlung statt 2");
   await expect(plan).toContainText("begleicht auch 5,00 € von Andy bei Katia");
+  await expect(plan.locator(".plan-route")).toHaveText("Du → Andy → Katia Du → Katia");
   await plan.getByRole("button", { name: "Zahlen" }).click();
 
   const sheet = page.locator(".settle-sheet");

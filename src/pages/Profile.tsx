@@ -58,7 +58,7 @@ export default function Profile({ next }: { next?: string }) {
         <form className="stack" onSubmit={save}>
           <p className="muted">
             Dein Profil bleibt auf diesem Gerät. Beim Erstellen einer Rechnung werden Name und Zahlungsdaten in den QR-Code
-            übernommen, damit deine Freunde dich bezahlen können. Ein Zahlungsweg reicht, mehrere geben deinen Freunden die
+            übernommen, damit Deine Freunde Dich bezahlen können. Ein Zahlungsweg reicht, mehrere geben Deinen Freunden die
             Wahl.
           </p>
 
@@ -66,7 +66,7 @@ export default function Profile({ next }: { next?: string }) {
             <label className="field">
               <span>Profilname</span>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Niklas" maxLength={40} autoComplete="given-name" aria-invalid={touched && !name.trim()} />
-              <small className="muted">So sehen dich deine Freunde auf der Rechnung.</small>
+              <small className="muted">So sehen Dich Deine Freunde auf der Rechnung.</small>
             </label>
           </div>
 
@@ -96,8 +96,8 @@ export default function Profile({ next }: { next?: string }) {
                 <input value={paypalMe} onChange={(e) => setPaypalMe(e.target.value)} placeholder="deinname" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
               </div>
               <small className="muted">
-                Nur mit PayPal.Me landen deine Freunde nach dem Login direkt im fertig ausgefüllten Bezahlschritt (Empfänger und
-                Betrag). Mit reiner E-Mail-Adresse müssen sie den Betrag selbst eintragen. Deinen Namen findest du in der
+                Nur mit PayPal.Me landen Deine Freunde nach dem Login direkt im fertig ausgefüllten Bezahlschritt (Empfänger und
+                Betrag). Mit reiner E-Mail-Adresse müssen sie den Betrag selbst eintragen. Deinen Namen findest Du in der
                 PayPal-App unter „PayPal.Me“.
               </small>
             </label>
@@ -133,7 +133,7 @@ export default function Profile({ next }: { next?: string }) {
               <label className="field">
                 <span>Kontoinhaber</span>
                 <input value={holder} onChange={(e) => setHolder(e.target.value)} placeholder={name.trim() || "Vor- und Nachname"} maxLength={70} autoComplete="name" />
-                <small className="muted">Leer lassen, wenn es dein Profilname ist.</small>
+                <small className="muted">Leer lassen, wenn es Dein Profilname ist.</small>
               </label>
             )}
           </div>
@@ -155,7 +155,7 @@ export default function Profile({ next }: { next?: string }) {
               {weroInvalid ? (
                 <small className="error">Bitte gib eine Handynummer oder E-Mail-Adresse ein.</small>
               ) : (
-                <small className="muted">Mit Wero in der Banking-App (z. B. Sparkasse, Volksbank, ING, Postbank) senden dir deine Freunde Geld an diese Nummer.</small>
+                <small className="muted">Mit Wero in der Banking-App (z. B. Sparkasse, Volksbank, ING, Postbank) senden Dir Deine Freunde Geld an diese Nummer.</small>
               )}
             </label>
           </div>
@@ -164,7 +164,7 @@ export default function Profile({ next }: { next?: string }) {
 
           {notStored && (
             <div className="alert">
-              Dein Browser lässt diese Seite gerade nichts dauerhaft speichern. Dein Profil gilt deshalb nur, bis du den Tab
+              Dein Browser lässt diese Seite gerade nichts dauerhaft speichern. Dein Profil gilt deshalb nur, bis Du den Tab
               schließt. Das passiert z. B. in einem privaten Tab, im eingebauten Browser anderer Apps oder wenn Cookies
               blockiert sind. Öffne billsplit am besten direkt in Safari bzw. Chrome. Tippe erneut auf den Knopf, um
               trotzdem fortzufahren.

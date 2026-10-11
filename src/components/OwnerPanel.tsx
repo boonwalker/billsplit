@@ -79,7 +79,7 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
         {formatMoney(equal ? equalShare(data, participants) : sharedPerPerson(data, participants), data.currency)} pro Person ·{" "}
         {missing > 0
           ? `${joined} beigetreten (inkl. Dir), ${missing} ${missing === 1 ? "kommt" : "kommen"} noch dazu`
-          : `gezählt: alle, die beigetreten sind, plus du`}
+          : `gezählt: alle, die beigetreten sind, plus Du`}
       </p>
     </div>
   );
@@ -129,7 +129,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl }: Pro
 
       {debtors.length === 0 ? (
         <p className="muted empty">
-          Noch ist niemand deiner Abrechnung beigetreten. Sobald jemand beitritt, taucht er hier mit seinem Namen auf.
+          Noch ist niemand Deiner Abrechnung beigetreten. Sobald jemand beitritt, taucht er hier mit seinem Namen auf.
         </p>
       ) : (
         <ul className="debtors">
@@ -201,7 +201,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl }: Pro
       )}
       {unassigned > 0 && !snapshot.data.equalSplit && (
         <p className="hint">
-          {formatMoney(unassigned, currency)} sind noch keiner Person zugeordnet – hast du deine eigenen Positionen schon
+          {formatMoney(unassigned, currency)} sind noch keiner Person zugeordnet – hast Du Deine eigenen Positionen schon
           abgehakt?
           {splitHeadCount(snapshot.data, snapshot.participants) > snapshot.participants.length &&
             " Darin enthalten sind auch Anteile an Trinkgeld und Gebühren von Personen, die noch nicht beigetreten sind."}
@@ -209,7 +209,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl }: Pro
       )}
       {debtors.length > 0 && (
         <p className="hint muted">
-          Gleiche die Beträge mit den Eingängen in deiner PayPal-App ab und hake „erhalten“ an, sobald das Geld da ist.
+          Gleiche die Beträge mit den Eingängen in Deiner PayPal-App ab und hake „erhalten“ an, sobald das Geld da ist.
         </p>
       )}
     </section>

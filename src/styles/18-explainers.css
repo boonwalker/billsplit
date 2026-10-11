@@ -217,3 +217,48 @@
     transform: scale(1.5);
   }
 }
+
+/* The "?" next to the instruction above the receipt and its legend of gestures (GestureHelp). */
+.gesture-help-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  padding: 0;
+  border: 1.5px solid var(--claim);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--claim);
+  font: 700 13px/1 var(--font-body);
+  vertical-align: 2px;
+  cursor: pointer;
+}
+
+.gesture-help-btn.open {
+  background: var(--claim);
+  color: var(--surface);
+}
+
+.gesture-legend {
+  display: block;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.gesture-legend > span {
+  display: block;
+  padding: 3px 0;
+}
+
+.gesture-legend b {
+  color: var(--claim);
+}

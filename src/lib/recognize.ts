@@ -76,7 +76,7 @@ interface SampleReceipt {
 
 const SAMPLE_ERRORS: Record<string, string> = {
   not_granted: "Du hast der Seite nicht erlaubt, Claude zu fragen. Trag die Positionen unten selbst ein.",
-  sampling_disabled: "Claude ist für dein Konto hier nicht verfügbar. Trag die Positionen unten selbst ein.",
+  sampling_disabled: "Claude ist für Dein Konto hier nicht verfügbar. Trag die Positionen unten selbst ein.",
   images_unavailable: "In dieser Ansicht können keine Fotos an Claude gesendet werden. Trag die Positionen unten selbst ein.",
   image_rejected: "Dieses Foto konnte nicht gelesen werden. Versuch ein anderes Bild (JPG oder PNG).",
   rate_limited: "Gerade zu viele Anfragen. Versuch es in ein paar Minuten noch einmal.",

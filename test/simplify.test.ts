@@ -42,7 +42,7 @@ describe("settling up with as few payments as possible", () => {
     const [plan] = planSettlement("me", store.network("me"));
     expect(plan.directCount).toBe(2);
     expect(plan.transfers).toHaveLength(1);
-    expect(plan.transfers[0]).toMatchObject({ toId: "katia", amount: 800, onBehalfOf: [{ id: "andy", name: "Andy", amount: 500 }] });
+    expect(plan.transfers[0]).toMatchObject({ toId: "katia", amount: 800, onBehalfOf: [{ id: "andy", name: "Andy", amount: 500 }], via: [["Andy"]] });
     settle(store);
     // Me, Andy and Katia are all settled by that one payment.
     expect(store.network("me")).toEqual([]);

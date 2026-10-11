@@ -5,6 +5,7 @@ import { navigate } from "../../lib/router";
 import { useOneLine } from "../../lib/useOneLine";
 import { whatsappLink } from "../../lib/whatsapp";
 import QrCode from "../QrCode";
+import { scrollBehavior } from "../../lib/motion";
 
 /** "(paypal.me/niklas, Überweisung, Wero)" – what the QR code passes on. */
 function paymentSummary(payment: BillData["payment"]): string {
@@ -37,16 +38,16 @@ export default function QrHero({ snapshot: snap, url }: { snapshot: BillSnapshot
   return (
     <section className="qr-hero" aria-label="QR-Code zum Teilen">
       <p className="eyebrow">Rechnung bereit</p>
-      <h2>Lass deine Freunde scannen</h2>
+      <h2>Lass Deine Freunde scannen</h2>
       <QrCode value={url} label="QR-Code zur Rechnung" />
       <p className="muted small">
-        Enthält die Rechnung und deine Zahlungsdaten
+        Enthält die Rechnung und Deine Zahlungsdaten
         {paymentSummary(snap.data.payment)}.
       </p>
       {DEMO && (
         <p className="demo-note">
           Demo ohne Server: Auf anderen Handys öffnet der Code noch keine Rechnung. Schalte oben auf Anna oder Ben, um die
-          Sicht deiner Freunde zu sehen.
+          Sicht Deiner Freunde zu sehen.
         </p>
       )}
       {/* Straight into WhatsApp: its share-sheet extension on the iPhone often only sends once
@@ -71,7 +72,7 @@ export default function QrHero({ snapshot: snap, url }: { snapshot: BillSnapshot
           </span>
         </button>
       </div>
-      <a className="scroll-hint" href="#receipt" onClick={(e) => (e.preventDefault(), document.getElementById("receipt")?.scrollIntoView({ behavior: "smooth" }))}>
+      <a className="scroll-hint" href="#receipt" onClick={(e) => (e.preventDefault(), document.getElementById("receipt")?.scrollIntoView({ behavior: scrollBehavior() }))}>
         Deine interaktive Rechnung
         <span aria-hidden="true">↓</span>
       </a>

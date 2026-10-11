@@ -237,3 +237,22 @@
 .loading-page .topbar {
   box-shadow: none;
 }
+
+/* The detour a payment saves: "Du → Andy → Katia" struck through, then "Du → Katia". */
+.plan-route {
+  color: var(--text);
+}
+
+.plan-route s,
+.plan-route b {
+  white-space: nowrap;
+}
+
+.plan-route s {
+  color: var(--muted);
+  margin-right: 4px;
+}
+
+.plan-explain {
+  margin: 8px 0 0;
+}

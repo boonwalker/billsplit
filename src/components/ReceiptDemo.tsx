@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Handwritten, tailApex } from "./ClaimDemo";
+import { reducedMotion } from "../lib/motion";
 
 /**
  * The payer's intro on the receipt ("Manches nicht" and the finished bill in the equal split),
@@ -80,7 +81,7 @@ const STEPS: { phase: DemoPhase; ms: number }[] = [
 export function useDemoLoop(layout: DemoLayout | null, active: boolean): { phase: DemoPhase; round: number } {
   const [state, setState] = useState({ step: 0, round: 0 });
   useEffect(() => {
-    if (!active || !layout) return;
+    if (!active || !layout || reducedMotion()) return;
     const usable = (phase: DemoPhase) =>
       phase === "pause" || (phase === "strike" ? layout.strike : phase === "tap" ? layout.tap : layout.hold) !== undefined;
     let timer = 0;
@@ -98,7 +99,7 @@ export function useDemoLoop(layout: DemoLayout | null, active: boolean): { phase
     timer = window.setTimeout(next, STEPS[0].ms);
     return () => window.clearTimeout(timer);
   }, [layout, active]);
-  return { phase: active && layout ? STEPS[state.step].phase : "pause", round: state.round };
+  return { phase: active && layout && !reducedMotion() ? STEPS[state.step].phase : "pause", round: state.round };
 }
 
 const strikePath = (y: number, width: number) =>

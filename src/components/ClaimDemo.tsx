@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, type CSSProperties, type RefObject } from "react";
+import { reducedMotion } from "../lib/motion";
 
 /**
  * Bill in the normal (not equal) split: shows once how the receipt is used – ticking a line,
@@ -63,7 +64,8 @@ export function useClaimDemo(billId: string, enabled: boolean, list: RefObject<H
   const [state, setState] = useState<{ step: Step; stage: Stage }>({ step: "tick", stage: "hidden" });
 
   useLayoutEffect(() => {
-    if (!enabled || !list.current) return;
+    // With reduced motion there is no demo; the "?" above the receipt explains the gestures.
+    if (!enabled || !list.current || reducedMotion()) return;
     try {
       if (localStorage.getItem(KEY(billId))) return;
     } catch {

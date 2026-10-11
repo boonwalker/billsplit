@@ -82,14 +82,14 @@ export default function Home() {
             <span className="hl">Alle splitten.</span>
           </h2>
           <p className="muted">
-            Rechnung fotografieren, QR-Code zeigen – deine Freunde haken ab, was sie hatten, und zahlen Dir ihren Anteil direkt
+            Rechnung fotografieren, QR-Code zeigen – Deine Freunde haken ab, was sie hatten, und zahlen Dir ihren Anteil direkt
             per PayPal.
           </p>
         </section>
 
         {DEMO && (
           <p className="demo-banner">
-            <b>Demo-Version.</b> Alles bleibt in diesem Browser. Auf der Rechnung kannst du oben zwischen Dir und deinen
+            <b>Demo-Version.</b> Alles bleibt in diesem Browser. Auf der Rechnung kannst Du oben zwischen Dir und Deinen
             Freunden Anna und Ben umschalten und so beide Seiten ausprobieren.
           </p>
         )}
@@ -148,7 +148,7 @@ export default function Home() {
             </span>
             <span className="action-text">
               <b>QR-Code scannen</b>
-              <small>Ein Freund hat bezahlt – du übernimmst deinen Anteil</small>
+              <small>Ein Freund hat bezahlt – Du übernimmst Deinen Anteil</small>
             </span>
           </button>
           )}

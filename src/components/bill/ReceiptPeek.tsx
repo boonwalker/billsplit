@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { scrollBehavior } from "../../lib/motion";
 
 /**
  * First opening of a new bill (payer): the receipt peeks up from behind the bar at the top
@@ -71,7 +72,7 @@ export default function ReceiptPeek({
       ref={ref}
       className={`receipt-peek${peek === "following" ? " following" : ""}`}
       style={{ bottom, ...(box ? { left: box.left, width: box.width, transform: "none" } : {}) }}
-      onClick={() => document.querySelector("#receipt .receipt-paper")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+      onClick={() => document.querySelector("#receipt .receipt-paper")?.scrollIntoView({ behavior: scrollBehavior(), block: "start" })}
       aria-label="Zur interaktiven Rechnung"
     >
       {/* The same paper as the receipt itself, so the hand-over is seamless. */}

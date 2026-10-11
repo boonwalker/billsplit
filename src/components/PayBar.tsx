@@ -133,7 +133,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
         {!snapshot.myReceived && myPayment && (
           <p className="paybar-note">
             ✓ Bezahlung über {formatMoney(myPayment.amount, data.currency)} an {ownerName || "den Rechnungssteller"} gestartet
-            {due > 0 && <> – durch deine neue Auswahl kommen {formatMoney(due, data.currency)} dazu</>}.
+            {due > 0 && <> – durch Deine neue Auswahl kommen {formatMoney(due, data.currency)} dazu</>}.
           </p>
         )}
 
@@ -206,7 +206,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                   clickRelease();
                 }}
               >
-                {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
+                {nothing ? "Hake Deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
               </button>
             )}
             {action.kind === "paypalMe" && !(myPayment && nothing) && ready && (
@@ -248,7 +248,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                   aria-disabled={nothing}
                   onClick={(e) => (nothing ? e.preventDefault() : void payByEmail(action.email))}
                 >
-                  {nothing ? "Hake deine Positionen ab" : <>In PayPal bezahlen · {formatMoney(due, data.currency)}</>}
+                  {nothing ? "Hake Deine Positionen ab" : <>In PayPal bezahlen · {formatMoney(due, data.currency)}</>}
                 </a>
                 {!nothing && (
                   <p className="paybar-note">
@@ -270,7 +270,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                   clickRelease();
                 }}
               >
-                {nothing ? "Hake deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
+                {nothing ? "Hake Deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
               </button>
             )}
             {/* With PayPal as the main way, bank transfer and Wero are offered below it. */}

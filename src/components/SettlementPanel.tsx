@@ -71,6 +71,12 @@ export function PlanCard({ plan, onPay }: { plan: SettlementPlan; onPay: (t: Pla
               <li key={t.toId}>
                 <span className="plan-text">
                   <b>An {t.toName}</b>
+                  {/* The detour it saves, as arrows: one payment instead of passing the money on. */}
+                  {t.via.map((names) => (
+                    <small key={names.join("→")} className="plan-route">
+                      <s>Du → {names.join(" → ")} → {t.toName}</s> <b>Du → {t.toName}</b>
+                    </small>
+                  ))}
                   {t.onBehalfOf.length > 0 && (
                     <small className="muted">
                       begleicht auch {t.onBehalfOf.map((o) => `${fmt(o.amount)} von ${o.name}`).join(" und ")} bei {t.toName}
@@ -84,6 +90,12 @@ export function PlanCard({ plan, onPay }: { plan: SettlementPlan; onPay: (t: Pla
               </li>
             ))}
           </ul>
+          {plan.transfers.some((t) => t.via.length > 0) && (
+            <p className="muted small plan-explain">
+              Statt Geld über mehrere Ecken weiterzureichen, zahlst Du direkt an die Person, die es am Ende bekommt. Jeder
+              Anteil in jeder Rechnung gilt dann als beglichen.
+            </p>
+          )}
         </>
       ) : (
         <h4>Du musst niemandem etwas zahlen</h4>

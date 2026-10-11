@@ -318,7 +318,7 @@ function ReceiptLine({
             −
           </button>
           <span>
-            {formatUnits(me ? unitShare(item, participants, me) : 0)} von {item.qty} für dich
+            {formatUnits(me ? unitShare(item, participants, me) : 0)} von {item.qty} für Dich
           </span>
           <button
             type="button"
@@ -380,7 +380,7 @@ function ReceiptLine({
       )}
       {canEdit && myWaiting && (
         <p className="rline-hint">
-          Du zahlst {item.qty > 1 ? "von einem Stück nur " : ""}die Hälfte. Die andere Hälfte bleibt offen, bis jemand auf deinen
+          Du zahlst {item.qty > 1 ? "von einem Stück nur " : ""}die Hälfte. Die andere Hälfte bleibt offen, bis jemand auf Deinen
           Namen tippt.
         </p>
       )}

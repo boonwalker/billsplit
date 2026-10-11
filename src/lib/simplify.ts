@@ -12,6 +12,8 @@ export interface PlannedTransfer {
   payment: PaymentInfo;
   /** Other people whose debts with the recipient this payment settles, and by how much. */
   onBehalfOf: { id: string; name: string; amount: Cents }[];
+  /** The detours this payment saves: the people in between, e.g. [["Andy"]] for Du → Andy → Katia. */
+  via: string[][];
 }
 
 export interface SettlementPlan {
@@ -157,7 +159,12 @@ function planOne(me: string, edges: NetworkEdge[], currency: string): Settlement
     const amount = list.reduce((s, p) => s + p.amount, 0);
     for (const p of list) for (const e of p.edges) allocations.push(alloc(e, p.amount));
     const ownBills = edges.filter((e) => e.creditorId === to).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    transfers.push({ toId: to, toName: names.get(to) ?? "", currency, amount, allocations, payment: ownBills[0]?.payment ?? {}, onBehalfOf: [] });
+    const via = new Map<string, string[]>();
+    for (const p of list) {
+      const between = p.edges.slice(0, -1).map((e) => names.get(e.creditorId) ?? "");
+      if (between.length) via.set(between.join("\u0000"), between);
+    }
+    transfers.push({ toId: to, toName: names.get(to) ?? "", currency, amount, allocations, payment: ownBills[0]?.payment ?? {}, onBehalfOf: [], via: [...via.values()] });
   }
 
   // Offsets with a person leave everyone even, so they ride along with a payment: preferably

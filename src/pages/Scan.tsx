@@ -83,7 +83,7 @@ export default function Scan() {
           </div>
           <div className="viewfinder-laser" aria-hidden="true" />
         </div>
-        <p className="muted center-text">Richte die Kamera auf den QR-Code auf dem Handy deines Freundes.</p>
+        <p className="muted center-text">Richte die Kamera auf den QR-Code auf dem Handy Deines Freundes.</p>
         {hint && <p className="warning center-text">{hint}</p>}
         {error && <div className="alert">{error}</div>}
 

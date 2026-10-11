@@ -406,7 +406,7 @@ export default function Editor({ billId }: { billId?: string }) {
               <>
                 <h2 className={draft.delivery ? "sheet-subtitle" : undefined}>Trinkgeld gegeben?</h2>
                 <p className="muted">
-                  {draft.engine ? "Auf dem Beleg steht kein Trinkgeld. " : ""}Wenn du Trinkgeld gegeben hast, trag es hier ein – es
+                  {draft.engine ? "Auf dem Beleg steht kein Trinkgeld. " : ""}Wenn Du Trinkgeld gegeben hast, trag es hier ein – es
                   wird gleichmäßig auf alle Personen verteilt.
                 </p>
                 <TipControl

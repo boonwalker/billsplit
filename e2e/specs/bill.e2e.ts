@@ -19,6 +19,12 @@ test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungsste
   await anna.getByRole("button", { name: "Zur Rechnung" }).click();
   await expect(owner.locator(".debtor-name")).toHaveText(["Anna"]);
 
+  // The "?" next to the instruction lists the gestures any time.
+  await anna.getByRole("button", { name: "Welche Gesten gibt es?" }).click();
+  await expect(anna.locator(".gesture-legend")).toContainText("Namen antippen = mit dieser Person teilen");
+  await anna.getByRole("button", { name: "Gesten ausblenden" }).click();
+  await expect(anna.locator(".gesture-legend")).toHaveCount(0);
+
   // She ticks the pizza; the payer sees it live.
   await anna.locator(".rline-main", { hasText: "Pizza" }).click();
   await expect(owner.locator(".receipt")).toContainText("Anna");

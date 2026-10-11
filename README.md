@@ -196,6 +196,8 @@ privat):
    wenn dadurch kein zusätzlicher Empfänger entsteht.
 3. Alles an dieselbe Person wird zu einer Zahlung gebündelt.
 
+Gesparte Umwege zeigt der Plan mit Pfeilen: ~~Du → Andy → Katia~~ **Du → Katia**, darunter ein kurzer Satz, warum.
+
 Jede geplante Zahlung listet genau, welche Anteile in welchen Rechnungen sie begleicht. Der Server prüft beim
 Eintragen, dass sie für alle Beteiligten aufgeht (niemand gewinnt oder verliert etwas) und nur offene Anteile aus
 Rechnungen des Zahlenden betrifft. Bezahlt wird per PayPal (Betrag vorher in der Zwischenablage), Überweisung oder
@@ -285,6 +287,13 @@ Beim ersten Öffnen einer Rechnung (ohne Gleichverteilung) führt eine kurze Ani
 man abhakt („Antippen = abhaken“), ein Stück mit jemandem teilt („Namen antippen = mit Anna teilen“, mit dem Namen einer Person aus der Rechnung) und die Hälfte des
 eigenen Stücks zum Teilen anbietet („Eigenen Namen antippen = Du willst mit jemandem teilen“). Sie läuft zweimal, einmal pro
 Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an der Rechnung.
+
+Dauerhaft erklärt ein kleines „?“ neben der Anleitung über dem Beleg die Gesten: beim Abhaken „Antippen“, „Namen
+antippen“, „Eigenen Namen antippen“ und „− / +“; beim Rechnungssteller mit Gleichverteilung „Antippen“ (streichen),
+„Gedrückt halten“ (nur einen Teil) und „„/2“ antippen“ (wieder ganz).
+
+Ist auf dem Gerät „Bewegung reduzieren“ eingeschaltet, springen alle Animationen sofort ans Ende, die Erklär-Animationen
+entfallen (das „?“ bleibt) und es wird nicht weich gescrollt.
 
 ## Technik
 

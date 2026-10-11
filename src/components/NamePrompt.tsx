@@ -24,9 +24,9 @@ export default function NamePrompt({ ownerName, initialName = "", onSubmit, extr
         <div className="sheet-logo" aria-hidden="true">
           <Wordmark size={52} />
         </div>
-        <h2>Wie heißt du?</h2>
+        <h2>Wie heißt Du?</h2>
         <p className="muted">
-          {ownerName || "Jemand"} hat die Rechnung bezahlt. Mit deinem Namen sehen alle, welche Positionen du übernimmst.
+          {ownerName || "Jemand"} hat die Rechnung bezahlt. Mit Deinem Namen sehen alle, welche Positionen Du übernimmst.
         </p>
         <input autoFocus={!initialName} value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" maxLength={40} autoComplete="given-name" />
         <button className="btn btn-primary btn-large" disabled={!name.trim()}>
