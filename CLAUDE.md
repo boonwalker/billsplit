@@ -50,7 +50,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
      mitgeben, wenn sich ihr Hash geändert hat.)
    - In einer **neuen Sitzung** das Artifact vorher einmal mit `action: "read"` lesen (sonst wird der Publish
      abgelehnt) und mit `action: "list", scope: "files"` nachsehen, welche Asset-Namen aktuell veröffentlicht sind.
-   - Zuletzt veröffentlicht: `assets/index-DZ-vxevQ.js`, `assets/Scan-BKPyC2f1.js` (Version 133).
+   - Zuletzt veröffentlicht: `assets/index-B0mpr7-u.js`, `assets/Scan-CwY9m6D0.js` (Version 134).
 
 ## Betrieb
 
@@ -166,7 +166,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Rechnung oben „Vielleicht nicht für alle?“
 - Rechnungssteller: „Erinnern“ (WhatsApp mit offenem Betrag und Link)
 - Konto: „Deine E-Mail-Adresse“, „Code senden“, „Code eingeben“, „Überspringen“, Startseite „Schon ein Konto?
-  Anmelden“, Profil „Angemeldet als …“, „Abmelden“, „Konto löschen“
+  Anmelden“, Profil ganz oben „Konto“: „● Angemeldet“ + Adresse bzw. „Nicht angemeldet“ + „Anmelden oder Konto
+  anlegen“, „Abmelden“, „Konto löschen“; grüner Haken am Profil-Knopf der Startseite
 
 ## Offene Ideen / Backlog (noch nicht beauftragt)
 
