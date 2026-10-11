@@ -4,6 +4,8 @@ import { DEMO } from "./demo";
 export type Route =
   | { name: "home" }
   | { name: "profile"; next?: string }
+  /** Signing in with the e-mail account. */
+  | { name: "signin" }
   | { name: "new" }
   | { name: "scan" }
   /** transfer: a settlement payment to bring into view (from a notification). */
@@ -26,6 +28,8 @@ export function parseHash(hash: string): Route {
       return { name: "profile", next: params.get("next") ?? undefined };
     case "new":
       return { name: "new" };
+    case "anmelden":
+      return { name: "signin" };
     case "scan":
       return { name: "scan" };
     case "dashboard":

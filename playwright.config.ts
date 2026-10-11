@@ -8,6 +8,10 @@ import { defineConfig } from "@playwright/test";
  * built server (`npm run build` first) with an empty data folder. Run: `npm run test:e2e`.
  */
 const PORT = 4173;
+// The config is loaded again in every test worker: they inherit the folder of the main process.
+const DATA_DIR = (process.env.E2E_DATA_DIR ??= mkdtempSync(path.join(tmpdir(), "billsplit-e2e-")));
+// Sign-in codes land in this file instead of a mailbox (see server/mail.ts); the tests read it.
+process.env.MAIL_OUTBOX = path.join(DATA_DIR, "outbox.jsonl");
 
 export default defineConfig({
   testDir: "e2e/specs",
@@ -33,7 +37,9 @@ export default defineConfig({
     reuseExistingServer: false,
     env: {
       PORT: String(PORT),
-      DATA_DIR: mkdtempSync(path.join(tmpdir(), "billsplit-e2e-")),
+      DATA_DIR,
+      MAIL_OUTBOX: process.env.MAIL_OUTBOX,
+      RESEND_API_KEY: "",
       // No AI in tests (and no costs).
       ANTHROPIC_API_KEY: "",
     },

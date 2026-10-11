@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { formatIban, isValidEmail, isValidIban, isValidWero, normalizeIban, normalizePaypalMe } from "../lib/payment";
-import { loadOwnProfile, saveProfile } from "../lib/storage";
+import { accountsAvailable, saveProfileEverywhere } from "../lib/account";
+import { hasPaymentMethod, loadAccountEmail, loadOwnProfile } from "../lib/storage";
+import AccountForm from "./AccountForm";
 import { Wordmark } from "./Logo";
 
 type Method = "paypal" | "bank" | "wero";
@@ -13,13 +15,25 @@ const METHODS: { id: Method; label: string; hint: string }[] = [
 
 /**
  * Creating the profile like an assistant, one question at a time: the name (if not known
- * yet), then "Wie willst Du bezahlt werden?" – and only the way chosen needs its details.
+ * yet), the e-mail address for the optional account (skippable), then "Wie willst Du bezahlt
+ * werden?" – and only the way chosen needs its details. Signing in to an existing account may
+ * already bring the payment details along; then the assistant ends there.
  * - payer: pops up while the first receipt is being read, so the waiting time is used.
  * - guest: after paying their share, for the day they pay a bill themselves ("Später" skips it).
  */
-export default function ProfileWizard({ role, onDone }: { role: "payer" | "guest"; onDone: (saved: boolean) => void }) {
+export default function ProfileWizard({
+  role,
+  onDone,
+}: {
+  role: "payer" | "guest";
+  /** switched: this device signed in to an existing account (it has another identity now). */
+  onDone: (saved: boolean, switched?: boolean) => void;
+}) {
   const initial = loadOwnProfile();
-  const [step, setStep] = useState<"name" | "method" | "details">(initial.name.trim() ? "method" : "name");
+  const askEmail = accountsAvailable && !loadAccountEmail();
+  const [first] = useState<"name" | "email" | "method">(initial.name.trim() ? (askEmail ? "email" : "method") : "name");
+  const [step, setStep] = useState<"name" | "email" | "method" | "details">(first);
+  const [switched, setSwitched] = useState(false);
   const [name, setName] = useState(initial.name);
   const [method, setMethod] = useState<Method | null>(null);
   const [value, setValue] = useState("");
@@ -49,8 +63,8 @@ export default function ProfileWizard({ role, onDone }: { role: "payer" | "guest
     } else {
       profile.wero = value.trim();
     }
-    saveProfile(profile);
-    onDone(true);
+    saveProfileEverywhere(profile);
+    onDone(true, switched);
   }
 
   return (
@@ -62,8 +76,8 @@ export default function ProfileWizard({ role, onDone }: { role: "payer" | "guest
           onSubmit={(e) => {
             e.preventDefault();
             if (!name.trim()) return;
-            saveProfile({ ...loadOwnProfile(), name: name.trim() });
-            setStep("method");
+            saveProfileEverywhere({ ...loadOwnProfile(), name: name.trim() });
+            setStep(askEmail ? "email" : "method");
           }}
         >
           <div className="sheet-logo" aria-hidden="true">
@@ -77,9 +91,23 @@ export default function ProfileWizard({ role, onDone }: { role: "payer" | "guest
             Weiter
           </button>
         </form>
+      ) : step === "email" ? (
+        <div className="sheet wizard" key="email" role="dialog" aria-label="Deine E-Mail-Adresse">
+          <AccountForm
+            lead={role === "guest" && first === "email" ? <p className="wizard-step">✓ Erledigt. Damit Du Deine Rechnungen überall wiederfindest:</p> : undefined}
+            onDone={(result) => {
+              const login = result === "login";
+              if (login) setSwitched(true);
+              // An existing account may already know how its owner gets paid.
+              if (hasPaymentMethod(loadOwnProfile())) onDone(true, login);
+              else setStep("method");
+            }}
+            onSkip={() => setStep("method")}
+          />
+        </div>
       ) : step === "method" ? (
         <div className="sheet wizard" key="method" role="dialog" aria-label="Wie willst Du bezahlt werden?">
-          {role === "guest" && <p className="wizard-step">✓ Erledigt. Und wenn Du mal eine Rechnung zahlst:</p>}
+          {role === "guest" && <p className="wizard-step">{first === "method" ? "✓ Erledigt. " : ""}Und wenn Du mal eine Rechnung zahlst:</p>}
           <h2>Wie willst Du bezahlt werden?</h2>
           <p className="muted">
             {role === "payer" ? "Deine Freunde bezahlen Dich damit mit einem Tipp." : "Dann bezahlen Dich Deine Freunde mit einem Tipp."} Weitere Wege
@@ -104,7 +132,7 @@ export default function ProfileWizard({ role, onDone }: { role: "payer" | "guest
             ))}
           </div>
           {role === "guest" && (
-            <button type="button" className="btn btn-ghost" onClick={() => onDone(false)}>
+            <button type="button" className="btn btn-ghost" onClick={() => onDone(false, switched)}>
               Später
             </button>
           )}

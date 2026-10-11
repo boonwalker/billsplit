@@ -7,7 +7,8 @@ import { api } from "../lib/api";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
-import { clearDraft, forgetBill, hasPaymentMethod, loadOwnProfile, loadRecent, updateRecent, type RecentBill } from "../lib/storage";
+import { accountsAvailable } from "../lib/account";
+import { clearDraft, forgetBill, hasPaymentMethod, loadAccountEmail, loadOwnProfile, loadRecent, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
@@ -153,6 +154,13 @@ export default function Home() {
           </button>
           )}
         </section>
+
+        {/* A new device (or a wiped browser): the bills come back with the e-mail account. */}
+        {recent.length === 0 && accountsAvailable && !loadAccountEmail() && (
+          <button type="button" className="btn btn-ghost signin-link" onClick={() => navigate("/anmelden")}>
+            Schon ein Konto? <b>Anmelden</b>
+          </button>
+        )}
 
         {recent.length > 0 && (
           <section>

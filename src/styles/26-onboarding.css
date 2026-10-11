@@ -74,3 +74,65 @@
 .open-in-app.compact .btn {
   width: 100%;
 }
+
+/* The optional e-mail account: address, then the code from the mail (AccountForm). */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.account-form h2,
+.account-form p {
+  margin: 0;
+}
+
+.account-privacy {
+  text-align: center;
+}
+
+.code-input {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+
+.account-links {
+  display: flex;
+  gap: 8px;
+}
+
+.account-links .btn {
+  flex: 1;
+}
+
+.account-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-card p {
+  margin: 0;
+}
+
+.account-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.danger-text {
+  color: var(--danger);
+}
+
+.signin-link {
+  align-self: center;
+  font-weight: 500;
+}

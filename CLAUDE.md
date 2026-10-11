@@ -31,7 +31,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 125 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 132 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -88,6 +88,12 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   `ErrorBoundary`.
 - **Gerät wechseln:** Einmal-Code (`server/deviceLink.ts`, Route `#/geraet/<code>`) bzw. Wiederherstellungs-Code
   (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.
+- **Konto (optional):** E-Mail-Adresse ↔ Gerätekennung (`server/accounts.ts`, `DATA_DIR/accounts.json`), Anmeldung
+  ohne Passwort per 6-stelligem Code (kein Link – der öffnet auf dem iPhone immer Safari). Versand über Resend
+  (`server/mail.ts`, `RESEND_API_KEY`, `MAIL_FROM`; ohne nur Log, in Klick-Tests Datei `MAIL_OUTBOX`). Anmelden auf einem
+  anderen Gerät übernimmt dessen Teilnahmen ins Konto (`mergeParticipant`) und gibt ihm Schlüssel, Profil, Rechnungen
+  (`src/lib/account.ts`, `AccountForm`, `AccountSection`, Seite `#/anmelden`). Absender-Domain `klicksplit.de` (INWX,
+  DNS-Einträge für Resend), `MAIL_FROM=klicksplit <code@klicksplit.de>`.
 - **Safari → App:** „In der App öffnen“ hängt `?von=<Einmal-Code>` an den kopierten Link; die App ruft
   `/api/merge-device` auf, `mergeParticipant` legt die Safari-Identität mit der App-Identität zusammen.
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
@@ -153,10 +159,17 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
 - Rechnungssteller: „Erinnern“ (WhatsApp mit offenem Betrag und Link)
+- Konto: „Deine E-Mail-Adresse“, „Code senden“, „Code eingeben“, „Überspringen“, Startseite „Schon ein Konto?
+  Anmelden“, Profil „Angemeldet als …“, „Abmelden“, „Konto löschen“
 
 ## Offene Ideen / Backlog (noch nicht beauftragt)
 
-Derzeit nichts offen. Erledigt am 11.10.2026 (Bedienbarkeits-Analyse vom 10.10.2026 komplett umgesetzt):
+- Datenschutzerklärung und Impressum (nötig, sobald die App öffentlich E-Mail-Adressen sammelt; braucht Name/Anschrift
+  des Betreibers).
+- Möglicher Umzug der App auf `klicksplit.de` (Konten machen ihn verlustfrei: anmelden, alles ist da) und Umbenennung
+  in „klicksplit“ – vom Auftraggeber angedacht, nicht beauftragt.
+
+Erledigt am 11.10.2026: optionales E-Mail-Konto. Erledigt am 11.10.2026 (Bedienbarkeits-Analyse vom 10.10.2026 komplett umgesetzt):
 Safari- und App-Identität zusammenführen (`?von=`-Code, `mergeParticipant`), „Hast Du … gesendet?“ nach Rückkehr von
 PayPal, „Erinnern“ per WhatsApp, erst fotografieren – Profil-Assistent (`ProfileWizard`) während der Erkennung bzw.
 für Gäste nach dem Bezahlen, Gesten-Legende („?“, `GestureHelp`), Pfeile im Gesamtausgleich, Du/Dein/Dir überall groß,

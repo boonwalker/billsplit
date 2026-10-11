@@ -98,10 +98,13 @@ export function startPush(): void {
     if (event.data?.type === "billsplit:navigate" && event.data.path) navigate(event.data.path);
   });
   // Registered right away, so turning notifications on later needs no extra wait.
-  const reg = ready();
-  if (Notification.permission !== "granted") return;
-  void reg.then(async (reg) => {
-    const sub = await reg?.pushManager.getSubscription();
-    if (sub) await post("/api/push/subscribe", sub.toJSON()).catch(() => undefined);
-  });
+  void ready();
+  void resubscribePush();
+}
+
+/** Tells the server this device's subscription again – under the current device key (e.g. after signing in). */
+export async function resubscribePush(): Promise<void> {
+  if (!supported() || Notification.permission !== "granted") return;
+  const sub = await (await ready())?.pushManager.getSubscription();
+  if (sub) await post("/api/push/subscribe", sub.toJSON()).catch(() => undefined);
 }

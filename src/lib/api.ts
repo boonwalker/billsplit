@@ -7,6 +7,10 @@ import { deviceKey, type Profile } from "./storage";
 
 export { ApiError };
 
+export type AccountVerify =
+  | { status: "created" | "same"; email: string; profile?: Partial<Profile> }
+  | { status: "login"; email: string; key: string; profile: Partial<Profile>; bills: MyBill[] };
+
 export interface Api {
   createBill(data: BillData, name: string): Promise<BillSnapshot>;
   getBill(id: string): Promise<BillSnapshot>;
@@ -40,6 +44,17 @@ export interface Api {
   mergeDevice(code: string): Promise<{ merged: string[]; bills: MyBill[]; profile: Partial<Profile> }>;
   /** Trades such a code for the key and profile. */
   claimDeviceLink(code: string): Promise<{ key: string; profile: Partial<Profile> }>;
+  /** The optional e-mail account of this device (null: none). */
+  account(): Promise<{ account: { email: string } | null }>;
+  /** Sends a six-digit sign-in code to the address. */
+  requestCode(email: string): Promise<{ ok: true }>;
+  /**
+   * Checks the code: creates the account for this device, or – when the address already has
+   * one – signs this device in (it gets the account's key, profile and bills).
+   */
+  verifyCode(email: string, code: string, profile: Partial<Profile>): Promise<AccountVerify>;
+  saveAccountProfile(profile: Partial<Profile>): Promise<{ ok: true }>;
+  deleteAccount(): Promise<{ account: null }>;
   /** Recipient: confirm / reject · payer: cancel a waiting settlement payment. */
   decideTransfer(id: string, action: "confirm" | "reject" | "cancel"): Promise<TransferList>;
   /**
@@ -123,6 +138,11 @@ const serverApi: Api = {
   createDeviceLink: (profile) => request("POST", "/api/device-link", { profile }),
   claimDeviceLink: (code) => request("POST", `/api/device-link/${encodeURIComponent(code)}`, {}),
   mergeDevice: (code) => request("POST", "/api/merge-device", { code }),
+  account: () => request("GET", "/api/account"),
+  requestCode: (email) => request("POST", "/api/account/code", { email }),
+  verifyCode: (email, code, profile) => request("POST", "/api/account/verify", { email, code, profile }),
+  saveAccountProfile: (profile) => request("PUT", "/api/account/profile", { profile }),
+  deleteAccount: () => request("DELETE", "/api/account"),
   subscribeEvents(onBillChanged) {
     const source = new EventSource(`/api/events?key=${encodeURIComponent(deviceKey())}`);
     source.addEventListener("changed", (e) => {

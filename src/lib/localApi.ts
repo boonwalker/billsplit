@@ -150,6 +150,11 @@ export const localApi: Api = {
   createDeviceLink: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
   claimDeviceLink: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
   mergeDevice: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
+  account: () => Promise.resolve({ account: null }),
+  requestCode: () => Promise.reject(new ApiError("In der Demo gibt es keine Konten.", 400)),
+  verifyCode: () => Promise.reject(new ApiError("In der Demo gibt es keine Konten.", 400)),
+  saveAccountProfile: () => Promise.resolve({ ok: true as const }),
+  deleteAccount: () => Promise.resolve({ account: null }),
   subscribeEvents: (onBillChanged) => localStore().listenAll(onBillChanged),
   subscribe(id, onSnapshot, onLive) {
     const push = () => {

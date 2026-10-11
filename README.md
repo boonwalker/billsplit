@@ -226,6 +226,26 @@ Home-Bildschirm (iOS 16.4 oder neuer); in Safari steht dort ein Hinweis. Technis
 neben den Rechnungen ablegt (`vapid.json`, Abos in `push.json`); gesendet wird nur an die Push-Dienste von Apple,
 Google, Mozilla und Microsoft.
 
+### Konto mit E-Mail-Adresse (optional)
+
+Wer möchte, verbindet seine Gerätekennung mit einer E-Mail-Adresse – ohne Passwort. billsplit schickt einen
+6-stelligen Code per Mail, der dort eingetippt wird, wo man gerade ist (ein Link in der Mail würde sich auf dem iPhone
+immer in Safari öffnen, nie in der Home-Bildschirm-App).
+
+- **Wo gefragt wird:** im Profil-Assistenten direkt nach dem Namen – beim Rechnungssteller während der Beleg gelesen
+  wird, bei Freunden nach dem Bezahlen („✓ Erledigt. Damit Du Deine Rechnungen überall wiederfindest:“). Immer mit
+  „Überspringen“. Außerdem im Profil unter „Konto“.
+- **Neues Gerät:** auf der Startseite „Schon ein Konto? Anmelden“ (solange dort noch keine Rechnungen sind) oder im
+  Profil. Nach dem Code hat das Gerät die Gerätekennung des Kontos, das Profil und alle Rechnungen. Was das Gerät
+  vorher schon hatte (z. B. eine Rechnung, der man im Browser beigetreten ist), wird ins Konto übernommen.
+- **Abmelden** (Profil): das Gerät startet leer, im Konto bleibt alles. **Konto löschen**: die Adresse wird
+  gelöscht, die Rechnungen bleiben auf dem Gerät.
+- **Schutz:** Codes gelten 15 Minuten und einmal, nach 5 falschen Versuchen ist ein Code ungültig; höchstens 5 Codes
+  pro Adresse und 15 pro Gerät/IP und Stunde. Ein Gerät gehört zu höchstens einem Konto.
+- **Versand:** über Resend (`RESEND_API_KEY`, `MAIL_FROM`, z. B. `klicksplit <code@klicksplit.de>`; der Name vor der
+  Adresse steht auch im Mail-Text). Ohne diese Variablen steht der Code nur im Server-Log. Konten liegen in
+  `DATA_DIR/accounts.json`. In der Demo gibt es keine Konten.
+
 ### Gerät wechseln und sichern
 
 Rechnungen, Bilanz und Ausgleichszahlungen hängen an der Gerätekennung (einem geheimen Schlüssel im Browser-Speicher).
@@ -333,7 +353,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
   gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
   abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
-  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme.
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`).
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait
@@ -424,6 +444,7 @@ claude.ai-Artifact gedacht:
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional: eigene Schlüssel für Push (sonst einmal erzeugt und in `DATA_DIR/vapid.json` gespeichert) |
 | `VAPID_SUBJECT` | optional: Kontakt für die Push-Dienste (Standard `mailto:hallo@billsplit.app`) |
 | `ADMIN_TOKEN` | optional: schaltet die Betriebsseite `/api/admin?token=…` frei (Nutzung, Kosten, Fehler, Datenbank-Download) |
+| `RESEND_API_KEY`, `MAIL_FROM` | optional: Versand der Anmelde-Codes über Resend, z. B. `MAIL_FROM=klicksplit <code@klicksplit.de>` (ohne: Code nur im Log) |
 
 ## API
 
@@ -451,6 +472,10 @@ claude.ai-Artifact gedacht:
 | `POST` | `/api/device-link` | Einmal-Code für die Übertragung auf ein neues Gerät (10 Minuten gültig) |
 | `POST` | `/api/device-link/:code` | Code einlösen: Gerätekennung und Profil (nur einmal) |
 | `POST` | `/api/merge-device` | App übernimmt mit einem Einmal-Code aus Safari dessen Teilnahmen |
+| `GET` / `DELETE` | `/api/account` | Konto dieses Geräts (E-Mail-Adresse) abfragen bzw. löschen |
+| `POST` | `/api/account/code` | 6-stelligen Anmelde-Code an eine Adresse schicken |
+| `POST` | `/api/account/verify` | Code prüfen: Konto anlegen oder auf diesem Gerät anmelden (Gerätekennung, Profil, Rechnungen) |
+| `PUT` | `/api/account/profile` | Profil im Konto aktualisieren |
 | `GET` | `/api/push/key` | Öffentlicher VAPID-Schlüssel für Push-Benachrichtigungen |
 | `POST` | `/api/push/subscribe` / `/api/push/unsubscribe` | Push-Abo des Geräts eintragen / entfernen |
 

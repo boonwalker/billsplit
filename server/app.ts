@@ -10,6 +10,8 @@ import type { Monitor } from "./monitor.ts";
 import { isAiConfigured, isSupportedMediaType, observeAi, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
 import { limitsFromEnv, RateLimiter, type Limits } from "./rateLimit.ts";
 import { DeviceLinks } from "./deviceLink.ts";
+import { AccountStore, normalizeEmail } from "./accounts.ts";
+import { mailerFromEnv, type SendCode } from "./mail.ts";
 import { HandoffBoard } from "./handoff.ts";
 import { isPushEndpoint, type PushService } from "./push.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
@@ -57,6 +59,10 @@ export interface AppOptions {
   monitor?: Monitor;
   /** Opens the admin page (`/api/admin?token=…`); without it there is none. */
   adminToken?: string;
+  /** Optional e-mail accounts (in memory when not given). */
+  accounts?: AccountStore;
+  /** Sends a sign-in code (default: Resend, or the log without a mail service). */
+  sendCode?: SendCode;
 }
 
 function clientAddress(req: IncomingMessage, trustProxy: boolean): string {
@@ -150,6 +156,12 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const userStreams = new Map<string, Set<ServerResponse>>();
   const handoffs = new HandoffBoard();
   const deviceLinks = new DeviceLinks();
+  const accounts = options.accounts ?? new AccountStore(null);
+  const sendCode = options.sendCode ?? mailerFromEnv();
+  /** Sign-in codes: per address (nobody floods a mailbox through billsplit) and per client. */
+  const codesPerEmail = new RateLimiter(5, 60 * 60 * 1000);
+  const codesPerClient = new RateLimiter(15, 60 * 60 * 1000);
+  const verifiesPerClient = new RateLimiter(40, 60 * 60 * 1000);
   const monitor = options.monitor;
   if (monitor) observeAi({ call: (usage) => monitor.aiCall(usage), failure: (message) => monitor.aiFailure(message) });
   /** Error reports from the app, per client address (a broken page must not flood the log). */
@@ -390,6 +402,69 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         const link = deviceLinks.claim(parts[2]);
         if (!link) throw new HttpError("Dieser Code ist abgelaufen oder wurde schon benutzt. Lass Dir auf dem alten Gerät einen neuen zeigen.", 410);
         return sendJson(res, 200, link);
+      }
+    }
+
+    // Optional e-mail account (see accounts.ts): sign in with a code from the mail.
+    if (parts[1] === "account") {
+      const viewer = requireViewer(req, url);
+      const key = (req.headers["x-billsplit-key"] as string | undefined) ?? url.searchParams.get("key")!;
+      const text = z.string().max(140).optional();
+      const profileSchema = z.object({ name: text, paypalMe: text, paypalEmail: text, iban: text, holder: text, wero: text });
+      const cleanProfile = (p: z.infer<typeof profileSchema>) =>
+        Object.fromEntries(Object.entries(p).filter((e): e is [string, string] => typeof e[1] === "string"));
+      const email = z.string().trim().max(200).email();
+      if (parts.length === 2 && method === "GET") {
+        const account = accounts.byKey(key);
+        return sendJson(res, 200, { account: account ? { email: account.email } : null });
+      }
+      if (parts.length === 2 && method === "DELETE") {
+        accounts.remove(key);
+        return sendJson(res, 200, { account: null });
+      }
+      if (parts[2] === "code" && parts.length === 3 && method === "POST") {
+        const body = parse(z.object({ email }), await readJson(req, MAX_JSON_BODY));
+        const address = normalizeEmail(body.email);
+        const tooMany = "Zu viele Codes angefordert. Bitte warte etwas und versuche es dann nochmal.";
+        enforce(codesPerClient, clientAddress(req, trustProxy), tooMany);
+        enforce(codesPerEmail, address, tooMany);
+        try {
+          await sendCode(address, accounts.newCode(address));
+        } catch (error) {
+          monitor?.error("server", `Mail an ${address.replace(/^(.).*@/, "$1…@")} fehlgeschlagen`, error instanceof Error ? error.message : String(error));
+          throw new HttpError("Die Mail konnte gerade nicht verschickt werden. Bitte versuche es gleich nochmal.", 502);
+        }
+        return sendJson(res, 200, { ok: true });
+      }
+      if (parts[2] === "verify" && parts.length === 3 && method === "POST") {
+        enforce(verifiesPerClient, clientAddress(req, trustProxy), "Zu viele Versuche. Bitte warte etwas.");
+        const body = parse(
+          z.object({ email, code: z.string().trim().regex(/^\d{6}$/), profile: profileSchema.optional() }),
+          await readJson(req, MAX_JSON_BODY),
+        );
+        const check = accounts.verify(body.email, body.code);
+        if (!check.ok) {
+          throw check.reason === "wrong"
+            ? new HttpError("Der Code stimmt nicht. Bitte prüfe ihn nochmal.", 400)
+            : new HttpError("Der Code ist abgelaufen. Lass Dir einen neuen schicken.", 410);
+        }
+        const existing = accounts.get(body.email);
+        const current = accounts.byKey(key);
+        if (existing?.key === key) return sendJson(res, 200, { status: "same", email: existing.email, profile: existing.profile });
+        if (current) throw new HttpError(`Dieses Gerät ist schon mit ${current.email} verbunden. Melde Dich dort erst ab.`, 409);
+        if (!existing) {
+          const account = accounts.create(body.email, key, cleanProfile(body.profile ?? {}));
+          return sendJson(res, 200, { status: "created", email: account.email });
+        }
+        // Signing in on another device: what this device did so far moves into the account.
+        const owner = participantIdFromKey(existing.key);
+        store.mergeParticipant(viewer, owner);
+        return sendJson(res, 200, { status: "login", email: existing.email, key: existing.key, profile: existing.profile, bills: store.myBills(owner) });
+      }
+      if (parts[2] === "profile" && parts.length === 3 && method === "PUT") {
+        const body = parse(z.object({ profile: profileSchema }), await readJson(req, MAX_JSON_BODY));
+        if (!accounts.setProfile(key, cleanProfile(body.profile))) throw new HttpError("Kein Konto auf diesem Gerät.", 404);
+        return sendJson(res, 200, { ok: true });
       }
     }
 

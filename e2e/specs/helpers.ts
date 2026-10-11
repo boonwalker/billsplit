@@ -92,3 +92,15 @@ export async function leaveAndReturn(page: Page): Promise<void> {
     set("visible");
   });
 }
+
+/** The latest sign-in code sent to an address (the test server writes them to MAIL_OUTBOX). */
+export async function mailedCode(email: string): Promise<string> {
+  const { readFile } = await import("node:fs/promises");
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const lines = (await readFile(process.env.MAIL_OUTBOX!, "utf8").catch(() => "")).trim().split("\n").filter(Boolean);
+    const mail = lines.map((l) => JSON.parse(l) as { email: string; code: string }).filter((m) => m.email === email).at(-1);
+    if (mail) return mail.code;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Kein Code an ${email}`);
+}

@@ -36,6 +36,9 @@ test("Erste Rechnung: Name und „Wie willst Du bezahlt werden?“ während der 
   await expect(page.locator(".scanning")).toBeVisible();
   await wizard.getByPlaceholder("Dein Name").fill("Niklas");
   await wizard.getByRole("button", { name: "Weiter" }).click();
+  // The e-mail account is optional.
+  await expect(wizard.getByRole("heading", { name: "Deine E-Mail-Adresse" })).toBeVisible();
+  await wizard.getByRole("button", { name: "Überspringen" }).click();
   await expect(wizard.getByRole("heading", { name: "Wie willst Du bezahlt werden?" })).toBeVisible();
   await wizard.getByRole("button", { name: /^PayPal/ }).click();
   await wizard.getByRole("button", { name: "Profil speichern" }).click();
@@ -67,9 +70,11 @@ test("Freund im Safari: nach dem Bezahlen „Wie willst Du bezahlt werden?“, d
   await expect(anna.locator(".paybar-ask")).toContainText("Hast Du 9,50 € an Niklas gesendet?");
   await anna.locator(".paybar-ask").getByRole("button", { name: "✓ Ja, gesendet" }).click();
 
-  // Her name is known from joining: straight to the way she wants to be paid.
+  // Her name is known from joining: the (optional) account, then the way she wants to be paid.
   const wizard = anna.locator(".wizard");
-  await expect(wizard).toContainText("✓ Erledigt. Und wenn Du mal eine Rechnung zahlst:");
+  await expect(wizard).toContainText("✓ Erledigt. Damit Du Deine Rechnungen überall wiederfindest:");
+  await wizard.getByRole("button", { name: "Überspringen" }).click();
+  await expect(wizard).toContainText("Und wenn Du mal eine Rechnung zahlst:");
   await wizard.getByRole("button", { name: /^Überweisung/ }).click();
   await wizard.getByLabel("IBAN").fill("de89 3704 0044 0532 0130 00");
   await wizard.getByRole("button", { name: "Profil speichern" }).click();

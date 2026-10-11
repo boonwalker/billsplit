@@ -10,6 +10,7 @@ import Editor from "./pages/Editor";
 import Home from "./pages/Home";
 import OriginalReceipt from "./pages/OriginalReceipt";
 import Profile from "./pages/Profile";
+import SignIn from "./pages/SignIn";
 
 // The scanner pulls in the QR decoder; only load it when needed.
 const Scan = lazy(() => import("./pages/Scan"));
@@ -31,6 +32,8 @@ function Page(): ReactNode {
   switch (route.name) {
     case "profile":
       return <Profile next={route.next} />;
+    case "signin":
+      return <SignIn />;
     case "new":
       return <Editor key="new" />;
     case "edit":

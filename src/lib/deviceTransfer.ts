@@ -1,3 +1,4 @@
+import { refreshAccount } from "./account";
 import { api } from "./api";
 import { addRecentBills, adoptDevice, loadOwnProfile, saveProfile, type Profile } from "./storage";
 
@@ -28,6 +29,8 @@ export async function takeOverDevice(key: string, profile: Partial<Profile> | nu
     profile,
     bills.map((b) => ({ id: b.id, title: b.title, role: b.role, createdAt: b.createdAt, currency: b.currency })),
   );
+  // The other device's account (if it has one) now belongs to this one too.
+  await refreshAccount();
   return bills.length;
 }
 

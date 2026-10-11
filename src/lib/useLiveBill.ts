@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
 import type { BillSnapshot, ItemClaims } from "./bill";
+import { DEVICE_CHANGED } from "./storage";
 
 const CLAIM_DEBOUNCE_MS = 300;
 
@@ -35,6 +36,14 @@ export function useLiveBill(id: string): LiveBill {
     saving: Promise.resolve(),
   });
 
+  // Signing in to an account gives this device another identity: load the bill again as that one.
+  const [identity, setIdentity] = useState(0);
+  useEffect(() => {
+    const changed = () => setIdentity((n) => n + 1);
+    window.addEventListener(DEVICE_CHANGED, changed);
+    return () => window.removeEventListener(DEVICE_CHANGED, changed);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
@@ -59,7 +68,7 @@ export function useLiveBill(id: string): LiveBill {
       cancelled = true;
       unsubscribe?.();
     };
-  }, [id]);
+  }, [id, identity]);
 
   const setMyClaims = useCallback(
     (claims: ItemClaims, splits: ItemClaims) => {

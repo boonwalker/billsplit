@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { AccountStore } from "./accounts.ts";
 import { createApp } from "./app.ts";
 import { Monitor } from "./monitor.ts";
 import { isAiConfigured } from "./parseReceipt.ts";
@@ -35,17 +36,20 @@ await push.init();
 const monitor = new Monitor(path.join(path.dirname(DATA_FILE), "monitor.json"));
 await monitor.load();
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN?.trim() || undefined;
+// Optional e-mail accounts (sign-in codes go out through Resend, see mail.ts).
+const accounts = new AccountStore(path.join(path.dirname(DATA_FILE), "accounts.json"));
+await accounts.load();
 
-const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN }));
+const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts }));
 
 server.listen(PORT, () => {
   console.log(
-    `billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${ADMIN_TOKEN ? "an" : "aus"})`,
+    `billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${ADMIN_TOKEN ? "an" : "aus"}, Mail: ${process.env.RESEND_API_KEY && process.env.MAIL_FROM ? "Resend" : "nur Log"})`,
   );
 });
 
 async function shutdown(): Promise<void> {
-  await Promise.all([store.flush(), monitor.flush()]);
+  await Promise.all([store.flush(), monitor.flush(), accounts.flush()]);
   store.close();
   process.exit(0);
 }

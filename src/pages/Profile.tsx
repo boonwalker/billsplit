@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import AccountSection from "../components/AccountSection";
 import DeviceTransfer from "../components/DeviceTransfer";
 import Header from "../components/Header";
 import PushSetting from "../components/PushSetting";
@@ -6,7 +7,8 @@ import { DEMO } from "../lib/demo";
 import { formatIban, isValidEmail, isValidIban, isValidWero, normalizeIban, normalizePaypalMe } from "../lib/payment";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
-import { loadProfile, saveProfile } from "../lib/storage";
+import { accountsAvailable, saveProfileEverywhere } from "../lib/account";
+import { loadAccountEmail, loadProfile } from "../lib/storage";
 
 export default function Profile({ next }: { next?: string }) {
   const initial = loadProfile();
@@ -30,7 +32,7 @@ export default function Profile({ next }: { next?: string }) {
     e.preventDefault();
     setTouched(true);
     if (invalid) return;
-    const stored = saveProfile({
+    const stored = saveProfileEverywhere({
       name: name.trim(),
       paypalEmail: email.trim(),
       paypalMe: meName,
@@ -57,7 +59,7 @@ export default function Profile({ next }: { next?: string }) {
       <main className="content">
         <form className="stack" onSubmit={save}>
           <p className="muted">
-            Dein Profil bleibt auf diesem Gerät. Beim Erstellen einer Rechnung werden Name und Zahlungsdaten in den QR-Code
+            {loadAccountEmail() ? "Dein Profil ist in Deinem Konto gesichert." : "Dein Profil bleibt auf diesem Gerät."} Beim Erstellen einer Rechnung werden Name und Zahlungsdaten in den QR-Code
             übernommen, damit Deine Freunde Dich bezahlen können. Ein Zahlungsweg reicht, mehrere geben Deinen Freunden die
             Wahl.
           </p>
@@ -175,6 +177,12 @@ export default function Profile({ next }: { next?: string }) {
         </form>
 
         {/* Not while setting up the profile for a first bill, and not in the demo (no server). */}
+        {!next && accountsAvailable && (
+          <section className="stack account-section" id="konto">
+            <h3 className="section-title">Konto</h3>
+            <AccountSection />
+          </section>
+        )}
         {!next && !DEMO && (
           <section className="stack push-section">
             <PushSetting variant="setting" />

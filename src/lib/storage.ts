@@ -66,6 +66,9 @@ const PROFILE_KEY = "billsplit.profile";
 const DEVICE_KEY = "billsplit.deviceKey";
 const RECENT_KEY = "billsplit.recent";
 const DRAFT_KEY = "billsplit.draft";
+const ACCOUNT_KEY = "billsplit.account";
+/** Fired when this device takes on another identity (sign-in, new device, sign-out). */
+export const DEVICE_CHANGED = "billsplit:device-changed";
 
 export function loadProfile(): Profile {
   // In the demo, friends are simulated personas with a fixed name.
@@ -121,6 +124,21 @@ export function adoptDevice(key: string, profile: Partial<Profile> | null, bills
   write(DEVICE_KEY, key);
   if (profile) write(PROFILE_KEY, { name: "", paypalMe: "", paypalEmail: "", ...profile });
   write(RECENT_KEY, bills.slice(0, 30));
+  window.dispatchEvent(new Event(DEVICE_CHANGED));
+}
+
+/** The e-mail address of this device's account (as last confirmed by the server), or null. */
+export const loadAccountEmail = (): string | null => read<string | null>(ACCOUNT_KEY, null);
+export function saveAccountEmail(email: string | null): void {
+  if (email) write(ACCOUNT_KEY, email);
+  else remove(ACCOUNT_KEY);
+}
+
+/** Signing out: this device starts over with a new identity (the account keeps everything). */
+export function resetDevice(): void {
+  memoryKey = null;
+  for (const key of [DEVICE_KEY, PROFILE_KEY, RECENT_KEY, ACCOUNT_KEY, DRAFT_KEY]) remove(key);
+  window.dispatchEvent(new Event(DEVICE_CHANGED));
 }
 
 export interface RecentBill {
