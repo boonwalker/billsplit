@@ -362,7 +362,7 @@ entfallen (das „?“ bleibt) und es wird nicht weich gescrollt.
 ### Sprachen (Deutsch, Englisch, Spanisch)
 
 klicksplit gibt es auf Deutsch, Englisch und Spanisch. Die App nimmt die Sprache des Browsers bzw. iPhones (Deutsch,
-Englisch oder Spanisch; jede andere Sprache → Englisch); im Profil unter „Sprache“ lässt sie sich festlegen („Wie
+Englisch oder Spanisch; jede andere Sprache → Englisch); im Profil unter „Sprache“ (unter den Benachrichtigungen) lässt sie sich festlegen („Wie
 Gerät“, Deutsch, English, Español). Beträge und Daten erscheinen im Format der Sprache (z. B. „€12.50“, „12,50 €“).
 
 Auch alles, was vom Server kommt, folgt der Sprache: Fehlermeldungen (die App schickt `x-billsplit-lang` mit, sonst

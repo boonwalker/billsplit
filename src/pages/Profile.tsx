@@ -183,18 +183,18 @@ export default function Profile({ next }: { next?: string }) {
           <button className="btn btn-primary btn-large">{next === "new" ? t("Weiter zur Kamera") : next === "sample" ? t("Weiter zur Beispielrechnung") : t("Speichern")}</button>
         </form>
 
+        {/* Not while setting up the profile for a first bill, and not in the demo (no server). */}
+        {!next && !DEMO && (
+          <section className="stack push-section">
+            <PushSetting variant="setting" />
+          </section>
+        )}
+
         {/* The app's language: the device's, or one chosen here (reloads the app). */}
         {!next && (
           <section className="stack language-section">
             <h3 className="section-title">{t("Sprache")}</h3>
             <LanguageSetting />
-          </section>
-        )}
-
-        {/* Not while setting up the profile for a first bill, and not in the demo (no server). */}
-        {!next && !DEMO && (
-          <section className="stack push-section">
-            <PushSetting variant="setting" />
           </section>
         )}
         {!next && !DEMO && (
