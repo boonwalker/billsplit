@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { t } from "../lib/i18n";
+import { locale, t } from "../lib/i18n";
 import { centsToInput, formatMoney, parseMoney, type Cents } from "../lib/money";
 
 /**
@@ -27,6 +27,12 @@ export function tipPersons(tip: TipValue): number | undefined {
 }
 
 const PERCENT_PRESETS = ["5", "10", "15"];
+/** Usual tips for a delivery driver, in cents. */
+const DELIVERY_PRESETS = [50, 100, 200];
+
+/** "0,50 €", "1 €", "2 €": whole amounts without cents. */
+const presetLabel = (cents: Cents, currency: string) =>
+  new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
 
 /** Tip in cents that the given input adds to a bill with this subtotal and these fees. */
 export function tipCents(tip: TipValue, sub: Cents, fees: Cents = 0): Cents {
@@ -45,10 +51,12 @@ interface Props {
   fees?: Cents;
   /** False when the head count is asked separately (delivery orders). */
   showPersons?: boolean;
+  /** A delivery order: quick amounts for the driver under "absolut". */
+  delivery?: boolean;
 }
 
 /** Tip input as percentage or fixed amount, optional head count, and a live preview. */
-export default function TipControl({ value, onChange, subtotal, currency, fees = 0, showPersons = true }: Props) {
+export default function TipControl({ value, onChange, subtotal, currency, fees = 0, showPersons = true, delivery = false }: Props) {
   const uid = useId();
   const tip = tipCents(value, subtotal, fees);
   const billAmount = subtotal + fees;
@@ -71,17 +79,33 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
       </div>
 
       {value.mode === "amount" ? (
-        <label className="tip-field wide">
-          <input
-            id={`${uid}-amount`}
-            inputMode="decimal"
-            aria-label={t("Trinkgeld als Betrag")}
-            value={value.amount ?? ""}
-            placeholder={centsToInput(0)}
-            onChange={(e) => set({ amount: e.target.value.replace(/[^\d.,]/g, "") })}
-          />
-          <span>{currency === "EUR" ? "€" : currency}</span>
-        </label>
+        <>
+          <label className="tip-field wide">
+            <input
+              id={`${uid}-amount`}
+              inputMode="decimal"
+              aria-label={t("Trinkgeld als Betrag")}
+              value={value.amount ?? ""}
+              placeholder={centsToInput(0)}
+              onChange={(e) => set({ amount: e.target.value.replace(/[^\d.,]/g, "") })}
+            />
+            <span>{currency === "EUR" ? "€" : currency}</span>
+          </label>
+          {delivery && (
+            <div className="chips tip-presets" role="group" aria-label={t("Trinkgeld für den Lieferdienst")}>
+              {DELIVERY_PRESETS.map((cents) => (
+                <button
+                  key={cents}
+                  type="button"
+                  className={`chip${parseMoney(value.amount ?? "") === cents ? " active" : ""}`}
+                  onClick={() => set({ amount: centsToInput(cents) })}
+                >
+                  {presetLabel(cents, currency)}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       ) : value.mode === "percent" ? (
         <div className="chips">
           {PERCENT_PRESETS.map((p) => (

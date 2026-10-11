@@ -84,7 +84,8 @@ bleibt „Anteil begleichen“ der PayPal-Weg und darunter steht „Lieber per �
 
 Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen. Sonst fragt billsplit vor dem Erstellen des
 QR-Codes nach: absolut (der Trinkgeldbetrag selbst, voreingestellt), in Prozent oder als Endbetrag, also was Du insgesamt bezahlt
-hast. Beim Endbetrag ist das Trinkgeld die Differenz zum Rechnungsbetrag.
+hast. Beim Endbetrag ist das Trinkgeld die Differenz zum Rechnungsbetrag. Bei einer erkannten Lieferbestellung stehen unter
+„absolut“ Schnellknöpfe für den Fahrer: 0,50 €, 1 €, 2 €.
 
 Das Trinkgeld wird gleichmäßig pro Person verteilt. Gezählt wird automatisch, wer der Rechnung per QR-Code
 beigetreten ist, plus der Rechnungssteller. Optional gibt der Rechnungssteller eine erwartete Personenzahl an,
@@ -409,7 +410,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
   gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
   abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
-  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch).
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch); Lieferbestellung mit Trinkgeld-Schnellknöpfen.
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait

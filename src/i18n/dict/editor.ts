@@ -1,6 +1,8 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. */
 export default {
   en: {
+    // TipControl: quick amounts for delivery orders
+    "Trinkgeld für den Lieferdienst": "Tip for the delivery driver",
     // src/pages/Editor.tsx
     "Nur wer die Rechnung bezahlt hat, kann sie bearbeiten.": "Only the person who paid the bill can edit it.",
     "Laden fehlgeschlagen.": "Loading failed.",
@@ -144,6 +146,8 @@ export default {
     "Bild konnte nicht kodiert werden.": "The image couldn't be encoded.",
   } as Record<string, string>,
   es: {
+    // TipControl: quick amounts for delivery orders
+    "Trinkgeld für den Lieferdienst": "Propina para el repartidor",
     // src/pages/Editor.tsx
     "Nur wer die Rechnung bezahlt hat, kann sie bearbeiten.": "Solo quien ha pagado la cuenta puede editarla.",
     "Laden fehlgeschlagen.": "No se ha podido cargar.",

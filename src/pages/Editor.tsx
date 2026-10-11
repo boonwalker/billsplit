@@ -317,7 +317,7 @@ export default function Editor({ billId }: { billId?: string }) {
               <div className="field">
                 <span>{t("Trinkgeld – wird gleichmäßig auf alle Personen verteilt")}</span>
                 {draft.tipOnReceipt && <small className="muted">{t("Vom Beleg übernommen.")}</small>}
-                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} fees={feeSum} />
+                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} fees={feeSum} delivery={draft.delivery} />
               </div>
             </div>
 
@@ -424,6 +424,7 @@ export default function Editor({ billId }: { billId?: string }) {
                   currency={draft.currency}
                   fees={feeSum}
                   showPersons={!draft.delivery}
+                  delivery={draft.delivery}
                 />
               </>
             )}
