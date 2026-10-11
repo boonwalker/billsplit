@@ -13,6 +13,8 @@ import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
   const [recent, setRecent] = useState<RecentBill[]>(loadRecent);
+  /** The bill whose ✕ was tapped: asked once more before it leaves the list. */
+  const [removing, setRemoving] = useState<RecentBill | null>(null);
   // The home screen always belongs to the device owner, also in the demo.
   useEffect(() => {
     if (DEMO && getPersona() !== "me") setPersona("me");
@@ -209,10 +211,7 @@ export default function Home() {
                   <button
                     className="icon-btn subtle"
                     aria-label="Aus Liste entfernen"
-                    onClick={() => {
-                      forgetBill(b.id);
-                      setRecent(loadRecent());
-                    }}
+                    onClick={() => setRemoving(b)}
                   >
                     ✕
                   </button>
@@ -246,6 +245,31 @@ export default function Home() {
           </ol>
         </section>
       </main>
+
+      {removing && (
+        <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && setRemoving(null)}>
+          <div className="sheet confirm-sheet" role="alertdialog" aria-labelledby="remove-title" aria-describedby="remove-text">
+            <h2 id="remove-title">Bist Du sicher, dass Du diese Rechnung löschen möchtest?</h2>
+            <p id="remove-text" className="muted">
+              „{removing.title || "Rechnung"}“ verschwindet aus Deiner Liste. Für die anderen Teilnehmer bleibt sie erhalten.
+            </p>
+            <button
+              type="button"
+              className="btn btn-danger btn-large"
+              onClick={() => {
+                forgetBill(removing.id);
+                setRecent(loadRecent());
+                setRemoving(null);
+              }}
+            >
+              Löschen
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => setRemoving(null)}>
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

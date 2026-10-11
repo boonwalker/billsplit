@@ -97,3 +97,13 @@
   color: var(--text);
   opacity: 0.75;
 }
+
+/* Asking once more before a bill leaves the list on the start page. */
+.confirm-sheet h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.confirm-sheet p {
+  margin: 0;
+}

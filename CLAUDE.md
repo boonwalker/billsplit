@@ -157,7 +157,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Teilen: „Du wartest auf jemanden“ / „wartet auf jemanden“; „geteilt“ erst, wenn wirklich vollständig geteilt
 - Kassenbon-Vorschau: „Deine interaktive Rechnung ist fertig ↓“ (für den Rechnungssteller immer „interaktive“; für
   Freunde bei Gleichverteilung „digitale“)
-- Dashboard: „Dashboard · Deine Bilanz“, „Du leihst“ (grün) / „Du schuldest“ (orange), „N Eingang bestätigen“
+- Dashboard: „Dashboard · Deine Bilanz“ (Knopf über „Deine Rechnungen“), „Du leihst“ (grün) / „Du schuldest“
+  (orange), „N Eingang bestätigen“
+- ✕ in der Rechnungsliste: „Bist Du sicher, dass Du diese Rechnung löschen möchtest?“ mit „Löschen“ / „Abbrechen“
 - Profil-Assistent: „Wie heißt Du?“, dann „Wie willst Du bezahlt werden?“ mit PayPal / Überweisung / Wero
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der

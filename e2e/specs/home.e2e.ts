@@ -19,4 +19,16 @@ test("Startseite: „Du schuldest“ zeigt den aktuell offenen Betrag, „Du lei
   await page.goto("/");
   await expect(page.locator(".list-item", { hasText: "Sushi Bar" })).toContainText("Du schuldest · 8,00 €");
   await expect(page.locator(".list-item", { hasText: "Trattoria" })).toContainText("Du leihst · 9,50 €");
+
+  // ✕ asks first: "Abbrechen" keeps the bill, "Löschen" takes it off the list.
+  const remove = () => page.locator(".list-item", { hasText: "Sushi Bar" }).getByRole("button", { name: "Aus Liste entfernen" }).click();
+  const dialog = page.getByRole("alertdialog");
+  await remove();
+  await expect(dialog).toContainText("Bist Du sicher, dass Du diese Rechnung löschen möchtest?");
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(page.locator(".list-title")).toHaveText(["Sushi Bar", "Trattoria"]);
+  await remove();
+  await dialog.getByRole("button", { name: "Löschen" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator(".list-title")).toHaveText(["Trattoria"]);
 });
