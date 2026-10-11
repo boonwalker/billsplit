@@ -35,7 +35,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 139 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 140 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -132,7 +132,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - **Rechnungssteller-Rolle** (`ownerId`) wandert nur über einen Nachweis derselben Person: Konto (E-Mail-Code),
   „Gerät wechseln“ oder Wiederherstellungs-Code. Der Safari→App-Code (`?von=`) nie: `mergeParticipant(…, { ownership:
   false })`, gilt nur im selben Netz (`networkKey`), und Rechnungssteller bekommen keinen `?von=` in kopierte Links
-  (Vorfall 11.10.2026: Einladung führte in die Rechnungssteller-Ansicht).
+  (Vorfall 11.10.2026: Einladung führte in die Rechnungssteller-Ansicht – Ursache war ein Testhandy, das mit dem
+  Konto des Rechnungsstellers angemeldet war; Lücke trotzdem geschlossen). Rechnungssteller und Gast derselben
+  Rechnung werden nie zusammengelegt (`mergeParticipant` lässt solche Rechnungen aus).
 - **Lange Drücken („/2“)** nur für den Rechnungssteller und nicht im Modus „Jeder selber abhaken“; ein präziser Tipp
   auf „/2“ hebt den Teiler auf, statt die Zeile zu streichen.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit

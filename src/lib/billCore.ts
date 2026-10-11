@@ -135,7 +135,15 @@ export class BillCore {
    */
   mergeParticipant(fromId: string, intoId: string, { ownership = true }: { ownership?: boolean } = {}): string[] {
     if (fromId === intoId) return [];
-    const kept = new Set(ownership ? [] : this.billsOf(fromId).filter((id) => this.get(id).ownerId === fromId));
+    const kept = new Set(
+      this.billsOf(fromId).filter((id) => {
+        const bill = this.get(id);
+        // The payer and a friend of the same bill are always two people (e.g. a test phone that
+        // joined as a friend, then signed in to the payer's account): never one entry.
+        if (bill.participants[intoId] && (bill.ownerId === fromId || bill.ownerId === intoId)) return true;
+        return !ownership && bill.ownerId === fromId;
+      }),
+    );
     const union = (a: ItemClaims = {}, b: ItemClaims = {}) => {
       const out: ItemClaims = { ...a };
       for (const [item, slots] of Object.entries(b)) out[item] = [...new Set([...(out[item] ?? []), ...slots])].sort((x, y) => x - y);

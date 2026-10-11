@@ -81,3 +81,22 @@ describe("a one-time code from Safari never hands over the payer's role", () => 
     expect(store.snapshot(joined, "anna").me).toBe("anna");
   });
 });
+
+describe("the payer and a friend of the same bill stay two people", () => {
+  it("does not fold a friend into the payer when that device signs in to the payer's account", () => {
+    const store = new BillStore(null);
+    const id = store.createBill(bill("Trattoria", [["pizza", 1, 950], ["bier", 1, 450]]), "niklas", "Niklas");
+    store.setClaims(id, "niklas", { bier: [0] });
+    store.join(id, "testphone", "Anna");
+    store.setClaims(id, "testphone", { pizza: [0] });
+
+    expect(store.mergeParticipant("testphone", "niklas")).toEqual([]);
+    const view = store.snapshot(id, "niklas");
+    expect(view.isOwner).toBe(true);
+    expect(view.participants.map((p) => [p.id, p.name])).toEqual([
+      ["niklas", "Niklas"],
+      ["testphone", "Anna"],
+    ]);
+    expect(view.debtors!.map((d) => d.name)).toEqual(["Anna"]);
+  });
+});
