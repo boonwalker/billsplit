@@ -31,7 +31,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 120 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 125 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -46,7 +46,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
      mitgeben, wenn sich ihr Hash geändert hat.)
    - In einer **neuen Sitzung** das Artifact vorher einmal mit `action: "read"` lesen (sonst wird der Publish
      abgelehnt) und mit `action: "list", scope: "files"` nachsehen, welche Asset-Namen aktuell veröffentlicht sind.
-   - Zuletzt veröffentlicht: `assets/index-Vy9dnFAH.js`, `assets/Scan-C3zZeTKg.js` (Version 127).
+   - Zuletzt veröffentlicht: `assets/index-BSusPs1t.js`, `assets/Scan-D7GdiqHA.js` (Version 128).
 
 ## Betrieb
 
@@ -148,26 +148,21 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Kassenbon-Vorschau: „Deine interaktive Rechnung ist fertig ↓“ (für den Rechnungssteller immer „interaktive“; für
   Freunde bei Gleichverteilung „digitale“)
 - Dashboard: „Dashboard · Deine Bilanz“, „Du leihst“ (grün) / „Du schuldest“ (orange), „N Eingang bestätigen“
+- Profil-Assistent: „Wie heißt Du?“, dann „Wie willst Du bezahlt werden?“ mit PayPal / Überweisung / Wero
+- Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
+- Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
+  Rechnung oben „Vielleicht nicht für alle?“
+- Rechnungssteller: „Erinnern“ (WhatsApp mit offenem Betrag und Link)
 
 ## Offene Ideen / Backlog (noch nicht beauftragt)
 
-Aus der Verbesserungsanalyse vom 10.10.2026, empfohlene Reihenfolge:
-
-Vorschläge aus der Bedienbarkeits-Analyse vom 10.10.2026 (dem Auftraggeber vorgelegt, noch nicht beauftragt):
-
-1. **Safari- und App-Identität zusammenführen:** Wer per WhatsApp-Link in Safari beitritt, ist dort ein anderer
-   Teilnehmer als in der Home-Bildschirm-App (getrennte Speicher, eigene Gerätekennung). Vorschlag: „In der App
-   öffnen“ nimmt die Safari-Kennung per Einmal-Code mit, die App übernimmt deren Teilnahmen (Server-Merge).
-2. **Erst fotografieren, dann Profil:** Name/Zahlungsweg während der Belegerkennung abfragen statt vorher.
-3. **„Hast Du bezahlt?“ automatisch** fragen, wenn die App nach dem PayPal-Absprung wieder in den Vordergrund kommt.
-4. **Erinnern:** Rechnungssteller schickt offenen Freunden per WhatsApp eine Erinnerung mit Betrag und Link.
-5. **Gesten-Legende** dauerhaft am Beleg (kleines „?“), nicht nur die einmalige Animation.
-6. **Bewegung reduzieren** (`prefers-reduced-motion`) für alle Animationen, nicht nur den Scanner.
-
-Weiteres:
-
-1. Kleinigkeiten: Großschreibung von „deine/deiner“ uneinheitlich (z. B. „Hake deine Positionen ab“, „in deiner PayPal-App“) – mit
-   dem Auftraggeber klären, ob die Regel für „Dir“ auch für Du/Dein gelten soll.
+Derzeit nichts offen. Erledigt am 11.10.2026 (Bedienbarkeits-Analyse vom 10.10.2026 komplett umgesetzt):
+Safari- und App-Identität zusammenführen (`?von=`-Code, `mergeParticipant`), „Hast Du … gesendet?“ nach Rückkehr von
+PayPal, „Erinnern“ per WhatsApp, erst fotografieren – Profil-Assistent (`ProfileWizard`) während der Erkennung bzw.
+für Gäste nach dem Bezahlen, Gesten-Legende („?“, `GestureHelp`), Pfeile im Gesamtausgleich, Du/Dein/Dir überall groß,
+`prefers-reduced-motion` für alles (`src/lib/motion.ts`, `27-motion.css`), stärkerer Kontrast blasser Hinweise,
+Betrag bei „Du schuldest“, Push und Listen führen direkt an die Stelle (`?an=`, `?zurueck=`, `?zahlung=`),
+Supermarkt „Alles aufteilen“ mit „/ N“-Stepper und „Vielleicht nicht für alle?“.
 
 Erledigt am 10.10.2026: einheitlicher Ausgleich über bestätigte Zahlungen, Gerät übertragen/Wiederherstellungs-Code,
 Web-Push, zweizeiliger PayPal-Hinweis im Ausgleichs-Fenster.
