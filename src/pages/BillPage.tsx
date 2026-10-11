@@ -325,7 +325,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
           />
         </div>
 
-        {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} shareUrl={url} />}
+        {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} shareUrl={url} onRemind={async (d) => replace(await api.remind(id, d.id))} />}
       </main>
       </div>
 

@@ -24,8 +24,13 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
 5. Unter der Rechnung siehst du deine Freunde, sobald sie beigetreten sind. Hat jemand auf „Bezahlen“ getippt,
    erscheint der Betrag hinter seinem Namen. Diese Angaben gleichst du mit den PayPal-Eingängen ab und hakst
    „erhalten“ an. Unten steht immer, wie viel dir noch fehlt.
-   Wer noch etwas offen hat, bekommt einen Knopf „Erinnern“: Er öffnet WhatsApp mit einer freundlichen Nachricht
-   samt offenem Betrag und Link zur Rechnung.
+   Wer noch etwas offen hat – oder beigetreten ist, aber noch nichts abgehakt hat –, bekommt einen Knopf „Erinnern“.
+   Hat der Freund Benachrichtigungen eingeschaltet, schickt er eine Push-Mitteilung („Niklas erinnert Dich – Für
+   „Trattoria“ sind bei Dir noch 9,50 € offen.“ bzw. „Bitte hake in „Trattoria“ ab, was Du hattest.“; ein Tipp führt
+   zu seinem Anteil). Sonst – und in den 12 Stunden nach einer Mitteilung – öffnet er WhatsApp mit derselben Nachricht
+   samt Link. In der Zeile steht danach „per Mitteilung erinnert vor 2 Std.“. Im Dashboard gibt es „Erinnern“ im
+   Ausgleich mit einer Person, die Dir etwas schuldet („Carl hat noch nicht bezahlt?“), mit dem Betrag aus allen
+   Deinen Rechnungen.
 
 **Freunde**
 
@@ -222,6 +227,7 @@ billsplit kann per Push Bescheid sagen, wenn etwas auf einen wartet – auch wen
 - „Katia hat 8,00 € erhalten ✓“ / „… nicht erhalten“ / „Katia hat Deinen Ausgleich eingetragen“
 - „Anna hat bezahlt“ (in Deiner Rechnung als bezahlt markiert – bitte Eingang prüfen)
 - „Niklas hat die Zahlung zurückgezogen“
+- „Niklas erinnert Dich“ (über „Erinnern“, höchstens einmal in 12 Stunden pro Rechnung)
 
 Ein Tipp auf die Benachrichtigung führt direkt dorthin, wo als Nächstes etwas zu tun ist: bei „Anna hat bezahlt“ in
 die Rechnung, heruntergescrollt zu Anna in der Freundesliste (kurz hervorgehoben), um den Eingang zu prüfen und
@@ -483,6 +489,8 @@ claude.ai-Artifact gedacht:
 | `GET` | `/api/my-bills` | Rechnungen, an denen das Gerät teilnimmt (für die Übertragung auf ein neues Gerät) |
 | `POST` | `/api/device-link` | Einmal-Code für die Übertragung auf ein neues Gerät (10 Minuten gültig) |
 | `POST` | `/api/device-link/:code` | Code einlösen: Gerätekennung und Profil (nur einmal) |
+| `POST` | `/api/bills/:id/remind` | Rechnungssteller erinnert einen Freund per Push (nur wenn erreichbar, max. alle 12 h) |
+| `GET` / `POST` | `/api/reminders` | Wen Push erreicht und wann zuletzt erinnert wurde · eine Erinnerung an eine Person über alle Rechnungen |
 | `POST` | `/api/merge-device` | App übernimmt mit einem Einmal-Code aus Safari dessen Teilnahmen |
 | `GET` / `DELETE` | `/api/account` | Konto dieses Geräts (E-Mail-Adresse) abfragen bzw. löschen |
 | `POST` | `/api/account/code` | 6-stelligen Anmelde-Code an eine Adresse schicken |

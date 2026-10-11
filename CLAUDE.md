@@ -164,7 +164,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
-- Rechnungssteller: „Erinnern“ (WhatsApp mit offenem Betrag und Link)
+- „Erinnern“ (Knopf heißt immer nur so): Push-Mitteilung „Niklas erinnert Dich“, wenn der Freund Benachrichtigungen
+  hat (bevorzugt), sonst bzw. innerhalb von 12 h danach WhatsApp; auch bei Freunden ohne Häkchen („Bitte hake in … ab,
+  was Du hattest.“) und im Dashboard („Carl hat noch nicht bezahlt?“). Status „per Mitteilung erinnert vor …“.
+  Regeln in `BillCore.remind`/`remindPerson` (`REMIND_COOLDOWN_MS`), Knopf `RemindButton`.
 - Code-Mail: „Hi,“ / „hier ist Dein Code für klicksplit:“, Code ohne Leerzeichen in Mint-Box (App-Design)
 - Konto: „Deine E-Mail-Adresse“, „Code senden“, „Code eingeben“, „Überspringen“, Startseite „Schon ein Konto?
   Anmelden“, Profil ganz oben „Konto“: „● Angemeldet“ + Adresse bzw. „Nicht angemeldet“ + „Anmelden oder Konto

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createBill, followPaypal, key, leaveAndReturn, phone } from "./helpers";
+import { api, createBill, followPaypal, key, leaveAndReturn, phone } from "./helpers";
 
 test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungssteller hakt „erhalten“ an", async ({ browser }) => {
   const niklas = { key: key("niklas"), name: "Niklas", paypal: "nik" };
@@ -35,6 +35,18 @@ test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungsste
   const text = decodeURIComponent((await remind.getAttribute("href"))!.replace(/^.*?text=/, ""));
   expect(text.replace(/\s/g, " ")).toContain("Für „Trattoria“ sind bei Dir noch 9,50 € offen");
   expect(text).toContain(`#/b/${id}`);
+
+  // Ben joined but has not ticked anything – and has notifications on: "Erinnern" sends one.
+  const ben = key("ben");
+  await api(ben, "POST", `/api/bills/${id}/join`, { name: "Ben" });
+  await api(ben, "POST", "/api/push/subscribe", { endpoint: "https://web.push.apple.com/e2e-ben", keys: { p256dh: "x", auth: "y" } });
+  await owner.reload();
+  const benRow = owner.locator(".debtor", { hasText: "Ben" });
+  await benRow.getByRole("button", { name: "Ben per Mitteilung erinnern" }).click();
+  await expect(benRow).toContainText("per Mitteilung erinnert gerade eben");
+  // Right after a notification, another nudge goes via WhatsApp – asking him to tick what he had.
+  const again = decodeURIComponent((await benRow.getByRole("link", { name: "Ben per WhatsApp erinnern" }).getAttribute("href"))!.replace(/^.*?text=/, ""));
+  expect(again).toContain("Bitte hake in „Trattoria“ ab, was Du hattest.");
 
   // Pay: the amount goes to the clipboard first, then PayPal opens with recipient and amount.
   await anna.getByRole("button", { name: /Anteil begleichen · 9,50/ }).click();

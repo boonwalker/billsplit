@@ -389,3 +389,26 @@
 .inbox-card.focus-flash {
   animation: focus-flash 2.4s ease-out;
 }
+
+/* "Erinnern" in the settle-up sheet: a nudge for someone who still owes me. */
+.settle-remind {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.settle-remind > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settle-remind small {
+  font-size: 0.78rem;
+  color: var(--claim);
+}

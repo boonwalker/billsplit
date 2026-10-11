@@ -168,7 +168,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const appErrors = new RateLimiter(30, 60 * 60 * 1000);
   const push = options.push;
   // Whatever needs someone (money arrived, a payment to confirm, …) goes to their devices.
-  if (push) store.onNotice((participantId, notice) => void push.notify(participantId, notice));
+  if (push) {
+    store.onNotice((participantId, notice) => void push.notify(participantId, notice));
+    // "Erinnern" sends a notification to those it reaches (WhatsApp for the others).
+    store.setReachability((participantId) => push.reachable(participantId));
+  }
 
   store.onChange((billId, kind) => {
     for (const sub of subscribers.get(billId) ?? []) {
@@ -481,6 +485,16 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       return sendJson(res, 200, { merged, bills: store.myBills(viewer), profile: { ...link.profile, ...(name ? { name } : {}) } });
     }
 
+    // "Erinnern" in the dashboard: whom notifications reach, and one reminder for a person's open shares.
+    if (parts[1] === "reminders" && parts.length === 2) {
+      const viewer = requireViewer(req, url);
+      if (method === "POST") {
+        const body = parse(z.object({ personId: z.string().max(32) }), await readJson(req, MAX_JSON_BODY));
+        store.remindPerson(viewer, body.personId);
+      }
+      if (method === "GET" || method === "POST") return sendJson(res, 200, store.reminderStatus(viewer));
+    }
+
     // Settling up across bills: open shares in the viewer's bills and settlement payments.
     if (parts[1] === "network" && parts.length === 2 && method === "GET") {
       return sendJson(res, 200, { edges: store.network(requireViewer(req, url)) });
@@ -580,6 +594,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       if (action === "paid" && method === "POST") {
         const body = parse(z.object({ paid: z.boolean() }), await readJson(req, MAX_JSON_BODY));
         store.setMarkedPaid(billId, viewer, body.paid);
+        return sendJson(res, 200, store.snapshot(billId, viewer));
+      }
+      if (action === "remind" && method === "POST") {
+        const body = parse(z.object({ participantId: z.string().max(32) }), await readJson(req, MAX_JSON_BODY));
+        store.remind(billId, viewer, body.participantId);
         return sendJson(res, 200, store.snapshot(billId, viewer));
       }
       if (action === "received" && method === "POST") {

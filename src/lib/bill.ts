@@ -117,6 +117,10 @@ export interface Debtor {
   creditPending?: Cents;
   /** What those payments were, e.g. "4,00 € von Niklas an Katia gezahlt". */
   creditNotes?: string[];
+  /** Notifications reach this friend ("Erinnern" sends one instead of opening WhatsApp). */
+  reachable?: boolean;
+  /** Last reminder sent as a notification. */
+  remindedAt?: string;
 }
 
 /** What settlement payments (Transfer) covered of a share: confirmed, waiting, and what they were. */

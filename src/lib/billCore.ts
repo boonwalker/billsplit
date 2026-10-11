@@ -43,7 +43,12 @@ export interface StoredParticipant {
   received?: boolean;
   /** The friend marked their share as paid. */
   markedPaidAt?: string;
+  /** Last reminder the payer sent as a notification (at most one every REMIND_COOLDOWN_MS). */
+  remindedAt?: string;
 }
+
+/** A friend gets at most one reminder notification per bill in this time. */
+export const REMIND_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
 export interface StoredBill {
   id: string;
@@ -92,6 +97,11 @@ export class BillCore {
 
   /** Tells a participant about something that needs them (the server sends it as a push notification). */
   protected notify(_participantId: string, _notice: Notice): void {}
+
+  /** Whether notifications reach a participant (the server knows their push subscriptions). */
+  protected canNotify(_participantId: string): boolean {
+    return false;
+  }
 
   /** Whether a participant has the app open right now (the server tracks open connections). */
   protected isOnline(_participantId: string): boolean {
@@ -351,6 +361,79 @@ export class BillCore {
     return openShare(share, p, c.confirmed + c.pending);
   }
 
+  /**
+   * "Erinnern" as a notification: the payer reminds a friend of their open share – or, when
+   * they have not ticked anything yet, to tick what they had. Only for friends notifications
+   * reach, at most once per REMIND_COOLDOWN_MS (the app falls back to WhatsApp otherwise).
+   */
+  remind(billId: string, requesterId: string, debtorId: string, now = Date.now()): void {
+    const bill = this.get(billId);
+    this.assertOwner(billId, requesterId);
+    if (debtorId === bill.ownerId) throw new BillError("Du kannst Dich nicht selbst erinnern.", 400);
+    const p = this.participant(bill, debtorId);
+    if (p.received || p.markedPaidAt) throw new BillError(`${p.name} hat schon bezahlt.`, 409);
+    const open = this.openOf(bill, debtorId);
+    const ticked = participantShare(bill.data, this.publicParticipants(bill), debtorId).total > 0;
+    if (ticked && open <= 0) throw new BillError(`Bei ${p.name} ist nichts mehr offen.`, 409);
+    this.assertRemindable(debtorId, [p], now);
+    const from = bill.participants[bill.ownerId]?.name ?? "";
+    this.notify(debtorId, {
+      title: `${from} erinnert Dich`,
+      body: ticked
+        ? `Für „${bill.data.title}“ sind bei Dir noch ${formatMoney(open, bill.data.currency)} offen.`
+        : `Bitte hake in „${bill.data.title}“ ab, was Du hattest.`,
+      // Straight to their own share, with the pay button.
+      path: `/b/${billId}?an=${debtorId}`,
+    });
+    p.remindedAt = new Date(now).toISOString();
+    this.changed(billId);
+  }
+
+  /** "Erinnern" in the dashboard: one notification about everything a person still owes the requester. */
+  remindPerson(requesterId: string, personId: string, now = Date.now()): void {
+    const edges = this.network(requesterId).filter((e) => e.creditorId === requesterId && e.debtorId === personId);
+    if (!edges.length) throw new BillError("Bei dieser Person ist nichts offen.", 409);
+    const shares = edges.map((e) => this.participant(this.get(e.billId), personId));
+    this.assertRemindable(personId, shares, now);
+    const totals = new Map<string, number>();
+    for (const e of edges) totals.set(e.currency, (totals.get(e.currency) ?? 0) + e.amount);
+    const amounts = [...totals].map(([currency, cents]) => formatMoney(cents, currency)).join(" und ");
+    const from = this.get(edges[0].billId).participants[requesterId]?.name ?? "";
+    this.notify(personId, {
+      title: `${from} erinnert Dich`,
+      body:
+        edges.length === 1
+          ? `Für „${edges[0].title}“ sind bei Dir noch ${amounts} offen.`
+          : `Bei Dir sind noch ${amounts} aus ${edges.length} Rechnungen offen.`,
+      path: edges.length === 1 ? `/b/${edges[0].billId}?an=${personId}` : "/dashboard",
+    });
+    const at = new Date(now).toISOString();
+    for (const p of shares) p.remindedAt = at;
+    for (const e of edges) this.changed(e.billId);
+  }
+
+  /** People in the requester's bills whom notifications reach, and when each was last reminded. */
+  reminderStatus(requesterId: string): { reachable: string[]; remindedAt: Record<string, string> } {
+    const reachable = new Set<string>();
+    const remindedAt: Record<string, string> = {};
+    for (const bill of this.bills.values()) {
+      if (bill.ownerId !== requesterId) continue;
+      for (const [pid, p] of Object.entries(bill.participants)) {
+        if (pid === requesterId) continue;
+        if (this.canNotify(pid)) reachable.add(pid);
+        if (p.remindedAt && (!remindedAt[pid] || p.remindedAt > remindedAt[pid])) remindedAt[pid] = p.remindedAt;
+      }
+    }
+    return { reachable: [...reachable], remindedAt };
+  }
+
+  private assertRemindable(participantId: string, shares: StoredParticipant[], now: number): void {
+    if (!this.canNotify(participantId)) throw new BillError("Diese Person hat keine Benachrichtigungen eingeschaltet.", 409);
+    if (shares.some((p) => p.remindedAt && now - Date.parse(p.remindedAt) < REMIND_COOLDOWN_MS)) {
+      throw new BillError("Du hast vor Kurzem schon erinnert.", 429);
+    }
+  }
+
   /** Open shares in all bills the viewer takes part in – the basis for settling up with as few payments as possible. */
   network(viewerId: string): NetworkEdge[] {
     const edges: NetworkEdge[] = [];
@@ -567,6 +650,8 @@ export class BillCore {
             payAmount: p.payAmount,
             received: Boolean(p.received),
             markedPaidAt: p.markedPaidAt,
+            reachable: this.canNotify(id),
+            remindedAt: p.remindedAt,
             ...this.debtorCredit(billId, id),
           }),
         );

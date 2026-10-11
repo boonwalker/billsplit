@@ -7,6 +7,11 @@ import { deviceKey, type Profile } from "./storage";
 
 export { ApiError };
 
+export interface ReminderStatus {
+  reachable: string[];
+  remindedAt: Record<string, string>;
+}
+
 export type AccountVerify =
   | { status: "created" | "same"; email: string; profile?: Partial<Profile> }
   | { status: "login"; email: string; key: string; profile: Partial<Profile>; bills: MyBill[] };
@@ -25,6 +30,12 @@ export interface Api {
   receiptImageUrl(id: string): Promise<string | null>;
   pay(id: string): Promise<{ amount: number }>;
   setReceived(id: string, participantId: string, received: boolean): Promise<BillSnapshot>;
+  /** The payer reminds a friend by notification (only when it reaches them; else the app opens WhatsApp). */
+  remind(id: string, participantId: string): Promise<BillSnapshot>;
+  /** Whom notifications reach among the people in my bills, and when I last reminded each. */
+  reminders(): Promise<ReminderStatus>;
+  /** One reminder notification about everything a person still owes me. */
+  remindPerson(personId: string): Promise<ReminderStatus>;
   /** A friend marks their own share as paid. */
   markPaid(id: string, paid: boolean): Promise<BillSnapshot>;
   /** Open shares in all bills this device takes part in (for settling up). */
@@ -129,6 +140,9 @@ const serverApi: Api = {
   pay: (id) => request("POST", `${bill(id)}/pay`, {}, { keepalive: true }),
   setReceived: (id, participantId, received) => request("POST", `${bill(id)}/received`, { participantId, received }),
   markPaid: (id, paid) => request("POST", `${bill(id)}/paid`, { paid }),
+  remind: (id, participantId) => request("POST", `${bill(id)}/remind`, { participantId }),
+  reminders: () => request("GET", "/api/reminders"),
+  remindPerson: (personId) => request("POST", "/api/reminders", { personId }),
   network: async () => (await request<{ edges: NetworkEdge[] }>("GET", "/api/network")).edges,
   transfers: () => request("GET", "/api/transfers"),
   createTransfer: (input) => request("POST", "/api/transfers", input),

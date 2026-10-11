@@ -170,3 +170,32 @@
 .remind-btn:active {
   opacity: 0.6;
 }
+
+/* The notification variant is a <button>: same pill as the WhatsApp link. */
+button.remind-btn {
+  background: transparent;
+  font-family: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+button.remind-btn:disabled {
+  opacity: 0.5;
+}
+
+.debtor-reminded {
+  display: block;
+  color: var(--claim);
+  font-size: 0.78rem;
+}
+
+.remind-error {
+  flex-basis: 100%;
+  color: var(--danger);
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.debtor:has(.remind-error) {
+  flex-wrap: wrap;
+}

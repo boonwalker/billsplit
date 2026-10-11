@@ -14,13 +14,15 @@ import {
   type Debtor,
 } from "../lib/bill";
 import { formatMoney } from "../lib/money";
-import { whatsappLink } from "../lib/whatsapp";
+import RemindButton, { remindedAgo } from "./RemindButton";
 
 interface Props {
   snapshot: BillSnapshot;
   onToggleReceived: (debtor: Debtor, received: boolean) => void;
   /** The bill's link, for reminders via WhatsApp. */
   shareUrl?: string;
+  /** Sends a reminder as a notification (for friends it reaches). */
+  onRemind?: (debtor: Debtor) => Promise<void>;
 }
 
 /** Switch for the payer: split the whole bill equally instead of ticking items (e.g. supermarket receipts). */
@@ -112,11 +114,16 @@ export function ownerSummary(snapshot: BillSnapshot) {
 }
 
 /** What only the payer sees below the bill: who scanned, who tapped pay, what is still missing. */
-export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl }: Props) {
+export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRemind }: Props) {
   const currency = snapshot.data.currency;
+  const title = snapshot.data.title || "die Rechnung";
   const openOf = (d: Debtor) => (d.received ? 0 : openShare(d.amount, d, (d.credited ?? 0) + (d.creditPending ?? 0)));
-  const reminder = (d: Debtor, open: number) =>
-    `Hi ${d.name}, kleine Erinnerung von klicksplit: Für „${snapshot.data.title || "die Rechnung"}“ sind bei Dir noch ${formatMoney(open, currency)} offen. Hier kannst Du direkt begleichen: ${shareUrl}`;
+  /** Not ticked anything yet (and no equal split, where nothing needs ticking). */
+  const nothingTicked = (d: Debtor) => d.amount === 0 && !snapshot.data.equalSplit;
+  const reminder = (d: Debtor) =>
+    nothingTicked(d)
+      ? `Hi ${d.name}, kleine Erinnerung von klicksplit: Bitte hake in „${title}“ ab, was Du hattest. Hier geht's zur Rechnung: ${shareUrl}`
+      : `Hi ${d.name}, kleine Erinnerung von klicksplit: Für „${title}“ sind bei Dir noch ${formatMoney(openOf(d), currency)} offen. Hier kannst Du direkt begleichen: ${shareUrl}`;
   const debtors = snapshot.debtors ?? [];
   const { total, own, received, missing, unassigned } = ownerSummary(snapshot);
 
@@ -158,6 +165,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl }: Pro
                           : "ist beigetreten · wählt noch aus …"}
                     {changed && <> · Auswahl jetzt {formatMoney(d.amount, currency)}</>}
                   </span>
+                  {d.remindedAt && !d.received && !d.markedPaidAt && <span className="debtor-reminded">per Mitteilung erinnert {remindedAgo(d.remindedAt)}</span>}
                   {/* Settled (partly) by settlement payments from the dashboard. */}
                   {d.creditNotes?.map((note) => (
                     <span key={note} className="debtor-credit">
@@ -166,11 +174,15 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl }: Pro
                   ))}
                 </span>
                 {d.payAmount !== undefined && <span className="debtor-amount">{formatMoney(d.payAmount, currency)}</span>}
-                {/* Still open: a friendly nudge via WhatsApp, with the amount and the link. */}
-                {shareUrl && openOf(d) > 0 && !d.markedPaidAt && (
-                  <a className="remind-btn" href={whatsappLink(reminder(d, openOf(d)))} aria-label={`${d.name} per WhatsApp erinnern`}>
-                    Erinnern
-                  </a>
+                {/* Still open (or nothing ticked yet): a friendly nudge – as a notification where it reaches them, else via WhatsApp. */}
+                {shareUrl && !d.received && !d.markedPaidAt && (openOf(d) > 0 || nothingTicked(d)) && (
+                  <RemindButton
+                    name={d.name}
+                    reachable={d.reachable && Boolean(onRemind)}
+                    remindedAt={d.remindedAt}
+                    whatsappText={reminder(d)}
+                    onPush={() => onRemind!(d)}
+                  />
                 )}
                 {d.payClickedAt && (
                   <label className="received-toggle" title="Geld ist auf PayPal angekommen">

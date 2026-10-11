@@ -66,6 +66,11 @@ export class PushService {
     this.scheduleSave();
   }
 
+  /** Whether notifications can reach a participant (keys ready and at least one device subscribed). */
+  reachable(participantId: string): boolean {
+    return Boolean(this.keys) && (this.subscriptions.get(participantId)?.length ?? 0) > 0;
+  }
+
   has(participantId: string, endpoint: string): boolean {
     return (this.subscriptions.get(participantId) ?? []).some((s) => s.endpoint === endpoint);
   }

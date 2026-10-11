@@ -65,6 +65,12 @@ test("Ausgleich mit einer Person: Erhaltenes selbst eintragen – die Person sie
   await page.locator(".person-ring", { hasText: "Carl" }).locator(".person-ring-hit").click();
   const sheet = page.locator(".settle-sheet");
   await expect(sheet).toContainText("Carl zahlt Dir 6,34 €");
+  // Not paid yet? "Erinnern" – Carl has no notifications, so it is WhatsApp with the amount and the bill.
+  const remind = sheet.locator(".settle-remind");
+  await expect(remind).toContainText("Carl hat noch nicht bezahlt?");
+  const text = decodeURIComponent((await remind.getByRole("link", { name: "Carl per WhatsApp erinnern" }).getAttribute("href"))!.replace(/^.*?text=/, ""));
+  expect(text.replace(/\s/g, " ")).toContain("Für „Bar“ sind bei Dir noch 6,34 € offen.");
+  expect(text).toContain(`#/b/${bar}`);
   await sheet.getByRole("button", { name: "✓ 6,34 € erhalten – eintragen" }).click();
   await expect(sheet).toContainText("als erhalten eingetragen");
   await sheet.getByRole("button", { name: "Fertig" }).click();

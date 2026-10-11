@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { api } from "../lib/api";
+import { useEffect, useState } from "react";
+import { api, type ReminderStatus } from "../lib/api";
+import { billUrl } from "../lib/bill";
 import type { NetworkEdge } from "../lib/bill";
 import { formatMoney } from "../lib/money";
 import { sameAllocations, settlementWith } from "../lib/settle";
 import PayButtons from "./PayButtons";
+import RemindButton, { remindedAgo } from "./RemindButton";
 import { BillEntry } from "./SettlementPanel";
 
 interface Props {
@@ -40,6 +42,22 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
   const bills = new Set(s.edges.map((e) => e.billId)).size;
   const fmt = (c: number) => formatMoney(c, currency);
   const inBills = bills === 1 ? "der Rechnung" : `allen ${bills} Rechnungen`;
+
+  // "Erinnern": what the person still owes me, bill by bill – as a notification where it reaches them.
+  const [reminders, setReminders] = useState<ReminderStatus | null>(null);
+  useEffect(() => {
+    api
+      .reminders()
+      .then(setReminders)
+      .catch(() => setReminders({ reachable: [], remindedAt: {} }));
+  }, []);
+  const owedToMe = s.edges.filter((e) => e.debtorId === person.id && e.creditorId === me);
+  const owedTotal = owedToMe.reduce((sum, e) => sum + e.amount, 0);
+  const remindedAt = reminders?.remindedAt[person.id];
+  const reminderText =
+    owedToMe.length === 1
+      ? `Hi ${person.name}, kleine Erinnerung von klicksplit: Für „${owedToMe[0].title}“ sind bei Dir noch ${fmt(owedTotal)} offen. Hier kannst Du direkt begleichen: ${billUrl(owedToMe[0].billId, window.location.href)}`
+      : `Hi ${person.name}, kleine Erinnerung von klicksplit: Bei Dir sind noch ${fmt(owedTotal)} aus ${owedToMe.length} Rechnungen offen. Im Dashboard kannst Du alles auf einmal ausgleichen: ${window.location.href.replace(/#.*$/, "")}#/dashboard`;
 
   /** Records the settlement – but only if the open amounts are still the ones shown (and paid). */
   async function book() {
@@ -150,7 +168,22 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
               />
             )}
 
-            {/* They pay me: record it once the money is there. */}
+            {/* They pay me: remind them – and record it once the money is there. */}
+            {net > 0 && owedToMe.length > 0 && stage === "review" && reminders && (
+              <div className="settle-remind">
+                <span>
+                  {person.name} hat noch nicht bezahlt?
+                  {remindedAt && <small className="muted">per Mitteilung erinnert {remindedAgo(remindedAt)}</small>}
+                </span>
+                <RemindButton
+                  name={person.name}
+                  reachable={reminders.reachable.includes(person.id)}
+                  remindedAt={remindedAt}
+                  whatsappText={reminderText}
+                  onPush={async () => setReminders(await api.remindPerson(person.id))}
+                />
+              </div>
+            )}
             {s.edges.length > 0 && net > 0 && stage === "review" && (
               <>
                 <p className="muted small">{person.name} sieht den Ausgleich im eigenen Dashboard. Sobald das Geld da ist, trag es hier ein.</p>

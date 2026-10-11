@@ -151,6 +151,17 @@ export class BillStore extends BillCore {
     for (const l of this.noticeListeners) l(participantId, notice);
   }
 
+  private reaches: (participantId: string) => boolean = () => false;
+
+  /** Tells the store whom notifications reach (participants with a push subscription). */
+  setReachability(check: (participantId: string) => boolean): void {
+    this.reaches = check;
+  }
+
+  protected override canNotify(participantId: string): boolean {
+    return this.reaches(participantId);
+  }
+
   protected override changed(billId: string): void {
     for (const l of this.listeners) l(billId, "data");
     this.dirtyBills.add(billId);
