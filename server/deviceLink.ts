@@ -13,6 +13,8 @@ const MAX_LINKS = 1000;
 export interface DeviceLinkPayload {
   key: string;
   profile: Record<string, string>;
+  /** Network the code was made in (Safari → app happens on one phone, so in the same network). */
+  network?: string;
 }
 
 export class DeviceLinks {
@@ -36,7 +38,7 @@ export class DeviceLinks {
     const link = this.links.get(code);
     this.links.delete(code);
     if (!link || link.expires < this.now()) return null;
-    return { key: link.key, profile: link.profile };
+    return { key: link.key, profile: link.profile, network: link.network };
   }
 
   private prune(): void {

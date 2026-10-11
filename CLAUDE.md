@@ -129,6 +129,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - **Erklär-Animationen:** Sprechblasen zeigen nie auf Positionen ohne Abhak-Kreis oder mit mehrfacher Menge; keine
   Sprechblasen, solange die Gleichverteilung an ist; laufen nur einmal pro Rechnung und Gerät (Flags in
   localStorage, z. B. `billsplit.claimDemo.<id>`, `billsplit.peekShown.<id>`), enden beim ersten Berühren.
+- **Rechnungssteller-Rolle** (`ownerId`) wandert nur über einen Nachweis derselben Person: Konto (E-Mail-Code),
+  „Gerät wechseln“ oder Wiederherstellungs-Code. Der Safari→App-Code (`?von=`) nie: `mergeParticipant(…, { ownership:
+  false })`, gilt nur im selben Netz (`networkKey`), und Rechnungssteller bekommen keinen `?von=` in kopierte Links
+  (Vorfall 11.10.2026: Einladung führte in die Rechnungssteller-Ansicht).
 - **Lange Drücken („/2“)** nur für den Rechnungssteller und nicht im Modus „Jeder selber abhaken“; ein präziser Tipp
   auf „/2“ hebt den Teiler auf, statt die Zeile zu streichen.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit

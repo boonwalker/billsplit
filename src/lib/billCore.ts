@@ -129,10 +129,13 @@ export class BillCore {
    * One person, two identities: on the iPhone, Safari and the home-screen app keep separate
    * keys. Moves everything `fromId` did (joined bills, ticked units, payments, settlement
    * payments) over to `intoId`. Where both are in the same bill, the units and marks are combined.
-   * Returns the bills that changed.
+   * With `ownership: false` (Safari → app, proven only by a one-time code) the bills `fromId`
+   * paid stay theirs – a leaked code must never make someone else the payer. Returns the bills
+   * that changed.
    */
-  mergeParticipant(fromId: string, intoId: string): string[] {
+  mergeParticipant(fromId: string, intoId: string, { ownership = true }: { ownership?: boolean } = {}): string[] {
     if (fromId === intoId) return [];
+    const kept = new Set(ownership ? [] : this.billsOf(fromId).filter((id) => this.get(id).ownerId === fromId));
     const union = (a: ItemClaims = {}, b: ItemClaims = {}) => {
       const out: ItemClaims = { ...a };
       for (const [item, slots] of Object.entries(b)) out[item] = [...new Set([...(out[item] ?? []), ...slots])].sort((x, y) => x - y);
@@ -140,6 +143,7 @@ export class BillCore {
     };
     const changed: string[] = [];
     for (const id of this.billsOf(fromId)) {
+      if (kept.has(id)) continue;
       const bill = this.get(id);
       const from = bill.participants[fromId];
       const into = bill.participants[intoId];
@@ -169,7 +173,8 @@ export class BillCore {
     }
     for (const t of this.transfers.values()) {
       const touches = t.fromId === fromId || t.toId === fromId || t.allocations.some((a) => a.debtorId === fromId || a.creditorId === fromId);
-      if (!touches) continue;
+      // Payments that settle shares in bills staying with `fromId` stay theirs as well.
+      if (!touches || t.allocations.some((a) => kept.has(a.billId))) continue;
       if (t.fromId === fromId) t.fromId = intoId;
       if (t.toId === fromId) t.toId = intoId;
       for (const a of t.allocations) {

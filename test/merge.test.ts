@@ -66,3 +66,18 @@ describe("Safari and the home-screen app become one person", () => {
     expect(store.snapshot(id, "me-app").isOwner).toBe(true);
   });
 });
+
+describe("a one-time code from Safari never hands over the payer's role", () => {
+  it("keeps bills paid with the Safari identity – also when the app is a friend in that bill", () => {
+    const store = new BillStore(null);
+    const paid = store.createBill(bill("Bar", [["wein", 1, 600]]), "niklas-safari", "Niklas");
+    store.join(paid, "anna", "Anna");
+    const joined = store.createBill(bill("Kino", [["ticket", 1, 1200]]), "katia", "Katia");
+    store.join(joined, "niklas-safari", "Niklas");
+
+    expect(store.mergeParticipant("niklas-safari", "anna", { ownership: false })).toEqual([joined]);
+    expect(store.snapshot(paid, "anna").isOwner).toBe(false);
+    expect(store.snapshot(paid, "niklas-safari").isOwner).toBe(true);
+    expect(store.snapshot(joined, "anna").me).toBe("anna");
+  });
+});

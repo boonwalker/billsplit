@@ -248,3 +248,39 @@ describe("from Safari into the home-screen app", () => {
     expect((await call(APP, "POST", "/api/merge-device", { code: link.json.code })).status).toBe(410);
   });
 });
+
+describe("Safari → app takes over only on the same phone", () => {
+  it("refuses a code used from another network and never moves the payer's role", async () => {
+    const hour = 60 * 60 * 1000;
+    const proxied = createServer(
+      createApp(new BillStore(null), "/nonexistent", {
+        trustProxy: true,
+        limits: { receiptPerClient: new RateLimiter(10, hour), receiptTotal: new RateLimiter(100, hour), billsPerClient: new RateLimiter(10, hour) },
+      }),
+    );
+    await new Promise<void>((resolve) => proxied.listen(0, resolve));
+    const at = `http://localhost:${(proxied.address() as AddressInfo).port}`;
+    const post = async <T>(key: string, path: string, body: unknown, ip: string) => {
+      const res = await fetch(at + path, { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": key, "x-forwarded-for": ip }, body: JSON.stringify(body) });
+      return { status: res.status, json: (await res.json()) as T };
+    };
+    try {
+      const OWNER_SAFARI = "owner-safari-key-0123456789";
+      const FRIEND = "friend-app-key-0123456789";
+      const created = await post<BillSnapshot>(OWNER_SAFARI, "/api/bills", { data, name: "Niklas" }, "203.0.113.7");
+      await post(FRIEND, `/api/bills/${created.json.id}/join`, { name: "Anna" }, "198.51.100.9");
+
+      // The payer's code ends up in a chat: the friend's phone elsewhere gets nothing.
+      const leaked = await post<{ code: string }>(OWNER_SAFARI, "/api/device-link", { profile: {} }, "203.0.113.7");
+      expect((await post(FRIEND, "/api/merge-device", { code: leaked.json.code }, "198.51.100.9")).status).toBe(403);
+
+      // Even in the same network the payer's role stays where it was.
+      const again = await post<{ code: string }>(OWNER_SAFARI, "/api/device-link", { profile: {} }, "203.0.113.7");
+      expect((await post(FRIEND, "/api/merge-device", { code: again.json.code }, "203.0.113.7")).status).toBe(200);
+      const view = await fetch(`${at}/api/bills/${created.json.id}`, { headers: { "x-billsplit-key": FRIEND } });
+      expect(((await view.json()) as BillSnapshot).isOwner).toBe(false);
+    } finally {
+      await new Promise<void>((resolve) => proxied.close(() => resolve()));
+    }
+  });
+});

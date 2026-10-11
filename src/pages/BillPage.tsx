@@ -279,7 +279,8 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       >
         {DEMO && <DemoBar />}
         {/* iPhone: shared links open in Safari – offer the way into the home-screen app. */}
-        {inBrowser && <OpenInApp url={url} carry />}
+        {/* Only friends take their identity along: a payer's copied link must never carry it (it may end up in a chat). */}
+        {inBrowser && <OpenInApp url={url} carry={!snap.isOwner} />}
 
         {snap.isOwner && <QrHero snapshot={snap} url={url} />}
 

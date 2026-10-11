@@ -300,6 +300,10 @@ beigetreten ist und abgehakt oder bezahlt hat, fände das in der App nicht wiede
 die Safari-Identität per Einmal-Code (10 Minuten gültig) im kopierten Link mit. Beim Öffnen in der App übernimmt
 billsplit alles, was in Safari entstanden ist – beigetretene Rechnungen, Häkchen, Zahlungen und Ausgleichszahlungen,
 bei derselben Rechnung zusammengeführt – samt Namen, falls die App noch keinen hat.
+**Sicherheit:** Der Code wirkt nur im selben Netz, in dem er entstanden ist (Safari und App auf einem Handy) – landet
+ein kopierter Link in einem Chat, übernimmt er bei anderen nichts. Er überträgt nie die Rolle des Rechnungsstellers:
+Rechnungen, die mit der Safari-Identität bezahlt wurden, bleiben bei ihr (dafür gibt es das Konto bzw. „Gerät
+wechseln“). Und wer selbst Rechnungssteller ist, bekommt im Browser gar keinen Code in den kopierten Link.
 Auf Android landen Links dank `handle_links`/`launch_handler` im Manifest bevorzugt direkt in der installierten App.
 
 ### Geteilte Positionen

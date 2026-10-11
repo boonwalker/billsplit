@@ -12,7 +12,7 @@ import { limitsFromEnv, RateLimiter, type Limits } from "./rateLimit.ts";
 import { DeviceLinks } from "./deviceLink.ts";
 import { AccountStore, normalizeEmail } from "./accounts.ts";
 import { mailerFromEnv, type SendCode } from "./mail.ts";
-import { HandoffBoard } from "./handoff.ts";
+import { HandoffBoard, networkKey } from "./handoff.ts";
 import { isPushEndpoint, type PushService } from "./push.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
 
@@ -400,12 +400,12 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
           await readJson(req, MAX_JSON_BODY),
         );
         const profile = Object.fromEntries(Object.entries(body.profile).filter((e): e is [string, string] => typeof e[1] === "string"));
-        return sendJson(res, 201, deviceLinks.create({ key, profile }));
+        return sendJson(res, 201, deviceLinks.create({ key, profile, network: networkKey(clientAddress(req, trustProxy)) }));
       }
       if (parts.length === 3) {
         const link = deviceLinks.claim(parts[2]);
         if (!link) throw new HttpError("Dieser Code ist abgelaufen oder wurde schon benutzt. Lass Dir auf dem alten Gerät einen neuen zeigen.", 410);
-        return sendJson(res, 200, link);
+        return sendJson(res, 200, { key: link.key, profile: link.profile });
       }
     }
 
@@ -478,10 +478,16 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       const body = parse(z.object({ code: z.string().regex(/^[A-Za-z0-9_-]{16,64}$/) }), await readJson(req, MAX_JSON_BODY));
       const link = deviceLinks.claim(body.code);
       if (!link) throw new HttpError("Die Übernahme aus Safari ist abgelaufen. Öffne den Link in Safari nochmal und tippe „In der App öffnen“.", 410);
+      // Safari and the app are one phone in one network: a code that went elsewhere (e.g. pasted
+      // into a chat) takes nothing over.
+      if (link.network !== networkKey(clientAddress(req, trustProxy))) {
+        throw new HttpError("Die Übernahme aus Safari klappt nur auf demselben Handy.", 403);
+      }
       const from = participantIdFromKey(link.key);
       // The name may have been entered in Safari only after the code was made.
       const name = store.nameOf(from);
-      const merged = store.mergeParticipant(from, viewer);
+      // Never the payer's role: bills paid in Safari stay with Safari's identity (the account moves those).
+      const merged = store.mergeParticipant(from, viewer, { ownership: false });
       return sendJson(res, 200, { merged, bills: store.myBills(viewer), profile: { ...link.profile, ...(name ? { name } : {}) } });
     }
 
