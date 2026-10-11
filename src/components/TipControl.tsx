@@ -47,8 +47,10 @@ interface Props {
   onChange: (value: TipValue) => void;
   subtotal: Cents;
   currency: string;
-  /** Fees that are shared per person together with the tip (shown in the preview). */
+  /** All fees of the bill, discounts included (shown in the preview). */
   fees?: Cents;
+  /** The fees shared per person together with the tip (without discounts); default: `fees`. */
+  perHeadFees?: Cents;
   /** False when the head count is asked separately (delivery orders). */
   showPersons?: boolean;
   /** A delivery order: quick amounts for the driver under "absolut". */
@@ -56,7 +58,7 @@ interface Props {
 }
 
 /** Tip input as percentage or fixed amount, optional head count, and a live preview. */
-export default function TipControl({ value, onChange, subtotal, currency, fees = 0, showPersons = true, delivery = false }: Props) {
+export default function TipControl({ value, onChange, subtotal, currency, fees = 0, perHeadFees = fees, showPersons = true, delivery = false }: Props) {
   const uid = useId();
   const tip = tipCents(value, subtotal, fees);
   const billAmount = subtotal + fees;
@@ -180,10 +182,10 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
         )}
         <dt>{t("+ Trinkgeld")}</dt>
         <dd>{formatMoney(tip, currency)}</dd>
-        {persons && tip + fees !== 0 && (
+        {persons && tip + perHeadFees !== 0 && (
           <>
-            <dt>{fees !== 0 ? t("Gebühren & Trinkgeld pro Person") : t("Trinkgeld pro Person")}</dt>
-            <dd>{formatMoney(Math.round((tip + fees) / persons), currency)}</dd>
+            <dt>{perHeadFees !== 0 ? t("Gebühren & Trinkgeld pro Person") : t("Trinkgeld pro Person")}</dt>
+            <dd>{formatMoney(Math.round((tip + perHeadFees) / persons), currency)}</dd>
           </>
         )}
         <dt className="strong">{t("Du hast bezahlt")}</dt>

@@ -145,6 +145,9 @@ export default function Editor({ billId }: { billId?: string }) {
   const sum = validItems.reduce((s, i) => s + i.total, 0);
   const fees = draftFees(draft);
   const feeSum = fees.reduce((s, f) => s + f.amount, 0);
+  // Per head: fees above zero; discounts lower the items by their value (see discountShare).
+  const headFeeSum = fees.reduce((s, f) => s + Math.max(0, f.amount), 0);
+  const discountSum = feeSum - headFeeSum;
   const mismatch = draft.receiptTotal !== null && validItems.length > 0 && draft.receiptTotal !== sum + feeSum;
   const updateFee = (id: string, patch: Partial<FeeRow>) => setDraft((d) => ({ ...d, fees: d.fees.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
   const removeFee = (id: string) => setDraft((d) => ({ ...d, fees: d.fees.filter((f) => f.id !== id) }));
@@ -317,7 +320,7 @@ export default function Editor({ billId }: { billId?: string }) {
               <div className="field">
                 <span>{t("Trinkgeld – wird gleichmäßig auf alle Personen verteilt")}</span>
                 {draft.tipOnReceipt && <small className="muted">{t("Vom Beleg übernommen.")}</small>}
-                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} fees={feeSum} delivery={draft.delivery} />
+                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} fees={feeSum} perHeadFees={headFeeSum} delivery={draft.delivery} />
               </div>
             </div>
 
@@ -375,10 +378,10 @@ export default function Editor({ billId }: { billId?: string }) {
               <>
                 <h2>{t("Wie viele haben mitbestellt?")}</h2>
                 <p className="muted">
-                  {feeSum !== 0
+                  {headFeeSum !== 0
                     ? draft.tipOnReceipt
-                      ? t("Gebühren ({amount}) und Trinkgeld werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.", { amount: formatMoney(feeSum, draft.currency) })
-                      : t("Gebühren ({amount}) werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.", { amount: formatMoney(feeSum, draft.currency) })
+                      ? t("Gebühren ({amount}) und Trinkgeld werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.", { amount: formatMoney(headFeeSum, draft.currency) })
+                      : t("Gebühren ({amount}) werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.", { amount: formatMoney(headFeeSum, draft.currency) })
                     : draft.tipOnReceipt
                       ? t("Gebühren und Trinkgeld werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.")
                       : t("Gebühren werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.")}
@@ -398,10 +401,15 @@ export default function Editor({ billId }: { billId?: string }) {
                     +
                   </button>
                 </div>
-                {persons && feeSum !== 0 && (
+                {discountSum !== 0 && (
+                  <p className="muted small">
+                    {t("Rabatte ({amount}) gehen anteilig auf die Positionen – wer mehr bestellt hat, spart mehr.", { amount: formatMoney(discountSum, draft.currency) })}
+                  </p>
+                )}
+                {persons && headFeeSum !== 0 && (
                   <p className="muted small center-text">
                     {(() => {
-                      const amount = formatMoney(Math.round((feeSum + (draft.tipOnReceipt ? tipCents(draft.tip, subtotal(askTip), feeSum) : 0)) / persons), draft.currency);
+                      const amount = formatMoney(Math.round((headFeeSum + (draft.tipOnReceipt ? tipCents(draft.tip, subtotal(askTip), feeSum) : 0)) / persons), draft.currency);
                       return draft.tipOnReceipt ? t("{amount} pro Person (Gebühren & Trinkgeld)", { amount }) : t("{amount} pro Person an Gebühren", { amount });
                     })()}
                   </p>
@@ -423,6 +431,7 @@ export default function Editor({ billId }: { billId?: string }) {
                   subtotal={subtotal(askTip)}
                   currency={draft.currency}
                   fees={feeSum}
+                  perHeadFees={headFeeSum}
                   showPersons={!draft.delivery}
                   delivery={draft.delivery}
                 />

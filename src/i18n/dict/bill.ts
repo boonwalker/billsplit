@@ -1,6 +1,7 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. */
 export default {
   en: {
+    "Rabatt auf jede Position": "Discount on every item",
     // src/pages/BillPage.tsx
     "Beitreten fehlgeschlagen.": "Couldn't join.",
     "Rechnung nicht gefunden": "Bill not found",
@@ -133,6 +134,7 @@ export default {
     "Fläche zum Durchstreichen und Antippen der Zeilen": "Area for crossing out and tapping the lines",
   } as Record<string, string>,
   es: {
+    "Rabatt auf jede Position": "Descuento en cada artículo",
     // src/pages/BillPage.tsx
     "Beitreten fehlgeschlagen.": "No se ha podido unir a la cuenta.",
     "Rechnung nicht gefunden": "Cuenta no encontrada",

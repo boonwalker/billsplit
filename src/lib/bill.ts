@@ -236,7 +236,7 @@ export interface BillSnapshot {
 export interface ShareSummary {
   /** Claimed items. */
   subtotal: Cents;
-  /** This person's part of tip and fees. */
+  /** This person's part of tip and fees (per head) and of discounts (by the value of their items). */
   shared: Cents;
   total: Cents;
 }
@@ -277,13 +277,33 @@ export function feesTotal(data: BillData): Cents {
   return (data.fees ?? []).reduce((sum, f) => sum + (f.excluded ? 0 : f.amount), 0);
 }
 
-/** Costs that everyone shares equally: tip plus fees. */
+/** Fees above zero (delivery, service, …): shared per head like the tip. */
+export function perHeadFees(data: BillData): Cents {
+  return (data.fees ?? []).reduce((sum, f) => sum + (f.excluded || f.amount <= 0 ? 0 : f.amount), 0);
+}
+
+/**
+ * Discounts (fees below zero, e.g. "Rabatt -5,00"): they lower the items in proportion to their
+ * price – split per head, someone with a small order would end up below zero.
+ */
+export function discountTotal(data: BillData): Cents {
+  return (data.fees ?? []).reduce((sum, f) => sum + (f.excluded || f.amount >= 0 ? 0 : f.amount), 0);
+}
+
+/** The part of the discounts that falls on items worth `items` cents. */
+export function discountShare(data: BillData, items: Cents): Cents {
+  const discount = discountTotal(data);
+  const all = subtotal(billedItems(data));
+  return discount && all > 0 ? Math.round((discount * items) / all) : 0;
+}
+
+/** Costs that everyone shares equally: tip plus fees (not discounts, see discountShare). */
 export function sharedTotal(data: BillData): Cents {
-  return tipTotal(data) + feesTotal(data);
+  return tipTotal(data) + perHeadFees(data);
 }
 
 export function billTotal(data: BillData): Cents {
-  return subtotal(billedItems(data)) + sharedTotal(data);
+  return subtotal(billedItems(data)) + tipTotal(data) + feesTotal(data);
 }
 
 /**
@@ -364,7 +384,7 @@ export function participantShare(data: BillData, participants: PublicParticipant
     return { subtotal: total - shared, shared, total };
   }
   const sub = billedItems(data).reduce((sum, item) => sum + claimCost(item, unitShare(item, participants, participantId)), 0);
-  const shared = sharedPerPerson(data, participants);
+  const shared = sharedPerPerson(data, participants) + discountShare(data, sub);
   return { subtotal: sub, shared, total: sub + shared };
 }
 
@@ -374,7 +394,7 @@ export function unassignedAmount(data: BillData, participants: PublicParticipant
   if (data.equalSplit) return (splitHeadCount(data, participants) - participants.length) * equalShare(data, participants);
   const sub = billedItems(data).reduce((sum, item) => sum + claimCost(item, item.qty - assignedUnits(item, participants)), 0);
   const missingPeople = splitHeadCount(data, participants) - participants.length;
-  return sub + missingPeople * sharedPerPerson(data, participants);
+  return sub + discountShare(data, sub) + missingPeople * sharedPerPerson(data, participants);
 }
 
 /**

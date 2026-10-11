@@ -4,9 +4,11 @@ import {
   billedItems,
   billTotal,
   claimCost,
+  discountTotal,
   equalShare,
   hasTip,
   isFullyAssigned,
+  perHeadFees,
   sharedPerPerson,
   sharedTotal,
   splitHeadCount,
@@ -646,13 +648,22 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
           {sharedTotal(data) !== 0 && !equal && (
             <>
               <dt className="tip-split">
-                {(data.fees ?? []).length > 0
+                {perHeadFees(data) !== 0
                   ? hasTip(data)
                     ? t("Gebühren & Trinkgeld ÷ {count} Personen", { count: splitHeadCount(data, participants) })
                     : t("Gebühren ÷ {count} Personen", { count: splitHeadCount(data, participants) })
                   : t("Trinkgeld ÷ {count} Personen", { count: splitHeadCount(data, participants) })}
               </dt>
               <dd className="tip-split">{t("je {amount}", { amount: formatMoney(sharedPerPerson(data, participants), data.currency) })}</dd>
+            </>
+          )}
+          {/* Discounts lower every item by the same percentage (see discountShare). */}
+          {discountTotal(data) !== 0 && sub > 0 && !equal && (
+            <>
+              <dt className="tip-split">{t("Rabatt auf jede Position")}</dt>
+              <dd className="tip-split">
+                {new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(discountTotal(data) / sub)}
+              </dd>
             </>
           )}
           <dt className="grand">{t("SUMME")}</dt>

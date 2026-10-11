@@ -4,8 +4,8 @@ import {
   billTotal,
   equalShare,
   participantShare,
-  feesTotal,
   hasTip,
+  perHeadFees,
   sharedPerPerson,
   sharedTotal,
   splitHeadCount,
@@ -67,7 +67,7 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
           {rich(
             equal
               ? t("<b>Rechnung {amount}</b> aufteilen auf", { amount: shared })
-              : feesTotal(data) !== 0
+              : perHeadFees(data) !== 0
                 ? hasTip(data)
                   ? t("<b>Gebühren & Trinkgeld {amount}</b> aufteilen auf", { amount: shared })
                   : t("<b>Gebühren {amount}</b> aufteilen auf", { amount: shared })

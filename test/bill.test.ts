@@ -174,3 +174,44 @@ describe("links", () => {
     expect(billIdFromUrl("https://example.com")).toBeNull();
   });
 });
+
+describe("discounts", () => {
+  // Saitong Thai-Imbiss: 20,00 € food, 1,20 € service fee, -5,00 € discount, 2 people expected.
+  const thai: BillData = {
+    title: "Saitong Thai-Imbiss",
+    date: "2026-09-27",
+    currency: "EUR",
+    tipPercent: 0,
+    tipSplitCount: 2,
+    payment: { paypalMe: "niklas" },
+    items: [
+      { id: "padthai", name: "Pad Thai", qty: 1, total: 1300 },
+      { id: "pohpia", name: "Poh Pia Pak", qty: 1, total: 700 },
+    ],
+    fees: [
+      { id: "service", name: "Servicegebühr", amount: 120 },
+      { id: "rabatt", name: "Rabatte", amount: -500 },
+    ],
+  };
+
+  it("lowers the items by their value instead of per head – nothing is missing beyond the bill", () => {
+    expect(billTotal(thai)).toBe(1620);
+    expect(sharedTotal(thai)).toBe(120);
+    expect(sharedPerPerson(thai, [p("niklas", {}, true)])).toBe(60);
+    // Before anyone ticks: the payer's part is only his share of the service fee.
+    const alone = [p("niklas", {}, true)];
+    expect(participantShare(thai, alone, "niklas").total).toBe(60);
+    expect(unassignedAmount(thai, alone)).toBe(1560);
+    // The payer had the Pad Thai: 13,00 € − 25 % + 0,60 €; the friend 7,00 € − 25 % + 0,60 €.
+    const both = [p("niklas", { padthai: [0] }, true), p("anna", { pohpia: [0] })];
+    expect(participantShare(thai, both, "niklas").total).toBe(1035);
+    expect(participantShare(thai, both, "anna").total).toBe(585);
+    expect(participantShare(thai, both, "niklas").total + participantShare(thai, both, "anna").total).toBe(billTotal(thai));
+  });
+
+  it("never lets a small order end up below zero", () => {
+    const small = { ...thai, items: [...thai.items, { id: "wasser", name: "Wasser", qty: 1, total: 100 }] };
+    const people = [p("niklas", { padthai: [0], pohpia: [0] }, true), p("ben", { wasser: [0] })];
+    expect(participantShare(small, people, "ben").total).toBeGreaterThan(0);
+  });
+});

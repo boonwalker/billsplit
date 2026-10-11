@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 156 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 158 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -78,7 +78,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Snapshot pro Betrachter). Server (`server/store.ts`, JSON-Datei) und Demo (`src/lib/localApi.ts`, localStorage)
   nutzen denselben Kern – Regeln dort ändern, nicht doppelt.
 - **`src/lib/bill.ts`:** Datenmodell + Berechnungen (Anteile, Trinkgeld, Gebühren, Gleichverteilung, Teiler,
-  `openShare`).
+  `openShare`). Gebühren über null pro Kopf (`perHeadFees`, `sharedPerPerson`), Rabatte (Gebühren unter null)
+  anteilig nach Bestellwert (`discountShare`).
 - **Identität:** Jedes Gerät hat einen geheimen Schlüssel (`localStorage billsplit.deviceKey`, Header
   `x-billsplit-key`, beim SSE-Stream Query-Parameter `key`). Teilnehmer-ID = sha256-Hash des Schlüssels → dasselbe
   Gerät hat in allen Rechnungen dieselbe ID (Grundlage für Dashboard und Ausgleich, nie über Namen zuordnen).

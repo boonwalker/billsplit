@@ -1,6 +1,7 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. */
 export default {
   en: {
+    "Rabatte ({amount}) gehen anteilig auf die Positionen – wer mehr bestellt hat, spart mehr.": "Discounts ({amount}) are shared by item value – whoever ordered more saves more.",
     // TipControl: quick amounts for delivery orders
     "Trinkgeld für den Lieferdienst": "Tip for the delivery driver",
     // src/pages/Editor.tsx
@@ -146,6 +147,7 @@ export default {
     "Bild konnte nicht kodiert werden.": "The image couldn't be encoded.",
   } as Record<string, string>,
   es: {
+    "Rabatte ({amount}) gehen anteilig auf die Positionen – wer mehr bestellt hat, spart mehr.": "Los descuentos ({amount}) se reparten según el importe de cada artículo: quien pidió más, ahorra más.",
     // TipControl: quick amounts for delivery orders
     "Trinkgeld für den Lieferdienst": "Propina para el repartidor",
     // src/pages/Editor.tsx

@@ -99,6 +99,11 @@ von den Positionen. Sie werden wie das Trinkgeld gleichmäßig pro Person vertei
 oder Abholbestellung (Gebühren auf dem Beleg oder typische Liefer-App), fragt es vor dem QR-Code:
 „Wie viele haben mitbestellt?“. Gebühren lassen sich im Editor ergänzen oder korrigieren.
 
+Rabatte (Gebühren unter null, z. B. „Rabatte -5,00 €“ oder „Gratis Lieferung -2,99 €“) werden dagegen nicht pro Kopf,
+sondern anteilig nach Bestellwert verteilt: Jede Position wird um denselben Prozentsatz günstiger (auf dem Beleg
+„Rabatt auf jede Position -25 %“). So kann kein Anteil unter null fallen, und „Dir fehlen noch“ liegt nie über der
+Rechnungssumme. „N von M haben auf Bezahlen getippt“ erscheint erst, wenn jemand beigetreten ist.
+
 ### Gleichverteilung
 
 Für Rechnungen, bei denen niemand einzelne Positionen zuordnen will (z. B. ein gemeinsamer Supermarkt-Einkauf),

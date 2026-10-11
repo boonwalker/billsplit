@@ -29,12 +29,15 @@ export default function OwnerBar({
       <div className="ownerbar-inner">
         <span>
           {t("Dir fehlen noch")}
-          <small>
-            {t("{tapped} von {count} haben auf Bezahlen getippt", {
-              tapped: snap.debtors?.filter((d) => d.payClickedAt).length ?? 0,
-              count: snap.debtors?.length ?? 0,
-            })}
-          </small>
+          {/* Only once someone joined: "0 von 0" says nothing. */}
+          {(snap.debtors?.length ?? 0) > 0 && (
+            <small>
+              {t("{tapped} von {count} haben auf Bezahlen getippt", {
+                tapped: snap.debtors?.filter((d) => d.payClickedAt).length ?? 0,
+                count: snap.debtors?.length ?? 0,
+              })}
+            </small>
+          )}
         </span>
         <strong>{formatMoney(missing, snap.data.currency)}</strong>
       </div>
