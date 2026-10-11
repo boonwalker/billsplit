@@ -274,7 +274,7 @@ immer in Safari öffnen, nie in der Home-Bildschirm-App).
   Mail-Programme zeigen ihn ruhig, ohne Zacken, wo sie keine Verläufe können). Anrede „Hi Niklas,“ mit dem Profilnamen,
   sofern schon einer eingegeben ist, sonst „Hi,“. Der Code steht groß in einer Mint-Box, ohne Leerzeichen, damit das
   iPhone ihn zum Einfügen vorschlägt. Am Ende stehen nach drei Leerzeilen „klicksplit •“ und darunter groß „Einer zahlt.“ /
-  „Alle splitten.“ in Schrift und Farben der Startseite (dunkel, „Alle splitten.“ in Mint).
+  „Alle splitten.“ in der Schrift der Startseite („Alle splitten.“ in Mint) – alles noch auf dem Kassenbon, kein dunkler Kasten.
 - **Willkommensmail:** Nach der ersten erfolgreichen Code-Eingabe, wenn das Konto neu angelegt wird, kommt einmalig
   „Willkommen bei klicksplit!“ – herzlich, mit den drei Schritten, wie man von überall per Browser ins Konto kommt
   (Adresse aus `PUBLIC_URL`, nach dem Umzug `klicksplit.de`), einem Knopf zur App und dem Home-Bildschirm-Tipp. Das Logo kommt von `PUBLIC_URL` bzw. der Railway-Domain (`/icon-192.png`). Ohne diese

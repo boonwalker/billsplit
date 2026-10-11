@@ -182,7 +182,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Regeln in `BillCore.remind`/`remindPerson` (`REMIND_COOLDOWN_MS`), Knopf `RemindButton`.
 - Code-Mail: Kassenbon mit Zacken (fährt in Apple Mail herein), „Hi Name,“ bzw. „Hi,“ / „hier ist Dein Code für
   klicksplit:“, Code ohne Leerzeichen in Mint-Box; Schluss nach 3 Leerzeilen: „klicksplit •“, darunter groß „Einer
-  zahlt.“ / „Alle splitten.“ (dunkel, mint). Willkommensmail „Willkommen bei klicksplit!“ nach Kontoanlage.
+  zahlt.“ / „Alle splitten.“ (noch auf dem Bon, „Alle splitten.“ mint, kein dunkler Kasten). Willkommensmail „Willkommen bei klicksplit!“ nach Kontoanlage.
 - Konto: „Deine E-Mail-Adresse“, „Code senden“, „Code eingeben“, „Überspringen“, Startseite „Schon ein Konto?
   Anmelden“, Profil ganz oben „Konto“: „● Angemeldet“ + Adresse bzw. „Nicht angemeldet“ + „Anmelden oder Konto
   anlegen“, „Abmelden“, „Konto löschen“; grüner Haken am Profil-Knopf der Startseite

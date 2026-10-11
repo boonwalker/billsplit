@@ -35,9 +35,6 @@ const C = {
   mint: "#3ddc97",
   mintSoft: "#d9f7e8",
   muted: "#5d6963",
-  // The start page in dark mode ("Einer zahlt. Alle splitten.").
-  night: "#0b1511",
-  nightText: "#e6eee9",
 };
 const DISPLAY = "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
 const MONO = "'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace";
@@ -67,8 +64,9 @@ function edge(side: "top" | "bottom"): string {
 /**
  * The frame of every mail, in the app's look: logo and wordmark, then the content on a receipt
  * with torn edges that slides out like from a printer (where the mail program allows
- * animation), and at the end the app's line "Einer zahlt. Alle splitten." Built the way mail
- * clients need it: tables, inline styles, fallback fonts and plain edges where gradients fail.
+ * animation). Everything stands on the receipt, down to the app's line "Einer zahlt. Alle
+ * splitten." at its end. Built the way mail clients need it: tables, inline styles, fallback
+ * fonts and plain edges where gradients fail.
  */
 function layout({ title, preheader, name, logoUrl, receipt, footnote }: { title: string; preheader: string; name: string; logoUrl?: string; receipt: string; footnote?: string }): string {
   const logo = logoUrl
@@ -102,20 +100,15 @@ function layout({ title, preheader, name, logoUrl, receipt, footnote }: { title:
         ${edge("top")}
         <tr><td style="background:${C.paper};padding:22px 22px 26px;font-family:${MONO};font-size:14px;line-height:1.55;color:${C.ink}">
 ${receipt}
+          ${footnote ? `<div style="margin-top:18px;font-size:12px;line-height:1.55;color:${C.muted}">${escapeHtml(footnote)}</div>` : ""}
+          <br><br><br>
+          <div style="font-family:${DISPLAY};font-size:15px;line-height:1.4">${wordmark(name, 15, C.ink, C.claim)} <span style="color:${C.muted}">&bull;</span></div>
+          <div style="padding-top:8px;font-family:${DISPLAY};font-size:32px;font-weight:700;letter-spacing:-0.035em;line-height:1.08;color:${C.ink}">Einer zahlt.</div>
+          <div style="font-family:${DISPLAY};font-size:32px;font-weight:700;letter-spacing:-0.035em;line-height:1.08;color:${C.mint}">Alle splitten.</div>
         </td></tr>
         ${edge("bottom")}
       </table>
       </div>
-    </td></tr>
-    <tr><td style="padding:20px 4px 0;font-family:${DISPLAY};font-size:13px;line-height:1.5;color:${C.muted}">
-      ${footnote ? `${escapeHtml(footnote)}<br>` : ""}<br><br><br>
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td style="background:${C.night};border-radius:18px;padding:20px 22px 22px">
-          <div style="font-family:${DISPLAY};font-size:15px;line-height:1.4;color:${C.nightText}">${wordmark(name, 15, C.nightText, C.mint)} <span style="color:${C.muted}">&bull;</span></div>
-          <div style="padding-top:8px;font-family:${DISPLAY};font-size:32px;font-weight:700;letter-spacing:-0.035em;line-height:1.08;color:${C.nightText}">Einer zahlt.</div>
-          <div style="font-family:${DISPLAY};font-size:32px;font-weight:700;letter-spacing:-0.035em;line-height:1.08;color:${C.mint}">Alle splitten.</div>
-        </td>
-      </tr></table>
     </td></tr>
   </table>
 </td></tr>
