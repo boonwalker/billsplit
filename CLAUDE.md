@@ -102,7 +102,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   `/api/merge-device` auf, `mergeParticipant` legt die Safari-Identität mit der App-Identität zusammen.
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
   max. 2000 px Kantenlänge). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
-- **Seiten:** `Home`, `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in
+- **Seiten:** `Home`, `Expense` (Ausgabe eingeben), `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in
   `src/lib/draft.ts`, Wartebildschirme in `BusyScreen`), `BillPage` (fertige Rechnung; Teile in
   `src/components/bill/`: `QrHero`, `LiveBadge`, `ReceiptPeek`, `OwnerBar`; Streichen/„/2“ als reine Funktionen in
   `src/lib/billEdits.ts`), `Dashboard`, `Profile`, `DeviceLink`, `OriginalReceipt`.
@@ -170,6 +170,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
+- „Ausgabe eingeben“ (Startseite, vorerst unter der Rechnungsliste, `src/pages/Expense.tsx`, `#/ausgabe`): Betrag,
+  „Wofür?“ mit Schnellauswahl, „Wann?“, „Wie viele teilen sich das?“ / „inklusive Dir“, „Rechnung erstellen“
 - „Erinnern“ (Knopf heißt immer nur so): Push-Mitteilung „Niklas erinnert Dich“, wenn der Freund Benachrichtigungen
   hat (bevorzugt), sonst bzw. innerhalb von 12 h danach WhatsApp; auch bei Freunden ohne Häkchen („Bitte hake in … ab,
   was Du hattest.“) und im Dashboard („Carl hat noch nicht bezahlt?“). Status „per Mitteilung erinnert vor …“.

@@ -176,3 +176,87 @@
   font-weight: 700;
   font-size: 0.9rem;
 }
+
+/* "Ausgabe eingeben": a single expense entered by hand (pages/Expense). */
+.expense-btn {
+  width: 100%;
+}
+
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.expense-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0 4px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.expense-amount-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+}
+
+.expense-amount input {
+  width: 7ch;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px dashed var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-align: right;
+}
+
+.expense-amount input:focus {
+  box-shadow: none;
+  border-bottom-color: var(--claim);
+}
+
+.expense-amount b {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  color: var(--text);
+}
+
+.expense-card,
+.expense-split {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.expense-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.expense-split {
+  align-items: center;
+  text-align: center;
+}
+
+.expense-each {
+  margin: 0;
+  color: var(--muted);
+}
+
+.expense-each b {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  color: var(--text);
+}

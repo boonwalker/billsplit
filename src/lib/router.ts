@@ -6,6 +6,8 @@ export type Route =
   | { name: "profile"; next?: string }
   /** Signing in with the e-mail account. */
   | { name: "signin" }
+  /** A single expense entered by hand ("Ausgabe eingeben"). */
+  | { name: "expense" }
   | { name: "new" }
   | { name: "scan" }
   /** transfer: a settlement payment to bring into view (from a notification). */
@@ -30,6 +32,8 @@ export function parseHash(hash: string): Route {
       return { name: "new" };
     case "anmelden":
       return { name: "signin" };
+    case "ausgabe":
+      return { name: "expense" };
     case "scan":
       return { name: "scan" };
     case "dashboard":

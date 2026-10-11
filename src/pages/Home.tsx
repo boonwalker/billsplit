@@ -246,6 +246,14 @@ export default function Home() {
           </section>
         )}
 
+        {/* A single expense without a receipt (taxi, tickets, …) – for now below the list. */}
+        <button type="button" className="btn btn-secondary expense-btn" onClick={() => navigate("/ausgabe")}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+          Ausgabe eingeben
+        </button>
+
         <section className="how">
           <h3 className="section-title">So funktioniert's</h3>
           <ol className="steps">

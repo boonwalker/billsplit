@@ -23,9 +23,12 @@ const METHODS: { id: Method; label: string; hint: string }[] = [
  */
 export default function ProfileWizard({
   role,
+  hint = "Während klicksplit Deinen Beleg liest …",
   onDone,
 }: {
   role: "payer" | "guest";
+  /** The payer's line above the first question (while the receipt is read, by default). */
+  hint?: string;
   /** switched: this device signed in to an existing account (it has another identity now). */
   onDone: (saved: boolean, switched?: boolean) => void;
 }) {
@@ -83,7 +86,7 @@ export default function ProfileWizard({
           <div className="sheet-logo" aria-hidden="true">
             <Wordmark size={44} />
           </div>
-          {role === "payer" && <p className="wizard-step">Während klicksplit Deinen Beleg liest …</p>}
+          {role === "payer" && <p className="wizard-step">{hint}</p>}
           <h2>Wie heißt Du?</h2>
           <p className="muted">So sehen Dich Deine Freunde auf der Rechnung.</p>
           <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" maxLength={40} autoComplete="given-name" />
