@@ -1,3 +1,4 @@
+import { rich, t, tMsg } from "../lib/i18n";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useOneLine } from "../lib/useOneLine";
 import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
@@ -47,7 +48,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
   const [sheet, setSheet] = useState<OtherMethod | null>(null);
   const myName = participants.find((p) => p.id === me)?.name ?? "";
   const reference = `klicksplit · ${data.title}${myName ? ` · ${myName}` : ""}`.slice(0, 140);
-  const otherLabel = others.map((m) => (m === "bank" ? "Überweisung" : "Wero")).join(" oder ");
+  const otherLabel = others.length > 1 ? t("Lieber per Überweisung oder Wero") : others[0] === "bank" ? t("Lieber per Überweisung") : t("Lieber per Wero");
 
   /**
    * Back from PayPal (or the banking app): ask right away whether the money went out, instead
@@ -101,16 +102,19 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
   }
 
   return (
-    <div className="paybar" ref={bar} role="region" aria-label="Dein Anteil">
+    <div className="paybar" ref={bar} role="region" aria-label={t("Dein Anteil")}>
       <div className="paybar-inner">
         <div className="paybar-sum">
           <span className="paybar-label">
-            Dein Anteil
+            {t("Dein Anteil")}
             {share.shared !== 0 && (
               <small>
                 {" "}
-                inkl. {formatMoney(share.shared, data.currency)} Anteil an{" "}
-                {(data.fees ?? []).length > 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"}
+                {(data.fees ?? []).length > 0
+                  ? hasTip(data)
+                    ? t("inkl. {amount} Anteil an Gebühren & Trinkgeld", { amount: formatMoney(share.shared, data.currency) })
+                    : t("inkl. {amount} Anteil an Gebühren", { amount: formatMoney(share.shared, data.currency) })
+                  : t("inkl. {amount} Anteil an Trinkgeld", { amount: formatMoney(share.shared, data.currency) })}
               </small>
             )}
           </span>
@@ -121,10 +125,10 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
 
         {/* The payer confirmed the share as received (e.g. offset in the dashboard): nothing to pay here. */}
         {snapshot.myReceived && (
-          <p className="paybar-note paybar-copied">✓ {ownerName || "Der Rechnungssteller"} hat Deinen Anteil als erhalten markiert.</p>
+          <p className="paybar-note paybar-copied">✓ {t("{name} hat Deinen Anteil als erhalten markiert.", { name: ownerName || t("Der Rechnungssteller") })}</p>
         )}
 
-        {snapshot.myCredit?.notes.map((note) => (
+        {snapshot.myCredit?.notes.map(tMsg).map((note) => (
           <p key={note} className="paybar-note">
             ✓ {note}
           </p>
@@ -132,15 +136,27 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
 
         {!snapshot.myReceived && myPayment && (
           <p className="paybar-note">
-            ✓ Bezahlung über {formatMoney(myPayment.amount, data.currency)} an {ownerName || "den Rechnungssteller"} gestartet
-            {due > 0 && <> – durch Deine neue Auswahl kommen {formatMoney(due, data.currency)} dazu</>}.
+            ✓{" "}
+            {due > 0
+              ? t("Bezahlung über {amount} an {name} gestartet – durch Deine neue Auswahl kommen {extra} dazu.", {
+                  amount: formatMoney(myPayment.amount, data.currency),
+                  name: ownerName || t("den Rechnungssteller"),
+                  extra: formatMoney(due, data.currency),
+                })
+              : t("Bezahlung über {amount} an {name} gestartet.", {
+                  amount: formatMoney(myPayment.amount, data.currency),
+                  name: ownerName || t("den Rechnungssteller"),
+                })}
           </p>
         )}
 
         {asking && myPayment && (
-          <div className="paybar-ask" role="alertdialog" aria-label="Hast Du bezahlt?">
+          <div className="paybar-ask" role="alertdialog" aria-label={t("Hast Du bezahlt?")}>
             <p>
-              Hast Du {formatMoney(myPayment.amount, data.currency)} an {ownerName || "den Rechnungssteller"} gesendet?
+              {t("Hast Du {amount} an {name} gesendet?", {
+                amount: formatMoney(myPayment.amount, data.currency),
+                name: ownerName || t("den Rechnungssteller"),
+              })}
             </p>
             <div className="paybar-ask-actions">
               <button
@@ -151,10 +167,10 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                   setAskPaid(false);
                 }}
               >
-                ✓ Ja, gesendet
+                ✓ {t("Ja, gesendet")}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setAskPaid(false)}>
-                Noch nicht
+                {t("Noch nicht")}
               </button>
             </div>
           </div>
@@ -173,12 +189,12 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                   leaving();
                 }}
               >
-                PayPal erneut öffnen
+                {t("PayPal erneut öffnen")}
               </a>
             )}
             {myPayment && nothing && action.kind === "none" && others.length > 0 && (
               <button type="button" className="btn btn-done btn-large" onClick={() => openSheet(others[0], false)}>
-                Zahlungsdaten erneut anzeigen
+                {t("Zahlungsdaten erneut anzeigen")}
               </button>
             )}
             {myPayment && nothing && (
@@ -188,11 +204,13 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                 aria-pressed={Boolean(myPayment.markedPaidAt)}
                 onClick={() => onMarkPaid(!myPayment.markedPaidAt)}
               >
-                {myPayment.markedPaidAt ? "✓ Als bezahlt markiert" : "Als bezahlt markieren"}
+                {myPayment.markedPaidAt ? t("✓ Als bezahlt markiert") : t("Als bezahlt markieren")}
               </button>
             )}
             {myPayment?.markedPaidAt && nothing && (
-              <p className="paybar-note">{ownerName || "Der Rechnungssteller"} sieht das jetzt. Nochmal tippen macht es rückgängig.</p>
+              <p className="paybar-note">
+                {t("{name} sieht das jetzt. Nochmal tippen macht es rückgängig.", { name: ownerName || t("Der Rechnungssteller") })}
+              </p>
             )}
 
             {action.kind === "paypalMe" && !(myPayment && nothing) && !ready && (
@@ -206,7 +224,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                   clickRelease();
                 }}
               >
-                {nothing ? "Hake Deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
+                {nothing ? t("Hake Deine Positionen ab") : t("Anteil begleichen · {amount}", { amount: formatMoney(due, data.currency) })}
               </button>
             )}
             {action.kind === "paypalMe" && !(myPayment && nothing) && ready && (
@@ -214,13 +232,13 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                 <p className="paybar-note paybar-copied">
                   {ready.copied ? (
                     <>
-                      ✓ {formatMoney(due, data.currency)} in die Zwischenablage kopiert –
+                      ✓ {t("{amount} in die Zwischenablage kopiert –", { amount: formatMoney(due, data.currency) })}
                       <span className="paybar-oneline" ref={oneLine}>
-                        in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.
+                        {t("in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.")}
                       </span>
                     </>
                   ) : (
-                    `Trag in PayPal ${formatMoney(due, data.currency)} ein.`
+                    t("Trag in PayPal {amount} ein.", { amount: formatMoney(due, data.currency) })
                   )}
                 </p>
                 <a
@@ -233,7 +251,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                     leaving();
                   }}
                 >
-                  Mit PayPal bezahlen · {formatMoney(due, data.currency)}
+                  {t("Mit PayPal bezahlen · {amount}", { amount: formatMoney(due, data.currency) })}
                 </a>
               </>
             )}
@@ -248,11 +266,12 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                   aria-disabled={nothing}
                   onClick={(e) => (nothing ? e.preventDefault() : void payByEmail(action.email))}
                 >
-                  {nothing ? "Hake Deine Positionen ab" : <>In PayPal bezahlen · {formatMoney(due, data.currency)}</>}
+                  {nothing ? t("Hake Deine Positionen ab") : t("In PayPal bezahlen · {amount}", { amount: formatMoney(due, data.currency) })}
                 </a>
                 {!nothing && (
                   <p className="paybar-note">
-                    Sende {formatMoney(due, data.currency)} an <b>{action.email}</b> {copied && "(Adresse kopiert)"}
+                    {rich(t("Sende {amount} an <b>{email}</b>", { amount: formatMoney(due, data.currency), email: action.email }))}{" "}
+                    {copied && t("(Adresse kopiert)")}
                   </p>
                 )}
               </>
@@ -270,17 +289,17 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                   clickRelease();
                 }}
               >
-                {nothing ? "Hake Deine Positionen ab" : <>Anteil begleichen · {formatMoney(due, data.currency)}</>}
+                {nothing ? t("Hake Deine Positionen ab") : t("Anteil begleichen · {amount}", { amount: formatMoney(due, data.currency) })}
               </button>
             )}
             {/* With PayPal as the main way, bank transfer and Wero are offered below it. */}
             {action.kind !== "none" && others.length > 0 && !nothing && (
               <button type="button" className="link paybar-other" onClick={() => openSheet(others[0])}>
-                Lieber per {otherLabel}
+                {otherLabel}
               </button>
             )}
             {action.kind === "none" && others.length === 0 && (
-              <p className="paybar-note">{ownerName || "Der Rechnungssteller"} hat keine Zahlungsdaten hinterlegt.</p>
+              <p className="paybar-note">{t("{name} hat keine Zahlungsdaten hinterlegt.", { name: ownerName || t("Der Rechnungssteller") })}</p>
             )}
           </>
         )}

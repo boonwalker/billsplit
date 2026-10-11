@@ -1,5 +1,6 @@
 import { openShare, participantShare, type BillSnapshot, type PaymentInfo } from "./bill";
 import { ownerSummary } from "../components/OwnerPanel";
+import { t } from "./i18n";
 import type { Cents } from "./money";
 
 /** One open amount between me and a person, in one bill. */
@@ -77,7 +78,7 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
   // People are matched by their participant id (derived from their device), never by name:
   // two friends called Anna stay apart, so a settlement is never booked with the wrong one.
   const person = (b: ReturnType<typeof sheet>, id: string, rawName: string) => {
-    const name = rawName.trim() || "Unbekannt";
+    const name = rawName.trim() || t("Unbekannt");
     let p = b.byId.get(id);
     if (!p) {
       p = { id, name, lent: 0, owed: 0, bills: 0, entries: [] };
@@ -88,7 +89,7 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
 
   for (const snap of snapshots) {
     const b = sheet(snap.data.currency);
-    const bill = { billId: snap.id, title: snap.data.title || "Rechnung", createdAt: snap.createdAt };
+    const bill = { billId: snap.id, title: snap.data.title || t("Rechnung"), createdAt: snap.createdAt };
     if (snap.isOwner) {
       const { missing, unassigned } = ownerSummary(snap);
       for (const d of snap.debtors ?? []) {

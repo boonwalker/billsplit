@@ -1,5 +1,6 @@
 import { getSample, type SampleError, type SampleFn } from "./claudeRuntime";
 import { DEMO } from "./demo";
+import { t } from "./i18n";
 import type { PreparedImage } from "./image";
 import { parseReceiptText, readWithSumCheck, RECEIPT_INSTRUCTIONS, type ParsedReceipt } from "./receipt";
 
@@ -8,7 +9,7 @@ export type ProgressFn = (message: string, progress?: number) => void;
 class AiUnavailableError extends Error {}
 
 async function recognizeWithAi(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
-  onProgress("klicksplit analysiert den Beleg …");
+  onProgress(t("klicksplit analysiert den Beleg …"));
   let res: Response;
   try {
     res = await fetch("/api/parse-receipt", {
@@ -26,7 +27,7 @@ async function recognizeWithAi(image: PreparedImage, onProgress: ProgressFn): Pr
   }
   const body = (await res.json().catch(() => null)) as (ParsedReceipt & { error?: string }) | null;
   if (!res.ok || !body) {
-    throw new Error(body?.error ?? `Belegerkennung fehlgeschlagen (HTTP ${res.status}).`);
+    throw new Error(body?.error ?? t("Belegerkennung fehlgeschlagen (HTTP {status}).", { status: res.status }));
   }
   // A missing field means "no tip found" – never "tip taken from the receipt".
   return {
@@ -40,7 +41,7 @@ async function recognizeWithAi(image: PreparedImage, onProgress: ProgressFn): Pr
 }
 
 async function recognizeWithOcr(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
-  onProgress("Texterkennung wird geladen …", 0);
+  onProgress(t("Texterkennung wird geladen …"), 0);
   const { createWorker, PSM } = await import("tesseract.js");
   // Assets are self-hosted (see scripts/copy-ocr-assets.mjs) instead of loaded from a CDN.
   const base = new URL(`${import.meta.env.BASE_URL}ocr/`, window.location.href).href;
@@ -49,8 +50,8 @@ async function recognizeWithOcr(image: PreparedImage, onProgress: ProgressFn): P
     corePath: `${base}core`,
     langPath: `${base}lang`,
     logger: (m) => {
-      if (m.status === "recognizing text") onProgress("Text wird erkannt …", m.progress);
-      else if (m.status.startsWith("loading")) onProgress("Texterkennung wird geladen …", m.progress);
+      if (m.status === "recognizing text") onProgress(t("Text wird erkannt …"), m.progress);
+      else if (m.status.startsWith("loading")) onProgress(t("Texterkennung wird geladen …"), m.progress);
     },
   });
   try {
@@ -74,23 +75,24 @@ interface SampleReceipt {
   supermarket?: unknown;
 }
 
-const SAMPLE_ERRORS: Record<string, string> = {
-  not_granted: "Du hast der Seite nicht erlaubt, Claude zu fragen. Trag die Positionen unten selbst ein.",
-  sampling_disabled: "Claude ist für Dein Konto hier nicht verfügbar. Trag die Positionen unten selbst ein.",
-  images_unavailable: "In dieser Ansicht können keine Fotos an Claude gesendet werden. Trag die Positionen unten selbst ein.",
-  image_rejected: "Dieses Foto konnte nicht gelesen werden. Versuch ein anderes Bild (JPG oder PNG).",
-  rate_limited: "Gerade zu viele Anfragen. Versuch es in ein paar Minuten noch einmal.",
-  refused: "Claude konnte dieses Bild nicht auswerten. Trag die Positionen unten selbst ein.",
-  invalid_json: "Die Antwort war unvollständig. Versuch es noch einmal.",
-};
+/** Messages for the runtime's error codes (built when needed, in the app's language). */
+const sampleErrors = (): Record<string, string> => ({
+  not_granted: t("Du hast der Seite nicht erlaubt, Claude zu fragen. Trag die Positionen unten selbst ein."),
+  sampling_disabled: t("Claude ist für Dein Konto hier nicht verfügbar. Trag die Positionen unten selbst ein."),
+  images_unavailable: t("In dieser Ansicht können keine Fotos an Claude gesendet werden. Trag die Positionen unten selbst ein."),
+  image_rejected: t("Dieses Foto konnte nicht gelesen werden. Versuch ein anderes Bild (JPG oder PNG)."),
+  rate_limited: t("Gerade zu viele Anfragen. Versuch es in ein paar Minuten noch einmal."),
+  refused: t("Claude konnte dieses Bild nicht auswerten. Trag die Positionen unten selbst ein."),
+  invalid_json: t("Die Antwort war unvollständig. Versuch es noch einmal."),
+});
 
 /** Demo build: asks Claude through the claude.ai artifact runtime, on the viewer's own account. */
 async function recognizeWithSample(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
   const sample = await getSample();
-  if (!sample) throw new Error("Die KI-Erkennung ist nur in der claude.ai-Ansicht verfügbar. Trag die Positionen unten selbst ein.");
-  onProgress("klicksplit analysiert den Beleg …");
+  if (!sample) throw new Error(t("Die KI-Erkennung ist nur in der claude.ai-Ansicht verfügbar. Trag die Positionen unten selbst ein."));
+  onProgress(t("klicksplit analysiert den Beleg …"));
   return readWithSumCheck((hint) => {
-    if (hint) onProgress("klicksplit rechnet nach …");
+    if (hint) onProgress(t("klicksplit rechnet nach …"));
     return sampleOnce(sample, image, hint);
   });
 }
@@ -107,7 +109,7 @@ Reply with only one JSON object of this shape:
     );
   } catch (e) {
     const code = (e as SampleError)?.code;
-    throw new Error(SAMPLE_ERRORS[code] ?? "Die Erkennung hat nicht geklappt. Versuch es noch einmal oder trag die Positionen selbst ein.");
+    throw new Error(sampleErrors()[code] ?? t("Die Erkennung hat nicht geklappt. Versuch es noch einmal oder trag die Positionen selbst ein."));
   }
   const cents = (v: unknown) => Math.round(Number(v) * 100);
   const items = (Array.isArray(out.items) ? out.items : [])

@@ -3,7 +3,9 @@ import AccountSection from "../components/AccountSection";
 import DeviceTransfer from "../components/DeviceTransfer";
 import Header from "../components/Header";
 import PushSetting from "../components/PushSetting";
+import { LANG_NAMES, LANGS, type Lang } from "../i18n";
 import { DEMO } from "../lib/demo";
+import { chosenLang, setLang, t } from "../lib/i18n";
 import { formatIban, isValidEmail, isValidIban, isValidWero, normalizeIban, normalizePaypalMe } from "../lib/payment";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
@@ -55,69 +57,68 @@ export default function Profile({ next }: { next?: string }) {
 
   return (
     <div className="page">
-      <Header back="/" title="Profil" />
+      <Header back="/" title={t("Profil")} />
       <main className="content">
         {/* At the top: whether this device is signed in, and signing out. Not while setting up the first bill, not in the demo. */}
         {!next && accountsAvailable && (
           <section className="stack account-section" id="konto">
-            <h3 className="section-title">Konto</h3>
+            <h3 className="section-title">{t("Konto")}</h3>
             <AccountSection />
           </section>
         )}
         <form className="stack" onSubmit={save}>
           <p className="muted">
-            {loadAccountEmail() ? "Dein Profil ist in Deinem Konto gesichert." : "Dein Profil bleibt auf diesem Gerät."} Beim Erstellen einer Rechnung werden Name und Zahlungsdaten in den QR-Code
-            übernommen, damit Deine Freunde Dich bezahlen können. Ein Zahlungsweg reicht, mehrere geben Deinen Freunden die
-            Wahl.
+            {loadAccountEmail() ? t("Dein Profil ist in Deinem Konto gesichert.") : t("Dein Profil bleibt auf diesem Gerät.")}{" "}
+            {t("Beim Erstellen einer Rechnung werden Name und Zahlungsdaten in den QR-Code übernommen, damit Deine Freunde Dich bezahlen können. Ein Zahlungsweg reicht, mehrere geben Deinen Freunden die Wahl.")}
           </p>
 
           <div className="card">
             <label className="field">
-              <span>Profilname</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Niklas" maxLength={40} autoComplete="given-name" aria-invalid={touched && !name.trim()} />
-              <small className="muted">So sehen Dich Deine Freunde auf der Rechnung.</small>
+              <span>{t("Profilname")}</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("z. B. Niklas")} maxLength={40} autoComplete="given-name" aria-invalid={touched && !name.trim()} />
+              <small className="muted">{t("So sehen Dich Deine Freunde auf der Rechnung.")}</small>
             </label>
           </div>
 
           <h3 className="section-title">PayPal</h3>
           <div className="card">
             <label className="field">
-              <span>PayPal-E-Mail-Adresse</span>
+              <span>{t("PayPal-E-Mail-Adresse")}</span>
               <input
                 type="email"
                 inputMode="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="du@beispiel.de"
+                placeholder={t("du@beispiel.de")}
                 autoCapitalize="off"
                 autoComplete="email"
                 aria-invalid={emailInvalid}
               />
-              {emailInvalid && <small className="error">Bitte prüfe die E-Mail-Adresse.</small>}
+              {emailInvalid && <small className="error">{t("Bitte prüfe die E-Mail-Adresse.")}</small>}
             </label>
 
             <label className="field">
               <span>
-                PayPal.Me-Name <em className="badge">empfohlen</em>
+                {t("PayPal.Me-Name")} <em className="badge">{t("empfohlen")}</em>
               </span>
               <div className="input-prefix">
                 <span>paypal.me/</span>
-                <input value={paypalMe} onChange={(e) => setPaypalMe(e.target.value)} placeholder="deinname" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+                <input value={paypalMe} onChange={(e) => setPaypalMe(e.target.value)} placeholder={t("deinname")} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
               </div>
               <small className="muted">
-                Nur mit PayPal.Me landen Deine Freunde nach dem Login direkt im fertig ausgefüllten Bezahlschritt (Empfänger und
-                Betrag). Mit reiner E-Mail-Adresse müssen sie den Betrag selbst eintragen. Deinen Namen findest Du in der
-                PayPal-App unter „PayPal.Me“.
+                {t(
+                  "Nur mit PayPal.Me landen Deine Freunde nach dem Login direkt im fertig ausgefüllten Bezahlschritt (Empfänger und Betrag). Mit reiner E-Mail-Adresse müssen sie den Betrag selbst eintragen. Deinen Namen findest Du in der PayPal-App unter „PayPal.Me“.",
+                )}
               </small>
             </label>
             {meName && (
               <a className="small" href={`https://www.paypal.com/paypalme/${meName}`} target="_blank" rel="noreferrer">
-                Link testen: paypal.me/{meName} ↗
+                {t("Link testen: paypal.me/{name} ↗", { name: meName })}
               </a>
             )}
           </div>
 
-          <h3 className="section-title">Überweisung</h3>
+          <h3 className="section-title">{t("Überweisung")}</h3>
           <div className="card">
             <label className="field">
               <span>IBAN</span>
@@ -133,16 +134,16 @@ export default function Profile({ next }: { next?: string }) {
                 aria-invalid={ibanInvalid}
               />
               {ibanInvalid ? (
-                <small className="error">Diese IBAN stimmt nicht – bitte prüfe sie.</small>
+                <small className="error">{t("Diese IBAN stimmt nicht – bitte prüfe sie.")}</small>
               ) : (
-                <small className="muted">Jede Bank, auch Trade Republic, N26 oder Revolut. Deine Freunde kopieren IBAN und Betrag in ihre Banking-App.</small>
+                <small className="muted">{t("Jede Bank, auch Trade Republic, N26 oder Revolut. Deine Freunde kopieren IBAN und Betrag in ihre Banking-App.")}</small>
               )}
             </label>
             {iban.trim() && (
               <label className="field">
-                <span>Kontoinhaber</span>
-                <input value={holder} onChange={(e) => setHolder(e.target.value)} placeholder={name.trim() || "Vor- und Nachname"} maxLength={70} autoComplete="name" />
-                <small className="muted">Leer lassen, wenn es Dein Profilname ist.</small>
+                <span>{t("Kontoinhaber")}</span>
+                <input value={holder} onChange={(e) => setHolder(e.target.value)} placeholder={name.trim() || t("Vor- und Nachname")} maxLength={70} autoComplete="name" />
+                <small className="muted">{t("Leer lassen, wenn es Dein Profilname ist.")}</small>
               </label>
             )}
           </div>
@@ -150,7 +151,7 @@ export default function Profile({ next }: { next?: string }) {
           <h3 className="section-title">Wero</h3>
           <div className="card">
             <label className="field">
-              <span>Handynummer oder E-Mail für Wero</span>
+              <span>{t("Handynummer oder E-Mail für Wero")}</span>
               <input
                 value={wero}
                 onChange={(e) => setWero(e.target.value)}
@@ -162,26 +163,33 @@ export default function Profile({ next }: { next?: string }) {
                 aria-invalid={weroInvalid}
               />
               {weroInvalid ? (
-                <small className="error">Bitte gib eine Handynummer oder E-Mail-Adresse ein.</small>
+                <small className="error">{t("Bitte gib eine Handynummer oder E-Mail-Adresse ein.")}</small>
               ) : (
-                <small className="muted">Mit Wero in der Banking-App (z. B. Sparkasse, Volksbank, ING, Postbank) senden Dir Deine Freunde Geld an diese Nummer.</small>
+                <small className="muted">{t("Mit Wero in der Banking-App (z. B. Sparkasse, Volksbank, ING, Postbank) senden Dir Deine Freunde Geld an diese Nummer.")}</small>
               )}
             </label>
           </div>
 
-          {touched && needsPayment && <div className="alert">Bitte hinterlege mindestens einen Zahlungsweg: PayPal, IBAN oder Wero.</div>}
+          {touched && needsPayment && <div className="alert">{t("Bitte hinterlege mindestens einen Zahlungsweg: PayPal, IBAN oder Wero.")}</div>}
 
           {notStored && (
             <div className="alert">
-              Dein Browser lässt diese Seite gerade nichts dauerhaft speichern. Dein Profil gilt deshalb nur, bis Du den Tab
-              schließt. Das passiert z. B. in einem privaten Tab, im eingebauten Browser anderer Apps oder wenn Cookies
-              blockiert sind. Öffne klicksplit am besten direkt in Safari bzw. Chrome. Tippe erneut auf den Knopf, um
-              trotzdem fortzufahren.
+              {t(
+                "Dein Browser lässt diese Seite gerade nichts dauerhaft speichern. Dein Profil gilt deshalb nur, bis Du den Tab schließt. Das passiert z. B. in einem privaten Tab, im eingebauten Browser anderer Apps oder wenn Cookies blockiert sind. Öffne klicksplit am besten direkt in Safari bzw. Chrome. Tippe erneut auf den Knopf, um trotzdem fortzufahren.",
+              )}
             </div>
           )}
 
-          <button className="btn btn-primary btn-large">{next === "new" ? "Weiter zur Kamera" : next === "sample" ? "Weiter zur Beispielrechnung" : "Speichern"}</button>
+          <button className="btn btn-primary btn-large">{next === "new" ? t("Weiter zur Kamera") : next === "sample" ? t("Weiter zur Beispielrechnung") : t("Speichern")}</button>
         </form>
+
+        {/* The app's language: the device's, or one chosen here (reloads the app). */}
+        {!next && (
+          <section className="stack language-section">
+            <h3 className="section-title">{t("Sprache")}</h3>
+            <LanguageSetting />
+          </section>
+        )}
 
         {/* Not while setting up the profile for a first bill, and not in the demo (no server). */}
         {!next && !DEMO && (
@@ -191,11 +199,34 @@ export default function Profile({ next }: { next?: string }) {
         )}
         {!next && !DEMO && (
           <section className="stack device-section">
-            <h3 className="section-title">Gerät wechseln &amp; sichern</h3>
+            <h3 className="section-title">{t("Gerät wechseln & sichern")}</h3>
             <DeviceTransfer />
           </section>
         )}
       </main>
+    </div>
+  );
+}
+
+/** "Wie Gerät" follows the device's language; the names of the languages stay in their own language. */
+function LanguageSetting() {
+  const current = chosenLang();
+  const options: { value: Lang | null; label: string }[] = [{ value: null, label: t("Wie Gerät") }, ...LANGS.map((value) => ({ value, label: LANG_NAMES[value] }))];
+  return (
+    <div className="seg lang-seg" role="radiogroup" aria-label={t("Sprache")}>
+      {options.map((o) => (
+        <button
+          key={o.value ?? "device"}
+          type="button"
+          role="radio"
+          aria-checked={current === o.value}
+          className={current === o.value ? "on" : ""}
+          lang={o.value ?? undefined}
+          onClick={() => current !== o.value && setLang(o.value)}
+        >
+          <b>{o.label}</b>
+        </button>
+      ))}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Handwritten, tailApex } from "./ClaimDemo";
+import { t } from "../lib/i18n";
 import { reducedMotion } from "../lib/motion";
 
 /**
@@ -160,7 +161,7 @@ export default function ReceiptDemo({
               } as CSSProperties
             }
           >
-            <Handwritten text="Gedrückt halten = nur einen Teil in Rechnung stellen" />
+            <Handwritten text={t("Gedrückt halten = nur einen Teil in Rechnung stellen")} />
           </div>
         </>
       )}

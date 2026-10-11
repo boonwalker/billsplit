@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { billIdFromUrl } from "../lib/bill";
 import { deviceCodeFromUrl, mergeCodeFromUrl, mergeFromSafari } from "../lib/deviceTransfer";
 import { finishHandoff, handoffPending, isStandalone } from "../lib/handoff";
+import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
 
 /**
@@ -35,7 +36,7 @@ export default function HandoffPrompt() {
     try {
       text = await navigator.clipboard.readText();
     } catch {
-      setError("Die Zwischenablage konnte nicht gelesen werden. Tippe nochmal und wähle „Einfügen“.");
+      setError(t("Die Zwischenablage konnte nicht gelesen werden. Tippe nochmal und wähle „Einfügen“."));
       return;
     }
     const id = billIdFromUrl(text);
@@ -45,7 +46,7 @@ export default function HandoffPrompt() {
       return navigate(`/geraet/${device}`);
     }
     if (!id) {
-      setError("In der Zwischenablage ist kein klicksplit-Link. Tippe in Safari nochmal auf „In der App öffnen“.");
+      setError(t("In der Zwischenablage ist kein klicksplit-Link. Tippe in Safari nochmal auf „In der App öffnen“."));
       return;
     }
     // Whatever was ticked or paid in Safari comes along (best effort: the bill opens anyway).
@@ -59,15 +60,15 @@ export default function HandoffPrompt() {
     <>
     {/* Dims the app behind it, so the notice cannot be missed. */}
     <div className="handoff-backdrop" aria-hidden="true" onClick={close} />
-    <div className="handoff" role="dialog" aria-label="Rechnung aus Safari öffnen">
-      <button type="button" className="handoff-close" aria-label="Schließen" onClick={close}>
+    <div className="handoff" role="dialog" aria-label={t("Rechnung aus Safari öffnen")}>
+      <button type="button" className="handoff-close" aria-label={t("Schließen")} onClick={close}>
         ✕
       </button>
-      <p className="handoff-title">Aus Safari weitergeleitet</p>
-      <p className="muted small">Die Rechnung, die Du in Safari geöffnet hast, liegt in Deiner Zwischenablage.</p>
+      <p className="handoff-title">{t("Aus Safari weitergeleitet")}</p>
+      <p className="muted small">{t("Die Rechnung, die Du in Safari geöffnet hast, liegt in Deiner Zwischenablage.")}</p>
       {error && <p className="handoff-error">{error}</p>}
       <button type="button" className="btn btn-primary btn-large" onClick={openCopied}>
-        Kopierten Link öffnen
+        {t("Kopierten Link öffnen")}
       </button>
     </div>
     </>

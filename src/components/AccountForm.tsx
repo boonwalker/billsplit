@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { confirmCode, type SignInResult } from "../lib/account";
 import { api } from "../lib/api";
+import { rich, t } from "../lib/i18n";
 import { isValidEmail } from "../lib/payment";
 import { loadOwnProfile } from "../lib/storage";
 
@@ -11,7 +12,7 @@ import { loadOwnProfile } from "../lib/storage";
 export default function AccountForm({
   onDone,
   onSkip,
-  skipLabel = "Überspringen",
+  skipLabel = t("Überspringen"),
   lead,
   heading = true,
 }: {
@@ -32,7 +33,7 @@ export default function AccountForm({
   async function send(e?: FormEvent) {
     e?.preventDefault();
     if (!isValidEmail(email)) {
-      setError("Bitte prüfe die E-Mail-Adresse.");
+      setError(t("Bitte prüfe die E-Mail-Adresse."));
       return;
     }
     setBusy(true);
@@ -42,7 +43,7 @@ export default function AccountForm({
       setStep("code");
       setCode("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Das hat nicht geklappt.");
+      setError(err instanceof Error ? err.message : t("Das hat nicht geklappt."));
     } finally {
       setBusy(false);
     }
@@ -55,7 +56,7 @@ export default function AccountForm({
     try {
       onDone(await confirmCode(email.trim(), value));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Das hat nicht geklappt.");
+      setError(err instanceof Error ? err.message : t("Das hat nicht geklappt."));
       setBusy(false);
     }
   }
@@ -64,28 +65,27 @@ export default function AccountForm({
     return (
       <form className="account-form" onSubmit={send}>
         {lead}
-        {heading && <h2>Deine E-Mail-Adresse</h2>}
+        {heading && <h2>{t("Deine E-Mail-Adresse")}</h2>}
         <p className="muted">
-          Damit findest Du Deine Rechnungen auf jedem Gerät wieder – auch auf einem neuen Handy. Kein Passwort: Du bekommst
-          einen Code per Mail.
+          {t("Damit findest Du Deine Rechnungen auf jedem Gerät wieder – auch auf einem neuen Handy. Kein Passwort: Du bekommst einen Code per Mail.")}
         </p>
         <input
           type="email"
           inputMode="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Deine E-Mail-Adresse"
+          placeholder={t("Deine E-Mail-Adresse")}
           autoComplete="email"
           autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}
-          aria-label="E-Mail-Adresse"
+          aria-label={t("E-Mail-Adresse")}
         />
         {error && <p className="alert">{error}</p>}
         <button className="btn btn-primary btn-large" disabled={busy || !email.trim()}>
-          {busy ? "Wird gesendet …" : "Code senden"}
+          {busy ? t("Wird gesendet …") : t("Code senden")}
         </button>
-        <small className="muted account-privacy">Nur für die Anmeldung, keine Werbung. Löschen kannst Du das Konto jederzeit im Profil.</small>
+        <small className="muted account-privacy">{t("Nur für die Anmeldung, keine Werbung. Löschen kannst Du das Konto jederzeit im Profil.")}</small>
         {onSkip && (
           <button type="button" className="btn btn-ghost" onClick={onSkip}>
             {skipLabel}
@@ -103,9 +103,9 @@ export default function AccountForm({
         void confirm();
       }}
     >
-      {heading && <h2>Code eingeben</h2>}
+      {heading && <h2>{t("Code eingeben")}</h2>}
       <p className="muted">
-        Wir haben Dir einen 6-stelligen Code an <b>{email.trim()}</b> geschickt. Schau auch im Spam-Ordner nach.
+        {rich(t("Wir haben Dir einen 6-stelligen Code an <b>{email}</b> geschickt. Schau auch im Spam-Ordner nach.", { email: email.trim() }))}
       </p>
       <input
         className="code-input"
@@ -119,12 +119,12 @@ export default function AccountForm({
         inputMode="numeric"
         autoComplete="one-time-code"
         placeholder="000000"
-        aria-label="Code aus der Mail"
+        aria-label={t("Code aus der Mail")}
         autoFocus
       />
       {error && <p className="alert">{error}</p>}
       <button className="btn btn-primary btn-large" disabled={busy || code.length !== 6}>
-        {busy ? "Wird geprüft …" : "Bestätigen"}
+        {busy ? t("Wird geprüft …") : t("Bestätigen")}
       </button>
       <div className="account-links">
         <button
@@ -133,7 +133,7 @@ export default function AccountForm({
           disabled={busy}
           onClick={() => void send()}
         >
-          Neuer Code
+          {t("Neuer Code")}
         </button>
         <button
           type="button"
@@ -143,7 +143,7 @@ export default function AccountForm({
             setError(null);
           }}
         >
-          Andere Adresse
+          {t("Andere Adresse")}
         </button>
       </div>
       {onSkip && (

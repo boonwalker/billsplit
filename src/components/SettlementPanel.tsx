@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { api } from "../lib/api";
 import type { NetworkEdge, Transfer, TransferAllocation } from "../lib/bill";
+import { t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 import { planSettlement, type PlannedTransfer, type SettlementPlan } from "../lib/simplify";
 import PayButtons from "./PayButtons";
@@ -24,7 +25,7 @@ export function BillEntry({ title, text, amount, onOpen }: { title: string; text
   return (
     <li>
       {onOpen ? (
-        <button type="button" className="settle-entry" onClick={onOpen} aria-label={`${title}: ${text} – Rechnung öffnen`}>
+        <button type="button" className="settle-entry" onClick={onOpen} aria-label={t("{title}: {text} – Rechnung öffnen", { title, text })}>
           {content}
           <span className="settle-entry-go" aria-hidden="true">
             ›
@@ -40,12 +41,12 @@ export function BillEntry({ title, text, amount, onOpen }: { title: string; text
 /** One settled share in words, from my point of view. */
 function describe(a: TransferAllocation, me: string, edges: Map<string, NetworkEdge>) {
   const e = edges.get(`${a.billId}:${a.debtorId}`);
-  const title = e?.title ?? "Rechnung";
+  const title = e?.title ?? t("Rechnung");
   const debtor = e?.debtorName ?? "";
   const creditor = e?.creditorName ?? "";
-  if (a.debtorId === me) return { title, text: `Dein Anteil bei ${creditor}`, sign: "−" };
-  if (a.creditorId === me) return { title, text: `Anteil von ${debtor} bei Dir (verrechnet)`, sign: "+" };
-  return { title, text: `Anteil von ${debtor} bei ${creditor} – wird mit beglichen`, sign: "" };
+  if (a.debtorId === me) return { title, text: t("Dein Anteil bei {name}", { name: creditor }), sign: "−" };
+  if (a.creditorId === me) return { title, text: t("Anteil von {name} bei Dir (verrechnet)", { name: debtor }), sign: "+" };
+  return { title, text: t("Anteil von {debtor} bei {creditor} – wird mit beglichen", { debtor, creditor }), sign: "" };
 }
 
 /**
@@ -53,7 +54,7 @@ function describe(a: TransferAllocation, me: string, edges: Map<string, NetworkE
  * shares in which bills that settles), then paying each one. A payment waits until its
  * recipient confirms it; until then the shares count as being paid.
  */
-export function PlanCard({ plan, onPay }: { plan: SettlementPlan; onPay: (t: PlannedTransfer) => void }) {
+export function PlanCard({ plan, onPay }: { plan: SettlementPlan; onPay: (tr: PlannedTransfer) => void }) {
   const fmt = (c: number) => formatMoney(c, plan.currency);
   const count = plan.transfers.length;
   if (!count && !plan.incoming.length) return null;
@@ -63,46 +64,57 @@ export function PlanCard({ plan, onPay }: { plan: SettlementPlan; onPay: (t: Pla
       {count > 0 ? (
         <>
           <h4>
-            Alles ausgleichen mit {count === 1 ? "einer Zahlung" : `${count} Zahlungen`}
-            {plan.directCount > count && <small> statt {plan.directCount}</small>}
+            {count === 1 ? t("Alles ausgleichen mit einer Zahlung") : t("Alles ausgleichen mit {n} Zahlungen", { n: count })}
+            {plan.directCount > count && <small> {t("statt {n}", { n: plan.directCount })}</small>}
           </h4>
           <ul className="plan-list">
-            {plan.transfers.map((t) => (
-              <li key={t.toId}>
+            {plan.transfers.map((tr) => (
+              <li key={tr.toId}>
                 <span className="plan-text">
-                  <b>An {t.toName}</b>
+                  <b>{t("An {name}", { name: tr.toName })}</b>
                   {/* The detour it saves, as arrows: one payment instead of passing the money on. */}
-                  {t.via.map((names) => (
+                  {tr.via.map((names) => (
                     <small key={names.join("→")} className="plan-route">
-                      <s>Du → {names.join(" → ")} → {t.toName}</s> <b>Du → {t.toName}</b>
+                      <s>
+                        {t("Du")} → {names.join(" → ")} → {tr.toName}
+                      </s>{" "}
+                      <b>
+                        {t("Du")} → {tr.toName}
+                      </b>
                     </small>
                   ))}
-                  {t.onBehalfOf.length > 0 && (
+                  {tr.onBehalfOf.length > 0 && (
                     <small className="muted">
-                      begleicht auch {t.onBehalfOf.map((o) => `${fmt(o.amount)} von ${o.name}`).join(" und ")} bei {t.toName}
+                      {t("begleicht auch {list} bei {name}", {
+                        list: tr.onBehalfOf.map((o) => t("{amount} von {name}", { amount: fmt(o.amount), name: o.name })).join(t(" und ")),
+                        name: tr.toName,
+                      })}
                     </small>
                   )}
                 </span>
-                <span className="plan-amount">{fmt(t.amount)}</span>
-                <button type="button" className="btn btn-paypal plan-pay" onClick={() => onPay(t)}>
-                  Zahlen
+                <span className="plan-amount">{fmt(tr.amount)}</span>
+                <button type="button" className="btn btn-paypal plan-pay" onClick={() => onPay(tr)}>
+                  {t("Zahlen")}
                 </button>
               </li>
             ))}
           </ul>
-          {plan.transfers.some((t) => t.via.length > 0) && (
+          {plan.transfers.some((tr) => tr.via.length > 0) && (
             <p className="muted small plan-explain">
-              Statt Geld über mehrere Ecken weiterzureichen, zahlst Du direkt an die Person, die es am Ende bekommt. Jeder
-              Anteil in jeder Rechnung gilt dann als beglichen.
+              {t(
+                "Statt Geld über mehrere Ecken weiterzureichen, zahlst Du direkt an die Person, die es am Ende bekommt. Jeder Anteil in jeder Rechnung gilt dann als beglichen.",
+              )}
             </p>
           )}
         </>
       ) : (
-        <h4>Du musst niemandem etwas zahlen</h4>
+        <h4>{t("Du musst niemandem etwas zahlen")}</h4>
       )}
       {plan.incoming.length > 0 && (
         <p className="muted small plan-incoming">
-          Noch offen für Dich: {plan.incoming.map((i) => `${i.name} ${fmt(i.amount)}`).join(", ")} – das gleichen sie von ihrer Seite aus.
+          {t("Noch offen für Dich: {list} – das gleichen sie von ihrer Seite aus.", {
+            list: plan.incoming.map((i) => `${i.name} ${fmt(i.amount)}`).join(", "),
+          })}
         </p>
       )}
     </div>
@@ -146,10 +158,10 @@ export function PlanPaySheet({
       const fresh = await reload();
       const again = planSettlement(fresh.me, fresh.edges)
         .find((p) => p.currency === planned.currency)
-        ?.transfers.find((t) => t.toId === planned.toId);
+        ?.transfers.find((tr) => tr.toId === planned.toId);
       if (!again || !same(again, planned)) {
         if (again) setPlanned(again);
-        setNotice("Die Beträge haben sich gerade geändert. Bitte prüfe die neue Aufstellung – noch wurde nichts eingetragen.");
+        setNotice(t("Die Beträge haben sich gerade geändert. Bitte prüfe die neue Aufstellung – noch wurde nichts eingetragen."));
         setStage("pay");
         return;
       }
@@ -157,33 +169,37 @@ export function PlanPaySheet({
       await reload();
       setStage("done");
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : "Das Eintragen ist fehlgeschlagen.");
+      setNotice(e instanceof Error ? e.message : t("Das Eintragen ist fehlgeschlagen."));
       setStage("pay");
     }
   }
 
-  const reference = `klicksplit · Ausgleich ${myName ? `von ${myName}` : ""}`.trim().slice(0, 140);
+  const reference = (myName ? t("klicksplit · Ausgleich von {name}", { name: myName }) : t("klicksplit · Ausgleich")).slice(0, 140);
 
   return (
     <div className="sheet-backdrop settle-backdrop" onClick={(e) => e.target === e.currentTarget && stage !== "booking" && onClose()}>
-      <div className="sheet settle-sheet" role="dialog" aria-label={`${fmt(planned.amount)} an ${planned.toName}`}>
-        <h2>
-          {fmt(planned.amount)} an {planned.toName}
-        </h2>
+      <div className="sheet settle-sheet" role="dialog" aria-label={t("{amount} an {name}", { amount: fmt(planned.amount), name: planned.toName })}>
+        <h2>{t("{amount} an {name}", { amount: fmt(planned.amount), name: planned.toName })}</h2>
         {stage === "done" ? (
           <>
-            <p className="settle-done">✓ Eingetragen – wartet auf die Bestätigung von {planned.toName}.</p>
+            <p className="settle-done">{t("✓ Eingetragen – wartet auf die Bestätigung von {name}.", { name: planned.toName })}</p>
             <p className="muted small">
-              Bis dahin gelten die Anteile als bezahlt. Bestätigt {planned.toName} den Eingang, sind sie in allen Rechnungen
-              beglichen{planned.onBehalfOf.length > 0 && <> – auch für {planned.onBehalfOf.map((o) => o.name).join(" und ")}</>}.
+              {planned.onBehalfOf.length > 0
+                ? t("Bis dahin gelten die Anteile als bezahlt. Bestätigt {name} den Eingang, sind sie in allen Rechnungen beglichen – auch für {names}.", {
+                    name: planned.toName,
+                    names: planned.onBehalfOf.map((o) => o.name).join(t(" und ")),
+                  })
+                : t("Bis dahin gelten die Anteile als bezahlt. Bestätigt {name} den Eingang, sind sie in allen Rechnungen beglichen.", {
+                    name: planned.toName,
+                  })}
             </p>
             <button type="button" className="btn btn-primary btn-large" onClick={onClose}>
-              Fertig
+              {t("Fertig")}
             </button>
           </>
         ) : (
           <>
-            <p className="muted small">Damit sind diese Anteile beglichen:</p>
+            <p className="muted small">{t("Damit sind diese Anteile beglichen:")}</p>
             <ul className="settle-entries">
               {planned.allocations.map((a) => {
                 const d = describe(a, me, byShare);
@@ -205,8 +221,10 @@ export function PlanPaySheet({
             </ul>
             {planned.onBehalfOf.length > 0 && (
               <p className="muted small">
-                Statt {planned.onBehalfOf.map((o) => o.name).join(" und ")} zahlst Du direkt an {planned.toName} – eine Zahlung weniger
-                für alle.
+                {t("Statt {names} zahlst Du direkt an {name} – eine Zahlung weniger für alle.", {
+                  names: planned.onBehalfOf.map((o) => o.name).join(t(" und ")),
+                  name: planned.toName,
+                })}
               </p>
             )}
             {notice && <p className="alert">{notice}</p>}
@@ -216,13 +234,13 @@ export function PlanPaySheet({
               currency={planned.currency}
               recipient={planned.toName}
               reference={reference}
-              confirmLabel={`✓ Gesendet – ${planned.toName} bestätigen lassen`}
+              confirmLabel={t("✓ Gesendet – {name} bestätigen lassen", { name: planned.toName })}
               onConfirm={book}
               busy={stage === "booking"}
             />
             {stage !== "booking" && (
               <button type="button" className="btn btn-ghost" onClick={onClose}>
-                Schließen
+                {t("Schließen")}
               </button>
             )}
           </>
@@ -254,37 +272,45 @@ export function TransferInbox({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const now = Date.now();
-  const recent = (t: Transfer) => now - Date.parse(t.decidedAt ?? t.createdAt) < RECENT_MS;
-  const incoming = transfers.filter((t) => t.toId === me && t.status === "pending");
+  const recent = (tr: Transfer) => now - Date.parse(tr.decidedAt ?? tr.createdAt) < RECENT_MS;
+  const incoming = transfers.filter((tr) => tr.toId === me && tr.status === "pending");
   const outgoing = transfers.filter(
-    (t) =>
-      t.fromId === me &&
-      (t.status === "pending" || (t.status === "rejected" && recent(t)) || (t.status === "confirmed" && now - Date.parse(t.decidedAt ?? t.createdAt) < CONFIRMED_MS)),
+    (tr) =>
+      tr.fromId === me &&
+      (tr.status === "pending" || (tr.status === "rejected" && recent(tr)) || (tr.status === "confirmed" && now - Date.parse(tr.decidedAt ?? tr.createdAt) < CONFIRMED_MS)),
   );
-  const involved = transfers.filter((t) => t.fromId !== me && t.toId !== me && t.status !== "cancelled" && t.status !== "rejected" && recent(t));
+  const involved = transfers.filter((tr) => tr.fromId !== me && tr.toId !== me && tr.status !== "cancelled" && tr.status !== "rejected" && recent(tr));
   if (!incoming.length && !outgoing.length && !involved.length) return null;
-  const fmt = (t: Transfer, c: number) => formatMoney(c, t.currency);
+  const fmt = (tr: Transfer, c: number) => formatMoney(c, tr.currency);
 
-  async function decide(t: Transfer, action: "confirm" | "reject" | "cancel") {
-    setBusy(t.id);
+  async function decide(tr: Transfer, action: "confirm" | "reject" | "cancel") {
+    setBusy(tr.id);
     setError(null);
     try {
-      await api.decideTransfer(t.id, action);
+      await api.decideTransfer(tr.id, action);
       onDecided();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Das hat nicht geklappt.");
+      setError(e instanceof Error ? e.message : t("Das hat nicht geklappt."));
     } finally {
       setBusy(null);
     }
   }
 
-  const lines = (t: Transfer) =>
-    t.allocations.map((a) => (
+  const lines = (tr: Transfer) =>
+    tr.allocations.map((a) => (
       <BillEntry
         key={`${a.billId}:${a.debtorId}`}
         title={a.billTitle}
-        text={`${a.debtorId === me ? "Dein Anteil" : `Anteil von ${a.debtorName}`} bei ${a.creditorId === me ? "Dir" : a.creditorName}`}
-        amount={fmt(t, a.amount)}
+        text={
+          a.debtorId === me
+            ? a.creditorId === me
+              ? t("Dein Anteil bei Dir")
+              : t("Dein Anteil bei {name}", { name: a.creditorName })
+            : a.creditorId === me
+              ? t("Anteil von {name} bei Dir", { name: a.debtorName })
+              : t("Anteil von {debtor} bei {creditor}", { debtor: a.debtorName, creditor: a.creditorName })
+        }
+        amount={fmt(tr, a.amount)}
         onOpen={onOpenBill && (() => onOpenBill(a.billId, a.debtorId))}
       />
     ));
@@ -292,82 +318,89 @@ export function TransferInbox({
   return (
     <section className="transfer-inbox">
       {error && <p className="alert">{error}</p>}
-      {incoming.map((t) =>
-        t.amount === 0 ? (
+      {incoming.map((tr) =>
+        tr.amount === 0 ? (
           // An offset: what we owe each other cancels out exactly.
-          <div key={t.id} data-transfer={t.id} className={`card inbox-card incoming${focus === t.id ? " focus-flash" : ""}`}>
-            <h4>{t.fromName} möchte gegenseitig verrechnen</h4>
-            <p className="muted small">Eure offenen Beträge gleichen sich genau aus – ohne dass jemand etwas zahlt:</p>
-            <ul className="settle-entries">{lines(t)}</ul>
+          <div key={tr.id} data-transfer={tr.id} className={`card inbox-card incoming${focus === tr.id ? " focus-flash" : ""}`}>
+            <h4>{t("{name} möchte gegenseitig verrechnen", { name: tr.fromName })}</h4>
+            <p className="muted small">{t("Eure offenen Beträge gleichen sich genau aus – ohne dass jemand etwas zahlt:")}</p>
+            <ul className="settle-entries">{lines(tr)}</ul>
             <div className="inbox-actions">
-              <button type="button" className="btn btn-primary" disabled={busy === t.id} onClick={() => decide(t, "confirm")}>
-                ✓ Einverstanden
+              <button type="button" className="btn btn-primary" disabled={busy === tr.id} onClick={() => decide(tr, "confirm")}>
+                {t("✓ Einverstanden")}
               </button>
-              <button type="button" className="btn btn-ghost" disabled={busy === t.id} onClick={() => decide(t, "reject")}>
-                Ablehnen
+              <button type="button" className="btn btn-ghost" disabled={busy === tr.id} onClick={() => decide(tr, "reject")}>
+                {t("Ablehnen")}
               </button>
             </div>
           </div>
         ) : (
-          <div key={t.id} data-transfer={t.id} className={`card inbox-card incoming${focus === t.id ? " focus-flash" : ""}`}>
-            <h4>
-              {t.fromName} hat Dir {fmt(t, t.amount)} gesendet
-            </h4>
-            <p className="muted small">Bestätige den Eingang, wenn das Geld da ist – dann wird es in diesen Rechnungen eingetragen:</p>
-            <ul className="settle-entries">{lines(t)}</ul>
+          <div key={tr.id} data-transfer={tr.id} className={`card inbox-card incoming${focus === tr.id ? " focus-flash" : ""}`}>
+            <h4>{t("{name} hat Dir {amount} gesendet", { name: tr.fromName, amount: fmt(tr, tr.amount) })}</h4>
+            <p className="muted small">{t("Bestätige den Eingang, wenn das Geld da ist – dann wird es in diesen Rechnungen eingetragen:")}</p>
+            <ul className="settle-entries">{lines(tr)}</ul>
             <div className="inbox-actions">
-              <button type="button" className="btn btn-primary" disabled={busy === t.id} onClick={() => decide(t, "confirm")}>
-                ✓ Erhalten
+              <button type="button" className="btn btn-primary" disabled={busy === tr.id} onClick={() => decide(tr, "confirm")}>
+                {t("✓ Erhalten")}
               </button>
-              <button type="button" className="btn btn-ghost" disabled={busy === t.id} onClick={() => decide(t, "reject")}>
-                Nicht erhalten
+              <button type="button" className="btn btn-ghost" disabled={busy === tr.id} onClick={() => decide(tr, "reject")}>
+                {t("Nicht erhalten")}
               </button>
             </div>
           </div>
         ),
       )}
-      {outgoing.map((t) => (
-        <div key={t.id} data-transfer={t.id} className={`card inbox-card ${t.status}${focus === t.id ? " focus-flash" : ""}`}>
-          {t.status === "pending" ? (
+      {outgoing.map((tr) => (
+        <div key={tr.id} data-transfer={tr.id} className={`card inbox-card ${tr.status}${focus === tr.id ? " focus-flash" : ""}`}>
+          {tr.status === "pending" ? (
             <>
-              <h4>{t.amount === 0 ? `Verrechnung mit ${t.toName} · wartet auf Bestätigung` : `${fmt(t, t.amount)} an ${t.toName} · wartet auf Bestätigung`}</h4>
-              <button type="button" className="link" disabled={busy === t.id} onClick={() => decide(t, "cancel")}>
-                {t.amount === 0 ? "Verrechnung zurückziehen" : "Doch nicht gezahlt – zurückziehen"}
+              <h4>
+                {tr.amount === 0
+                  ? t("Verrechnung mit {name} · wartet auf Bestätigung", { name: tr.toName })
+                  : t("{amount} an {name} · wartet auf Bestätigung", { amount: fmt(tr, tr.amount), name: tr.toName })}
+              </h4>
+              <button type="button" className="link" disabled={busy === tr.id} onClick={() => decide(tr, "cancel")}>
+                {tr.amount === 0 ? t("Verrechnung zurückziehen") : t("Doch nicht gezahlt – zurückziehen")}
               </button>
             </>
-          ) : t.status === "confirmed" ? (
+          ) : tr.status === "confirmed" ? (
             <h4>
               ✓{" "}
-              {t.amount === 0
-                ? `${t.toName} hat die Verrechnung bestätigt – alles ausgeglichen.`
-                : t.recordedByRecipient
-                  ? `${t.toName} hat ${fmt(t, t.amount)} von Dir als erhalten eingetragen – alles ausgeglichen.`
-                  : `${t.toName} hat ${fmt(t, t.amount)} erhalten – alles ausgeglichen.`}
+              {tr.amount === 0
+                ? t("{name} hat die Verrechnung bestätigt – alles ausgeglichen.", { name: tr.toName })
+                : tr.recordedByRecipient
+                  ? t("{name} hat {amount} von Dir als erhalten eingetragen – alles ausgeglichen.", { name: tr.toName, amount: fmt(tr, tr.amount) })
+                  : t("{name} hat {amount} erhalten – alles ausgeglichen.", { name: tr.toName, amount: fmt(tr, tr.amount) })}
             </h4>
           ) : (
             <h4>
-              {t.amount === 0
-                ? `${t.toName} hat die Verrechnung abgelehnt – die Beträge sind wieder offen.`
-                : `${t.toName} hat ${fmt(t, t.amount)} als nicht erhalten markiert – die Anteile sind wieder offen.`}
+              {tr.amount === 0
+                ? t("{name} hat die Verrechnung abgelehnt – die Beträge sind wieder offen.", { name: tr.toName })
+                : t("{name} hat {amount} als nicht erhalten markiert – die Anteile sind wieder offen.", { name: tr.toName, amount: fmt(tr, tr.amount) })}
             </h4>
           )}
         </div>
       ))}
-      {involved.map((t) => {
-        const mine = t.allocations.filter((a) => a.debtorId === me || a.creditorId === me);
+      {involved.map((tr) => {
+        const mine = tr.allocations.filter((a) => a.debtorId === me || a.creditorId === me);
         const settledMine = mine.filter((a) => a.debtorId === me).reduce((s, a) => s + a.amount, 0);
         return (
-          <div key={t.id} data-transfer={t.id} className={`card inbox-card involved${focus === t.id ? " focus-flash" : ""}`}>
+          <div key={tr.id} data-transfer={tr.id} className={`card inbox-card involved${focus === tr.id ? " focus-flash" : ""}`}>
             <h4>
-              {t.fromName} hat {fmt(t, t.amount)} an {t.toName} gezahlt
-              {t.status === "pending" ? " (noch nicht bestätigt)" : " ✓"}
+              {tr.status === "pending"
+                ? t("{from} hat {amount} an {to} gezahlt (noch nicht bestätigt)", { from: tr.fromName, amount: fmt(tr, tr.amount), to: tr.toName })
+                : t("{from} hat {amount} an {to} gezahlt ✓", { from: tr.fromName, amount: fmt(tr, tr.amount), to: tr.toName })}
             </h4>
             <p className="muted small">
               {settledMine > 0
-                ? `Damit ist Dein Anteil von ${fmt(t, settledMine)} bei ${t.toName} beglichen – und ${t.fromName} schuldet Dir dafür nichts mehr.`
-                : "Darin sind Anteile verrechnet, die Dich betreffen:"}
+                ? t("Damit ist Dein Anteil von {amount} bei {to} beglichen – und {from} schuldet Dir dafür nichts mehr.", {
+                    amount: fmt(tr, settledMine),
+                    to: tr.toName,
+                    from: tr.fromName,
+                  })
+                : t("Darin sind Anteile verrechnet, die Dich betreffen:")}
             </p>
-            <ul className="settle-entries">{lines({ ...t, allocations: mine })}</ul>
+            <ul className="settle-entries">{lines({ ...tr, allocations: mine })}</ul>
           </div>
         );
       })}

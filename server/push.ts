@@ -1,7 +1,11 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import webpush, { type PushSubscription } from "web-push";
+import { translateMsg, type Lang } from "../src/i18n/index.ts";
 import type { Notice } from "../src/lib/billCore.ts";
+
+/** A device's subscription and the language its notifications are written in. */
+type Subscription = PushSubscription & { lang?: Lang };
 
 /**
  * Push notifications ("Niklas hat Dir 8,00 € gesendet"): devices subscribe through their
@@ -28,7 +32,7 @@ export function isPushEndpoint(endpoint: string): boolean {
 
 export class PushService {
   private keys: { publicKey: string; privateKey: string } | null = null;
-  private subscriptions = new Map<string, PushSubscription[]>();
+  private subscriptions = new Map<string, Subscription[]>();
   private saveTimer: NodeJS.Timeout | null = null;
 
   /** dir: where the keys and subscriptions are kept (null: in memory only, for tests). */
@@ -45,7 +49,7 @@ export class PushService {
       this.keys = webpush.generateVAPIDKeys();
       await this.write("vapid.json", this.keys);
     }
-    const stored = await this.read<Record<string, PushSubscription[]>>("push.json");
+    const stored = await this.read<Record<string, Subscription[]>>("push.json");
     if (stored) this.subscriptions = new Map(Object.entries(stored));
   }
 
@@ -53,9 +57,9 @@ export class PushService {
     return this.keys?.publicKey ?? null;
   }
 
-  subscribe(participantId: string, sub: PushSubscription): void {
+  subscribe(participantId: string, sub: PushSubscription, lang: Lang = "de"): void {
     const others = (this.subscriptions.get(participantId) ?? []).filter((s) => s.endpoint !== sub.endpoint);
-    this.subscriptions.set(participantId, [sub, ...others].slice(0, MAX_PER_PARTICIPANT));
+    this.subscriptions.set(participantId, [{ ...sub, lang }, ...others].slice(0, MAX_PER_PARTICIPANT));
     this.scheduleSave();
   }
 
@@ -80,9 +84,10 @@ export class PushService {
     const keys = this.keys;
     const subs = this.subscriptions.get(participantId);
     if (!keys || !subs?.length) return;
-    const payload = JSON.stringify(notice);
     await Promise.all(
-      subs.map(async (sub) => {
+      subs.map(async ({ lang = "de", ...sub }) => {
+        // In the language the device subscribed with (older subscriptions: German).
+        const payload = JSON.stringify({ title: translateMsg(lang, notice.title), body: translateMsg(lang, notice.body), path: notice.path });
         try {
           await this.send(sub, payload, {
             TTL: TTL_SECONDS,

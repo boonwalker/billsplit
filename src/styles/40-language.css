@@ -1,0 +1,14 @@
+/* ───────────────────────── language (profile) ───────────────────────── */
+.language-section {
+  margin-top: 22px;
+}
+
+/* Four choices: two by two, so "Wie Gerät" fits in every language on a phone. */
+.seg.lang-seg {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.seg.lang-seg button {
+  min-height: 44px;
+  justify-content: center;
+}

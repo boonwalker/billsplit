@@ -1,5 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { fill, msg, type Vars } from "../src/i18n/index.ts";
 import { readWithSumCheck, RECEIPT_INSTRUCTIONS, type ParsedReceipt } from "../src/lib/receipt.ts";
 
 const DEFAULT_MODEL = "claude-opus-5-5";
@@ -75,12 +76,16 @@ const RECEIPT_JSON_SCHEMA = {
   },
 } as const;
 
+/** A failed recognition; `template` and `vars` let the server answer in the reader's language. */
 export class ReceiptParseError extends Error {
+  readonly template: string;
   constructor(
     message: string,
     readonly status: number,
+    readonly vars?: Vars,
   ) {
-    super(message);
+    super(fill(message, vars, "de-DE"));
+    this.template = message;
   }
 }
 
@@ -173,7 +178,7 @@ async function requestOnce(base64: string, mediaType: ReceiptMediaType, hint?: s
     } else if (error instanceof AnthropicClient.BadRequestError) {
       throw new ReceiptParseError("Das Bild konnte nicht verarbeitet werden.", 400);
     } else if (error instanceof AnthropicClient.APIError) {
-      throw new ReceiptParseError(`Belegerkennung fehlgeschlagen (${error.status ?? "Netzwerk"}).`, 502);
+      throw new ReceiptParseError("Belegerkennung fehlgeschlagen ({status}).", 502, { status: error.status ?? msg("Netzwerk") });
     }
     throw error;
   }

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState, type CSSProperties, type RefObject } from "react";
+import { t } from "../lib/i18n";
 import { reducedMotion } from "../lib/motion";
 
 /**
@@ -32,9 +33,9 @@ const GAP_MS = 300;
 const KEY = (billId: string) => `billsplit.claimDemo.${billId}`;
 
 const CAPTION: Record<Step, (other: string) => string> = {
-  tick: () => "Antippen = abhaken",
-  share: (other) => `Namen antippen = mit ${other} teilen`,
-  offer: () => "„Du“ antippen = Du willst mit jemandem teilen",
+  tick: () => t("Antippen = abhaken"),
+  share: (other) => t("Namen antippen = mit {name} teilen", { name: other }),
+  offer: () => t("„Du“ antippen = Du willst mit jemandem teilen"),
 };
 
 /**
@@ -106,18 +107,18 @@ export function useClaimDemo(billId: string, enabled: boolean, list: RefObject<H
   useEffect(() => {
     if (!layout) return;
     const timers: number[] = [];
-    let t = START_MS;
+    let elapsed = START_MS;
     for (let cycle = 0; cycle < CYCLES; cycle++) {
       for (const step of STEPS) {
         for (const stage of ["before", "tap", "after"] as const) {
-          timers.push(window.setTimeout(() => setState({ step, stage }), t));
-          t += STAGE_MS[stage];
+          timers.push(window.setTimeout(() => setState({ step, stage }), elapsed));
+          elapsed += STAGE_MS[stage];
         }
-        timers.push(window.setTimeout(() => setState({ step, stage: "hidden" }), t));
-        t += GAP_MS;
+        timers.push(window.setTimeout(() => setState({ step, stage: "hidden" }), elapsed));
+        elapsed += GAP_MS;
       }
     }
-    timers.push(window.setTimeout(() => setLayout(null), t));
+    timers.push(window.setTimeout(() => setLayout(null), elapsed));
     return () => timers.forEach((id) => window.clearTimeout(id));
   }, [layout]);
 
@@ -181,19 +182,19 @@ export default function ClaimDemo({ layout, step, stage, otherName }: { layout: 
           </span>
           {done && (
             <span className="claim-demo-chip mine half">
-              <i>✓</i>Du ×½
+              <i>✓</i>{t("Du")} ×½
             </span>
           )}
-          {done && <span className="claim-demo-note">geteilt</span>}
+          {done && <span className="claim-demo-note">{t("geteilt")}</span>}
         </span>
       )}
       {step === "offer" && (
         <span className="claim-demo-chips" style={{ left: target.x, top: target.y }}>
           <span className={`claim-demo-chip mine${done ? " offer" : ""}`}>
-            <i>✓</i>Du ×{done ? "½" : "1"}
+            <i>✓</i>{t("Du")} ×{done ? "½" : "1"}
             {tap}
           </span>
-          {done && <span className="claim-demo-note">wartest auf jemanden</span>}
+          {done && <span className="claim-demo-note">{t("wartest auf jemanden")}</span>}
         </span>
       )}
       {/* Never wider than the receipt: Safari leaves traces of anything sticking out of the paper. */}

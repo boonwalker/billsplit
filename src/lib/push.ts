@@ -1,3 +1,4 @@
+import { lang, t } from "./i18n";
 import { DEMO } from "./demo";
 import { isIosBrowser } from "./handoff";
 import { navigate } from "./router";
@@ -42,7 +43,7 @@ async function serverKey(): Promise<string | null> {
 }
 
 function post(path: string, body: unknown): Promise<Response> {
-  return fetch(path, { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": deviceKey() }, body: JSON.stringify(body) });
+  return fetch(path, { method: "POST", headers: { "content-type": "application/json", "x-billsplit-key": deviceKey(), "x-billsplit-lang": lang }, body: JSON.stringify(body) });
 }
 
 function toBytes(base64url: string): Uint8Array<ArrayBuffer> {
@@ -66,15 +67,15 @@ export async function enablePush(): Promise<PushState> {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission === "denied" ? "denied" : "off";
   const [reg, key] = await Promise.all([ready(), serverKey()]);
-  if (!reg || !key) throw new Error("Benachrichtigungen lassen sich gerade nicht einschalten. Bitte später nochmal versuchen.");
+  if (!reg || !key) throw new Error(t("Benachrichtigungen lassen sich gerade nicht einschalten. Bitte später nochmal versuchen."));
   let sub: PushSubscription;
   try {
     sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toBytes(key) }));
   } catch {
-    throw new Error("Dein Browser konnte Benachrichtigungen gerade nicht einrichten. Bitte versuch es später nochmal.");
+    throw new Error(t("Dein Browser konnte Benachrichtigungen gerade nicht einrichten. Bitte versuch es später nochmal."));
   }
   const res = await post("/api/push/subscribe", sub.toJSON());
-  if (!res.ok) throw new Error("Benachrichtigungen lassen sich gerade nicht einschalten. Bitte später nochmal versuchen.");
+  if (!res.ok) throw new Error(t("Benachrichtigungen lassen sich gerade nicht einschalten. Bitte später nochmal versuchen."));
   return "on";
 }
 

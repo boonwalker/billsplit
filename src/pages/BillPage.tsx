@@ -24,6 +24,7 @@ import { askOnStartPage, SHOW_PAID_MS, takeProfileQuestion } from "../lib/onboar
 import { paymentFromProfile, samePayment } from "../lib/payment";
 import { forgetBill, hasPaymentMethod, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
+import { rich, t } from "../lib/i18n";
 import { scrollBehavior } from "../lib/motion";
 
 /**
@@ -117,7 +118,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         if (!snap.isOwner) confirmScan();
         replace(snap);
       })
-      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Beitreten fehlgeschlagen."))
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Beitreten fehlgeschlagen.")))
       .finally(() => (joining.current = false));
   }, [snapshot, id, replace]);
 
@@ -178,8 +179,8 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         <main className="content">
           <div className="empty-state">
             <div className="empty-emoji">🧾</div>
-            <h2>Rechnung nicht gefunden</h2>
-            <p className="muted">Der Link ist ungültig oder die Rechnung ist abgelaufen.</p>
+            <h2>{t("Rechnung nicht gefunden")}</h2>
+            <p className="muted">{t("Der Link ist ungültig oder die Rechnung ist abgelaufen.")}</p>
           </div>
         </main>
       </div>
@@ -191,7 +192,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       <div className="page">
         <Header back="/" />
         <main className="content center-v">
-          {error ? <div className="alert">{error}</div> : <div className="spinner" aria-label="Lädt" />}
+          {error ? <div className="alert">{error}</div> : <div className="spinner" aria-label={t("Lädt")} />}
         </main>
       </div>
     );
@@ -219,14 +220,14 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
     api
       .setReceived(id, d.id, received)
       .then(replace)
-      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."));
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")));
   }
 
   function updateData(data: BillData) {
     api
       .updateBill(id, data)
       .then(replace)
-      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."));
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")));
   }
 
   /** Equal split, payer: crossing out lines, fees and the tip, billing a part of a line (see billEdits). */
@@ -244,7 +245,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
     // Ticks of the last moment go first, so the amount noted is the one being paid.
     void flushClaims()
       .then(() => api.pay(id))
-      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Konnte Zahlung nicht vermerken.")));
   }
 
   function markPaid(paid: boolean) {
@@ -254,7 +255,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         replace(snap);
         if (paid) askForProfile();
       })
-      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Konnte Zahlung nicht vermerken.")));
   }
 
   const summary = snap.isOwner ? ownerSummary(snap) : null;
@@ -283,10 +284,10 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         {!snap.isOwner && (
           <section className="guest-intro">
             <p>
-              <b>{snap.ownerName}</b> hat bezahlt.{" "}
+              {rich(t("<b>{name}</b> hat bezahlt.", { name: snap.ownerName }))}{" "}
               {equal
-                ? "Die Rechnung wird gleichmäßig auf alle verteilt – Du musst nichts abhaken."
-                : "Hake ab, was Du hattest – alle sehen live, wer was übernimmt."}
+                ? t("Die Rechnung wird gleichmäßig auf alle verteilt – Du musst nichts abhaken.")
+                : t("Hake ab, was Du hattest – alle sehen live, wer was übernimmt.")}
               {!equal && snap.me && <GestureHelp mode="claim" />}
             </p>
           </section>
@@ -303,10 +304,10 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         <div id="receipt" className="receipt-anchor">
           {snap.isOwner && <EqualSplitToggle snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && (sharedTotal(snap.data) !== 0 || equal) && <TipSplit snapshot={snap} onUpdateData={updateData} />}
-          {snap.isOwner && !equal && <p className="receipt-instruction">Hake Deine eigenen Positionen ab: <GestureHelp mode="claim" /></p>}
+          {snap.isOwner && !equal && <p className="receipt-instruction">{t("Hake Deine eigenen Positionen ab:")} <GestureHelp mode="claim" /></p>}
           {snap.isOwner && equal && (
             <p className="receipt-instruction">
-              Etwas war nicht für alle? Tippe es an, um es zu streichen – nochmal tippen holt es zurück. <GestureHelp mode="strike" />
+              {t("Etwas war nicht für alle? Tippe es an, um es zu streichen – nochmal tippen holt es zurück.")} <GestureHelp mode="strike" />
             </p>
           )}
           <Receipt
@@ -359,7 +360,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
                 if (!snap.isOwner) confirmScan();
                 replace(snap);
               })
-              .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Beitreten fehlgeschlagen."))
+              .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Beitreten fehlgeschlagen.")))
               .finally(() => (joining.current = false));
           }}
         />

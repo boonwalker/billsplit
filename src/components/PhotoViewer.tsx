@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { t } from "../lib/i18n";
 
 interface Props {
   src: string;
@@ -98,7 +99,7 @@ export default function PhotoViewer({ src, alt, onClose }: Props) {
 
   return (
     <div className="photo-viewer" role="dialog" aria-modal="true" aria-label={alt} style={{ backgroundColor: `rgb(0 0 0 / ${fade})` }}>
-      <button type="button" className="photo-viewer-close" onClick={onClose} aria-label="Schließen">
+      <button type="button" className="photo-viewer-close" onClick={onClose} aria-label={t("Schließen")}>
         ×
       </button>
       <div
@@ -118,7 +119,7 @@ export default function PhotoViewer({ src, alt, onClose }: Props) {
           }}
         />
       </div>
-      <p className="photo-viewer-hint">Zum Schließen nach oben oder unten wischen</p>
+      <p className="photo-viewer-hint">{t("Zum Schließen nach oben oder unten wischen")}</p>
     </div>
   );
 }

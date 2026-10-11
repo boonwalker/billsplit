@@ -3,6 +3,7 @@ import { ApiError } from "./apiError";
 import type { BillSnapshot } from "./bill";
 import { BillCore, BillError, type StoredBill, type StoredTransfer } from "./billCore";
 import { PERSONA_EVENT } from "./demo";
+import { t } from "./i18n";
 import { deviceKey } from "./storage";
 
 const BILLS_KEY = "billsplit.demo.bills";
@@ -106,7 +107,8 @@ function call<T>(fn: () => T): Promise<T> {
   try {
     return Promise.resolve(fn());
   } catch (e) {
-    return Promise.reject(e instanceof BillError ? new ApiError(e.message, e.status) : e);
+    // In the app's language, like the server's answers.
+    return Promise.reject(e instanceof BillError ? new ApiError(t(e.template, e.vars), e.status) : e);
   }
 }
 
@@ -121,7 +123,7 @@ export const localApi: Api = {
   join: (id, name) => call(() => (localStore().join(id, me(), name), view(id))),
   setClaims: (id, claims, splits) => call(() => (localStore().setClaims(id, me(), claims, splits), view(id))),
   async uploadReceiptImage(id, jpeg) {
-    localStore().assertOwner(id, me());
+    await call(() => localStore().assertOwner(id, me()));
     const dataUrl = await blobToDataUrl(jpeg);
     receiptImages.set(id, dataUrl);
     try {
@@ -151,13 +153,13 @@ export const localApi: Api = {
   decideTransfer: (id, action) => call(() => (localStore().decideTransfer(me(), id, action), { me: me(), transfers: localStore().listTransfers(me()) })),
   myBills: () => call(() => localStore().myBills(me())),
   // Moving to another device needs the server: in the demo everything stays in this browser.
-  createDeviceLink: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
-  claimDeviceLink: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
-  mergeDevice: () => Promise.reject(new ApiError("In der Demo gibt es keine Übertragung auf andere Geräte.", 400)),
-  move: () => Promise.reject(new ApiError("In der Demo gibt es keinen Umzug.", 400)),
+  createDeviceLink: () => Promise.reject(new ApiError(t("In der Demo gibt es keine Übertragung auf andere Geräte."), 400)),
+  claimDeviceLink: () => Promise.reject(new ApiError(t("In der Demo gibt es keine Übertragung auf andere Geräte."), 400)),
+  mergeDevice: () => Promise.reject(new ApiError(t("In der Demo gibt es keine Übertragung auf andere Geräte."), 400)),
+  move: () => Promise.reject(new ApiError(t("In der Demo gibt es keinen Umzug."), 400)),
   account: () => Promise.resolve({ account: null }),
-  requestCode: () => Promise.reject(new ApiError("In der Demo gibt es keine Konten.", 400)),
-  verifyCode: () => Promise.reject(new ApiError("In der Demo gibt es keine Konten.", 400)),
+  requestCode: () => Promise.reject(new ApiError(t("In der Demo gibt es keine Konten."), 400)),
+  verifyCode: () => Promise.reject(new ApiError(t("In der Demo gibt es keine Konten."), 400)),
   saveAccountProfile: () => Promise.resolve({ ok: true as const }),
   deleteAccount: () => Promise.resolve({ account: null }),
   subscribeEvents: (onBillChanged) => localStore().listenAll(onBillChanged),

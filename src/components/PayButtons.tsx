@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { t } from "../lib/i18n";
 import type { PaymentInfo } from "../lib/bill";
 import { copyText } from "../lib/clipboard";
 import { clickPress, clickRelease } from "../lib/haptics";
@@ -36,7 +37,7 @@ export default function PayButtons({ payment, amount, currency, recipient, refer
   const fmt = (c: Cents) => formatMoney(c, currency);
   const noWay = action.kind === "none" && others.length === 0;
 
-  if (busy) return <p className="muted small pay-buttons-busy">Wird eingetragen …</p>;
+  if (busy) return <p className="muted small pay-buttons-busy">{t("Wird eingetragen …")}</p>;
 
   return (
     <div className="pay-buttons">
@@ -51,7 +52,7 @@ export default function PayButtons({ payment, amount, currency, recipient, refer
             clickRelease();
           }}
         >
-          {fmt(amount)} an {recipient} zahlen
+          {t("{amount} an {name} zahlen", { amount: fmt(amount), name: recipient })}
         </button>
       )}
       {stage === "copied" && action.kind === "paypalMe" && (
@@ -59,17 +60,17 @@ export default function PayButtons({ payment, amount, currency, recipient, refer
           <p className="paybar-note settle-copied">
             {copied ? (
               <>
-                ✓ {fmt(amount)} in die Zwischenablage kopiert –
+                ✓ {t("{amount} in die Zwischenablage kopiert –", { amount: fmt(amount) })}
                 <span className="paybar-oneline" ref={oneLine}>
-                  in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.
+                  {t("in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.")}
                 </span>
               </>
             ) : (
-              `Trag in PayPal ${fmt(amount)} ein.`
+              t("Trag in PayPal {amount} ein.", { amount: fmt(amount) })
             )}
           </p>
           <a className="btn btn-paypal btn-large" href={action.url} target="_blank" rel="noreferrer" onClick={() => setStage("confirm")}>
-            Mit PayPal bezahlen · {fmt(amount)}
+            {t("Mit PayPal bezahlen · {amount}", { amount: fmt(amount) })}
           </a>
         </>
       )}
@@ -84,12 +85,18 @@ export default function PayButtons({ payment, amount, currency, recipient, refer
             setStage("confirm");
           }}
         >
-          In PayPal bezahlen · {fmt(amount)}
+          {t("In PayPal bezahlen · {amount}", { amount: fmt(amount) })}
         </a>
       )}
       {stage === "pay" && others.length > 0 && (
         <button type="button" className={action.kind === "none" ? "btn btn-paypal btn-large" : "link settle-other"} onClick={() => setTransfer(others[0])}>
-          {action.kind === "none" ? `${fmt(amount)} an ${recipient} zahlen` : `Lieber per ${others.map((m) => (m === "bank" ? "Überweisung" : "Wero")).join(" oder ")}`}
+          {action.kind === "none"
+            ? t("{amount} an {name} zahlen", { amount: fmt(amount), name: recipient })
+            : others.length > 1
+              ? t("Lieber per Überweisung oder Wero")
+              : others[0] === "bank"
+                ? t("Lieber per Überweisung")
+                : t("Lieber per Wero")}
         </button>
       )}
 
@@ -97,17 +104,17 @@ export default function PayButtons({ payment, amount, currency, recipient, refer
         <>
           {stage === "confirm" ? (
             <p className="settle-question">
-              Hast Du {fmt(amount)} an {recipient} gesendet?
+              {t("Hast Du {amount} an {name} gesendet?", { amount: fmt(amount), name: recipient })}
             </p>
           ) : (
-            <p className="muted small">{recipient} hat keine Zahlungsdaten hinterlegt – zahl den Betrag auf anderem Weg.</p>
+            <p className="muted small">{t("{name} hat keine Zahlungsdaten hinterlegt – zahl den Betrag auf anderem Weg.", { name: recipient })}</p>
           )}
           <button type="button" className="btn btn-primary btn-large" onClick={onConfirm}>
             {confirmLabel}
           </button>
           {stage === "confirm" && (
             <button type="button" className="btn btn-ghost" onClick={() => setStage("pay")}>
-              Noch nicht
+              {t("Noch nicht")}
             </button>
           )}
         </>

@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+
 export interface PreparedImage {
   /** Base64 without data-URL prefix. */
   base64: string;
@@ -22,14 +24,14 @@ export async function prepareImage(file: Blob): Promise<PreparedImage> {
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas wird nicht unterstützt.");
+  if (!ctx) throw new Error(t("Canvas wird nicht unterstützt."));
   // Screenshots can be transparent PNGs; JPEG would turn transparency black.
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
   const blob = await new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Bild konnte nicht kodiert werden."))), "image/jpeg", 0.85),
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t("Bild konnte nicht kodiert werden.")))), "image/jpeg", 0.85),
   );
   const base64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();

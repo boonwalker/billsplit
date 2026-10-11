@@ -1,3 +1,4 @@
+import { lang, t } from "./i18n";
 import { ApiError } from "./apiError";
 import type { BillData, BillSnapshot, ItemClaims, MyBill, NetworkEdge, TransferAllocation, TransferList } from "./bill";
 import { checkForUpdate } from "./updates";
@@ -91,7 +92,7 @@ async function request<T>(method: string, path: string, body?: unknown, init?: R
     try {
       res = await fetch(path, {
         method,
-        headers: { "content-type": "application/json", "x-billsplit-key": deviceKey() },
+        headers: { "content-type": "application/json", "x-billsplit-key": deviceKey(), "x-billsplit-lang": lang },
         body: body === undefined ? undefined : JSON.stringify(body),
         ...init,
       });
@@ -101,17 +102,17 @@ async function request<T>(method: string, path: string, body?: unknown, init?: R
       }
       break;
     } catch {
-      if (attempt === attempts) throw new ApiError("Keine Verbindung zum Server.", 0);
+      if (attempt === attempts) throw new ApiError(t("Keine Verbindung zum Server."), 0);
       await wait(1500 * attempt);
     }
   }
-  if (!res) throw new ApiError("Keine Verbindung zum Server.", 0);
+  if (!res) throw new ApiError(t("Keine Verbindung zum Server."), 0);
   const json = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
   if (!res.ok || json === null) {
     const unavailable = res.status === 502 || res.status === 503 || res.status === 504;
     const fallback = unavailable
-      ? "Der Server ist gerade kurz nicht erreichbar (vermutlich ein Update). Bitte gleich nochmal tippen."
-      : `Fehler (HTTP ${res.status}).`;
+      ? t("Der Server ist gerade kurz nicht erreichbar (vermutlich ein Update). Bitte gleich nochmal tippen.")
+      : t("Fehler (HTTP {status}).", { status: res.status });
     throw new ApiError(json?.error ?? fallback, res.status);
   }
   return json;
@@ -130,11 +131,11 @@ const serverApi: Api = {
   async uploadReceiptImage(id, jpeg) {
     const res = await fetch(`${bill(id)}/receipt-image`, {
       method: "PUT",
-      headers: { "content-type": "image/jpeg", "x-billsplit-key": deviceKey() },
+      headers: { "content-type": "image/jpeg", "x-billsplit-key": deviceKey(), "x-billsplit-lang": lang },
       body: jpeg,
     });
     const json = (await res.json().catch(() => null)) as (BillSnapshot & { error?: string }) | null;
-    if (!res.ok || !json) throw new ApiError(json?.error ?? `Fehler (HTTP ${res.status}).`, res.status);
+    if (!res.ok || !json) throw new ApiError(json?.error ?? t("Fehler (HTTP {status}).", { status: res.status }), res.status);
     return json;
   },
   receiptImageUrl: async (id) => `${bill(id)}/receipt-image`,
@@ -150,7 +151,7 @@ const serverApi: Api = {
   createTransfer: (input) => request("POST", "/api/transfers", input),
   decideTransfer: (id, action) => request("POST", `/api/transfers/${encodeURIComponent(id)}/${action}`, {}),
   myBills: async (key) =>
-    (await request<{ bills: MyBill[] }>("GET", "/api/my-bills", undefined, key ? { headers: { "x-billsplit-key": key } } : undefined)).bills,
+    (await request<{ bills: MyBill[] }>("GET", "/api/my-bills", undefined, key ? { headers: { "x-billsplit-key": key, "x-billsplit-lang": lang } } : undefined)).bills,
   createDeviceLink: (profile) => request("POST", "/api/device-link", { profile }),
   claimDeviceLink: (code) => request("POST", `/api/device-link/${encodeURIComponent(code)}`, {}),
   mergeDevice: (code) => request("POST", "/api/merge-device", { code }),

@@ -1,5 +1,6 @@
 import { newItemId, type BillData } from "./bill";
 import { personaDeviceKey } from "./demo";
+import { t } from "./i18n";
 import { localStore, newBillId } from "./localApi";
 import { paymentFromProfile } from "./payment";
 import { loadOwnProfile, rememberBill } from "./storage";
@@ -13,7 +14,7 @@ export function createSampleBill(): string {
   const profile = loadOwnProfile();
   const ids = { pizza: newItemId(), bier: newItemId(), tira: newItemId(), pasta: newItemId(), wasser: newItemId() };
   const data: BillData = {
-    title: "Trattoria Da Mario (Beispiel)",
+    title: t("{name} (Beispiel)", { name: "Trattoria Da Mario" }),
     date: new Date().toISOString().slice(0, 10),
     currency: "EUR",
     tipPercent: 10,
@@ -30,7 +31,7 @@ export function createSampleBill(): string {
   const owner = personaDeviceKey("me");
   const anna = personaDeviceKey("anna");
   const ben = personaDeviceKey("ben");
-  const id = store.create(newBillId(), data, owner, profile.name || "Du");
+  const id = store.create(newBillId(), data, owner, profile.name || t("Du"));
   store.join(id, anna, "Anna");
   store.join(id, ben, "Ben");
   store.setClaims(id, anna, { [ids.pizza]: 1, [ids.bier]: 2 });

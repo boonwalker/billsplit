@@ -1,5 +1,6 @@
 import { useId } from "react";
-import { formatMoney, parseMoney, type Cents } from "../lib/money";
+import { t } from "../lib/i18n";
+import { centsToInput, formatMoney, parseMoney, type Cents } from "../lib/money";
 
 /**
  * "amount" = the tip itself, e.g. 5 €; "total" = the payer enters what they paid in the end and
@@ -57,15 +58,15 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
 
   return (
     <div className="tip-control">
-      <div className="tip-mode" role="radiogroup" aria-label="Trinkgeld angeben als">
+      <div className="tip-mode" role="radiogroup" aria-label={t("Trinkgeld angeben als")}>
         <button type="button" role="radio" aria-checked={value.mode === "amount"} className={value.mode === "amount" ? "on" : ""} onClick={() => set({ mode: "amount" })}>
-          absolut
+          {t("absolut")}
         </button>
         <button type="button" role="radio" aria-checked={value.mode === "percent"} className={value.mode === "percent" ? "on" : ""} onClick={() => set({ mode: "percent" })}>
-          in Prozent
+          {t("in Prozent")}
         </button>
         <button type="button" role="radio" aria-checked={value.mode === "total"} className={value.mode === "total" ? "on" : ""} onClick={() => set({ mode: "total" })}>
-          als Endbetrag
+          {t("als Endbetrag")}
         </button>
       </div>
 
@@ -74,9 +75,9 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
           <input
             id={`${uid}-amount`}
             inputMode="decimal"
-            aria-label="Trinkgeld als Betrag"
+            aria-label={t("Trinkgeld als Betrag")}
             value={value.amount ?? ""}
-            placeholder="0,00"
+            placeholder={centsToInput(0)}
             onChange={(e) => set({ amount: e.target.value.replace(/[^\d.,]/g, "") })}
           />
           <span>{currency === "EUR" ? "€" : currency}</span>
@@ -92,9 +93,9 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
             <input
               id={`${uid}-percent`}
               inputMode="decimal"
-              aria-label="Trinkgeld in Prozent"
+              aria-label={t("Trinkgeld in Prozent")}
               value={value.percent === "0" ? "" : value.percent}
-              placeholder="eigener"
+              placeholder={t("eigener")}
               onChange={(e) => set({ percent: e.target.value.replace(/[^\d.,]/g, "") || "0" })}
             />
             <span>%</span>
@@ -106,15 +107,15 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
             <input
               id={`${uid}-total`}
               inputMode="decimal"
-              aria-label="Endbetrag inklusive Trinkgeld"
+              aria-label={t("Endbetrag inklusive Trinkgeld")}
               value={value.total}
-              placeholder={formatMoney(billAmount, currency).replace(/\s?[^\d.,-]+$/, "")}
+              placeholder={formatMoney(billAmount, currency).replace(/^[^\d-]+|\s?[^\d.,-]+$/g, "")}
               onChange={(e) => set({ total: e.target.value.replace(/[^\d.,]/g, "") })}
             />
             <span>{currency === "EUR" ? "€" : currency}</span>
           </label>
           {enteredTotal !== null && enteredTotal < billAmount && (
-            <p className="tip-hint">Der Endbetrag liegt unter dem Rechnungsbetrag von {formatMoney(billAmount, currency)}.</p>
+            <p className="tip-hint">{t("Der Endbetrag liegt unter dem Rechnungsbetrag von {amount}.", { amount: formatMoney(billAmount, currency) })}</p>
           )}
         </>
       )}
@@ -122,46 +123,46 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
       {showPersons && (
       <label className="tip-persons">
         <span>
-          Aufteilen auf
-          <small>optional</small>
+          {t("Aufteilen auf")}
+          <small>{t("optional")}</small>
         </span>
         <input
           id={`${uid}-persons`}
           inputMode="numeric"
-          aria-label="Trinkgeld aufteilen auf Personen"
+          aria-label={t("Trinkgeld aufteilen auf Personen")}
           value={value.persons}
-          placeholder="auto"
+          placeholder={t("auto")}
           onChange={(e) => set({ persons: e.target.value.replace(/\D/g, "").slice(0, 3) })}
         />
-        <span>Personen</span>
+        <span>{t("Personen")}</span>
       </label>
       )}
       {showPersons && (
         <p className="tip-hint">
           {persons
-            ? `Inklusive Dir. Wer später scannt, wird mitgezählt – es werden aber mindestens ${persons} Personen angenommen.`
-            : "Leer lassen: Gezählt wird automatisch, wer den QR-Code scannt, plus du."}
+            ? t("Inklusive Dir. Wer später scannt, wird mitgezählt – es werden aber mindestens {n} Personen angenommen.", { n: persons })
+            : t("Leer lassen: Gezählt wird automatisch, wer den QR-Code scannt, plus Du.")}
         </p>
       )}
 
       <dl className="tip-preview">
-        <dt>Rechnung</dt>
+        <dt>{t("Rechnung")}</dt>
         <dd>{formatMoney(subtotal, currency)}</dd>
         {fees !== 0 && (
           <>
-            <dt>+ Gebühren</dt>
+            <dt>{t("+ Gebühren")}</dt>
             <dd>{formatMoney(fees, currency)}</dd>
           </>
         )}
-        <dt>+ Trinkgeld</dt>
+        <dt>{t("+ Trinkgeld")}</dt>
         <dd>{formatMoney(tip, currency)}</dd>
         {persons && tip + fees !== 0 && (
           <>
-            <dt>{fees !== 0 ? "Gebühren & Trinkgeld pro Person" : "Trinkgeld pro Person"}</dt>
+            <dt>{fees !== 0 ? t("Gebühren & Trinkgeld pro Person") : t("Trinkgeld pro Person")}</dt>
             <dd>{formatMoney(Math.round((tip + fees) / persons), currency)}</dd>
           </>
         )}
-        <dt className="strong">Du hast bezahlt</dt>
+        <dt className="strong">{t("Du hast bezahlt")}</dt>
         <dd className="strong">{formatMoney(subtotal + fees + tip, currency)}</dd>
       </dl>
     </div>

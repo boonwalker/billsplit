@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { copyText } from "../lib/clipboard";
 import { deviceLinkUrl, takeOverDevice } from "../lib/deviceTransfer";
+import { rich, t } from "../lib/i18n";
 import { navigate } from "../lib/router";
 import { deviceKey, isDeviceKey, loadOwnProfile, loadRecent } from "../lib/storage";
 import QrCode from "./QrCode";
@@ -49,26 +50,26 @@ export default function DeviceTransfer() {
       setLink({ url: deviceLinkUrl(code), expires: Date.parse(expiresAt) });
       setNow(Date.now());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Das hat nicht geklappt.");
+      setError(e instanceof Error ? e.message : t("Das hat nicht geklappt."));
     }
   }
 
   async function restore() {
     const key = input.replace(/\s+/g, "");
-    if (!isDeviceKey(key)) return setError("Das ist kein Wiederherstellungs-Code – bitte prüfe ihn.");
-    if (key === deviceKey()) return setError("Das ist der Code dieses Geräts.");
+    if (!isDeviceKey(key)) return setError(t("Das ist kein Wiederherstellungs-Code – bitte prüfe ihn."));
+    if (key === deviceKey()) return setError(t("Das ist der Code dieses Geräts."));
     setRestoring(true);
     setError(null);
     try {
       const bills = await api.myBills(key);
       if (!bills.length) {
-        setError("Zu diesem Code gibt es keine Rechnungen (mehr). Bitte prüfe ihn.");
+        setError(t("Zu diesem Code gibt es keine Rechnungen (mehr). Bitte prüfe ihn."));
         return;
       }
       // The profile stays as it is here; the bills (and their names) come from the code.
       setRestored(await takeOverDevice(key, null));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Das hat nicht geklappt.");
+      setError(e instanceof Error ? e.message : t("Das hat nicht geklappt."));
     } finally {
       setRestoring(false);
     }
@@ -79,21 +80,23 @@ export default function DeviceTransfer() {
   return (
     <div className="card device-transfer">
       <p className="muted small">
-        Deine Rechnungen hängen an diesem Gerät. Damit sie bei einem neuen Handy oder gelöschtem Browser-Speicher nicht verloren
-        gehen:
+        {t("Deine Rechnungen hängen an diesem Gerät. Damit sie bei einem neuen Handy oder gelöschtem Browser-Speicher nicht verloren gehen:")}
       </p>
 
       <button type="button" className="btn btn-ghost" onClick={showLink}>
-        Auf neues Gerät übertragen
+        {t("Auf neues Gerät übertragen")}
       </button>
       {open === "link" && (
         <div className="device-panel">
           {link && left > 0 ? (
             <>
-              <QrCode value={link.url} label="QR-Code zum Übertragen auf ein neues Gerät" />
+              <QrCode value={link.url} label={t("QR-Code zum Übertragen auf ein neues Gerät")} />
               <p className="small">
-                Auf dem neuen Gerät klicksplit öffnen und <b>„QR-Code scannen“</b> antippen. Gilt noch{" "}
-                {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")} Minuten und nur einmal.
+                {rich(
+                  t("Auf dem neuen Gerät klicksplit öffnen und <b>„QR-Code scannen“</b> antippen. Gilt noch {time} Minuten und nur einmal.", {
+                    time: `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`,
+                  }),
+                )}
               </p>
               <button
                 type="button"
@@ -103,21 +106,21 @@ export default function DeviceTransfer() {
                   setCopied("link");
                 }}
               >
-                {copied === "link" ? "✓ Link kopiert" : "Stattdessen Link kopieren"}
+                {copied === "link" ? t("✓ Link kopiert") : t("Stattdessen Link kopieren")}
               </button>
             </>
           ) : link ? (
             <button type="button" className="link small" onClick={() => void createLink()}>
-              Abgelaufen – neuen QR-Code zeigen
+              {t("Abgelaufen – neuen QR-Code zeigen")}
             </button>
           ) : (
-            !error && <p className="muted small">QR-Code wird erstellt …</p>
+            !error && <p className="muted small">{t("QR-Code wird erstellt …")}</p>
           )}
         </div>
       )}
 
       <button type="button" className="btn btn-ghost" onClick={() => toggle("code")}>
-        Wiederherstellungs-Code anzeigen
+        {t("Wiederherstellungs-Code anzeigen")}
       </button>
       {open === "code" && (
         <div className="device-panel">
@@ -130,24 +133,27 @@ export default function DeviceTransfer() {
               setCopied("code");
             }}
           >
-            {copied === "code" ? "✓ Kopiert" : "Kopieren"}
+            {copied === "code" ? t("✓ Kopiert") : t("Kopieren")}
           </button>
           <p className="muted small">
-            Bewahre ihn sicher auf, z. B. in Deinem Passwort-Manager. Damit holst Du Deine Rechnungen auf jedes Gerät zurück –
-            und wer ihn hat, kann in Deinem Namen abhaken und Zahlungen bestätigen. Gib ihn niemandem.
+            {t(
+              "Bewahre ihn sicher auf, z. B. in Deinem Passwort-Manager. Damit holst Du Deine Rechnungen auf jedes Gerät zurück – und wer ihn hat, kann in Deinem Namen abhaken und Zahlungen bestätigen. Gib ihn niemandem.",
+            )}
           </p>
         </div>
       )}
 
       <button type="button" className="link small device-restore-toggle" onClick={() => toggle("restore")}>
-        Wiederherstellungs-Code eingeben
+        {t("Wiederherstellungs-Code eingeben")}
       </button>
       {open === "restore" &&
         (restored !== null ? (
           <div className="device-panel">
-            <p className="settle-done">✓ {restored === 1 ? "1 Rechnung" : `${restored} Rechnungen`} wiederhergestellt</p>
+            <p className="settle-done">
+              {restored === 1 ? t("✓ 1 Rechnung wiederhergestellt") : t("✓ {count} Rechnungen wiederhergestellt", { count: restored })}
+            </p>
             <button type="button" className="btn btn-primary" onClick={() => navigate("/")}>
-              Zu Deinen Rechnungen
+              {t("Zu Deinen Rechnungen")}
             </button>
           </div>
         ) : (
@@ -156,7 +162,7 @@ export default function DeviceTransfer() {
               className="recovery-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Wiederherstellungs-Code einfügen"
+              placeholder={t("Wiederherstellungs-Code einfügen")}
               rows={3}
               autoCapitalize="off"
               autoCorrect="off"
@@ -164,12 +170,13 @@ export default function DeviceTransfer() {
             />
             {here > 0 && (
               <p className="muted small">
-                Die {here === 1 ? "Rechnung" : `${here} Rechnungen`} auf diesem Gerät {here === 1 ? "wird" : "werden"} dabei durch die
-                des Codes ersetzt.
+                {here === 1
+                  ? t("Die Rechnung auf diesem Gerät wird dabei durch die des Codes ersetzt.")
+                  : t("Die {count} Rechnungen auf diesem Gerät werden dabei durch die des Codes ersetzt.", { count: here })}
               </p>
             )}
             <button type="button" className="btn btn-primary" disabled={restoring || !input.trim()} onClick={restore}>
-              {restoring ? "Wird wiederhergestellt …" : "Rechnungen wiederherstellen"}
+              {restoring ? t("Wird wiederhergestellt …") : t("Rechnungen wiederherstellen")}
             </button>
           </div>
         ))}

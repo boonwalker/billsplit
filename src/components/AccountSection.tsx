@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { deleteAccount, refreshAccount, signOut } from "../lib/account";
+import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
 import { loadAccountEmail, loadOwnProfile } from "../lib/storage";
 import AccountForm from "./AccountForm";
@@ -26,11 +27,11 @@ export default function AccountSection() {
       <div className="card account-card">
         <p className="account-status">
           <span className="account-dot off" aria-hidden="true" />
-          Nicht angemeldet
+          {t("Nicht angemeldet")}
         </p>
-        <p className="muted small">Mit Deiner E-Mail-Adresse sind Deine Rechnungen auf jedem Gerät da – ohne Passwort, mit einem Code per Mail.</p>
+        <p className="muted small">{t("Mit Deiner E-Mail-Adresse sind Deine Rechnungen auf jedem Gerät da – ohne Passwort, mit einem Code per Mail.")}</p>
         <button type="button" className="btn btn-secondary" onClick={() => setSigningIn(true)}>
-          Anmelden oder Konto anlegen
+          {t("Anmelden oder Konto anlegen")}
         </button>
       </div>
     );
@@ -41,7 +42,7 @@ export default function AccountSection() {
       <div className="card account-card">
         <AccountForm
           onSkip={() => setSigningIn(false)}
-          skipLabel="Abbrechen"
+          skipLabel={t("Abbrechen")}
           heading={false}
           onDone={(result) => {
             // Signed in to an existing account: this device has its bills now.
@@ -65,7 +66,7 @@ export default function AccountSection() {
       setEmail(null);
       setAsk(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Das hat nicht geklappt.");
+      setError(e instanceof Error ? e.message : t("Das hat nicht geklappt."));
     } finally {
       setBusy(false);
     }
@@ -73,7 +74,7 @@ export default function AccountSection() {
 
   return (
     <div className="card account-card">
-      {created && <p className="settle-done">✓ Konto angelegt</p>}
+      {created && <p className="settle-done">{t("✓ Konto angelegt")}</p>}
       <div className="account-who">
         <span className="account-avatar" aria-hidden="true">
           {(loadOwnProfile().name.trim() || email).slice(0, 1).toUpperCase()}
@@ -81,19 +82,18 @@ export default function AccountSection() {
         <span>
           <span className="account-status">
             <span className="account-dot" aria-hidden="true" />
-            Angemeldet
+            {t("Angemeldet")}
           </span>
           <b className="account-email">{email}</b>
         </span>
       </div>
       <p className="muted small">
-        Deine Rechnungen, Dein Profil und Deine Bilanz hängen an diesem Konto. Auf einem anderen Gerät meldest Du Dich mit
-        derselben Adresse an – dann ist dort alles da.
+        {t("Deine Rechnungen, Dein Profil und Deine Bilanz hängen an diesem Konto. Auf einem anderen Gerät meldest Du Dich mit derselben Adresse an – dann ist dort alles da.")}
       </p>
       {error && <p className="alert">{error}</p>}
       {ask === "signout" ? (
         <div className="account-ask">
-          <p className="small">Auf diesem Gerät abmelden? Deine Rechnungen bleiben im Konto; das Gerät startet danach leer.</p>
+          <p className="small">{t("Auf diesem Gerät abmelden? Deine Rechnungen bleiben im Konto; das Gerät startet danach leer.")}</p>
           <button
             type="button"
             className="btn btn-secondary"
@@ -102,32 +102,31 @@ export default function AccountSection() {
               navigate("/", { replace: true });
             }}
           >
-            Ja, abmelden
+            {t("Ja, abmelden")}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setAsk(null)}>
-            Abbrechen
+            {t("Abbrechen")}
           </button>
         </div>
       ) : ask === "delete" ? (
         <div className="account-ask">
           <p className="small">
-            Konto löschen? Die E-Mail-Adresse wird gelöscht. Deine Rechnungen bleiben auf diesem Gerät, auf anderen Geräten
-            kannst Du Dich dann aber nicht mehr damit anmelden.
+            {t("Konto löschen? Die E-Mail-Adresse wird gelöscht. Deine Rechnungen bleiben auf diesem Gerät, auf anderen Geräten kannst Du Dich dann aber nicht mehr damit anmelden.")}
           </p>
           <button type="button" className="btn btn-danger" disabled={busy} onClick={remove}>
-            {busy ? "Wird gelöscht …" : "Ja, Konto löschen"}
+            {busy ? t("Wird gelöscht …") : t("Ja, Konto löschen")}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setAsk(null)}>
-            Abbrechen
+            {t("Abbrechen")}
           </button>
         </div>
       ) : (
         <div className="account-links">
           <button type="button" className="btn btn-ghost" onClick={() => setAsk("signout")}>
-            Abmelden
+            {t("Abmelden")}
           </button>
           <button type="button" className="btn btn-ghost danger-text" onClick={() => setAsk("delete")}>
-            Konto löschen
+            {t("Konto löschen")}
           </button>
         </div>
       )}

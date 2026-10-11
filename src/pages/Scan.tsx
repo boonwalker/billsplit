@@ -4,6 +4,7 @@ import Header from "../components/Header";
 import { billIdFromUrl } from "../lib/bill";
 import { deviceCodeFromUrl } from "../lib/deviceTransfer";
 import { confirmScan } from "../lib/haptics";
+import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
 
 /** In-app QR scanner for friends: opens the scanned bill directly in billsplit. */
@@ -40,7 +41,7 @@ export default function Scan() {
             navigate(id ? `/b/${id}` : `/geraet/${device}`, { replace: true });
             return;
           }
-          setHint("Das ist kein klicksplit-QR-Code.");
+          setHint(t("Das ist kein klicksplit-QR-Code."));
         }
       }
       raf = requestAnimationFrame(tick);
@@ -49,20 +50,20 @@ export default function Scan() {
     navigator.mediaDevices
       ?.getUserMedia({ video: { facingMode: "environment" }, audio: false })
       .then((s) => {
-        if (stopped) return s.getTracks().forEach((t) => t.stop());
+        if (stopped) return s.getTracks().forEach((track) => track.stop());
         stream = s;
         const video = videoRef.current!;
         video.srcObject = s;
         void video.play();
         raf = requestAnimationFrame(tick);
       })
-      .catch(() => setError("Kein Kamerazugriff. Erlaube die Kamera in den Browser-Einstellungen oder füge den Link unten ein."));
-    if (!navigator.mediaDevices) setError("Dein Browser unterstützt keinen Kamerazugriff. Füge den Link unten ein.");
+      .catch(() => setError(t("Kein Kamerazugriff. Erlaube die Kamera in den Browser-Einstellungen oder füge den Link unten ein.")));
+    if (!navigator.mediaDevices) setError(t("Dein Browser unterstützt keinen Kamerazugriff. Füge den Link unten ein."));
 
     return () => {
       stopped = true;
       cancelAnimationFrame(raf);
-      stream?.getTracks().forEach((t) => t.stop());
+      stream?.getTracks().forEach((track) => track.stop());
     };
   }, []);
 
@@ -71,7 +72,7 @@ export default function Scan() {
 
   return (
     <div className="page scan-page">
-      <Header back="/" title="QR-Code scannen" />
+      <Header back="/" title={t("QR-Code scannen")} />
       <main className="content">
         <div className="viewfinder">
           <video ref={videoRef} playsInline muted />
@@ -83,7 +84,7 @@ export default function Scan() {
           </div>
           <div className="viewfinder-laser" aria-hidden="true" />
         </div>
-        <p className="muted center-text">Richte die Kamera auf den QR-Code auf dem Handy Deines Freundes.</p>
+        <p className="muted center-text">{t("Richte die Kamera auf den QR-Code auf dem Handy Deines Freundes.")}</p>
         {hint && <p className="warning center-text">{hint}</p>}
         {error && <div className="alert">{error}</div>}
 
@@ -96,11 +97,11 @@ export default function Scan() {
           }}
         >
           <label className="field">
-            <span>Oder Link einfügen</span>
+            <span>{t("Oder Link einfügen")}</span>
             <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="https://…/#/b/…" />
           </label>
           <button className="btn btn-secondary" disabled={!manualId && !manualDevice}>
-            {manualDevice ? "Gerät übernehmen" : "Rechnung öffnen"}
+            {manualDevice ? t("Gerät übernehmen") : t("Rechnung öffnen")}
           </button>
         </form>
       </main>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { t } from "../../lib/i18n";
 import { scrollBehavior } from "../../lib/motion";
 
 /**
@@ -73,7 +74,7 @@ export default function ReceiptPeek({
       className={`receipt-peek${peek === "following" ? " following" : ""}`}
       style={{ bottom, ...(box ? { left: box.left, width: box.width, transform: "none" } : {}) }}
       onClick={() => document.querySelector("#receipt .receipt-paper")?.scrollIntoView({ behavior: scrollBehavior(), block: "start" })}
-      aria-label="Zur interaktiven Rechnung"
+      aria-label={t("Zur interaktiven Rechnung")}
     >
       {/* The same paper as the receipt itself, so the hand-over is seamless. */}
       <span className="receipt-paper receipt-peek-paper">
@@ -81,9 +82,9 @@ export default function ReceiptPeek({
           <span className="receipt-logo" aria-hidden="true">
             ✦
           </span>
-          <span className="receipt-peek-title">{title || "Rechnung"}</span>
+          <span className="receipt-peek-title">{title || t("Rechnung")}</span>
           {/* For the payer every bill is interactive (crossing out, holding, equal split or not). */}
-          <span className="receipt-peek-hint">Deine interaktive Rechnung ist fertig ↓</span>
+          <span className="receipt-peek-hint">{t("Deine interaktive Rechnung ist fertig ↓")}</span>
         </span>
       </span>
     </button>

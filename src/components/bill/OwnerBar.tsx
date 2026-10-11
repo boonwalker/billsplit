@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { BillSnapshot } from "../../lib/bill";
+import { t } from "../../lib/i18n";
 import { formatMoney } from "../../lib/money";
 
 /** The payer's bar at the bottom: what is still missing; away at the end of the page, where the panel says the same. */
@@ -27,9 +28,12 @@ export default function OwnerBar({
     <div className={`ownerbar${away ? " away" : ""}`} aria-hidden={away} ref={ref}>
       <div className="ownerbar-inner">
         <span>
-          Dir fehlen noch
+          {t("Dir fehlen noch")}
           <small>
-            {snap.debtors?.filter((d) => d.payClickedAt).length ?? 0} von {snap.debtors?.length ?? 0} haben auf Bezahlen getippt
+            {t("{tapped} von {count} haben auf Bezahlen getippt", {
+              tapped: snap.debtors?.filter((d) => d.payClickedAt).length ?? 0,
+              count: snap.debtors?.length ?? 0,
+            })}
           </small>
         </span>
         <strong>{formatMoney(missing, snap.data.currency)}</strong>

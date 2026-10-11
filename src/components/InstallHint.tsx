@@ -1,3 +1,4 @@
+import { rich, t } from "../lib/i18n";
 import OpenInApp from "./OpenInApp";
 
 /**
@@ -8,25 +9,23 @@ import OpenInApp from "./OpenInApp";
 export default function InstallHint({ url, onClose }: { url: string; onClose: () => void }) {
   return (
     <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet install-hint" role="dialog" aria-label="klicksplit auf den Home-Bildschirm">
-        <h2>klicksplit auf Deinen Home-Bildschirm</h2>
-        <p className="muted">Dann hast Du Deine Rechnungen, Deine Bilanz und Benachrichtigungen immer dabei – und Deine Freunde zahlen Dir mit einem Tipp.</p>
+      <div className="sheet install-hint" role="dialog" aria-label={t("klicksplit auf den Home-Bildschirm")}>
+        <h2>{t("klicksplit auf Deinen Home-Bildschirm")}</h2>
+        <p className="muted">{t("Dann hast Du Deine Rechnungen, Deine Bilanz und Benachrichtigungen immer dabei – und Deine Freunde zahlen Dir mit einem Tipp.")}</p>
         <ol className="install-steps">
           <li>
-            Tippe auf <b>„In der App öffnen“</b> – diese Rechnung und was Du hier abgehakt hast, kommen mit.
+            {rich(t("Tippe auf <b>„In der App öffnen“</b> – diese Rechnung und was Du hier abgehakt hast, kommen mit."))}
           </li>
           <li>
-            Dann unten in Safari auf <b>Teilen</b>{" "}
-            <ShareIcon />{" "}
-            und <b>„Zum Home-Bildschirm“</b>.
+            {rich(t("Dann unten in Safari auf <b>Teilen</b>"))} <ShareIcon /> {rich(t("und <b>„Zum Home-Bildschirm“</b>."))}
           </li>
           <li>
-            klicksplit dort öffnen und <b>„Kopierten Link öffnen“</b> tippen.
+            {rich(t("klicksplit dort öffnen und <b>„Kopierten Link öffnen“</b> tippen."))}
           </li>
         </ol>
         <OpenInApp url={url} carry compact />
         <button type="button" className="btn btn-ghost" onClick={onClose}>
-          Später
+          {t("Später")}
         </button>
       </div>
     </div>
@@ -36,7 +35,7 @@ export default function InstallHint({ url, onClose }: { url: string; onClose: ()
 /** Safari's share symbol, as it looks in the toolbar. */
 export function ShareIcon() {
   return (
-    <svg className="install-share" viewBox="0 0 24 24" aria-label="Teilen-Symbol">
+    <svg className="install-share" viewBox="0 0 24 24" aria-label={t("Teilen-Symbol")}>
       <path d="M12 3v12M8 7l4-4 4 4" />
       <path d="M6 11v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8" />
     </svg>

@@ -1,16 +1,17 @@
 import { useState, type FormEvent } from "react";
 import { formatIban, isValidEmail, isValidIban, isValidWero, normalizeIban, normalizePaypalMe } from "../lib/payment";
 import { accountsAvailable, saveProfileEverywhere } from "../lib/account";
+import { t } from "../lib/i18n";
 import { hasPaymentMethod, loadAccountEmail, loadOwnProfile } from "../lib/storage";
 import AccountForm from "./AccountForm";
 import { Wordmark } from "./Logo";
 
 type Method = "paypal" | "bank" | "wero";
 
-const METHODS: { id: Method; label: string; hint: string }[] = [
-  { id: "paypal", label: "PayPal", hint: "PayPal.Me-Name oder E-Mail" },
-  { id: "bank", label: "Überweisung", hint: "IBAN – jede Bank" },
-  { id: "wero", label: "Wero", hint: "Handynummer oder E-Mail" },
+const methods = (): { id: Method; label: string; hint: string }[] => [
+  { id: "paypal", label: "PayPal", hint: t("PayPal.Me-Name oder E-Mail") },
+  { id: "bank", label: t("Überweisung"), hint: t("IBAN – jede Bank") },
+  { id: "wero", label: "Wero", hint: t("Handynummer oder E-Mail") },
 ];
 
 /**
@@ -23,7 +24,7 @@ const METHODS: { id: Method; label: string; hint: string }[] = [
  */
 export default function ProfileWizard({
   role,
-  hint = "Während klicksplit Deinen Beleg liest …",
+  hint = t("Während klicksplit Deinen Beleg liest …"),
   onDone,
 }: {
   role: "payer" | "guest";
@@ -87,17 +88,17 @@ export default function ProfileWizard({
             <Wordmark size={44} />
           </div>
           {role === "payer" && <p className="wizard-step">{hint}</p>}
-          <h2>Wie heißt Du?</h2>
-          <p className="muted">So sehen Dich Deine Freunde auf der Rechnung.</p>
-          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" maxLength={40} autoComplete="given-name" />
+          <h2>{t("Wie heißt Du?")}</h2>
+          <p className="muted">{t("So sehen Dich Deine Freunde auf der Rechnung.")}</p>
+          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Dein Name")} maxLength={40} autoComplete="given-name" />
           <button className="btn btn-primary btn-large" disabled={!name.trim()}>
-            Weiter
+            {t("Weiter")}
           </button>
         </form>
       ) : step === "email" ? (
-        <div className="sheet wizard" key="email" role="dialog" aria-label="Deine E-Mail-Adresse">
+        <div className="sheet wizard" key="email" role="dialog" aria-label={t("Deine E-Mail-Adresse")}>
           <AccountForm
-            lead={role === "guest" && first === "email" ? <p className="wizard-step">✓ Erledigt. Damit Du Deine Rechnungen überall wiederfindest:</p> : undefined}
+            lead={role === "guest" && first === "email" ? <p className="wizard-step">{t("✓ Erledigt. Damit Du Deine Rechnungen überall wiederfindest:")}</p> : undefined}
             onDone={(result) => {
               const login = result === "login";
               if (login) setSwitched(true);
@@ -109,15 +110,17 @@ export default function ProfileWizard({
           />
         </div>
       ) : step === "method" ? (
-        <div className="sheet wizard" key="method" role="dialog" aria-label="Wie willst Du bezahlt werden?">
-          {role === "guest" && <p className="wizard-step">{first === "method" ? "✓ Erledigt. " : ""}Und wenn Du mal eine Rechnung zahlst:</p>}
-          <h2>Wie willst Du bezahlt werden?</h2>
+        <div className="sheet wizard" key="method" role="dialog" aria-label={t("Wie willst Du bezahlt werden?")}>
+          {role === "guest" && <p className="wizard-step">
+              {first === "method" ? t("✓ Erledigt. Und wenn Du mal eine Rechnung zahlst:") : t("Und wenn Du mal eine Rechnung zahlst:")}
+            </p>}
+          <h2>{t("Wie willst Du bezahlt werden?")}</h2>
           <p className="muted">
-            {role === "payer" ? "Deine Freunde bezahlen Dich damit mit einem Tipp." : "Dann bezahlen Dich Deine Freunde mit einem Tipp."} Weitere Wege
-            kannst Du später im Profil ergänzen.
+            {role === "payer" ? t("Deine Freunde bezahlen Dich damit mit einem Tipp.") : t("Dann bezahlen Dich Deine Freunde mit einem Tipp.")}{" "}
+            {t("Weitere Wege kannst Du später im Profil ergänzen.")}
           </p>
           <div className="wizard-methods">
-            {METHODS.map((m) => (
+            {methods().map((m) => (
               <button
                 key={m.id}
                 type="button"
@@ -136,21 +139,21 @@ export default function ProfileWizard({
           </div>
           {role === "guest" && (
             <button type="button" className="btn btn-ghost" onClick={() => onDone(false, switched)}>
-              Später
+              {t("Später")}
             </button>
           )}
         </div>
       ) : (
         <form className="sheet wizard" key="details" onSubmit={save}>
-          <h2>{method === "paypal" ? "PayPal" : method === "bank" ? "Überweisung" : "Wero"}</h2>
+          <h2>{method === "paypal" ? "PayPal" : method === "bank" ? t("Überweisung") : "Wero"}</h2>
           <label className="field">
-            <span>{method === "paypal" ? "PayPal.Me-Name oder E-Mail-Adresse" : method === "bank" ? "IBAN" : "Handynummer oder E-Mail für Wero"}</span>
+            <span>{method === "paypal" ? t("PayPal.Me-Name oder E-Mail-Adresse") : method === "bank" ? "IBAN" : t("Handynummer oder E-Mail für Wero")}</span>
             <input
               autoFocus
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onBlur={() => method === "bank" && isValidIban(value) && setValue(formatIban(value))}
-              placeholder={method === "paypal" ? "z. B. niklas oder du@beispiel.de" : method === "bank" ? "DE00 0000 0000 0000 0000 00" : "+49 170 1234567"}
+              placeholder={method === "paypal" ? t("z. B. niklas oder du@beispiel.de") : method === "bank" ? "DE00 0000 0000 0000 0000 00" : "+49 170 1234567"}
               inputMode={method === "wero" || method === "paypal" ? "email" : "text"}
               autoCapitalize={method === "bank" ? "characters" : "off"}
               autoCorrect="off"
@@ -160,24 +163,24 @@ export default function ProfileWizard({
             {touched && invalid ? (
               <small className="error">
                 {method === "paypal"
-                  ? "Bitte gib Deinen PayPal.Me-Namen oder Deine PayPal-E-Mail-Adresse ein."
+                  ? t("Bitte gib Deinen PayPal.Me-Namen oder Deine PayPal-E-Mail-Adresse ein.")
                   : method === "bank"
-                    ? "Diese IBAN stimmt nicht – bitte prüfe sie."
-                    : "Bitte gib eine Handynummer oder E-Mail-Adresse ein."}
+                    ? t("Diese IBAN stimmt nicht – bitte prüfe sie.")
+                    : t("Bitte gib eine Handynummer oder E-Mail-Adresse ein.")}
               </small>
             ) : (
               <small className="muted">
                 {method === "paypal"
-                  ? "Mit PayPal.Me landen Deine Freunde direkt im ausgefüllten Bezahlschritt (Empfänger und Betrag)."
+                  ? t("Mit PayPal.Me landen Deine Freunde direkt im ausgefüllten Bezahlschritt (Empfänger und Betrag).")
                   : method === "bank"
-                    ? "Deine Freunde kopieren IBAN und Betrag in ihre Banking-App."
-                    : "Mit Wero in der Banking-App (z. B. Sparkasse, Volksbank, ING) senden Dir Deine Freunde Geld."}
+                    ? t("Deine Freunde kopieren IBAN und Betrag in ihre Banking-App.")
+                    : t("Mit Wero in der Banking-App (z. B. Sparkasse, Volksbank, ING) senden Dir Deine Freunde Geld.")}
               </small>
             )}
           </label>
-          <button className="btn btn-primary btn-large">Profil speichern</button>
+          <button className="btn btn-primary btn-large">{t("Profil speichern")}</button>
           <button type="button" className="btn btn-ghost" onClick={() => setStep("method")}>
-            Andere Zahlungsart
+            {t("Andere Zahlungsart")}
           </button>
         </form>
       )}

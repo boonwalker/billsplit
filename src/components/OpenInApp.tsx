@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { copyText } from "../lib/clipboard";
 import { withMergeCode } from "../lib/deviceTransfer";
 import { announceHandoff } from "../lib/handoff";
+import { rich, t } from "../lib/i18n";
 import { loadOwnProfile } from "../lib/storage";
 
 /** A one-time code is valid for 10 minutes; a fresh one is fetched a little before. */
@@ -51,14 +52,15 @@ export default function OpenInApp({ url, carry = false, compact = false }: { url
   if (copied) {
     return (
       <div className="open-in-app done" role="status">
-        <b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“
-        {carry && code ? " – was Du hier abgehakt hast, kommt mit" : ""}.
+        {carry && code
+          ? rich(t("<b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“ – was Du hier abgehakt hast, kommt mit."))
+          : rich(t("<b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“."))}
       </div>
     );
   }
   return (
     <div className={`open-in-app${compact ? " compact" : ""}`}>
-      {!compact && <span>klicksplit auf dem Home-Bildschirm?</span>}
+      {!compact && <span>{t("klicksplit auf dem Home-Bildschirm?")}</span>}
       <button
         type="button"
         className={compact ? "btn btn-primary btn-large" : "btn btn-small"}
@@ -68,7 +70,7 @@ export default function OpenInApp({ url, carry = false, compact = false }: { url
           setCopied(true);
         }}
       >
-        In der App öffnen
+        {t("In der App öffnen")}
       </button>
     </div>
   );

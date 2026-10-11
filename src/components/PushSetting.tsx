@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { t } from "../lib/i18n";
 import { disablePush, enablePush, pushState, type PushState } from "../lib/push";
 
 const ASKED_KEY = "billsplit.pushAsked";
@@ -32,7 +33,7 @@ export default function PushSetting({ variant }: { variant: "prompt" | "setting"
     try {
       setState(await (on ? enablePush() : disablePush()));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Das hat nicht geklappt.");
+      setError(e instanceof Error ? e.message : t("Das hat nicht geklappt."));
     } finally {
       setBusy(false);
     }
@@ -51,8 +52,8 @@ export default function PushSetting({ variant }: { variant: "prompt" | "setting"
     if (state !== "off" || dismissed) return null;
     return (
       <div className="card push-prompt">
-        <h4>Benachrichtigen, wenn Geld eingeht?</h4>
-        <p className="muted small">klicksplit sagt Dir Bescheid, wenn Dir jemand etwas sendet, eine Zahlung Deine Bestätigung braucht oder Deine Zahlung bestätigt wurde.</p>
+        <h4>{t("Benachrichtigen, wenn Geld eingeht?")}</h4>
+        <p className="muted small">{t("klicksplit sagt Dir Bescheid, wenn Dir jemand etwas sendet, eine Zahlung Deine Bestätigung braucht oder Deine Zahlung bestätigt wurde.")}</p>
         {error && <p className="alert">{error}</p>}
         <div className="inbox-actions">
           <button
@@ -61,10 +62,10 @@ export default function PushSetting({ variant }: { variant: "prompt" | "setting"
             disabled={busy}
             onClick={() => void change(true)}
           >
-            Einschalten
+            {t("Einschalten")}
           </button>
           <button type="button" className="btn btn-ghost" disabled={busy} onClick={dismiss}>
-            Nicht jetzt
+            {t("Nicht jetzt")}
           </button>
         </div>
       </div>
@@ -76,17 +77,16 @@ export default function PushSetting({ variant }: { variant: "prompt" | "setting"
     <div className="card push-setting">
       {state === "needs-app" ? (
         <p className="muted small">
-          Benachrichtigungen gibt es auf dem iPhone nur in der klicksplit-App vom Home-Bildschirm: In Safari auf „Teilen“ → „Zum
-          Home-Bildschirm“ tippen und klicksplit dort öffnen.
+          {t("Benachrichtigungen gibt es auf dem iPhone nur in der klicksplit-App vom Home-Bildschirm: In Safari auf „Teilen“ → „Zum Home-Bildschirm“ tippen und klicksplit dort öffnen.")}
         </p>
       ) : state === "denied" ? (
-        <p className="muted small">Benachrichtigungen sind für klicksplit blockiert. Du kannst sie in den Einstellungen Deines Geräts wieder erlauben.</p>
+        <p className="muted small">{t("Benachrichtigungen sind für klicksplit blockiert. Du kannst sie in den Einstellungen Deines Geräts wieder erlauben.")}</p>
       ) : (
         <>
           <label className="push-switch">
             <span>
-              <b>Benachrichtigungen</b>
-              <small className="muted">Wenn Dir jemand etwas sendet, bezahlt oder Deine Zahlung bestätigt.</small>
+              <b>{t("Benachrichtigungen")}</b>
+              <small className="muted">{t("Wenn Dir jemand etwas sendet, bezahlt oder Deine Zahlung bestätigt.")}</small>
             </span>
             {/* The real checkbox stays for screen readers and keyboards; drawn like the app's other switches. */}
             <input type="checkbox" role="switch" checked={state === "on"} disabled={busy} onChange={(e) => void change(e.target.checked)} />

@@ -1,5 +1,6 @@
 import { tipCents, tipPersons, type TipValue } from "../components/TipControl";
 import { newItemId, subtotal, type BillData, type BillFee, type BillItem } from "./bill";
+import { t } from "./i18n";
 import { centsToInput, parseMoney } from "./money";
 import { paymentFromProfile } from "./payment";
 import type { ParsedReceipt, ReceiptItem } from "./receipt";
@@ -137,7 +138,7 @@ export function rowToItem(row: Row): BillItem | null {
 
 export function toBillData(draft: Draft, items: BillItem[]): BillData {
   const base = {
-    title: draft.title.trim() || "Rechnung",
+    title: draft.title.trim() || t("Rechnung"),
     date: draft.date,
     currency: draft.currency,
     items,

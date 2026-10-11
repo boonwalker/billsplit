@@ -359,6 +359,18 @@ und „Gedrückt halten“ (nur einen Teil).
 Ist auf dem Gerät „Bewegung reduzieren“ eingeschaltet, springen alle Animationen sofort ans Ende, die Erklär-Animationen
 entfallen (das „?“ bleibt) und es wird nicht weich gescrollt.
 
+### Sprachen (Deutsch, Englisch, Spanisch)
+
+klicksplit gibt es auf Deutsch, Englisch und Spanisch. Die App nimmt die Sprache des Browsers bzw. iPhones (Deutsch,
+Englisch oder Spanisch; jede andere Sprache → Englisch); im Profil unter „Sprache“ lässt sie sich festlegen („Wie
+Gerät“, Deutsch, English, Español). Beträge und Daten erscheinen im Format der Sprache (z. B. „€12.50“, „12,50 €“).
+
+Auch alles, was vom Server kommt, folgt der Sprache: Fehlermeldungen (die App schickt `x-billsplit-lang` mit, sonst
+zählt `Accept-Language`), Push-Mitteilungen (jedes Gerät in der Sprache, mit der es Benachrichtigungen eingeschaltet
+hat; ältere Abos bleiben Deutsch, bis die App dort wieder geöffnet wird) sowie Code- und Willkommensmail (in der
+Sprache der App, in der der Code angefordert wurde). Was in einer Rechnung gespeichert ist (Titel, Namen, Positionen)
+bleibt, wie es eingegeben wurde. Technik und feste Begriffe: `docs/i18n.md`.
+
 ## Technik
 
 | Teil | Umsetzung |
@@ -397,7 +409,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
   gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
   abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
-  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte).
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch).
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait

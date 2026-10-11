@@ -3,6 +3,7 @@ import type { PaymentInfo } from "../lib/bill";
 import { copyText } from "../lib/clipboard";
 import { centsToInput, formatMoney, type Cents } from "../lib/money";
 import { formatIban, type OtherMethod } from "../lib/payment";
+import { rich, t } from "../lib/i18n";
 
 interface Props {
   payment: PaymentInfo;
@@ -17,7 +18,7 @@ interface Props {
   onClose: () => void;
 }
 
-const LABEL: Record<OtherMethod, string> = { bank: "Überweisung", wero: "Wero" };
+const methodLabel = (method: OtherMethod): string => (method === "bank" ? t("Überweisung") : "Wero");
 
 /** One value with its own copy button – the banking app has no link to prefill it. */
 function CopyRow({ label, value, shown }: { label: string; value: string; shown?: string }) {
@@ -36,7 +37,7 @@ function CopyRow({ label, value, shown }: { label: string; value: string; shown?
           window.setTimeout(() => setCopied(false), 1800);
         }}
       >
-        {copied ? "✓ Kopiert" : "Kopieren"}
+        {copied ? t("✓ Kopiert") : t("Kopieren")}
       </button>
     </div>
   );
@@ -49,13 +50,13 @@ export default function TransferSheet({ payment, methods, initial, amount, curre
 
   return (
     <div className="sheet-backdrop transfer-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet transfer-sheet" role="dialog" aria-label={`Per ${LABEL[method]} bezahlen`}>
-        <h2>{formatMoney(amount, currency)} senden</h2>
+      <div className="sheet transfer-sheet" role="dialog" aria-label={method === "bank" ? t("Per Überweisung bezahlen") : t("Per Wero bezahlen")}>
+        <h2>{t("{amount} senden", { amount: formatMoney(amount, currency) })}</h2>
         {methods.length > 1 && (
           <div className="transfer-tabs" role="tablist">
             {methods.map((m) => (
               <button key={m} type="button" role="tab" aria-selected={m === method} className={m === method ? "on" : undefined} onClick={() => setMethod(m)}>
-                {LABEL[m]}
+                {methodLabel(m)}
               </button>
             ))}
           </div>
@@ -63,30 +64,31 @@ export default function TransferSheet({ payment, methods, initial, amount, curre
 
         {method === "bank" && payment.iban && (
           <>
-            <CopyRow label="Empfänger" value={holder} />
-            <CopyRow label="IBAN" value={payment.iban} shown={formatIban(payment.iban)} />
-            <CopyRow label="Betrag" value={centsToInput(amount)} shown={formatMoney(amount, currency)} />
-            <CopyRow label="Verwendungszweck" value={reference} />
+            <CopyRow label={t("Empfänger")} value={holder} />
+            <CopyRow label={t("IBAN")} value={payment.iban} shown={formatIban(payment.iban)} />
+            <CopyRow label={t("Betrag")} value={centsToInput(amount)} shown={formatMoney(amount, currency)} />
+            <CopyRow label={t("Verwendungszweck")} value={reference} />
             <p className="muted small">
-              Öffne Deine Banking-App (z. B. Sparkasse, ING oder Trade Republic), lege eine neue Überweisung an und füge die
-              Angaben ein.
+              {t(
+                "Öffne Deine Banking-App (z. B. Sparkasse, ING oder Trade Republic), lege eine neue Überweisung an und füge die Angaben ein.",
+              )}
             </p>
           </>
         )}
 
         {method === "wero" && payment.wero && (
           <>
-            <CopyRow label="An" value={payment.wero} />
-            <CopyRow label="Betrag" value={centsToInput(amount)} shown={formatMoney(amount, currency)} />
-            <CopyRow label="Nachricht" value={reference} />
+            <CopyRow label={t("An")} value={payment.wero} />
+            <CopyRow label={t("Betrag")} value={centsToInput(amount)} shown={formatMoney(amount, currency)} />
+            <CopyRow label={t("Nachricht")} value={reference} />
             <p className="muted small">
-              Öffne Deine Banking-App, tippe auf <b>Wero</b> → <b>Senden</b> und füge die Nummer bzw. E-Mail von {holder} ein.
+              {rich(t("Öffne Deine Banking-App, tippe auf <b>Wero</b> → <b>Senden</b> und füge die Nummer bzw. E-Mail von {name} ein.", { name: holder }))}
             </p>
           </>
         )}
 
         <button type="button" className="btn btn-primary btn-large" onClick={onClose}>
-          Fertig
+          {t("Fertig")}
         </button>
       </div>
     </div>

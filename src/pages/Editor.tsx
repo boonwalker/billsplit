@@ -12,6 +12,7 @@ import { prepareImage } from "../lib/image";
 import { centsToInput, formatMoney, parseMoney } from "../lib/money";
 import { receiptSum } from "../lib/receipt";
 import { recognizeReceipt } from "../lib/recognize";
+import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
 import { clearDraft, loadProfile, profileReady, rememberBill, saveDraft } from "../lib/storage";
 
@@ -47,11 +48,11 @@ export default function Editor({ billId }: { billId?: string }) {
     api
       .getBill(billId)
       .then((snap) => {
-        if (!snap.isOwner) throw new Error("Nur wer die Rechnung bezahlt hat, kann sie bearbeiten.");
+        if (!snap.isOwner) throw new Error(t("Nur wer die Rechnung bezahlt hat, kann sie bearbeiten."));
         setDraft(draftFromData(snap.data));
         setLoaded(true);
       })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Laden fehlgeschlagen."));
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : t("Laden fehlgeschlagen.")));
   }, [billId]);
 
   useEffect(() => {
@@ -60,23 +61,23 @@ export default function Editor({ billId }: { billId?: string }) {
   useEffect(() => () => void (preview && URL.revokeObjectURL(preview)), [preview]);
 
   async function publish(data: BillData) {
-    setBusy({ message: "klicksplit generiert die interaktive Rechnung", create: true });
+    setBusy({ message: t("klicksplit generiert die interaktive Rechnung"), create: true });
     try {
-      const snap = await api.createBill(data, loadProfile().name.trim() || "Ich");
+      const snap = await api.createBill(data, loadProfile().name.trim() || t("Ich"));
       // Keep the photo the bill was read from, so everyone can check it later.
       if (photo.current) await api.uploadReceiptImage(snap.id, photo.current).catch(() => null);
       rememberBill({ id: snap.id, title: data.title, role: "owner", createdAt: snap.createdAt });
       clearDraft();
       navigate(`/b/${snap.id}`, { replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Die Rechnung konnte nicht erstellt werden.");
+      setError(e instanceof Error ? e.message : t("Die Rechnung konnte nicht erstellt werden."));
       setBusy(null);
     }
   }
 
   async function scan(file: File) {
     setError(null);
-    setBusy({ message: "Bild wird vorbereitet …" });
+    setBusy({ message: t("Bild wird vorbereitet …") });
     try {
       const image = await prepareImage(file);
       photo.current = image.blob;
@@ -100,7 +101,7 @@ export default function Editor({ billId }: { billId?: string }) {
       };
       setDraft(next);
       if (receipt.items.length === 0) {
-        setError("Auf dem Foto wurden keine Positionen erkannt. Versuch es mit einem schärferen Foto oder trag sie unten ein.");
+        setError(t("Auf dem Foto wurden keine Positionen erkannt. Versuch es mit einem schärferen Foto oder trag sie unten ein."));
       } else if (isConfident(receipt)) {
         // Straight to the QR code – the payer can still correct lines from there.
         // Without a tip on the receipt, or for a delivery order, ask first.
@@ -117,7 +118,7 @@ export default function Editor({ billId }: { billId?: string }) {
         setAskTip(recognized);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Die Erkennung ist fehlgeschlagen.");
+      setError(e instanceof Error ? e.message : t("Die Erkennung ist fehlgeschlagen."));
     }
     setBusy(null);
   }
@@ -165,12 +166,12 @@ export default function Editor({ billId }: { billId?: string }) {
       return;
     }
     const data = toBillData(draft, validItems);
-    setBusy({ message: "Wird gespeichert …", create: true });
+    setBusy({ message: t("Wird gespeichert …"), create: true });
     try {
       await api.updateBill(billId, data);
       navigate(`/b/${billId}`, { replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
+      setError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen."));
       setBusy(null);
     }
   }
@@ -187,7 +188,7 @@ export default function Editor({ billId }: { billId?: string }) {
 
   return (
     <div className="page">
-      <Header back={billId ? `/b/${billId}` : "/"} title={editing ? "Positionen bearbeiten" : "Rechnung prüfen"} />
+      <Header back={billId ? `/b/${billId}` : "/"} title={editing ? t("Positionen bearbeiten") : t("Rechnung prüfen")} />
       <main className="content">
         {error && <div className="alert">{error}</div>}
 
@@ -195,11 +196,11 @@ export default function Editor({ billId }: { billId?: string }) {
         {!editing && validItems.length === 0 && (
           <div className="capture-row">
             <label className="btn btn-primary grow">
-              📷 Neues Foto
+              {t("📷 Neues Foto")}
               <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => e.target.files?.[0] && scan(e.target.files[0])} />
             </label>
             <label className="btn btn-ghost grow">
-              Anderer Screenshot
+              {t("Anderer Screenshot")}
               <input type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && scan(e.target.files[0])} />
             </label>
           </div>
@@ -207,7 +208,7 @@ export default function Editor({ billId }: { billId?: string }) {
 
         {draft.engine && validItems.length > 0 && (
           <p className="muted small">
-            {draft.engine === "ai" ? "✨ Per KI erkannt" : "🔎 Per Texterkennung auf dem Gerät erkannt"} – bitte kurz prüfen.
+            {draft.engine === "ai" ? t("✨ Per KI erkannt – bitte kurz prüfen.") : t("🔎 Per Texterkennung auf dem Gerät erkannt – bitte kurz prüfen.")}
           </p>
         )}
 
@@ -215,117 +216,117 @@ export default function Editor({ billId }: { billId?: string }) {
           <>
             <div className="card">
               <label className="field">
-                <span>Restaurant / Titel</span>
-                <input value={draft.title} onChange={(e) => update({ title: e.target.value })} placeholder="z. B. Trattoria Da Mario" maxLength={80} />
+                <span>{t("Restaurant / Titel")}</span>
+                <input value={draft.title} onChange={(e) => update({ title: e.target.value })} placeholder={t("z. B. Trattoria Da Mario")} maxLength={80} />
               </label>
               <label className="field">
-                <span>Datum</span>
+                <span>{t("Datum")}</span>
                 <input type="date" value={draft.date} onChange={(e) => update({ date: e.target.value })} />
               </label>
             </div>
 
-            <h3 className="section-title">Positionen</h3>
+            <h3 className="section-title">{t("Positionen")}</h3>
             <div className="card items-editor">
               <div className="items-head muted small" aria-hidden="true">
-                <span>Anz.</span>
-                <span>Bezeichnung</span>
-                <span>Preis gesamt</span>
+                <span>{t("Anz.")}</span>
+                <span>{t("Bezeichnung")}</span>
+                <span>{t("Preis gesamt")}</span>
                 <span />
               </div>
               {draft.rows.map((row, idx) => {
                 const item = items[idx];
                 return (
                   <div key={row.id} className={`item-row${showErrors && !item ? " invalid" : ""}`}>
-                    <input className="qty-input" inputMode="numeric" aria-label="Anzahl" value={row.qty} onChange={(e) => updateRow(row.id, { qty: e.target.value.replace(/\D/g, "") })} />
-                    <input aria-label="Bezeichnung" value={row.name} placeholder="Bezeichnung" maxLength={120} onChange={(e) => updateRow(row.id, { name: e.target.value })} />
+                    <input className="qty-input" inputMode="numeric" aria-label={t("Anzahl")} value={row.qty} onChange={(e) => updateRow(row.id, { qty: e.target.value.replace(/\D/g, "") })} />
+                    <input aria-label={t("Bezeichnung")} value={row.name} placeholder={t("Bezeichnung")} maxLength={120} onChange={(e) => updateRow(row.id, { name: e.target.value })} />
                     <div className="price-cell">
                       <input
                         className="price-input"
                         inputMode="decimal"
-                        aria-label="Preis gesamt"
+                        aria-label={t("Preis gesamt")}
                         value={row.total}
-                        placeholder="0,00"
+                        placeholder={centsToInput(0)}
                         onChange={(e) => updateRow(row.id, { total: e.target.value })}
                         onBlur={() => {
                           const c = parseMoney(row.total);
                           if (c !== null) updateRow(row.id, { total: centsToInput(c) });
                         }}
                       />
-                      {item && item.qty > 1 && <small className="muted">à {formatMoney(Math.round(item.total / item.qty), draft.currency)}</small>}
+                      {item && item.qty > 1 && <small className="muted">{t("à {price}", { price: formatMoney(Math.round(item.total / item.qty), draft.currency) })}</small>}
                     </div>
-                    <button className="icon-btn subtle" aria-label="Position entfernen" onClick={() => removeRow(row.id)}>
+                    <button className="icon-btn subtle" aria-label={t("Position entfernen")} onClick={() => removeRow(row.id)}>
                       ✕
                     </button>
                   </div>
                 );
               })}
               <button className="btn btn-ghost" onClick={addRow}>
-                + Position hinzufügen
+                {t("+ Position hinzufügen")}
               </button>
             </div>
 
-            <h3 className="section-title">Gebühren</h3>
+            <h3 className="section-title">{t("Gebühren")}</h3>
             <div className="card items-editor">
               <p className="muted small">
-                Liefer-, Service- und ähnliche Gebühren werden wie das Trinkgeld gleichmäßig auf alle Personen verteilt.
+                {t("Liefer-, Service- und ähnliche Gebühren werden wie das Trinkgeld gleichmäßig auf alle Personen verteilt.")}
               </p>
               {draft.fees.map((fee) => {
                 const invalid = showErrors && feeRowToFee(fee) === null && (fee.name.trim() !== "" || fee.amount.trim() !== "");
                 return (
                   <div key={fee.id} className={`fee-row${invalid ? " invalid" : ""}`}>
-                    <input aria-label="Gebühr" value={fee.name} placeholder="z. B. Liefergebühr" maxLength={80} onChange={(e) => updateFee(fee.id, { name: e.target.value })} />
+                    <input aria-label={t("Gebühr")} value={fee.name} placeholder={t("z. B. Liefergebühr")} maxLength={80} onChange={(e) => updateFee(fee.id, { name: e.target.value })} />
                     <input
                       className="price-input"
                       inputMode="decimal"
-                      aria-label="Betrag der Gebühr"
+                      aria-label={t("Betrag der Gebühr")}
                       value={fee.amount}
-                      placeholder="0,00"
+                      placeholder={centsToInput(0)}
                       onChange={(e) => updateFee(fee.id, { amount: e.target.value })}
                       onBlur={() => {
                         const c = parseMoney(fee.amount);
                         if (c !== null) updateFee(fee.id, { amount: centsToInput(c) });
                       }}
                     />
-                    <button className="icon-btn subtle" aria-label="Gebühr entfernen" onClick={() => removeFee(fee.id)}>
+                    <button className="icon-btn subtle" aria-label={t("Gebühr entfernen")} onClick={() => removeFee(fee.id)}>
                       ✕
                     </button>
                   </div>
                 );
               })}
               <button className="btn btn-ghost" onClick={addFee}>
-                + Gebühr hinzufügen
+                {t("+ Gebühr hinzufügen")}
               </button>
             </div>
 
             <div className="card">
               <div className="row between">
-                <span>Summe Positionen</span>
+                <span>{t("Summe Positionen")}</span>
                 <strong>{formatMoney(sum, draft.currency)}</strong>
               </div>
               {feeSum !== 0 && (
                 <div className="row between">
-                  <span>Gebühren</span>
+                  <span>{t("Gebühren")}</span>
                   <strong>{formatMoney(feeSum, draft.currency)}</strong>
                 </div>
               )}
               {mismatch && (
                 <p className="warning small">
-                  Auf dem Beleg steht {formatMoney(draft.receiptTotal!, draft.currency)}. Fehlt eine Position oder ist ein Preis falsch erkannt?
+                  {t("Auf dem Beleg steht {amount}. Fehlt eine Position oder ist ein Preis falsch erkannt?", { amount: formatMoney(draft.receiptTotal!, draft.currency) })}
                 </p>
               )}
               <div className="field">
-                <span>Trinkgeld – wird gleichmäßig auf alle Personen verteilt</span>
-                {draft.tipOnReceipt && <small className="muted">Vom Beleg übernommen.</small>}
+                <span>{t("Trinkgeld – wird gleichmäßig auf alle Personen verteilt")}</span>
+                {draft.tipOnReceipt && <small className="muted">{t("Vom Beleg übernommen.")}</small>}
                 <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} fees={feeSum} />
               </div>
             </div>
 
 
-            {showErrors && items.some((i) => i === null) && <div className="alert">Bitte vervollständige die rot markierten Positionen.</div>}
+            {showErrors && items.some((i) => i === null) && <div className="alert">{t("Bitte vervollständige die rot markierten Positionen.")}</div>}
 
             <div className="sticky-footer">
               <button className="btn btn-primary btn-large" onClick={submit}>
-                {editing ? "Änderungen speichern" : "Rechnung erstellen"}
+                {editing ? t("Änderungen speichern") : t("Rechnung erstellen")}
               </button>
             </div>
           </>
@@ -372,31 +373,37 @@ export default function Editor({ billId }: { billId?: string }) {
 
             {draft.delivery && (
               <>
-                <h2>Wie viele haben mitbestellt?</h2>
+                <h2>{t("Wie viele haben mitbestellt?")}</h2>
                 <p className="muted">
-                  {feeSum !== 0 ? `Gebühren (${formatMoney(feeSum, draft.currency)})` : "Gebühren"}
-                  {draft.tipOnReceipt ? " und Trinkgeld" : ""} werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den
-                  QR-Code scannt, wird automatisch mitgezählt.
+                  {feeSum !== 0
+                    ? draft.tipOnReceipt
+                      ? t("Gebühren ({amount}) und Trinkgeld werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.", { amount: formatMoney(feeSum, draft.currency) })
+                      : t("Gebühren ({amount}) werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.", { amount: formatMoney(feeSum, draft.currency) })
+                    : draft.tipOnReceipt
+                      ? t("Gebühren und Trinkgeld werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.")
+                      : t("Gebühren werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.")}
                 </p>
-                <div className="persons-question" role="group" aria-label="Personen, die mitbestellt haben">
-                  <button type="button" onClick={() => setPersons((persons ?? 2) - 1)} disabled={(persons ?? 0) <= 1} aria-label="Eine Person weniger">
+                <div className="persons-question" role="group" aria-label={t("Personen, die mitbestellt haben")}>
+                  <button type="button" onClick={() => setPersons((persons ?? 2) - 1)} disabled={(persons ?? 0) <= 1} aria-label={t("Eine Person weniger")}>
                     −
                   </button>
                   <input
                     inputMode="numeric"
-                    aria-label="Anzahl Personen"
+                    aria-label={t("Anzahl Personen")}
                     value={draft.tip.persons}
                     placeholder="?"
                     onChange={(e) => setPersons(parseInt(e.target.value.replace(/\D/g, ""), 10) || undefined)}
                   />
-                  <button type="button" onClick={() => setPersons((persons ?? 1) + 1)} aria-label="Eine Person mehr">
+                  <button type="button" onClick={() => setPersons((persons ?? 1) + 1)} aria-label={t("Eine Person mehr")}>
                     +
                   </button>
                 </div>
                 {persons && feeSum !== 0 && (
                   <p className="muted small center-text">
-                    {formatMoney(Math.round((feeSum + (draft.tipOnReceipt ? tipCents(draft.tip, subtotal(askTip), feeSum) : 0)) / persons), draft.currency)} pro
-                    Person{draft.tipOnReceipt ? " (Gebühren & Trinkgeld)" : " an Gebühren"}
+                    {(() => {
+                      const amount = formatMoney(Math.round((feeSum + (draft.tipOnReceipt ? tipCents(draft.tip, subtotal(askTip), feeSum) : 0)) / persons), draft.currency);
+                      return draft.tipOnReceipt ? t("{amount} pro Person (Gebühren & Trinkgeld)", { amount }) : t("{amount} pro Person an Gebühren", { amount });
+                    })()}
                   </p>
                 )}
               </>
@@ -404,10 +411,11 @@ export default function Editor({ billId }: { billId?: string }) {
 
             {!draft.tipOnReceipt && (
               <>
-                <h2 className={draft.delivery ? "sheet-subtitle" : undefined}>Trinkgeld gegeben?</h2>
+                <h2 className={draft.delivery ? "sheet-subtitle" : undefined}>{t("Trinkgeld gegeben?")}</h2>
                 <p className="muted">
-                  {draft.engine ? "Auf dem Beleg steht kein Trinkgeld. " : ""}Wenn Du Trinkgeld gegeben hast, trag es hier ein – es
-                  wird gleichmäßig auf alle Personen verteilt.
+                  {draft.engine
+                    ? t("Auf dem Beleg steht kein Trinkgeld. Wenn Du Trinkgeld gegeben hast, trag es hier ein – es wird gleichmäßig auf alle Personen verteilt.")
+                    : t("Wenn Du Trinkgeld gegeben hast, trag es hier ein – es wird gleichmäßig auf alle Personen verteilt.")}
                 </p>
                 <TipControl
                   value={draft.tip}
@@ -420,7 +428,7 @@ export default function Editor({ billId }: { billId?: string }) {
               </>
             )}
 
-            <button className="btn btn-primary btn-large">Rechnung erstellen</button>
+            <button className="btn btn-primary btn-large">{t("Rechnung erstellen")}</button>
             {!draft.tipOnReceipt && (
               <button
                 type="button"
@@ -433,11 +441,11 @@ export default function Editor({ billId }: { billId?: string }) {
                   void publish(toBillData(noTip, items));
                 }}
               >
-                Ohne Trinkgeld weiter
+                {t("Ohne Trinkgeld weiter")}
               </button>
             )}
             <button type="button" className="link sheet-back" onClick={() => setAskTip(null)}>
-              Positionen nochmal prüfen
+              {t("Positionen nochmal prüfen")}
             </button>
           </form>
         </div>

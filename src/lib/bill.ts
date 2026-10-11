@@ -1,3 +1,4 @@
+import type { Msg } from "../i18n";
 import type { Cents } from "./money";
 
 export interface BillItem {
@@ -116,7 +117,7 @@ export interface Debtor {
   /** … and still waiting for that confirmation. */
   creditPending?: Cents;
   /** What those payments were, e.g. "4,00 € von Niklas an Katia gezahlt". */
-  creditNotes?: string[];
+  creditNotes?: Msg[];
   /** Notifications reach this friend ("Erinnern" sends one instead of opening WhatsApp). */
   reachable?: boolean;
   /** Last reminder sent as a notification. */
@@ -127,7 +128,8 @@ export interface Debtor {
 export interface ShareCredit {
   confirmed: Cents;
   pending: Cents;
-  notes: string[];
+  /** What each payment was, in the reader's language (see tMsg). */
+  notes: Msg[];
 }
 
 /**

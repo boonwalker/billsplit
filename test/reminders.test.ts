@@ -1,7 +1,8 @@
+import { translateMsg } from "../src/i18n";
 import { describe, expect, it } from "vitest";
 import { BillStore } from "../server/store";
 import type { BillData } from "../src/lib/bill";
-import { REMIND_COOLDOWN_MS, type Notice } from "../src/lib/billCore";
+import { REMIND_COOLDOWN_MS } from "../src/lib/billCore";
 
 const data = (title: string, items: [string, number][]): BillData => ({
   title,
@@ -15,9 +16,11 @@ const data = (title: string, items: [string, number][]): BillData => ({
 /** Niklas paid two bills; Anna has push, Ben has not. Anna had the pizza, nothing ticked in the cinema yet. */
 function setup() {
   const store = new BillStore(null);
-  const sent: { to: string; notice: Notice }[] = [];
+  const sent: { to: string; notice: { title: string; body: string; path: string } }[] = [];
   // Amounts come with a non-breaking space ("9,50 €"); compared with a plain one.
-  store.onNotice((to, notice) => sent.push({ to, notice: { ...notice, body: notice.body.replace(/\s/g, " ") } }));
+  store.onNotice((to, notice) =>
+    sent.push({ to, notice: { title: translateMsg("de", notice.title), body: translateMsg("de", notice.body).replace(/\s/g, " "), path: notice.path } }),
+  );
   store.setReachability((id) => id === "anna");
   const pizza = store.createBill(data("Trattoria", [["pizza", 950], ["bier", 450]]), "niklas", "Niklas");
   store.join(pizza, "anna", "Anna");

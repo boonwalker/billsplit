@@ -18,6 +18,9 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
   mit Haken und Tipp-Ring, `src/components/Logo.tsx`, `public/icon.svg`, PNG-Icons mit `e2e/icons.mjs`). Repo, Ordner
   und interne Schlüssel (`billsplit.*`, `x-billsplit-key`, Ereignisnamen, Backup-Dateien) bleiben „billsplit“ – nie
   umbenennen, sonst gehen gespeicherte Daten verloren. Logo-Entwürfe A–C: https://claude.ai/artifact/997z19NSsceErabgCCqXuv
+- **Sprachen:** Die App gibt es auf Deutsch (Quelle), Englisch und Spanisch (`docs/i18n.md`). Jeder neue sichtbare
+  Text als Literal in `t("…")` (App) bzw. `msg("…")`/Fehlerklasse (Server, gemeinsamer Kern), Übersetzungen in
+  `src/i18n/dict/<bereich>.ts`; `test/i18n.test.ts` schlägt fehl, wenn eine fehlt. Gespeicherte Daten nie übersetzen.
 - **App-Texte:** „Dir“ wird in der gesamten App **immer großgeschrieben** (ausdrücklich gewünscht). Ebenso werden
   „Du“, „Dein“, „Deine“ in neuen Texten großgeschrieben.
 - **Fragen sind Fragen:** Fragt der Auftraggeber etwas („Kannst Du …?“, „Was wäre, wenn …?“), erst antworten bzw.
@@ -35,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 146 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 156 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -104,6 +107,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - **Umzug der Adresse:** `PUBLIC_URL` ist die maßgebliche Adresse (Meta-Tag `klicksplit-home`, `src/lib/move.ts`).
   Browser an anderen Adressen springen mit Einmal-Code (`#/umzug/<code>?ziel=…`, `/api/move`) dorthin, die alte
   Home-Bildschirm-App zeigt `MovedNotice`. Seit 11.10.2026 aktiv (`PUBLIC_URL=https://www.klicksplit.de`).
+- **Sprache:** `src/lib/i18n.tsx` (Erkennung: Profil-Wahl `billsplit.lang`, sonst `navigator.languages`, sonst
+  Englisch; `t`, `rich`, `formatDate`), gemeinsamer Kern `src/i18n/index.ts` (`translate`, `msg`, Beträge als
+  `{ cents, currency }`). Server: `requestLang(req)`, Fehler mit `template`/`vars`, Push-Abos mit `lang`, Mails mit `lang`.
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
   max. 2000 px Kantenlänge). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
 - **Seiten:** `Home`, `Expense` (Ausgabe eingeben), `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in

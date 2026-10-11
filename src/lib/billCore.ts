@@ -1,3 +1,4 @@
+import { fill, msg, type Msg, type Vars } from "../i18n";
 import {
   compactClaims,
   openShare,
@@ -16,19 +17,22 @@ import {
   type Transfer,
   type TransferAllocation,
 } from "./bill";
-import { formatMoney } from "./money";
 
 /**
  * The rules of a shared bill, independent of where it is stored. Used by the
  * Node server and by the serverless demo that keeps bills in the browser.
  */
 
+/** A refused request; `template` and `vars` let the server answer in the reader's language. */
 export class BillError extends Error {
+  readonly template: string;
   constructor(
     message: string,
     readonly status: number,
+    readonly vars?: Vars,
   ) {
-    super(message);
+    super(fill(message, vars, "de-DE"));
+    this.template = message;
   }
 }
 
@@ -79,8 +83,9 @@ const MAX_ALLOCATIONS = 200;
 
 /** A message for one person's devices (sent as a push notification by the server). */
 export interface Notice {
-  title: string;
-  body: string;
+  /** Texts to translate into each recipient's language (see push.ts). */
+  title: Msg;
+  body: Msg;
   /** Where tapping it leads, as an app route (e.g. "/dashboard"). */
   path: string;
 }
@@ -286,8 +291,8 @@ export class BillCore {
     if (paid && !before) {
       const amount = p.payAmount ?? participantShare(bill.data, this.publicParticipants(bill), participantId).total;
       this.notify(bill.ownerId, {
-        title: `${p.name} hat bezahlt`,
-        body: `${formatMoney(amount, bill.data.currency)} für „${bill.data.title}“ – bitte prüfe den Eingang.`,
+        title: msg("{name} hat bezahlt", { name: p.name }),
+        body: msg("{amount} für „{title}“ – bitte prüfe den Eingang.", { amount: { cents: amount, currency: bill.data.currency }, title: bill.data.title }),
         // Straight to that friend in the list below the receipt, to check the money and tick "erhalten".
         path: `/b/${billId}?an=${participantId}`,
       });
@@ -352,9 +357,17 @@ export class BillCore {
         if (a.billId !== billId || a.debtorId !== participantId) continue;
         if (t.status === "confirmed") credit.confirmed += a.amount;
         else credit.pending += a.amount;
-        const money = formatMoney(a.amount, t.currency);
-        const how = t.amount === 0 ? `gegenseitig verrechnet (${t.fromName} ↔ ${t.toName})` : `per Ausgleich ${t.fromName} → ${t.toName}`;
-        credit.notes.push(`${money} ${how}${t.status === "pending" ? ` (wartet auf Bestätigung von ${t.toName})` : " ✓"}`);
+        const vars = { money: { cents: a.amount, currency: t.currency }, from: t.fromName, to: t.toName };
+        const pending = t.status === "pending";
+        credit.notes.push(
+          t.amount === 0
+            ? pending
+              ? msg("{money} gegenseitig verrechnet ({from} ↔ {to}) (wartet auf Bestätigung von {to})", vars)
+              : msg("{money} gegenseitig verrechnet ({from} ↔ {to}) ✓", vars)
+            : pending
+              ? msg("{money} per Ausgleich {from} → {to} (wartet auf Bestätigung von {to})", vars)
+              : msg("{money} per Ausgleich {from} → {to} ✓", vars),
+        );
       }
     }
     return credit;
@@ -384,17 +397,17 @@ export class BillCore {
     this.assertOwner(billId, requesterId);
     if (debtorId === bill.ownerId) throw new BillError("Du kannst Dich nicht selbst erinnern.", 400);
     const p = this.participant(bill, debtorId);
-    if (p.received || p.markedPaidAt) throw new BillError(`${p.name} hat schon bezahlt.`, 409);
+    if (p.received || p.markedPaidAt) throw new BillError("{name} hat schon bezahlt.", 409, { name: p.name });
     const open = this.openOf(bill, debtorId);
     const ticked = participantShare(bill.data, this.publicParticipants(bill), debtorId).total > 0;
-    if (ticked && open <= 0) throw new BillError(`Bei ${p.name} ist nichts mehr offen.`, 409);
+    if (ticked && open <= 0) throw new BillError("Bei {name} ist nichts mehr offen.", 409, { name: p.name });
     this.assertRemindable(debtorId, [p], now);
     const from = bill.participants[bill.ownerId]?.name ?? "";
     this.notify(debtorId, {
-      title: `${from} erinnert Dich`,
+      title: msg("{name} erinnert Dich", { name: from }),
       body: ticked
-        ? `Für „${bill.data.title}“ sind bei Dir noch ${formatMoney(open, bill.data.currency)} offen.`
-        : `Bitte hake in „${bill.data.title}“ ab, was Du hattest.`,
+        ? msg("Für „{title}“ sind bei Dir noch {amount} offen.", { title: bill.data.title, amount: { cents: open, currency: bill.data.currency } })
+        : msg("Bitte hake in „{title}“ ab, was Du hattest.", { title: bill.data.title }),
       // Straight to their own share, with the pay button.
       path: `/b/${billId}?an=${debtorId}`,
     });
@@ -410,14 +423,17 @@ export class BillCore {
     this.assertRemindable(personId, shares, now);
     const totals = new Map<string, number>();
     for (const e of edges) totals.set(e.currency, (totals.get(e.currency) ?? 0) + e.amount);
-    const amounts = [...totals].map(([currency, cents]) => formatMoney(cents, currency)).join(" und ");
+    // "9,50 € und 12,00 $" when the bills have different currencies.
+    const amounts = [...totals]
+      .map(([currency, cents]) => msg("{amount}", { amount: { cents, currency } }))
+      .reduce((all, next) => msg("{first} und {next}", { first: all, next }));
     const from = this.get(edges[0].billId).participants[requesterId]?.name ?? "";
     this.notify(personId, {
-      title: `${from} erinnert Dich`,
+      title: msg("{name} erinnert Dich", { name: from }),
       body:
         edges.length === 1
-          ? `Für „${edges[0].title}“ sind bei Dir noch ${amounts} offen.`
-          : `Bei Dir sind noch ${amounts} aus ${edges.length} Rechnungen offen.`,
+          ? msg("Für „{title}“ sind bei Dir noch {amount} offen.", { title: edges[0].title, amount: amounts })
+          : msg("Bei Dir sind noch {amount} aus {count} Rechnungen offen.", { amount: amounts, count: edges.length }),
       path: edges.length === 1 ? `/b/${edges[0].billId}?an=${personId}` : "/dashboard",
     });
     const at = new Date(now).toISOString();
@@ -536,23 +552,23 @@ export class BillCore {
     };
     this.transfers.set(id, t);
     this.transfersTouched(id);
-    const money = formatMoney(amount, currency);
+    const money = { cents: amount, currency };
     if (received) {
       this.notify(fromId, {
-        title: `${t.toName} hat Deinen Ausgleich eingetragen`,
-        body: `${money} als erhalten – Deine Anteile bei ${t.toName} sind beglichen.`,
+        title: msg("{name} hat Deinen Ausgleich eingetragen", { name: t.toName }),
+        body: msg("{amount} als erhalten – Deine Anteile bei {name} sind beglichen.", { amount: money, name: t.toName }),
         path: `/dashboard?zahlung=${id}`,
       });
     } else if (amount === 0) {
       this.notify(toId, {
-        title: `${t.fromName} möchte gegenseitig verrechnen`,
-        body: "Eure offenen Beträge gleichen sich genau aus – bitte bestätige das im Dashboard.",
+        title: msg("{name} möchte gegenseitig verrechnen", { name: t.fromName }),
+        body: msg("Eure offenen Beträge gleichen sich genau aus – bitte bestätige das im Dashboard."),
         path: `/dashboard?zahlung=${id}`,
       });
     } else {
       this.notify(toId, {
-        title: `${t.fromName} hat Dir ${money} gesendet`,
-        body: "Bestätige den Eingang im Dashboard, sobald das Geld da ist.",
+        title: msg("{name} hat Dir {amount} gesendet", { name: t.fromName, amount: money }),
+        body: msg("Bestätige den Eingang im Dashboard, sobald das Geld da ist."),
         path: `/dashboard?zahlung=${id}`,
       });
     }
@@ -565,17 +581,19 @@ export class BillCore {
     if (!t) throw new BillError("Diese Ausgleichszahlung gibt es nicht (mehr).", 404);
     if (t.status !== "pending") throw new BillError("Diese Ausgleichszahlung ist schon abgeschlossen.", 409);
     if (action === "cancel" ? viewerId !== t.fromId : viewerId !== t.toId) {
-      throw new BillError(action === "cancel" ? "Nur wer gezahlt hat, kann das zurückziehen." : "Nur der Empfänger kann das bestätigen.", 403);
+      throw action === "cancel" ? new BillError("Nur wer gezahlt hat, kann das zurückziehen.", 403) : new BillError("Nur der Empfänger kann das bestätigen.", 403);
     }
     t.status = action === "confirm" ? "confirmed" : action === "reject" ? "rejected" : "cancelled";
     t.decidedAt = new Date().toISOString();
     this.transfersTouched(transferId);
-    const money = formatMoney(t.amount, t.currency);
+    const money = { cents: t.amount, currency: t.currency };
     const offset = t.amount === 0;
     if (action === "cancel") {
       this.notify(t.toId, {
-        title: offset ? `${t.fromName} hat die Verrechnung zurückgezogen` : `${t.fromName} hat die Zahlung zurückgezogen`,
-        body: offset ? "Die Beträge sind wieder offen." : `${money} – die Anteile sind wieder offen.`,
+        title: offset
+          ? msg("{name} hat die Verrechnung zurückgezogen", { name: t.fromName })
+          : msg("{name} hat die Zahlung zurückgezogen", { name: t.fromName }),
+        body: offset ? msg("Die Beträge sind wieder offen.") : msg("{amount} – die Anteile sind wieder offen.", { amount: money }),
         path: "/dashboard",
       });
     } else {
@@ -583,12 +601,12 @@ export class BillCore {
         title:
           action === "confirm"
             ? offset
-              ? `${t.toName} hat die Verrechnung bestätigt ✓`
-              : `${t.toName} hat ${money} erhalten ✓`
+              ? msg("{name} hat die Verrechnung bestätigt ✓", { name: t.toName })
+              : msg("{name} hat {amount} erhalten ✓", { name: t.toName, amount: money })
             : offset
-              ? `${t.toName} hat die Verrechnung abgelehnt`
-              : `${t.toName} hat ${money} nicht erhalten`,
-        body: action === "confirm" ? "Die Anteile sind in allen Rechnungen beglichen." : "Die Anteile sind wieder offen.",
+              ? msg("{name} hat die Verrechnung abgelehnt", { name: t.toName })
+              : msg("{name} hat {amount} nicht erhalten", { name: t.toName, amount: money }),
+        body: action === "confirm" ? msg("Die Anteile sind in allen Rechnungen beglichen.") : msg("Die Anteile sind wieder offen."),
         path: `/dashboard?zahlung=${t.id}`,
       });
     }

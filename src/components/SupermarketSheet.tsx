@@ -2,6 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState, type FormEvent 
 import { billedItems, type BillFee, type BillItem } from "../lib/bill";
 import { boundsOf, type InkPoint, type Stroke } from "../lib/ink";
 import { vibrate } from "../lib/haptics";
+import { rich, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 import DivisorSheet from "./DivisorSheet";
 import InkLayer from "./InkLayer";
@@ -96,8 +97,8 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
   // The notice floats over the receipt for a moment, then gets out of the way.
   useEffect(() => {
     if (!notice) return;
-    const t = window.setTimeout(() => setNotice(null), 2600);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setNotice(null), 2600);
+    return () => window.clearTimeout(timer);
   }, [notice]);
 
   /** Fees crossed out in "Manches nicht". */
@@ -112,7 +113,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
   function toggleFee(fee: BillFee) {
     const struck = !struckFees.includes(fee.id);
     setStruckFees(struck ? [...struckFees, fee.id] : struckFees.filter((id) => id !== fee.id));
-    setNotice(`${fee.name} wird ${struck ? "nicht" : "wieder"} abgerechnet.`);
+    setNotice(struck ? t("{name} wird nicht abgerechnet.", { name: fee.name }) : t("{name} wird wieder abgerechnet.", { name: fee.name }));
   }
 
   // Place the demos on the lines once the paper is laid out; they loop until the paper is touched.
@@ -153,15 +154,17 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
       const units = struckUnits(item, next[item.id]);
       setNotice(
         units === 0
-          ? `${item.name} wird wieder abgerechnet.`
+          ? t("{name} wird wieder abgerechnet.", { name: item.name })
           : units < item.qty
-            ? `${units} von ${item.qty} × ${item.name} ${units === 1 ? "wird" : "werden"} nicht abgerechnet – nochmal tippen streicht eins mehr.`
-            : `${item.name} wird nicht abgerechnet.`,
+            ? units === 1
+              ? t("{units} von {qty} × {name} wird nicht abgerechnet – nochmal tippen streicht eins mehr.", { units, qty: item.qty, name: item.name })
+              : t("{units} von {qty} × {name} werden nicht abgerechnet – nochmal tippen streicht eins mehr.", { units, qty: item.qty, name: item.name })
+            : t("{name} wird nicht abgerechnet.", { name: item.name }),
       );
       return;
     }
     const names = hit.map((i) => i.name).join(", ");
-    setNotice(hit.every((i) => struckUnits(i, next[i.id]) > 0) ? `${names} werden nicht abgerechnet.` : `${names} werden wieder abgerechnet.`);
+    setNotice(hit.every((i) => struckUnits(i, next[i.id]) > 0) ? t("{names} werden nicht abgerechnet.", { names }) : t("{names} werden wieder abgerechnet.", { names }));
   }
 
   /** The line under a touch point. */
@@ -186,7 +189,11 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
 
   function setDivisor(item: BillItem, divisor: number) {
     setMarks((m) => ({ ...m, [item.id]: { ...m[item.id], divisor: divisor > 1 ? divisor : undefined } }));
-    setNotice(divisor > 1 ? `${item.name}: nur 1/${divisor} wird aufgeteilt, den Rest trägst Du.` : `${item.name} wird wieder ganz aufgeteilt.`);
+    setNotice(
+      divisor > 1
+        ? t("{name}: nur 1/{divisor} wird aufgeteilt, den Rest trägst Du.", { name: item.name, divisor })
+        : t("{name} wird wieder ganz aufgeteilt.", { name: item.name }),
+    );
   }
 
   /** Whether a tap hit the pencilled "/2" of a line (a little room around it, but not the whole line). */
@@ -244,24 +251,24 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
             onClick={() => setSplit((on) => !on)}
           >
             <span className="equal-toggle-text">
-              <b>Gleichverteilung</b>
-              <small>{split ? "Alles, was nicht gestrichen ist, wird gleichmäßig geteilt." : "Aus: Jeder hakt auf der Rechnung selbst ab, was er hatte."}</small>
+              <b>{t("Gleichverteilung")}</b>
+              <small>{split ? t("Alles, was nicht gestrichen ist, wird gleichmäßig geteilt.") : t("Aus: Jeder hakt auf der Rechnung selbst ab, was er hatte.")}</small>
             </span>
             <span className="switch" aria-hidden="true" />
           </button>
-          <article className="receipt shop-paper" aria-label="Rechnung zum Markieren">
+          <article className="receipt shop-paper" aria-label={t("Rechnung zum Markieren")}>
             <div className="receipt-paper">
               <header className="receipt-head">
                 <div className="receipt-logo" aria-hidden="true">
                   ✦
                 </div>
-                <h2>{title || "Einkauf"}</h2>
+                <h2>{title || t("Einkauf")}</h2>
                 <p>{formatDate(date ?? "")}</p>
-                {ownerName && <p className="receipt-paidby">bezahlt von {ownerName}</p>}
+                {ownerName && <p className="receipt-paidby">{t("bezahlt von {name}", { name: ownerName })}</p>}
               </header>
               <div className="receipt-rule" aria-hidden="true" />
               <div className="receipt-cols" aria-hidden="true">
-                <span>Artikel</span>
+                <span>{t("Artikel")}</span>
                 <span>{currency}</span>
               </div>
               <div className="receipt-lines-wrap">
@@ -279,7 +286,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                     const heading =
                       personalCount > 0 && personalCount < ordered.length && (index === 0 || index === personalCount) ? (
                         <li className="rline-group" aria-hidden="true">
-                          {index === 0 ? "Wahrscheinlich nicht für alle" : "Für alle"}
+                          {index === 0 ? t("Wahrscheinlich nicht für alle") : t("Für alle")}
                         </li>
                       ) : null;
                     return (
@@ -307,7 +314,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                                 </span>
                                 {divisor > 1 && <span className="pencil rline-divisor">/{divisor}</span>}
                               </span>
-                              {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
+                              {item.qty > 1 && <span className="rline-unit">{t("à {price}", { price: formatMoney(Math.round(item.total / item.qty), currency) })}</span>}
                             </span>
                             <span className="rline-dots" aria-hidden="true" />
                             <span className="rline-price">
@@ -327,7 +334,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
               <dl className="receipt-sums">
                 {fees.length > 0 && (
                   <>
-                    <dt>Zwischensumme</dt>
+                    <dt>{t("Zwischensumme")}</dt>
                     <dd>{formatMoney(itemsSum, currency)}</dd>
                     {fees.map((fee) => (
                       <FeeLine
@@ -343,19 +350,19 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
                 )}
                 {billedSum !== fullSum && (
                   <>
-                    <dt>Auf dem Beleg</dt>
+                    <dt>{t("Auf dem Beleg")}</dt>
                     <dd>{formatMoney(fullSum, currency)}</dd>
                   </>
                 )}
-                <dt className="grand">SUMME</dt>
+                <dt className="grand">{t("SUMME")}</dt>
                 <dd className="grand">{formatMoney(billedSum, currency)}</dd>
               </dl>
               <div className="receipt-rule double" aria-hidden="true" />
               <div className="receipt-barcode" aria-hidden="true" />
-              <p className="receipt-thanks">Danke &amp; bis zum nächsten Mal!</p>
+              <p className="receipt-thanks">{t("Danke & bis zum nächsten Mal!")}</p>
               {photoUrl && (
                 <button type="button" className="receipt-original" onClick={() => setShowPhoto(true)}>
-                  Zum Originalbeleg
+                  {t("Zum Originalbeleg")}
                 </button>
               )}
             </div>
@@ -375,7 +382,7 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
               )
             );
           })()}
-        {showPhoto && photoUrl && <PhotoViewer src={photoUrl} alt="Originalbeleg" onClose={() => setShowPhoto(false)} />}
+        {showPhoto && photoUrl && <PhotoViewer src={photoUrl} alt={t("Originalbeleg")} onClose={() => setShowPhoto(false)} />}
 
         <footer className="scribble-foot">
           {notice && (
@@ -388,28 +395,28 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
             {split ? (
               <DivideBy value={persons} onChange={setPersons} />
             ) : (
-              <p className="scribble-own">Jeder hakt ab, was er hatte.</p>
+              <p className="scribble-own">{t("Jeder hakt ab, was er hatte.")}</p>
             )}
             <div className="scribble-side">
               <p className="scribble-sum">
                 = {formatMoney(billedSum, currency)}
-                {billedSum !== fullSum && <small>statt {formatMoney(fullSum, currency)}</small>}
+                {billedSum !== fullSum && <small>{t("statt {amount}", { amount: formatMoney(fullSum, currency) })}</small>}
               </p>
               {split && (
                 <p className="scribble-each">
-                  {persons ? `je ${formatMoney(Math.round(billedSum / persons), currency)} pro Person` : "Personenzahl wählen"}
+                  {persons ? t("je {amount} pro Person", { amount: formatMoney(Math.round(billedSum / persons), currency) }) : t("Personenzahl wählen")}
                 </p>
               )}
             </div>
           </div>
           <div className="scribble-actions">
-            <button type="button" className="icon-btn scribble-back" aria-label="Zurück" onClick={() => setStep("ask")}>
+            <button type="button" className="icon-btn scribble-back" aria-label={t("Zurück")} onClick={() => setStep("ask")}>
               <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
             <button className="btn btn-primary btn-large" disabled={!anyBilled}>
-              Rechnung erstellen
+              {t("Rechnung erstellen")}
             </button>
           </div>
         </footer>
@@ -421,43 +428,43 @@ export default function SupermarketSheet({ items, fees = [], currency, onDone, i
     <div className="sheet-backdrop">
       <form className="sheet shop-sheet" onSubmit={submit}>
         <PencilFilter />
-        <h2>Supermarkt-Einkauf</h2>
+        <h2>{t("Supermarkt-Einkauf")}</h2>
 
         {step === "ask" ? (
           <>
             <p className="muted">
-              Soll etwas <b>nicht</b> oder <b>nur teilweise</b> in Rechnung gestellt werden?
-              <small className="shop-examples">z.B. Gewürze, Duschgel, Pfand?</small>
+              {rich(t("Soll etwas <b>nicht</b> oder <b>nur teilweise</b> in Rechnung gestellt werden?"))}
+              <small className="shop-examples">{t("z.B. Gewürze, Duschgel, Pfand?")}</small>
             </p>
             <button type="button" className="btn btn-primary btn-large" onClick={() => setStep("all")}>
-              Alles aufteilen
+              {t("Alles aufteilen")}
             </button>
             <button type="button" className="btn btn-secondary btn-large" onClick={() => setStep("some")}>
-              Manches nicht
+              {t("Manches nicht")}
             </button>
             {/* Straight to the bill without the equal split: everyone ticks what they had. */}
             <button type="button" className="btn btn-secondary btn-large" onClick={() => onDone(items, false, undefined, false, [])}>
-              Jeder selber abhaken
+              {t("Jeder selber abhaken")}
             </button>
           </>
         ) : (
           <>
             {/* Split equally by default; the payer can still switch it off on the bill. */}
             <p className="shop-persons">
-              Wie viele teilen sich den Einkauf?
-              <span className="shop-persons-hint">inklusive Dir</span>
+              {t("Wie viele teilen sich den Einkauf?")}
+              <span className="shop-persons-hint">{t("inklusive Dir")}</span>
             </p>
-            <DivideBy value={persons} onChange={setPersons} label="Personen, die sich den Einkauf teilen" className="shop-divide" />
+            <DivideBy value={persons} onChange={setPersons} label={t("Personen, die sich den Einkauf teilen")} className="shop-divide" />
 
             <p className="shop-sum">
-              Abgerechnet werden <b>{formatMoney(billedSum, currency)}</b>
+              {rich(t("Abgerechnet werden <b>{amount}</b>", { amount: formatMoney(billedSum, currency) }))}
             </p>
 
             <button className="btn btn-primary btn-large" disabled={!anyBilled}>
-              Rechnung erstellen
+              {t("Rechnung erstellen")}
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setStep("ask")}>
-              Zurück
+              {t("Zurück")}
             </button>
           </>
         )}

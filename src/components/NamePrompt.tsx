@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { t } from "../lib/i18n";
 import { Wordmark } from "./Logo";
 
 interface Props {
@@ -24,13 +25,13 @@ export default function NamePrompt({ ownerName, initialName = "", onSubmit, extr
         <div className="sheet-logo" aria-hidden="true">
           <Wordmark size={52} />
         </div>
-        <h2>Wie heißt Du?</h2>
+        <h2>{t("Wie heißt Du?")}</h2>
         <p className="muted">
-          {ownerName || "Jemand"} hat die Rechnung bezahlt. Mit Deinem Namen sehen alle, welche Positionen Du übernimmst.
+          {t("{name} hat die Rechnung bezahlt. Mit Deinem Namen sehen alle, welche Positionen Du übernimmst.", { name: ownerName || t("Jemand") })}
         </p>
-        <input autoFocus={!initialName} value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" maxLength={40} autoComplete="given-name" />
+        <input autoFocus={!initialName} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Dein Name")} maxLength={40} autoComplete="given-name" />
         <button className="btn btn-primary btn-large" disabled={!name.trim()}>
-          Zur Rechnung
+          {t("Zur Rechnung")}
         </button>
         {extra}
       </form>

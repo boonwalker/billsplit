@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type ReminderStatus } from "../lib/api";
 import { billUrl } from "../lib/bill";
 import type { NetworkEdge } from "../lib/bill";
+import { rich, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 import { sameAllocations, settlementWith } from "../lib/settle";
 import PayButtons from "./PayButtons";
@@ -41,7 +42,6 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
   const { net } = s;
   const bills = new Set(s.edges.map((e) => e.billId)).size;
   const fmt = (c: number) => formatMoney(c, currency);
-  const inBills = bills === 1 ? "der Rechnung" : `allen ${bills} Rechnungen`;
 
   // "Erinnern": what the person still owes me, bill by bill – as a notification where it reaches them.
   const [reminders, setReminders] = useState<ReminderStatus | null>(null);
@@ -56,8 +56,18 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
   const remindedAt = reminders?.remindedAt[person.id];
   const reminderText =
     owedToMe.length === 1
-      ? `Hi ${person.name}, kleine Erinnerung von klicksplit: Für „${owedToMe[0].title}“ sind bei Dir noch ${fmt(owedTotal)} offen. Hier kannst Du direkt begleichen: ${billUrl(owedToMe[0].billId, window.location.href)}`
-      : `Hi ${person.name}, kleine Erinnerung von klicksplit: Bei Dir sind noch ${fmt(owedTotal)} aus ${owedToMe.length} Rechnungen offen. Im Dashboard kannst Du alles auf einmal ausgleichen: ${window.location.href.replace(/#.*$/, "")}#/dashboard`;
+      ? t("Hi {name}, kleine Erinnerung von klicksplit: Für „{title}“ sind bei Dir noch {amount} offen. Hier kannst Du direkt begleichen: {url}", {
+          name: person.name,
+          title: owedToMe[0].title,
+          amount: fmt(owedTotal),
+          url: billUrl(owedToMe[0].billId, window.location.href),
+        })
+      : t("Hi {name}, kleine Erinnerung von klicksplit: Bei Dir sind noch {amount} aus {n} Rechnungen offen. Im Dashboard kannst Du alles auf einmal ausgleichen: {url}", {
+          name: person.name,
+          amount: fmt(owedTotal),
+          n: owedToMe.length,
+          url: `${window.location.href.replace(/#.*$/, "")}#/dashboard`,
+        });
 
   /** Records the settlement – but only if the open amounts are still the ones shown (and paid). */
   async function book() {
@@ -70,8 +80,8 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
         setEdges(fresh.edges);
         setNotice(
           now.edges.length
-            ? "Die Beträge haben sich gerade geändert. Bitte prüfe die neue Aufstellung – noch wurde nichts eingetragen."
-            : `Mit ${person.name} ist inzwischen alles ausgeglichen – noch wurde nichts eingetragen.`,
+            ? t("Die Beträge haben sich gerade geändert. Bitte prüfe die neue Aufstellung – noch wurde nichts eingetragen.")
+            : t("Mit {name} ist inzwischen alles ausgeglichen – noch wurde nichts eingetragen.", { name: person.name }),
         );
         setStage("review");
         return;
@@ -86,40 +96,55 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
       setBooked({ net });
       setStage("done");
     } catch (e) {
-      setNotice(`${e instanceof Error ? e.message : "Das Eintragen ist fehlgeschlagen."} Es wurde nichts eingetragen.`);
+      setNotice(t("{error} Es wurde nichts eingetragen.", { error: e instanceof Error ? e.message : t("Das Eintragen ist fehlgeschlagen.") }));
       setStage("review");
     }
   }
 
-  const reference = `klicksplit · Ausgleich ${myName ? `von ${myName} ` : ""}(${bills} ${bills === 1 ? "Rechnung" : "Rechnungen"})`.slice(0, 140);
+  const reference = (
+    myName
+      ? bills === 1
+        ? t("klicksplit · Ausgleich von {name} ({n} Rechnung)", { name: myName, n: bills })
+        : t("klicksplit · Ausgleich von {name} ({n} Rechnungen)", { name: myName, n: bills })
+      : bills === 1
+        ? t("klicksplit · Ausgleich ({n} Rechnung)", { n: bills })
+        : t("klicksplit · Ausgleich ({n} Rechnungen)", { n: bills })
+  ).slice(0, 140);
 
   return (
     <div className="sheet-backdrop settle-backdrop" onClick={(e) => e.target === e.currentTarget && stage !== "booking" && onClose(stage === "done")}>
-      <div className="sheet settle-sheet" role="dialog" aria-label={`Mit ${person.name} ausgleichen`}>
-        <h2>Mit {person.name} ausgleichen</h2>
+      <div className="sheet settle-sheet" role="dialog" aria-label={t("Mit {name} ausgleichen", { name: person.name })}>
+        <h2>{t("Mit {name} ausgleichen", { name: person.name })}</h2>
 
         {stage === "done" && booked ? (
           <>
             {booked.net < 0 ? (
               <>
-                <p className="settle-done">✓ Eingetragen – wartet auf die Bestätigung von {person.name}.</p>
+                <p className="settle-done">{t("✓ Eingetragen – wartet auf die Bestätigung von {name}.", { name: person.name })}</p>
                 <p className="muted small">
-                  Bis dahin gelten Deine Anteile als bezahlt. Bestätigt {person.name} den Eingang, ist alles in {inBills} beglichen.
+                  {bills === 1
+                    ? t("Bis dahin gelten Deine Anteile als bezahlt. Bestätigt {name} den Eingang, ist alles in der Rechnung beglichen.", { name: person.name })
+                    : t("Bis dahin gelten Deine Anteile als bezahlt. Bestätigt {name} den Eingang, ist alles in allen {n} Rechnungen beglichen.", {
+                        name: person.name,
+                        n: bills,
+                      })}
                 </p>
               </>
             ) : booked.net > 0 ? (
               <>
-                <p className="settle-done">✓ In {inBills} als erhalten eingetragen.</p>
-                <p className="muted small">{person.name} sieht im Dashboard und in den Rechnungen, dass alles beglichen ist.</p>
+                <p className="settle-done">
+                  {bills === 1 ? t("✓ In der Rechnung als erhalten eingetragen.") : t("✓ In allen {n} Rechnungen als erhalten eingetragen.", { n: bills })}
+                </p>
+                <p className="muted small">{t("{name} sieht im Dashboard und in den Rechnungen, dass alles beglichen ist.", { name: person.name })}</p>
               </>
             ) : (
               <>
-                <p className="settle-done">✓ Verrechnung vorgeschlagen – wartet auf die Bestätigung von {person.name}.</p>
-                <p className="muted small">Bis dahin gelten die Beträge als verrechnet.</p>
+                <p className="settle-done">{t("✓ Verrechnung vorgeschlagen – wartet auf die Bestätigung von {name}.", { name: person.name })}</p>
+                <p className="muted small">{t("Bis dahin gelten die Beträge als verrechnet.")}</p>
               </>
             )}
             <button type="button" className="btn btn-primary btn-large" onClick={() => onClose(true)}>
-              Fertig
+              {t("Fertig")}
             </button>
           </>
         ) : (
@@ -130,7 +155,7 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
                 <BillEntry
                   key={`${e.billId}:${e.debtorId}`}
                   title={e.title}
-                  text={e.debtorId === me ? `Du schuldest ${person.name}` : `${person.name} schuldet Dir`}
+                  text={e.debtorId === me ? t("Du schuldest {name}", { name: person.name }) : t("{name} schuldet Dir", { name: person.name })}
                   amount={`${e.debtorId === me ? "−" : "+"}${fmt(e.amount)}`}
                   onOpen={onOpenBill && (() => onOpenBill(e.billId, e.debtorId))}
                 />
@@ -139,15 +164,11 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
             {s.edges.length > 0 && (
               <p className="settle-total">
                 {net < 0 ? (
-                  <>
-                    Du zahlst {person.name} <b>{fmt(-net)}</b>
-                  </>
+                  rich(t("Du zahlst {name} <b>{amount}</b>", { name: person.name, amount: fmt(-net) }))
                 ) : net > 0 ? (
-                  <>
-                    {person.name} zahlt Dir <b>{fmt(net)}</b>
-                  </>
+                  rich(t("{name} zahlt Dir <b>{amount}</b>", { name: person.name, amount: fmt(net) }))
                 ) : (
-                  <>Gleicht sich genau aus</>
+                  t("Gleicht sich genau aus")
                 )}
               </p>
             )}
@@ -162,7 +183,7 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
                 currency={currency}
                 recipient={person.name}
                 reference={reference}
-                confirmLabel={`✓ Gesendet – ${person.name} bestätigen lassen`}
+                confirmLabel={t("✓ Gesendet – {name} bestätigen lassen", { name: person.name })}
                 onConfirm={book}
                 busy={stage === "booking"}
               />
@@ -172,8 +193,8 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
             {net > 0 && owedToMe.length > 0 && stage === "review" && reminders && (
               <div className="settle-remind">
                 <span>
-                  {person.name} hat noch nicht bezahlt?
-                  {remindedAt && <small className="muted">per Mitteilung erinnert {remindedAgo(remindedAt)}</small>}
+                  {t("{name} hat noch nicht bezahlt?", { name: person.name })}
+                  {remindedAt && <small className="muted">{t("per Mitteilung erinnert {ago}", { ago: remindedAgo(remindedAt) })}</small>}
                 </span>
                 <RemindButton
                   name={person.name}
@@ -186,25 +207,27 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
             )}
             {s.edges.length > 0 && net > 0 && stage === "review" && (
               <>
-                <p className="muted small">{person.name} sieht den Ausgleich im eigenen Dashboard. Sobald das Geld da ist, trag es hier ein.</p>
+                <p className="muted small">{t("{name} sieht den Ausgleich im eigenen Dashboard. Sobald das Geld da ist, trag es hier ein.", { name: person.name })}</p>
                 <button type="button" className="btn btn-primary btn-large" onClick={book}>
-                  ✓ {fmt(net)} erhalten – eintragen
+                  {t("✓ {amount} erhalten – eintragen", { amount: fmt(net) })}
                 </button>
               </>
             )}
             {s.edges.length > 0 && net === 0 && stage === "review" && (
               <>
-                <p className="muted small">Ihr schuldet Euch gegenseitig gleich viel. {person.name} bestätigt die Verrechnung im Dashboard.</p>
+                <p className="muted small">
+                  {t("Ihr schuldet Euch gegenseitig gleich viel. {name} bestätigt die Verrechnung im Dashboard.", { name: person.name })}
+                </p>
                 <button type="button" className="btn btn-primary btn-large" onClick={book}>
-                  Gegenseitig verrechnen
+                  {t("Gegenseitig verrechnen")}
                 </button>
               </>
             )}
-            {stage === "booking" && net >= 0 && <p className="muted small">Wird eingetragen …</p>}
+            {stage === "booking" && net >= 0 && <p className="muted small">{t("Wird eingetragen …")}</p>}
 
             {stage !== "booking" && (
               <button type="button" className="btn btn-ghost" onClick={() => onClose(false)}>
-                Schließen
+                {t("Schließen")}
               </button>
             )}
           </>

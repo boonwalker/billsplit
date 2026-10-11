@@ -5,11 +5,13 @@
  * mail service is set up (and, for the click tests, to the file MAIL_OUTBOX).
  */
 
+import { formatMoneyIn, localeOf, translate, type Lang, type Vars } from "../src/i18n/index.ts";
 import { appendFile } from "node:fs/promises";
 
 /** name: the person's profile name for the greeting, when known. */
-export type SendCode = (email: string, code: string, name?: string) => Promise<void>;
-export type SendWelcome = (email: string, name?: string) => Promise<void>;
+/** lang: the language of the app that asked for the mail. */
+export type SendCode = (email: string, code: string, name?: string, lang?: Lang) => Promise<void>;
+export type SendWelcome = (email: string, name?: string, lang?: Lang) => Promise<void>;
 
 export interface Mail {
   subject: string;
@@ -50,10 +52,14 @@ function wordmark(name: string, size: number, light: string, green: string): str
 }
 
 /** "Hi Niklas," – or just "Hi," without a name. */
-export function greeting(name?: string): string {
+export function greeting(name?: string, lang: Lang = "de"): string {
+  const t = (text: string, vars?: Vars) => translate(lang, text, vars);
   const clean = name?.trim().slice(0, 40);
-  return clean ? `Hi ${clean},` : "Hi,";
+  return clean ? t("Hi {name},", { name: clean }) : t("Hi,");
 }
+
+/** Plain text of a translated sentence with markup (for the text version of a mail). */
+const plain = (html: string) => html.replace(/<\/?b>/g, "");
 
 /** The torn paper edge of the receipt: teeth pointing up (top) or down (bottom). */
 function edge(side: "top" | "bottom"): string {
@@ -69,6 +75,7 @@ function edge(side: "top" | "bottom"): string {
  * fonts and plain edges where gradients fail.
  */
 function layout({
+  lang,
   title,
   preheader,
   name,
@@ -77,6 +84,7 @@ function layout({
   footnote,
   style = "",
 }: {
+  lang: Lang;
   title: string;
   preheader: string;
   name: string;
@@ -86,11 +94,12 @@ function layout({
   /** Extra CSS for the content (e.g. the demo receipt's animations). */
   style?: string;
 }): string {
+  const t = (text: string, vars?: Vars) => translate(lang, text, vars);
   const logo = logoUrl
     ? `<td style="padding-right:10px;vertical-align:middle"><img src="${escapeHtml(logoUrl)}" width="40" height="40" alt="" style="display:block;border:0;border-radius:11px"></td>`
     : "";
   return `<!doctype html>
-<html lang="de">
+<html lang="${lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -120,8 +129,8 @@ ${receipt}
           ${footnote ? `<div style="margin-top:18px;font-size:12px;line-height:1.55;color:${C.muted}">${escapeHtml(footnote)}</div>` : ""}
           <br><br><br>
           <div style="font-family:${DISPLAY};font-size:15px;line-height:1.4">${wordmark(name, 15, C.ink, C.claim)} <span style="color:${C.muted}">&bull;</span></div>
-          <div style="padding-top:8px;font-family:${DISPLAY};font-size:32px;font-weight:700;letter-spacing:-0.035em;line-height:1.08;color:${C.ink}">Einer zahlt.</div>
-          <div style="font-family:${DISPLAY};font-size:32px;font-weight:700;letter-spacing:-0.035em;line-height:1.08;color:${C.mint}">Alle splitten.</div>
+          <div style="padding-top:8px;font-family:${DISPLAY};font-size:32px;font-weight:700;letter-spacing:-0.035em;line-height:1.08;color:${C.ink}">${t("Einer zahlt.")}</div>
+          <div style="font-family:${DISPLAY};font-size:32px;font-weight:700;letter-spacing:-0.035em;line-height:1.08;color:${C.mint}">${t("Alle splitten.")}</div>
         </td></tr>
         ${edge("bottom")}
       </table>
@@ -135,8 +144,8 @@ ${receipt}
 }
 
 /** The receipt's head: a green star, a title in capitals, the date. */
-function receiptHead(title: string, now: Date): string {
-  const date = now.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" });
+function receiptHead(title: string, now: Date, lang: Lang): string {
+  const date = now.toLocaleDateString(localeOf(lang), { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" });
   return `          <div style="text-align:center;color:${C.claim};font-size:18px">&#10022;</div>
           <div style="text-align:center;font-weight:700;font-size:17px;letter-spacing:0.08em;text-transform:uppercase;padding-top:4px">${escapeHtml(title)}</div>
           <div style="text-align:center;font-size:12px;color:${C.inkSoft}">${date}</div>
@@ -146,12 +155,15 @@ function receiptHead(title: string, now: Date): string {
 const rule = `<div style="border-top:2px dashed ${C.inkFaint};margin:18px 0 16px;height:0;line-height:0;font-size:0">&nbsp;</div>`;
 
 /** The sign-in mail: the code large in a mint box on the receipt. */
-export function codeMail(code: string, from: string | undefined, logoUrl?: string, person?: string, now = new Date()): Mail {
+export function codeMail(code: string, from: string | undefined, logoUrl?: string, person?: string, now = new Date(), lang: Lang = "de"): Mail {
+  const t = (text: string, vars?: Vars) => translate(lang, text, vars);
   const name = senderName(from);
-  const hi = greeting(person);
-  const receipt = `${receiptHead("Dein Code", now)}
+  const hi = greeting(person, lang);
+  const valid = t("Tippe ihn in {name} ein – dort, wo Du ihn angefordert hast. Er gilt <b>15 Minuten</b>.", { name: escapeHtml(name) });
+  const ignore = t("Wenn Du keinen Code angefordert hast, kannst Du diese Mail einfach ignorieren.");
+  const receipt = `${receiptHead(t("Dein Code"), now, lang)}
           <p style="margin:0 0 4px">${escapeHtml(hi)}</p>
-          <p style="margin:0 0 18px">hier ist Dein Code für ${escapeHtml(name)}:</p>
+          <p style="margin:0 0 18px">${t("hier ist Dein Code für {name}:", { name: escapeHtml(name) })}</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
             <td align="center" style="background:${C.mintSoft};border-radius:14px;padding:18px 12px">
               <!-- One unbroken number (spaced by letter-spacing only): the iPhone offers codes from mails for filling in. -->
@@ -159,34 +171,36 @@ export function codeMail(code: string, from: string | undefined, logoUrl?: strin
             </td>
           </tr></table>
           ${rule}
-          <p style="margin:0;font-size:13px;color:${C.inkSoft}">Tippe ihn in ${escapeHtml(name)} ein – dort, wo Du ihn angefordert hast. Er gilt <b style="color:${C.ink}">15 Minuten</b>.</p>`;
+          <p style="margin:0;font-size:13px;color:${C.inkSoft}">${valid.replace("<b>", `<b style="color:${C.ink}">`)}</p>`;
   return {
-    subject: `Dein ${name}-Code: ${code}`,
-    text: `${hi}\n\nhier ist Dein Code für ${name}: ${code}\n\nTippe ihn in ${name} ein – dort, wo Du ihn angefordert hast. Er gilt 15 Minuten.\n\nWenn Du keinen Code angefordert hast, kannst Du diese Mail einfach ignorieren.\n\n\n\n${name} •\nEiner zahlt.\nAlle splitten.\n`,
+    subject: t("Dein {name}-Code: {code}", { name, code }),
+    text: `${hi}\n\n${t("hier ist Dein Code für {name}:", { name })} ${code}\n\n${plain(t("Tippe ihn in {name} ein – dort, wo Du ihn angefordert hast. Er gilt <b>15 Minuten</b>.", { name }))}\n\n${ignore}\n\n\n\n${name} •\n${t("Einer zahlt.")}\n${t("Alle splitten.")}\n`,
     html: layout({
-      title: `Dein ${name}-Code`,
-      preheader: `Dein Code: ${code} – gilt 15 Minuten.`,
+      lang,
+      title: t("Dein {name}-Code", { name }),
+      preheader: t("Dein Code: {code} – gilt 15 Minuten.", { code }),
       name,
       logoUrl,
       receipt,
-      footnote: "Wenn Du keinen Code angefordert hast, kannst Du diese Mail einfach ignorieren.",
+      footnote: ignore,
     }),
   };
 }
 
-/** A shopping receipt for the welcome mail's demo: Duschgel gets crossed out, Olivenöl halved. */
-const DEMO_ITEMS = [
-  { name: "Spaghetti", total: 149 },
-  { name: "Duschgel", total: 295 },
-  { name: "Olivenöl", total: 790 },
-  { name: "Parmesan", total: 379 },
-];
+/**
+ * A shopping receipt for the welcome mail's demo – Spaghetti, Duschgel, Olivenöl, Parmesan (the
+ * names are translated in demoReceipt): Duschgel gets crossed out, Olivenöl halved.
+ */
+const DEMO_ITEMS = [{ total: 149 }, { total: 295 }, { total: 790 }, { total: 379 }];
 const STRUCK = 1;
 const HALVED = 2;
 const PENCIL = "#3f413f";
 const HAND = "'Caveat', 'Bradley Hand', 'Segoe Print', cursive";
-const euro = (cents: number) => `${(cents / 100).toFixed(2).replace(".", ",")} €`;
-const price = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
+/** Amounts in the reader's format, with plain spaces ("16,13 €", "€16.13"). */
+const euro = (cents: number, lang: Lang) => formatMoneyIn(localeOf(lang), cents, "EUR").replace(/[\u00a0\u202f]/g, " ");
+/** A line's price without currency ("7,90", "7.90"). */
+const price = (cents: number, lang: Lang) =>
+  new Intl.NumberFormat(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 
 /**
  * The app's receipt in the welcome mail, built in three layers so every mail program shows
@@ -197,7 +211,10 @@ const price = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
  * pre-checked probe box shows the "tap here" hint only where tapping works, and the first tap
  * stops the loop – like in the app.
  */
-function demoReceipt(): { html: string; style: string } {
+function demoReceipt(lang: Lang): { html: string; style: string } {
+  const t = (text: string, vars?: Vars) => translate(lang, text, vars);
+  // The item names in the reader's language (t() needs the literals).
+  const names = [t("Spaghetti"), t("Duschgel"), t("Olivenöl"), t("Parmesan")];
   const total = DEMO_ITEMS.reduce((sum, item) => sum + item.total, 0);
   const afterStrike = total - DEMO_ITEMS[STRUCK].total;
   const afterHalf = afterStrike - DEMO_ITEMS[HALVED].total / 2;
@@ -210,11 +227,11 @@ function demoReceipt(): { html: string; style: string } {
     const ring = i === STRUCK ? "ks-tap" : i === HALVED ? "ks-hold" : "";
     const amount =
       i === HALVED
-        ? `<span style="position:relative;display:inline-block"><span class="ks-a ks-full">${price(item.total)}</span><span class="ks-a ks-half" style="${hidden};position:absolute;right:0;bottom:0;text-align:right;white-space:nowrap;line-height:1.2"><span style="font-size:11px;font-weight:400;color:${C.inkSoft};text-decoration:line-through">${price(item.total)}</span><br>${price(item.total / 2)}</span></span>`
-        : price(item.total);
+        ? `<span style="position:relative;display:inline-block"><span class="ks-a ks-full">${price(item.total, lang)}</span><span class="ks-a ks-half" style="${hidden};position:absolute;right:0;bottom:0;text-align:right;white-space:nowrap;line-height:1.2"><span style="font-size:11px;font-weight:400;color:${C.inkSoft};text-decoration:line-through">${price(item.total, lang)}</span><br>${price(item.total / 2, lang)}</span></span>`
+        : price(item.total, lang);
     const strike = i === STRUCK ? " ks-a ks-a-strike" : "";
     return `<label for="ks-i${i}" class="ks-row ks-r${i}" style="display:block;padding:7px 2px;cursor:pointer">
-            <span style="display:table;width:100%"><span style="display:table-cell;vertical-align:bottom"><span style="position:relative;display:inline-block"><span class="ks-t${strike}" style="background:${line}">${escapeHtml(item.name)}</span>${
+            <span style="display:table;width:100%"><span style="display:table-cell;vertical-align:bottom"><span style="position:relative;display:inline-block"><span class="ks-t${strike}" style="background:${line}">${escapeHtml(names[i])}</span>${
               // The finger taps (and holds) right on the word, as in the app's explainer.
               ring ? `<span class="ks-a ${ring}" style="${hidden};position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:2.5px solid ${C.mint};background:rgba(61,220,151,0.18);box-sizing:border-box"></span>` : ""
             }</span>${
@@ -224,10 +241,10 @@ function demoReceipt(): { html: string; style: string } {
   }).join("\n          ");
 
   const sums = [
-    `<span class="ks-a ks-sum0">${euro(total)}</span>`,
-    `<span class="ks-a ks-sumA" style="${hidden};position:absolute;right:0;top:0">${euro(afterStrike)}</span>`,
-    `<span class="ks-a ks-sumB" style="${hidden};position:absolute;right:0;top:0">${euro(afterHalf)}</span>`,
-    ...masks.map((mask) => `<span class="ks-m${mask}" style="${hidden};position:absolute;right:0;top:0">${euro(billed(mask))}</span>`),
+    `<span class="ks-a ks-sum0">${euro(total, lang)}</span>`,
+    `<span class="ks-a ks-sumA" style="${hidden};position:absolute;right:0;top:0">${euro(afterStrike, lang)}</span>`,
+    `<span class="ks-a ks-sumB" style="${hidden};position:absolute;right:0;top:0">${euro(afterHalf, lang)}</span>`,
+    ...masks.map((mask) => `<span class="ks-m${mask}" style="${hidden};position:absolute;right:0;top:0">${euro(billed(mask), lang)}</span>`),
   ].join("");
 
   const html = `<input type="checkbox" class="ks-probe" checked style="${hidden}">
@@ -235,9 +252,9 @@ function demoReceipt(): { html: string; style: string } {
           <div class="ks-demo">
           ${rows}
           <div style="border-top:2px dashed ${C.inkFaint};margin:8px 0 0;height:0;line-height:0;font-size:0">&nbsp;</div>
-          <div style="display:table;width:100%;padding-top:8px;font-weight:700"><span style="display:table-cell;padding-left:2px">Abgerechnet werden</span><span style="display:table-cell;text-align:right;white-space:nowrap;padding-right:2px"><span style="position:relative;display:inline-block">${sums}</span></span></div>
-          <p style="margin:14px 0 0;font-size:12px;line-height:1.5;color:${C.inkSoft}">Antippen = durchstreichen · Gedrückt halten = nur einen Teil in Rechnung stellen</p>
-          <p class="ks-hint" style="${hidden};margin:6px 0 0;font-size:12px;font-weight:700;color:${C.claim}">↑ Probier's aus: Tipp hier in der Mail eine Zeile an.</p>
+          <div style="display:table;width:100%;padding-top:8px;font-weight:700"><span style="display:table-cell;padding-left:2px">${t("Abgerechnet werden")}</span><span style="display:table-cell;text-align:right;white-space:nowrap;padding-right:2px"><span style="position:relative;display:inline-block">${sums}</span></span></div>
+          <p style="margin:14px 0 0;font-size:12px;line-height:1.5;color:${C.inkSoft}">${t("Antippen = durchstreichen · Gedrückt halten = nur einen Teil in Rechnung stellen")}</p>
+          <p class="ks-hint" style="${hidden};margin:6px 0 0;font-size:12px;font-weight:700;color:${C.claim}">${t("↑ Probier's aus: Tipp hier in der Mail eine Zeile an.")}</p>
           </div>`;
 
   const checked = (i: number, on: boolean) => `.ks-c${i}${on ? ":checked" : ":not(:checked)"}`;
@@ -276,38 +293,58 @@ ${masks.map((mask) => `${DEMO_ITEMS.map((_, i) => checked(i, Boolean(mask & (1 <
 }
 
 /** After the first sign-in code: a warm welcome, and how to get into the account from anywhere. */
-export function welcomeMail(from: string | undefined, appUrl: string, logoUrl?: string, person?: string, now = new Date()): Mail {
+export function welcomeMail(from: string | undefined, appUrl: string, logoUrl?: string, person?: string, now = new Date(), lang: Lang = "de"): Mail {
+  const t = (text: string, vars?: Vars) => translate(lang, text, vars);
   const name = senderName(from);
-  const hi = greeting(person);
+  const hi = greeting(person, lang);
   const host = appUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-  const demo = demoReceipt();
+  const demo = demoReceipt(lang);
+  const welcome = t("schön, dass Du dabei bist! Dein {name}-Konto ist angelegt.", { name: escapeHtml(name) });
+  const safe = t("Ab jetzt sind Deine Rechnungen, Dein Profil und Deine Bilanz sicher bei Dir auf jedem Gerät.");
+  const anywhere = t("So kommst Du von überall rein");
+  const steps = [
+    t("<b>{host}</b> im Browser öffnen – am Handy, Tablet oder Laptop.", { host: escapeHtml(host) }),
+    t("„Anmelden“ tippen und Deine E-Mail-Adresse eingeben."),
+    t("Den Code aus der Mail eintippen – fertig. Kein Passwort, nichts zu merken."),
+  ];
   const step = (n: number, text: string) =>
     `<tr><td style="width:26px;vertical-align:top;font-weight:700;color:${C.claim}">${n}.</td><td style="padding-bottom:6px">${text}</td></tr>`;
-  const receipt = `${receiptHead("Willkommen", now)}
+  const receipt = `${receiptHead(t("Willkommen"), now, lang)}
           <p style="margin:0 0 4px">${escapeHtml(hi)}</p>
-          <p style="margin:0 0 12px">schön, dass Du dabei bist! Dein ${escapeHtml(name)}-Konto ist angelegt.</p>
-          <p style="margin:0">Ab jetzt sind Deine Rechnungen, Dein Profil und Deine Bilanz sicher bei Dir auf jedem Gerät.</p>
+          <p style="margin:0 0 12px">${welcome}</p>
+          <p style="margin:0">${safe}</p>
           ${rule}
-          <p style="margin:0 0 6px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;font-size:13px">So einfach geht's</p>
+          <p style="margin:0 0 6px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;font-size:13px">${t("So einfach geht's")}</p>
           ${demo.html}
           ${rule}
-          <p style="margin:0 0 10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;font-size:13px">So kommst Du von überall rein</p>
+          <p style="margin:0 0 10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;font-size:13px">${anywhere}</p>
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:${MONO};font-size:14px;line-height:1.55;color:${C.ink}">
-            ${step(1, `<b>${escapeHtml(host)}</b> im Browser öffnen – am Handy, Tablet oder Laptop.`)}
-            ${step(2, "„Anmelden“ tippen und Deine E-Mail-Adresse eingeben.")}
-            ${step(3, "Den Code aus der Mail eintippen – fertig. Kein Passwort, nichts zu merken.")}
+            ${steps.map((text, i) => step(i + 1, text)).join("\n            ")}
           </table>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px"><tr>
             <td align="center" style="background:${C.mint};border-radius:14px">
-              <a href="${escapeHtml(appUrl)}" style="display:block;padding:14px 12px;font-family:${DISPLAY};font-size:16px;font-weight:700;color:${C.brand};text-decoration:none">${escapeHtml(host)} öffnen</a>
+              <a href="${escapeHtml(appUrl)}" style="display:block;padding:14px 12px;font-family:${DISPLAY};font-size:16px;font-weight:700;color:${C.brand};text-decoration:none">${t("{host} öffnen", { host: escapeHtml(host) })}</a>
             </td>
           </tr></table>
           ${rule}
-          <p style="margin:0;font-size:13px;color:${C.inkSoft}">Tipp: Auf dem iPhone in Safari auf „Teilen“ und „Zum Home-Bildschirm“ tippen – dann ist ${escapeHtml(name)} wie eine App immer dabei, mit Benachrichtigungen, wenn Geld eingeht.</p>`;
+          <p style="margin:0;font-size:13px;color:${C.inkSoft}">${t("Tipp: Auf dem iPhone in Safari auf „Teilen“ und „Zum Home-Bildschirm“ tippen – dann ist {name} wie eine App immer dabei, mit Benachrichtigungen, wenn Geld eingeht.", { name: escapeHtml(name) })}</p>`;
+  const textSteps = [
+    t("<b>{host}</b> im Browser öffnen – am Handy, Tablet oder Laptop.", { host }),
+    t("„Anmelden“ tippen und Deine E-Mail-Adresse eingeben."),
+    t("Den Code aus der Mail eintippen – fertig. Kein Passwort, nichts zu merken."),
+  ].map((text, i) => `${i + 1}. ${plain(text)}`);
   return {
-    subject: `Willkommen bei ${name}!`,
-    text: `${hi}\n\nschön, dass Du dabei bist! Dein ${name}-Konto ist angelegt. Ab jetzt sind Deine Rechnungen, Dein Profil und Deine Bilanz sicher bei Dir auf jedem Gerät.\n\nSo kommst Du von überall rein:\n1. ${host} im Browser öffnen – am Handy, Tablet oder Laptop.\n2. „Anmelden“ tippen und Deine E-Mail-Adresse eingeben.\n3. Den Code aus der Mail eintippen – fertig. Kein Passwort, nichts zu merken.\n\n${appUrl}\n\nTipp: Auf dem iPhone in Safari auf „Teilen“ und „Zum Home-Bildschirm“ tippen – dann ist ${name} wie eine App immer dabei.\n\n\n\n${name} •\nEiner zahlt.\nAlle splitten.\n`,
-    html: layout({ title: `Willkommen bei ${name}`, preheader: "Dein Konto ist angelegt – so kommst Du von überall rein.", name, logoUrl, receipt, style: demo.style }),
+    subject: t("Willkommen bei {name}!", { name }),
+    text: `${hi}\n\n${t("schön, dass Du dabei bist! Dein {name}-Konto ist angelegt.", { name })} ${safe}\n\n${anywhere}:\n${textSteps.join("\n")}\n\n${appUrl}\n\n${t("Tipp: Auf dem iPhone in Safari auf „Teilen“ und „Zum Home-Bildschirm“ tippen – dann ist {name} wie eine App immer dabei.", { name })}\n\n\n\n${name} •\n${t("Einer zahlt.")}\n${t("Alle splitten.")}\n`,
+    html: layout({
+      lang,
+      title: t("Willkommen bei {name}", { name }),
+      preheader: t("Dein Konto ist angelegt – so kommst Du von überall rein."),
+      name,
+      logoUrl,
+      receipt,
+      style: demo.style,
+    }),
   };
 }
 
@@ -331,13 +368,13 @@ export function mailerFromEnv(): Mailer {
       if (outbox) await appendFile(outbox, `${JSON.stringify(entry)}\n`);
     };
     return {
-      sendCode: async (email, code) => {
+      sendCode: async (email, code, _name, lang = "de") => {
         console.log(`[Mail] Kein Mail-Dienst eingerichtet (RESEND_API_KEY, MAIL_FROM) – Code für ${email}: ${code}`);
-        await note({ email, code });
+        await note({ email, code, lang });
       },
-      sendWelcome: async (email) => {
+      sendWelcome: async (email, _name, lang = "de") => {
         console.log(`[Mail] Kein Mail-Dienst eingerichtet – Willkommensmail an ${email}`);
-        await note({ email, welcome: "1" });
+        await note({ email, welcome: "1", lang });
       },
     };
   }
@@ -352,7 +389,7 @@ export function mailerFromEnv(): Mailer {
     if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
   };
   return {
-    sendCode: (email, code, name) => send(email, codeMail(code, from, logo, name)),
-    sendWelcome: (email, name) => send(email, welcomeMail(from, base ?? "https://klicksplit.de", logo, name)),
+    sendCode: (email, code, name, lang) => send(email, codeMail(code, from, logo, name, undefined, lang)),
+    sendWelcome: (email, name, lang) => send(email, welcomeMail(from, base ?? "https://www.klicksplit.de", logo, name, undefined, lang)),
   };
 }

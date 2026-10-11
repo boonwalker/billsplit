@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { reportError } from "../lib/errorReport";
+import { t } from "../lib/i18n";
 
 /** A crashed screen shows a way out instead of a blank page – and the error reaches the admin page. */
 export default class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -18,10 +19,10 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, { 
     return (
       <div className="page">
         <main className="content crash">
-          <h2>Da ist etwas schiefgelaufen.</h2>
-          <p className="muted">Deine Rechnungen sind sicher gespeichert. Lade die Seite neu – meistens ist es dann erledigt.</p>
+          <h2>{t("Da ist etwas schiefgelaufen.")}</h2>
+          <p className="muted">{t("Deine Rechnungen sind sicher gespeichert. Lade die Seite neu – meistens ist es dann erledigt.")}</p>
           <button type="button" className="btn btn-primary btn-large" onClick={() => window.location.reload()}>
-            Neu laden
+            {t("Neu laden")}
           </button>
           <button
             type="button"
@@ -31,7 +32,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, { 
               window.location.reload();
             }}
           >
-            Zur Startseite
+            {t("Zur Startseite")}
           </button>
         </main>
       </div>

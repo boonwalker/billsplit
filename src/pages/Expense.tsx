@@ -6,13 +6,14 @@ import ProfileWizard from "../components/ProfileWizard";
 import { PencilFilter } from "../components/Receipt";
 import { api } from "../lib/api";
 import { newItemId, type BillData } from "../lib/bill";
+import { t } from "../lib/i18n";
 import { formatMoney, parseMoney } from "../lib/money";
 import { paymentFromProfile } from "../lib/payment";
 import { navigate } from "../lib/router";
 import { loadProfile, profileReady, rememberBill } from "../lib/storage";
 
 /** Quick picks for "Wofür?" – a tap fills in the description. */
-const PICKS = ["Taxi", "Tanken", "Tickets", "Einkauf", "Essen", "Geschenk"];
+const picks = () => [t("Taxi"), t("Tanken"), t("Tickets"), t("Einkauf"), t("Essen"), t("Geschenk")];
 
 const today = () => {
   const d = new Date();
@@ -54,11 +55,11 @@ export default function Expense() {
       payment: paymentFromProfile(loadProfile()),
     };
     try {
-      const snap = await api.createBill(data, loadProfile().name.trim() || "Ich");
+      const snap = await api.createBill(data, loadProfile().name.trim() || t("Ich"));
       rememberBill({ id: snap.id, title: name, role: "owner", createdAt: snap.createdAt });
       navigate(`/b/${snap.id}`, { replace: true });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Die Rechnung konnte nicht erstellt werden.");
+      setError(e instanceof Error ? e.message : t("Die Rechnung konnte nicht erstellt werden."));
       setBusy(false);
     }
   }
@@ -72,16 +73,16 @@ export default function Expense() {
     else void create();
   }
 
-  if (busy) return <BusyScreen message="klicksplit generiert die interaktive Rechnung" creating />;
+  if (busy) return <BusyScreen message={t("klicksplit generiert die interaktive Rechnung")} creating />;
 
   return (
     <div className="page expense-page">
-      <Header back="/" title="Ausgabe eingeben" />
+      <Header back="/" title={t("Ausgabe eingeben")} />
       <main className="content">
         <PencilFilter />
         <form className="expense-form" onSubmit={submit} noValidate>
           <label className="expense-amount">
-            <span>Betrag</span>
+            <span>{t("Betrag")}</span>
             <span className="expense-amount-row">
               <input
                 autoFocus
@@ -90,7 +91,7 @@ export default function Expense() {
                 inputMode="decimal"
                 placeholder="0,00"
                 aria-invalid={touched && (cents === null || cents <= 0)}
-                aria-label="Betrag in Euro"
+                aria-label={t("Betrag in Euro")}
               />
               <b aria-hidden="true">€</b>
             </span>
@@ -98,50 +99,50 @@ export default function Expense() {
 
           <div className="card expense-card">
             <label className="field">
-              <span>Wofür?</span>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. Taxi zum Konzert" maxLength={60} aria-invalid={touched && !title.trim()} />
+              <span>{t("Wofür?")}</span>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("z. B. Taxi zum Konzert")} maxLength={60} aria-invalid={touched && !title.trim()} />
             </label>
-            <div className="expense-picks" role="group" aria-label="Schnellauswahl">
-              {PICKS.map((pick) => (
+            <div className="expense-picks" role="group" aria-label={t("Schnellauswahl")}>
+              {picks().map((pick) => (
                 <button key={pick} type="button" className={`chip${title === pick ? " active" : ""}`} onClick={() => setTitle(pick)}>
                   {pick}
                 </button>
               ))}
             </div>
             <label className="field">
-              <span>Wann?</span>
+              <span>{t("Wann?")}</span>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} max={today()} />
             </label>
           </div>
 
           <div className="card expense-split">
             <p className="shop-persons">
-              Wie viele teilen sich das?
-              <span className="shop-persons-hint">inklusive Dir</span>
+              {t("Wie viele teilen sich das?")}
+              <span className="shop-persons-hint">{t("inklusive Dir")}</span>
             </p>
-            <DivideBy value={persons} onChange={(n) => setPersons(n ?? 2)} label="Personen, die sich die Ausgabe teilen" className="shop-divide" />
+            <DivideBy value={persons} onChange={(n) => setPersons(n ?? 2)} label={t("Personen, die sich die Ausgabe teilen")} className="shop-divide" />
             <p className="expense-each">
               {cents ? (
                 <>
-                  <b>{formatMoney(each, "EUR")}</b> pro Person
+                  <b>{formatMoney(each, "EUR")}</b> {t("pro Person")}
                 </>
               ) : (
-                "Betrag eingeben – dann siehst Du den Anteil pro Person."
+                t("Betrag eingeben – dann siehst Du den Anteil pro Person.")
               )}
             </p>
           </div>
 
-          {touched && !valid && <p className="alert">{cents === null || cents <= 0 ? "Bitte gib einen Betrag ein." : "Wofür war die Ausgabe?"}</p>}
+          {touched && !valid && <p className="alert">{cents === null || cents <= 0 ? t("Bitte gib einen Betrag ein.") : t("Wofür war die Ausgabe?")}</p>}
           {error && <p className="alert">{error}</p>}
 
-          <button className="btn btn-primary btn-large">Rechnung erstellen</button>
+          <button className="btn btn-primary btn-large">{t("Rechnung erstellen")}</button>
         </form>
       </main>
 
       {needProfile && (
         <ProfileWizard
           role="payer"
-          hint="Kurz noch zu Dir, dann ist Deine Rechnung fertig."
+          hint={t("Kurz noch zu Dir, dann ist Deine Rechnung fertig.")}
           onDone={() => {
             setNeedProfile(false);
             if (profileReady()) void create();

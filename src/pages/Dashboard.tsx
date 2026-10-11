@@ -8,6 +8,7 @@ import { computeBalances, type Balances, type PersonBalance } from "../lib/balan
 import type { BillSnapshot, NetworkEdge, Transfer } from "../lib/bill";
 import { useBillChanges } from "../lib/liveEvents";
 import { planSettlement, type PlannedTransfer } from "../lib/simplify";
+import { t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 import { rememberDashboard, takeDashboard, type DashboardView } from "../lib/dashboardReturn";
 import { billPath, navigate } from "../lib/router";
@@ -27,7 +28,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 /** Surface gap between the two slices (in px along the ring). */
 const GAP = 3;
 
-const LABEL: Record<Slice, string> = { lent: "Du leihst", owed: "Du schuldest" };
+const label = (slice: Slice): string => (slice === "lent" ? t("Du leihst") : t("Du schuldest"));
 
 /**
  * The two slices of a ring (lent green, owed orange) in a 200×200 view box, each shortened by
@@ -70,7 +71,13 @@ function RingSlices({
             onPointerLeave={onActive && ((e) => e.pointerType === "mouse" && onActive(null))}
             onClick={onActive && (() => onActive(active === s.key ? null : s.key))}
           >
-            <title>{`${LABEL[s.key]}: ${formatMoney(s.value, currency)} (${Math.round((s.value / total) * 100)} %)`}</title>
+            <title>
+              {t("{label}: {amount} ({percent} %)", {
+                label: label(s.key),
+                amount: formatMoney(s.value, currency),
+                percent: Math.round((s.value / total) * 100),
+              })}
+            </title>
           </circle>
         );
       })}
@@ -92,26 +99,26 @@ function BalanceRing({ balances }: { balances: Balances }) {
   return (
     <figure className="balance-ring">
       <div className="balance-ring-chart">
-        <svg viewBox="0 0 200 200" role="img" aria-label={`Du leihst ${formatMoney(lent, currency)}, Du schuldest ${formatMoney(owed, currency)}`}>
+        <svg viewBox="0 0 200 200" role="img" aria-label={t("Du leihst {lent}, Du schuldest {owed}", { lent: formatMoney(lent, currency), owed: formatMoney(owed, currency) })}>
           <RingSlices lent={lent} owed={owed} currency={currency} active={active} onActive={setActive} />
         </svg>
         <div className="balance-ring-centre" aria-live="polite">
           {active ? (
             <>
-              <small>{LABEL[active]}</small>
+              <small>{label(active)}</small>
               <b>{formatMoney(active === "lent" ? lent : owed, currency)}</b>
-              <small>{share(active === "lent" ? lent : owed)} % von allem Offenen</small>
+              <small>{t("{percent} % von allem Offenen", { percent: share(active === "lent" ? lent : owed) })}</small>
             </>
           ) : total === 0 ? (
             <>
               <b className="settled">✓</b>
-              <small>Alles ausgeglichen</small>
+              <small>{t("Alles ausgeglichen")}</small>
             </>
           ) : (
             <>
-              <small>Bilanz</small>
+              <small>{t("Bilanz")}</small>
               <b>{signed(net, currency)}</b>
-              <small>{net > 0 ? "Du bekommst mehr zurück" : net < 0 ? "Du schuldest mehr" : "Hält sich die Waage"}</small>
+              <small>{net > 0 ? t("Du bekommst mehr zurück") : net < 0 ? t("Du schuldest mehr") : t("Hält sich die Waage")}</small>
             </>
           )}
         </div>
@@ -126,13 +133,13 @@ function BalanceRing({ balances }: { balances: Balances }) {
             onClick={() => setActive((a) => (a === key ? null : key))}
           >
             <i className={`swatch ${key}`} aria-hidden="true" />
-            <span>{LABEL[key]}</span>
+            <span>{label(key)}</span>
             <b>{formatMoney(key === "lent" ? lent : owed, currency)}</b>
           </button>
         ))}
         {balances.unassigned > 0 && (
           <p className="muted small balance-note">
-            Davon {formatMoney(balances.unassigned, balances.currency)} noch von niemandem abgehakt.
+            {t("Davon {amount} noch von niemandem abgehakt.", { amount: formatMoney(balances.unassigned, balances.currency) })}
           </p>
         )}
       </figcaption>
@@ -147,9 +154,13 @@ function PersonRing({ person, currency, onOpen }: { person: PersonBalance; curre
   return (
     <li className={`person-ring${open ? " open" : ""}`}>
       {/* Tapping a person with open amounts opens the settlement (pay or confirm, bill by bill). */}
-      {open && <button type="button" className="person-ring-hit" aria-label={`Mit ${person.name} ausgleichen`} onClick={onOpen} />}
+      {open && <button type="button" className="person-ring-hit" aria-label={t("Mit {name} ausgleichen", { name: person.name })} onClick={onOpen} />}
       <div className="person-ring-chart">
-        <svg viewBox="0 0 200 200" role="img" aria-label={`${person.name}: Dir geschuldet ${formatMoney(person.lent, currency)}, Du schuldest ${formatMoney(person.owed, currency)}`}>
+        <svg viewBox="0 0 200 200" role="img" aria-label={t("{name}: Dir geschuldet {lent}, Du schuldest {owed}", {
+            name: person.name,
+            lent: formatMoney(person.lent, currency),
+            owed: formatMoney(person.owed, currency),
+          })}>
           <RingSlices lent={person.lent} owed={person.owed} currency={currency} />
         </svg>
         <span className="person-ring-initial" aria-hidden="true">
@@ -158,14 +169,14 @@ function PersonRing({ person, currency, onOpen }: { person: PersonBalance; curre
       </div>
       <b className="person-ring-name">{person.name}</b>
       {net === 0 ? (
-        <span className="list-paid small">✓ ausgeglichen</span>
+        <span className="list-paid small">{t("✓ ausgeglichen")}</span>
       ) : (
         <>
           <span className="person-ring-amount">
             <i className={`swatch ${net > 0 ? "lent" : "owed"}`} aria-hidden="true" />
             {formatMoney(Math.abs(net), currency)}
           </span>
-          <small className="muted">{net > 0 ? "schuldet Dir" : "schuldest Du"}</small>
+          <small className="muted">{net > 0 ? t("schuldet Dir") : t("schuldest Du")}</small>
         </>
       )}
       {person.lent > 0 && person.owed > 0 && (
@@ -174,9 +185,9 @@ function PersonRing({ person, currency, onOpen }: { person: PersonBalance; curre
         </small>
       )}
       <small className="muted person-ring-bills">
-        {person.bills} {person.bills === 1 ? "Rechnung" : "Rechnungen"}
+        {person.bills === 1 ? t("{n} Rechnung", { n: person.bills }) : t("{n} Rechnungen", { n: person.bills })}
       </small>
-      {open && <span className="person-ring-action">{net < 0 ? "Ausgleich zahlen ›" : net > 0 ? "Ausgleich ansehen ›" : "Verrechnen ›"}</span>}
+      {open && <span className="person-ring-action">{net < 0 ? t("Ausgleich zahlen ›") : net > 0 ? t("Ausgleich ansehen ›") : t("Verrechnen ›")}</span>}
     </li>
   );
 }
@@ -243,7 +254,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
       const person = balances.find((b) => b.currency === view.currency)?.people.find((p) => p.id === view.personId);
       if (person) setSettle({ person, currency: view.currency });
     } else if (view.kind === "plan") {
-      const planned = plans.find((p) => p.currency === view.currency)?.transfers.find((t) => t.toId === view.toId);
+      const planned = plans.find((p) => p.currency === view.currency)?.transfers.find((tr) => tr.toId === view.toId);
       if (planned) setPaying({ planned, edges: network.edges, me: network.me });
     }
     window.requestAnimationFrame(() => window.scrollTo(0, back.scrollY));
@@ -258,7 +269,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
 
   return (
     <div className="page dashboard">
-      <Header back="/" title="Dashboard" />
+      <Header back="/" title={t("Dashboard")} />
       <main className="content">
         {network && (
           <TransferInbox
@@ -277,14 +288,14 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
               <i />
               <i />
             </div>
-            <p className="scan-msg">Deine Rechnungen werden zusammengerechnet</p>
+            <p className="scan-msg">{t("Deine Rechnungen werden zusammengerechnet")}</p>
           </div>
         ) : balances.length === 0 ? (
-          <p className="muted empty">Noch keine Rechnungen – sobald Du eine erstellst oder scannst, erscheint hier Deine Bilanz.</p>
+          <p className="muted empty">{t("Noch keine Rechnungen – sobald Du eine erstellst oder scannst, erscheint hier Deine Bilanz.")}</p>
         ) : (
           balances.map((b) => (
             <section key={b.currency} className="dashboard-section">
-              <h3 className="section-title">{balances.length > 1 ? `Bilanz in ${b.currency}` : "Leihen oder schulden?"}</h3>
+              <h3 className="section-title">{balances.length > 1 ? t("Bilanz in {currency}", { currency: b.currency }) : t("Leihen oder schulden?")}</h3>
               <div className="card">
                 <BalanceRing balances={b} />
               </div>
@@ -297,7 +308,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
                   ))}
               {b.people.length > 0 && (
                 <>
-                  <h3 className="section-title">Mit wem Du wie stehst</h3>
+                  <h3 className="section-title">{t("Mit wem Du wie stehst")}</h3>
                   <ul className="person-rings">
                     {b.people.map((p) => (
                       <PersonRing key={p.id} person={p} currency={b.currency} onOpen={() => setSettle({ person: p, currency: b.currency })} />

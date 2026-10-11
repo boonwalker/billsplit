@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { isStandalone } from "../lib/handoff";
+import { rich, t } from "../lib/i18n";
 import { currentPath, moveCode, moveUrl, newHome } from "../lib/move";
 
 /** A one-time code is valid for 10 minutes; a fresh one is fetched a little before. */
@@ -50,23 +51,23 @@ export default function MovedNotice() {
 
   return (
     <div className="sheet-backdrop">
-      <div className="sheet install-hint" role="dialog" aria-label="klicksplit ist umgezogen">
-        <h2>klicksplit ist umgezogen</h2>
+      <div className="sheet install-hint" role="dialog" aria-label={t("klicksplit ist umgezogen")}>
+        <h2>{t("klicksplit ist umgezogen")}</h2>
         <p className="muted">
-          Ab jetzt findest Du klicksplit unter <b>{host}</b>. Hier funktioniert vorerst alles weiter – so ziehst Du mit um:
+          {rich(t("Ab jetzt findest Du klicksplit unter <b>{host}</b>. Hier funktioniert vorerst alles weiter – so ziehst Du mit um:", { host }))}
         </p>
         <ol className="install-steps">
           <li>
-            Tippe auf <b>„{host} öffnen“</b> – Deine Rechnungen, Dein Profil und Deine Bilanz kommen mit.
+            {rich(t("Tippe auf <b>„{host} öffnen“</b> – Deine Rechnungen, Dein Profil und Deine Bilanz kommen mit.", { host }))}
           </li>
-          <li>Dort holst Du Dir klicksplit neu auf den Home-Bildschirm.</li>
-          <li>Danach diese alte App vom Home-Bildschirm löschen.</li>
+          <li>{t("Dort holst Du Dir klicksplit neu auf den Home-Bildschirm.")}</li>
+          <li>{t("Danach diese alte App vom Home-Bildschirm löschen.")}</li>
         </ol>
         <a className="btn btn-primary btn-large" href={code ? moveUrl(home, code, currentPath(), true) : `${home}/`} target="_blank" rel="noopener">
-          {host} öffnen
+          {t("{host} öffnen", { host })}
         </a>
         <button type="button" className="btn btn-ghost" onClick={close}>
-          Später
+          {t("Später")}
         </button>
       </div>
     </div>

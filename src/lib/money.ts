@@ -1,9 +1,18 @@
 /** All amounts are stored as integer minor units (cents) to avoid float errors. */
 export type Cents = number;
 
-export function formatMoney(cents: Cents, currency = "EUR"): string {
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(cents / 100);
+/** Number format for amounts: the app's language (set by i18n.tsx); German on the server. */
+let moneyLocale = "de-DE";
+export function setMoneyLocale(locale: string): void {
+  moneyLocale = locale;
 }
+
+export function formatMoney(cents: Cents, currency = "EUR"): string {
+  return new Intl.NumberFormat(moneyLocale, { style: "currency", currency }).format(cents / 100);
+}
+
+/** The decimal separator of the app's language ("," in German, "." in English). */
+const decimalSeparator = () => (1.5).toLocaleString(moneyLocale).charAt(1);
 
 /**
  * Parses user or OCR input like "12,50", "12.50", "1.234,50", "-3,00" or "12" into cents.
@@ -30,9 +39,9 @@ export function parseMoney(input: string): Cents | null {
   return negative ? -cents : cents;
 }
 
-/** Formats cents for an input field, e.g. 1250 -> "12,50". */
+/** Formats cents for an input field, e.g. 1250 -> "12,50" (in English "12.50"). */
 export function centsToInput(cents: Cents): string {
-  return (cents / 100).toFixed(2).replace(".", ",");
+  return (cents / 100).toFixed(2).replace(".", decimalSeparator());
 }
 
 /** Formats cents with a dot decimal separator, as payment providers expect, e.g. 1250 -> "12.50". */

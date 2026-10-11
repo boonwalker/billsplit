@@ -1,3 +1,4 @@
+import { translateMsg } from "../src/i18n";
 import { describe, expect, it } from "vitest";
 import { BillStore, StoreError } from "../server/store";
 import type { BillData } from "../src/lib/bill";
@@ -110,7 +111,7 @@ describe("settlement payments", () => {
   it("lets the recipient record money that arrived outside the app – confirmed right away", () => {
     const { store, me, andy, pizzeria } = setup();
     const notices: [string, string][] = [];
-    store.onNotice((pid, n) => notices.push([pid, n.title]));
+    store.onNotice((pid, n) => notices.push([pid, translateMsg("de", n.title)]));
     // Andy records that I paid him the 5 € for the pizza.
     store.createTransfer(andy, { fromId: me, toId: andy, amount: 500, currency: "EUR", allocations: [{ billId: pizzeria, debtorId: me, creditorId: andy, amount: 500 }] });
     expect(store.listTransfers(me)[0]).toMatchObject({ status: "confirmed", recordedByRecipient: true, fromName: "Niklas", toName: "Andy" });
@@ -130,7 +131,7 @@ describe("settlement payments", () => {
     store.join(hers, me, "Niklas");
     store.setClaims(hers, me, { cake: [0] });
     const notices: [string, string][] = [];
-    store.onNotice((pid, n) => notices.push([pid, n.title]));
+    store.onNotice((pid, n) => notices.push([pid, translateMsg("de", n.title)]));
     const id = store.createTransfer(me, {
       toId: anna,
       amount: 0,
@@ -153,7 +154,7 @@ describe("settlement payments", () => {
   it("tells the people involved what needs them", () => {
     const { store, me, andy, katia, pizzeria, kino } = setup();
     const notices: [string, string][] = [];
-    store.onNotice((pid, n) => notices.push([pid, n.title.replace(/\s/g, " ")]));
+    store.onNotice((pid, n) => notices.push([pid, translateMsg("de", n.title).replace(/\s/g, " ")]));
     store.recordPayClick(pizzeria, me);
     store.setMarkedPaid(pizzeria, me, true);
     store.setMarkedPaid(pizzeria, me, true);

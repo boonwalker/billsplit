@@ -5,6 +5,7 @@ import { z } from "zod";
 import { timingSafeEqual } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { fill, isLang, msg, pickLang, translate, type Lang, type Msg, type Vars } from "../src/i18n/index.ts";
 import { adminPage } from "./adminPage.ts";
 import type { Monitor } from "./monitor.ts";
 import { isAiConfigured, isSupportedMediaType, observeAi, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
@@ -40,13 +41,23 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 class HttpError extends Error {
+  readonly template: string;
   constructor(
     message: string,
     readonly status: number,
     readonly retryAfterSec?: number,
+    readonly vars?: Vars,
   ) {
-    super(message);
+    super(fill(message, vars, "de-DE"));
+    this.template = message;
   }
+}
+
+/** The reader's language: what the app sends along, else the browser's Accept-Language. */
+function requestLang(req: IncomingMessage): Lang {
+  const sent = req.headers["x-billsplit-lang"];
+  if (isLang(sent)) return sent;
+  return pickLang(req.headers["accept-language"], "de");
 }
 
 export interface AppOptions {
@@ -91,9 +102,9 @@ function clientAddress(req: IncomingMessage, trustProxy: boolean): string {
 }
 
 /** Throws 429 when the limiter is exhausted for this key. */
-function enforce(limiter: RateLimiter, key: string, message: string): void {
+function enforce(limiter: RateLimiter, key: string, message: Msg): void {
   const result = limiter.take(key);
-  if (!result.ok) throw new HttpError(message, 429, result.retryAfterSec);
+  if (!result.ok) throw new HttpError(message.text, 429, result.retryAfterSec, message.vars);
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -122,13 +133,20 @@ async function readJson(req: IncomingMessage, limit: number): Promise<unknown> {
 }
 
 /** Where in a bill a validation problem is, in the user's words ("Position 4", "Gebühr 1", …). */
-function describePath(path: PropertyKey[]): string {
+function describePath(path: PropertyKey[]): Msg {
   const parts = path.filter((p) => p !== "data");
   const [head, index] = parts;
-  if (head === "items" && typeof index === "number") return `Position ${index + 1}`;
-  if (head === "fees" && typeof index === "number") return `Gebühr ${index + 1}`;
-  const names: Record<string, string> = { title: "Titel", date: "Datum", currency: "Währung", tipAmount: "Trinkgeld", tipPercent: "Trinkgeld", name: "Name" };
-  return names[String(head)] ?? parts.map(String).join(".");
+  if (head === "items" && typeof index === "number") return msg("Position {n}", { n: index + 1 });
+  if (head === "fees" && typeof index === "number") return msg("Gebühr {n}", { n: index + 1 });
+  const names: Record<string, Msg> = {
+    title: msg("Titel"),
+    date: msg("Datum"),
+    currency: msg("Währung"),
+    tipAmount: msg("Trinkgeld"),
+    tipPercent: msg("Trinkgeld"),
+    name: msg("Name"),
+  };
+  return names[String(head)] ?? { text: parts.map(String).join(".") };
 }
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
@@ -137,12 +155,14 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
     // Say what is wrong and where, so the user can fix it.
     const issue = result.error.issues[0];
     const field = String(issue?.path.at(-1) ?? "");
-    const where = issue?.path.length ? ` (${describePath(issue.path)})` : "";
+    const where = issue?.path.length ? describePath(issue.path) : null;
     if (issue?.code === "too_big" && ["total", "amount", "tipAmount", "fullTotal"].includes(field)) {
-      throw new HttpError(`Ein Betrag ist zu hoch${where}.`, 400);
+      throw where ? new HttpError("Ein Betrag ist zu hoch ({where}).", 400, undefined, { where }) : new HttpError("Ein Betrag ist zu hoch.", 400);
     }
-    if (issue?.code === "too_big" && field === "name") throw new HttpError(`Eine Bezeichnung ist zu lang${where}.`, 400);
-    throw new HttpError(`Ungültige Anfrage${where}.`, 400);
+    if (issue?.code === "too_big" && field === "name") {
+      throw where ? new HttpError("Eine Bezeichnung ist zu lang ({where}).", 400, undefined, { where }) : new HttpError("Eine Bezeichnung ist zu lang.", 400);
+    }
+    throw where ? new HttpError("Ungültige Anfrage ({where}).", 400, undefined, { where }) : new HttpError("Ungültige Anfrage.", 400);
   }
   return result.data;
 }
@@ -288,13 +308,10 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   }
 
   async function handleParseReceipt(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    if (!isAiConfigured()) {
-      sendJson(res, 503, { error: "KI-Belegerkennung ist auf dem Server nicht eingerichtet." });
-      return;
-    }
+    if (!isAiConfigured()) throw new HttpError("KI-Belegerkennung ist auf dem Server nicht eingerichtet.", 503);
     // Every photo costs API usage: limit per client and in total per day.
-    enforce(limits.receiptPerClient, clientAddress(req, trustProxy), "Zu viele Belegfotos in kurzer Zeit. Versuch es später noch einmal.");
-    enforce(limits.receiptTotal, "all", "Die KI-Belegerkennung hat ihr Tageslimit erreicht. Trag die Positionen bitte selbst ein.");
+    enforce(limits.receiptPerClient, clientAddress(req, trustProxy), msg("Zu viele Belegfotos in kurzer Zeit. Versuch es später noch einmal."));
+    enforce(limits.receiptTotal, "all", msg("Die KI-Belegerkennung hat ihr Tageslimit erreicht. Trag die Positionen bitte selbst ein."));
     const body = (await readJson(req, MAX_IMAGE_BODY)) as { image?: unknown; mediaType?: unknown };
     if (typeof body.image !== "string" || typeof body.mediaType !== "string" || !isSupportedMediaType(body.mediaType)) {
       throw new HttpError("Ungültige Anfrage: Bild fehlt oder Format wird nicht unterstützt.", 400);
@@ -351,7 +368,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       const token = url.searchParams.get("token") ?? "";
       const expected = options.adminToken ?? "";
       const ok = expected.length >= 12 && token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
-      if (!ok) throw new HttpError("Not found", 404);
+      if (!ok) throw new HttpError("Nicht gefunden.", 404);
       if (parts.length === 2) {
         const { days, errors } = monitor?.stats() ?? { days: [], errors: [] };
         const html = adminPage({
@@ -395,7 +412,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
           await readJson(req, MAX_JSON_BODY),
         );
         if (!isPushEndpoint(body.endpoint)) throw new HttpError("Unbekannter Push-Dienst.", 400);
-        push.subscribe(viewer, { endpoint: body.endpoint, keys: body.keys });
+        push.subscribe(viewer, { endpoint: body.endpoint, keys: body.keys }, requestLang(req));
         return sendJson(res, 200, { ok: true });
       }
       if (parts[2] === "unsubscribe" && method === "POST") {
@@ -468,11 +485,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         // name: the profile name so far, for "Hi Niklas," in the mail.
         const body = parse(z.object({ email, name: z.string().trim().max(40).optional() }), await readJson(req, MAX_JSON_BODY));
         const address = normalizeEmail(body.email);
-        const tooMany = "Zu viele Codes angefordert. Bitte warte etwas und versuche es dann nochmal.";
+        const tooMany = msg("Zu viele Codes angefordert. Bitte warte etwas und versuche es dann nochmal.");
         enforce(codesPerClient, clientAddress(req, trustProxy), tooMany);
         enforce(codesPerEmail, address, tooMany);
         try {
-          await sendCode(address, accounts.newCode(address), body.name || undefined);
+          await sendCode(address, accounts.newCode(address), body.name || undefined, requestLang(req));
         } catch (error) {
           monitor?.error("server", `Mail an ${address.replace(/^(.).*@/, "$1…@")} fehlgeschlagen`, error instanceof Error ? error.message : String(error));
           throw new HttpError("Die Mail konnte gerade nicht verschickt werden. Bitte versuche es gleich nochmal.", 502);
@@ -480,7 +497,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         return sendJson(res, 200, { ok: true });
       }
       if (parts[2] === "verify" && parts.length === 3 && method === "POST") {
-        enforce(verifiesPerClient, clientAddress(req, trustProxy), "Zu viele Versuche. Bitte warte etwas.");
+        enforce(verifiesPerClient, clientAddress(req, trustProxy), msg("Zu viele Versuche. Bitte warte etwas."));
         const body = parse(
           z.object({ email, code: z.string().trim().regex(/^\d{6}$/), profile: profileSchema.optional() }),
           await readJson(req, MAX_JSON_BODY),
@@ -494,11 +511,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         const existing = accounts.get(body.email);
         const current = accounts.byKey(key);
         if (existing?.key === key) return sendJson(res, 200, { status: "same", email: existing.email, profile: existing.profile });
-        if (current) throw new HttpError(`Dieses Gerät ist schon mit ${current.email} verbunden. Melde Dich dort erst ab.`, 409);
+        if (current) throw new HttpError("Dieses Gerät ist schon mit {email} verbunden. Melde Dich dort erst ab.", 409, undefined, { email: current.email });
         if (!existing) {
           const account = accounts.create(body.email, key, cleanProfile(body.profile ?? {}));
           // A warm welcome – and how to get into the account from anywhere (not waited for).
-          sendWelcome(account.email, account.profile.name).catch((error: unknown) =>
+          sendWelcome(account.email, account.profile.name, requestLang(req)).catch((error: unknown) =>
             monitor?.error("server", "Willkommensmail fehlgeschlagen", error instanceof Error ? error.message : String(error)),
           );
           return sendJson(res, 200, { status: "created", email: account.email });
@@ -576,7 +593,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
 
     if (parts[1] === "bills" && parts.length === 2 && method === "POST") {
       const viewer = requireViewer(req, url);
-      enforce(limits.billsPerClient, clientAddress(req, trustProxy), "Zu viele neue Rechnungen in kurzer Zeit. Versuch es später noch einmal.");
+      enforce(limits.billsPerClient, clientAddress(req, trustProxy), msg("Zu viele neue Rechnungen in kurzer Zeit. Versuch es später noch einmal."));
       const body = parse(z.object({ data: BillDataSchema, name: ParticipantNameSchema }), await readJson(req, MAX_JSON_BODY));
       const id = store.createBill(body.data, viewer, body.name);
       return sendJson(res, 201, store.snapshot(id, viewer));
@@ -594,7 +611,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     if (parts[1] === "bills" && parts[2]) {
       const billId = parts[2];
       const action = parts[3] ?? "";
-      if (!/^[A-Za-z0-9_-]{6,40}$/.test(billId)) throw new HttpError("Not found", 404);
+      if (!/^[A-Za-z0-9_-]{6,40}$/.test(billId)) throw new HttpError("Nicht gefunden.", 404);
 
       if (action === "" && method === "GET") {
         return sendJson(res, 200, store.snapshot(billId, viewerId(req, url)));
@@ -661,7 +678,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         return sendJson(res, 200, store.snapshot(billId, viewer));
       }
     }
-    throw new HttpError("Not found", 404);
+    throw new HttpError("Nicht gefunden.", 404);
   }
 
   async function serveStatic(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
@@ -707,13 +724,15 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         res.writeHead(405).end();
       }
     } catch (error) {
+      // Errors are answered in the reader's language (the error keeps its German template).
+      const t = (text: string, vars?: Vars) => translate(requestLang(req), text, vars);
       if (error instanceof HttpError || error instanceof StoreError || error instanceof ReceiptParseError) {
         if (error instanceof HttpError && error.retryAfterSec) res.setHeader("retry-after", String(error.retryAfterSec));
-        sendJson(res, error.status, { error: error.message });
+        sendJson(res, error.status, { error: t(error.template, error.vars) });
       } else {
         console.error(`${req.method} ${url.pathname} failed`, error);
         monitor?.error("server", `${req.method} ${url.pathname}: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
-        sendJson(res, 500, { error: "Interner Serverfehler." });
+        sendJson(res, 500, { error: t("Interner Serverfehler.") });
       }
     }
   };

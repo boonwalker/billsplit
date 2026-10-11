@@ -6,6 +6,7 @@ import { ownerStatus } from "../components/OwnerPanel";
 import { guestStatus } from "../lib/balances";
 import { billUrl } from "../lib/bill";
 import { isIosBrowser } from "../lib/handoff";
+import { formatDate, rich, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 import { ASK_PROFILE_AFTER_MS, takeStartPageQuestion } from "../lib/onboarding";
 import { api } from "../lib/api";
@@ -70,7 +71,7 @@ export default function Home() {
     if (!loadRecent().length) return;
     api
       .transfers()
-      .then((list) => setToConfirm(list.transfers.filter((t) => t.toId === list.me && t.status === "pending").length))
+      .then((list) => setToConfirm(list.transfers.filter((tr) => tr.toId === list.me && tr.status === "pending").length))
       .catch(() => {});
   }, []);
   const profile = loadOwnProfile();
@@ -88,7 +89,7 @@ export default function Home() {
     <div className="page home">
       <Header
         action={
-          <button className="avatar-btn" aria-label={account ? `Profil – angemeldet als ${account}` : "Profil"} onClick={() => navigate("/profile")}>
+          <button className="avatar-btn" aria-label={account ? t("Profil – angemeldet als {account}", { account }) : t("Profil")} onClick={() => navigate("/profile")}>
             {profile.name.trim() ? profile.name.trim().slice(0, 1).toUpperCase() : "?"}
             {/* Signed in with the e-mail account: a small tick on the avatar. */}
             {account && (
@@ -103,22 +104,24 @@ export default function Home() {
       />
       <main className="content">
         <section className="hero">
-          <p className="eyebrow">{profile.name ? `Hi ${profile.name}!` : "Willkommen bei klicksplit"}</p>
+          <p className="eyebrow">{profile.name ? t("Hi {name}!", { name: profile.name }) : t("Willkommen bei klicksplit")}</p>
           <h2>
-            Einer zahlt.
+            {t("Einer zahlt.")}
             <br />
-            <span className="hl">Alle splitten.</span>
+            <span className="hl">{t("Alle splitten.")}</span>
           </h2>
           <p className="muted">
-            Rechnung fotografieren, QR-Code zeigen – Deine Freunde haken ab, was sie hatten, und zahlen Dir ihren Anteil direkt
-            per PayPal.
+            {t("Rechnung fotografieren, QR-Code zeigen – Deine Freunde haken ab, was sie hatten, und zahlen Dir ihren Anteil direkt per PayPal.")}
           </p>
         </section>
 
         {DEMO && (
           <p className="demo-banner">
-            <b>Demo-Version.</b> Alles bleibt in diesem Browser. Auf der Rechnung kannst Du oben zwischen Dir und Deinen
-            Freunden Anna und Ben umschalten und so beide Seiten ausprobieren.
+            {rich(
+              t(
+                "<b>Demo-Version.</b> Alles bleibt in diesem Browser. Auf der Rechnung kannst Du oben zwischen Dir und Deinen Freunden Anna und Ben umschalten und so beide Seiten ausprobieren.",
+              ),
+            )}
           </p>
         )}
 
@@ -132,8 +135,8 @@ export default function Home() {
               </svg>
             </span>
             <span className="action-text">
-              <b>Rechnung fotografieren</b>
-              <small>Du hast bezahlt und willst anteilig Geld zurück</small>
+              <b>{t("Rechnung fotografieren")}</b>
+              <small>{t("Du hast bezahlt und willst anteilig Geld zurück")}</small>
             </span>
             <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
           </label>
@@ -148,8 +151,8 @@ export default function Home() {
               </svg>
             </span>
             <span className="action-text">
-              <b>Screenshot hochladen</b>
-              <small>Für digitale Rechnungen aus App oder Mail</small>
+              <b>{t("Screenshot hochladen")}</b>
+              <small>{t("Für digitale Rechnungen aus App oder Mail")}</small>
             </span>
             <input type="file" accept="image/*" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
           </label>
@@ -163,8 +166,8 @@ export default function Home() {
                 </svg>
               </span>
               <span className="action-text">
-                <b>Beispielrechnung ansehen</b>
-                <small>Mit Anna und Ben – schon teilweise abgehakt</small>
+                <b>{t("Beispielrechnung ansehen")}</b>
+                <small>{t("Mit Anna und Ben – schon teilweise abgehakt")}</small>
               </span>
             </button>
           ) : (
@@ -175,8 +178,8 @@ export default function Home() {
               </svg>
             </span>
             <span className="action-text">
-              <b>QR-Code scannen</b>
-              <small>Ein Freund hat bezahlt – Du übernimmst Deinen Anteil</small>
+              <b>{t("QR-Code scannen")}</b>
+              <small>{t("Ein Freund hat bezahlt – Du übernimmst Deinen Anteil")}</small>
             </span>
           </button>
           )}
@@ -185,7 +188,7 @@ export default function Home() {
         {/* A new device (or a wiped browser): the bills come back with the e-mail account. */}
         {recent.length === 0 && accountsAvailable && !loadAccountEmail() && (
           <button type="button" className="btn btn-ghost signin-link" onClick={() => navigate("/anmelden")}>
-            Schon ein Konto? <b>Anmelden</b>
+            {rich(t("Schon ein Konto? <b>Anmelden</b>"))}
           </button>
         )}
 
@@ -199,35 +202,35 @@ export default function Home() {
                   <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeDasharray="17.3 50.3" strokeDashoffset="-31" opacity="0.4" />
                 </g>
               </svg>
-              Dashboard · Deine Bilanz
-              {toConfirm > 0 && <span className="badge">{toConfirm === 1 ? "1 Eingang bestätigen" : `${toConfirm} Eingänge bestätigen`}</span>}
+              {t("Dashboard · Deine Bilanz")}
+              {toConfirm > 0 && <span className="badge">{toConfirm === 1 ? t("1 Eingang bestätigen") : t("{n} Eingänge bestätigen", { n: toConfirm })}</span>}
             </button>
-            <h3 className="section-title">Deine Rechnungen</h3>
+            <h3 className="section-title">{t("Deine Rechnungen")}</h3>
             <ul className="list">
               {recent.map((b) => (
                 <li key={b.id} className="list-item">
                   <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
-                    <span className="list-title">{b.title || "Rechnung"}</span>
+                    <span className="list-title">{b.title || t("Rechnung")}</span>
                     <span className="muted small">
-                      {new Date(b.createdAt).toLocaleDateString("de-DE")} · {b.role === "owner" ? (
+                      {formatDate(b.createdAt)} · {b.role === "owner" ? (
                         <>
-                          Du leihst
+                          {t("Du leihst")}
                           {b.settled ? (
                             <>
                               {" "}
-                              · <span className="list-paid">✓ ausgeglichen</span>
+                              · <span className="list-paid">{t("✓ ausgeglichen")}</span>
                             </>
                           ) : (
                             b.missing !== undefined && b.missing > 0 && <> · {formatMoney(b.missing, b.currency ?? "EUR")}</>
                           )}
                         </>
                       ) : b.settled ? (
-                        <span className="list-paid">✓ beglichen</span>
+                        <span className="list-paid">{t("✓ beglichen")}</span>
                       ) : b.markedPaid ? (
-                        <span className="list-paid">✓ als bezahlt markiert</span>
+                        <span className="list-paid">{t("✓ als bezahlt markiert")}</span>
                       ) : (
                         <>
-                          Du schuldest
+                          {t("Du schuldest")}
                           {b.owed !== undefined && b.owed > 0 && <> · {formatMoney(b.owed, b.currency ?? "EUR")}</>}
                         </>
                       )}
@@ -235,7 +238,7 @@ export default function Home() {
                   </button>
                   <button
                     className="icon-btn subtle"
-                    aria-label="Aus Liste entfernen"
+                    aria-label={t("Aus Liste entfernen")}
                     onClick={() => setRemoving(b)}
                   >
                     ✕
@@ -251,28 +254,28 @@ export default function Home() {
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
           </svg>
-          Ausgabe eingeben
+          {t("Ausgabe eingeben")}
         </button>
 
         <section className="how">
-          <h3 className="section-title">So funktioniert's</h3>
+          <h3 className="section-title">{t("So funktioniert's")}</h3>
           <ol className="steps">
             <li>
               <span>1</span>
               <div>
-                <b>Foto oder Screenshot.</b> Alle Positionen inkl. Mengen werden automatisch erkannt.
+                {rich(t("<b>Foto oder Screenshot.</b> Alle Positionen inkl. Mengen werden automatisch erkannt."))}
               </div>
             </li>
             <li>
               <span>2</span>
               <div>
-                <b>QR-Code zeigen.</b> Freunde scannen ihn mit klicksplit und erscheinen sofort bei Dir.
+                {rich(t("<b>QR-Code zeigen.</b> Freunde scannen ihn mit klicksplit und erscheinen sofort bei Dir."))}
               </div>
             </li>
             <li>
               <span>3</span>
               <div>
-                <b>Abhaken &amp; zahlen.</b> Jeder sieht live, wer was hat, und zahlt mit einem Klick.
+                {rich(t("<b>Abhaken & zahlen.</b> Jeder sieht live, wer was hat, und zahlt mit einem Klick."))}
               </div>
             </li>
           </ol>
@@ -294,9 +297,9 @@ export default function Home() {
       {removing && (
         <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && setRemoving(null)}>
           <div className="sheet confirm-sheet" role="alertdialog" aria-labelledby="remove-title" aria-describedby="remove-text">
-            <h2 id="remove-title">Bist Du sicher, dass Du diese Rechnung löschen möchtest?</h2>
+            <h2 id="remove-title">{t("Bist Du sicher, dass Du diese Rechnung löschen möchtest?")}</h2>
             <p id="remove-text" className="muted">
-              „{removing.title || "Rechnung"}“ verschwindet aus Deiner Liste. Für die anderen Teilnehmer bleibt sie erhalten.
+              {t("„{title}“ verschwindet aus Deiner Liste. Für die anderen Teilnehmer bleibt sie erhalten.", { title: removing.title || t("Rechnung") })}
             </p>
             <button
               type="button"
@@ -307,10 +310,10 @@ export default function Home() {
                 setRemoving(null);
               }}
             >
-              Löschen
+              {t("Löschen")}
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setRemoving(null)}>
-              Abbrechen
+              {t("Abbrechen")}
             </button>
           </div>
         </div>

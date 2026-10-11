@@ -1,3 +1,4 @@
+import { formatTime, rich, t, tMsg } from "../lib/i18n";
 import {
   openShare,
   billTotal,
@@ -37,8 +38,8 @@ export function EqualSplitToggle({ snapshot, onUpdateData }: { snapshot: BillSna
       onClick={() => onUpdateData({ ...snapshot.data, equalSplit: on ? undefined : true })}
     >
       <span className="equal-toggle-text">
-        <b>Gleichverteilung</b>
-        <small>{on ? "Alle zahlen gleich viel – Abhaken ist aus." : "Alle zahlen gleich viel, z. B. beim Supermarkt-Einkauf."}</small>
+        <b>{t("Gleichverteilung")}</b>
+        <small>{on ? t("Alle zahlen gleich viel – Abhaken ist aus.") : t("Alle zahlen gleich viel, z. B. beim Supermarkt-Einkauf.")}</small>
       </span>
       <span className="switch" aria-hidden="true" />
     </button>
@@ -56,39 +57,46 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
   const missing = count - joined;
   const setCount = (n: number) => onUpdateData({ ...data, tipSplitCount: n <= joined ? undefined : n });
   const equal = Boolean(data.equalSplit);
+  const shared = formatMoney(equal ? billTotal(data) : sharedTotal(data), data.currency);
+  const perPerson = formatMoney(equal ? equalShare(data, participants) : sharedPerPerson(data, participants), data.currency);
 
   return (
     <div className="tip-split-panel">
       <div className="row between">
         <span>
-          <b>
-            {equal ? "Rechnung" : feesTotal(data) !== 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"}{" "}
-            {formatMoney(equal ? billTotal(data) : sharedTotal(data), data.currency)}
-          </b>{" "}
-          aufteilen auf
+          {rich(
+            equal
+              ? t("<b>Rechnung {amount}</b> aufteilen auf", { amount: shared })
+              : feesTotal(data) !== 0
+                ? hasTip(data)
+                  ? t("<b>Gebühren & Trinkgeld {amount}</b> aufteilen auf", { amount: shared })
+                  : t("<b>Gebühren {amount}</b> aufteilen auf", { amount: shared })
+                : t("<b>Trinkgeld {amount}</b> aufteilen auf", { amount: shared }),
+          )}
         </span>
-        <div className="stepper-mini" role="group" aria-label="Personen für Trinkgeld und Gebühren">
-          <button type="button" onClick={() => setCount(count - 1)} disabled={count <= joined} aria-label="Eine Person weniger">
+        <div className="stepper-mini" role="group" aria-label={t("Personen für Trinkgeld und Gebühren")}>
+          <button type="button" onClick={() => setCount(count - 1)} disabled={count <= joined} aria-label={t("Eine Person weniger")}>
             −
           </button>
           <span>{count}</span>
-          <button type="button" onClick={() => setCount(count + 1)} disabled={count >= 100} aria-label="Eine Person mehr">
+          <button type="button" onClick={() => setCount(count + 1)} disabled={count >= 100} aria-label={t("Eine Person mehr")}>
             +
           </button>
         </div>
       </div>
       <p className="muted small">
-        {formatMoney(equal ? equalShare(data, participants) : sharedPerPerson(data, participants), data.currency)} pro Person ·{" "}
         {missing > 0
-          ? `${joined} beigetreten (inkl. Dir), ${missing} ${missing === 1 ? "kommt" : "kommen"} noch dazu`
-          : `gezählt: alle, die beigetreten sind, plus Du`}
+          ? missing === 1
+            ? t("{amount} pro Person · {joined} beigetreten (inkl. Dir), {missing} kommt noch dazu", { amount: perPerson, joined, missing })
+            : t("{amount} pro Person · {joined} beigetreten (inkl. Dir), {missing} kommen noch dazu", { amount: perPerson, joined, missing })
+          : t("{amount} pro Person · gezählt: alle, die beigetreten sind, plus Du", { amount: perPerson })}
       </p>
     </div>
   );
 }
 
 function time(iso: string): string {
-  return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return formatTime(iso, { hour: "2-digit", minute: "2-digit" });
 }
 
 /** The payer got everything back: friends joined and "Dir fehlen noch" is 0,00 €. */
@@ -116,27 +124,36 @@ export function ownerSummary(snapshot: BillSnapshot) {
 /** What only the payer sees below the bill: who scanned, who tapped pay, what is still missing. */
 export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRemind }: Props) {
   const currency = snapshot.data.currency;
-  const title = snapshot.data.title || "die Rechnung";
+  const title = snapshot.data.title || t("die Rechnung");
   const openOf = (d: Debtor) => (d.received ? 0 : openShare(d.amount, d, (d.credited ?? 0) + (d.creditPending ?? 0)));
   /** Not ticked anything yet (and no equal split, where nothing needs ticking). */
   const nothingTicked = (d: Debtor) => d.amount === 0 && !snapshot.data.equalSplit;
   const reminder = (d: Debtor) =>
     nothingTicked(d)
-      ? `Hi ${d.name}, kleine Erinnerung von klicksplit: Bitte hake in „${title}“ ab, was Du hattest. Hier geht's zur Rechnung: ${shareUrl}`
-      : `Hi ${d.name}, kleine Erinnerung von klicksplit: Für „${title}“ sind bei Dir noch ${formatMoney(openOf(d), currency)} offen. Hier kannst Du direkt begleichen: ${shareUrl}`;
+      ? t("Hi {name}, kleine Erinnerung von klicksplit: Bitte hake in „{title}“ ab, was Du hattest. Hier geht's zur Rechnung: {url}", {
+          name: d.name,
+          title,
+          url: shareUrl ?? "",
+        })
+      : t("Hi {name}, kleine Erinnerung von klicksplit: Für „{title}“ sind bei Dir noch {amount} offen. Hier kannst Du direkt begleichen: {url}", {
+          name: d.name,
+          title,
+          amount: formatMoney(openOf(d), currency),
+          url: shareUrl ?? "",
+        });
   const debtors = snapshot.debtors ?? [];
   const { total, own, received, missing, unassigned } = ownerSummary(snapshot);
 
   return (
     <section className="owner-panel" aria-labelledby="owner-title">
       <div className="panel-head">
-        <h3 id="owner-title">Deine Freunde</h3>
-        <span className="pill">{debtors.length} beigetreten</span>
+        <h3 id="owner-title">{t("Deine Freunde")}</h3>
+        <span className="pill">{t("{n} beigetreten", { n: debtors.length })}</span>
       </div>
 
       {debtors.length === 0 ? (
         <p className="muted empty">
-          Noch ist niemand Deiner Abrechnung beigetreten. Sobald jemand beitritt, taucht er hier mit seinem Namen auf.
+          {t("Noch ist niemand Deiner Abrechnung beigetreten. Sobald jemand beitritt, taucht er hier mit seinem Namen auf.")}
         </p>
       ) : (
         <ul className="debtors">
@@ -151,23 +168,23 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                   <span className="debtor-name">{d.name}</span>
                   <span className="debtor-status">
                     {d.received
-                      ? "Zahlungseingang bestätigt"
+                      ? t("Zahlungseingang bestätigt")
                       : d.amount > 0 && (d.credited ?? 0) >= d.amount
-                        ? "per Ausgleich beglichen"
+                        ? t("per Ausgleich beglichen")
                         : d.amount > 0 && (d.credited ?? 0) + (d.creditPending ?? 0) >= d.amount
-                          ? "Ausgleich gesendet – bestätige ihn im Dashboard"
+                          ? t("Ausgleich gesendet – bestätige ihn im Dashboard")
                       : d.markedPaidAt
-                        ? `hat um ${time(d.markedPaidAt)} als bezahlt markiert`
+                        ? t("hat um {time} als bezahlt markiert", { time: time(d.markedPaidAt) })
                         : d.payClickedAt
-                        ? `hat um ${time(d.payClickedAt)} auf Bezahlen getippt`
+                        ? t("hat um {time} auf Bezahlen getippt", { time: time(d.payClickedAt) })
                         : snapshot.data.equalSplit
-                          ? "ist beigetreten"
-                          : "ist beigetreten · wählt noch aus …"}
-                    {changed && <> · Auswahl jetzt {formatMoney(d.amount, currency)}</>}
+                          ? t("ist beigetreten")
+                          : t("ist beigetreten · wählt noch aus …")}
+                    {changed && <> · {t("Auswahl jetzt {amount}", { amount: formatMoney(d.amount, currency) })}</>}
                   </span>
-                  {d.remindedAt && !d.received && !d.markedPaidAt && <span className="debtor-reminded">per Mitteilung erinnert {remindedAgo(d.remindedAt)}</span>}
+                  {d.remindedAt && !d.received && !d.markedPaidAt && <span className="debtor-reminded">{t("per Mitteilung erinnert {ago}", { ago: remindedAgo(d.remindedAt) })}</span>}
                   {/* Settled (partly) by settlement payments from the dashboard. */}
-                  {d.creditNotes?.map((note) => (
+                  {d.creditNotes?.map(tMsg).map((note) => (
                     <span key={note} className="debtor-credit">
                       {note}
                     </span>
@@ -185,9 +202,9 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                   />
                 )}
                 {d.payClickedAt && (
-                  <label className="received-toggle" title="Geld ist auf PayPal angekommen">
+                  <label className="received-toggle" title={t("Geld ist auf PayPal angekommen")}>
                     <input type="checkbox" checked={d.received} onChange={(e) => onToggleReceived(d, e.target.checked)} />
-                    <span>erhalten</span>
+                    <span>{t("erhalten")}</span>
                   </label>
                 )}
               </li>
@@ -197,31 +214,33 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
       )}
 
       <dl className="owner-sums">
-        <dt>Rechnung gesamt</dt>
+        <dt>{t("Rechnung gesamt")}</dt>
         <dd>{formatMoney(total, currency)}</dd>
-        <dt>Dein eigener Anteil</dt>
+        <dt>{t("Dein eigener Anteil")}</dt>
         <dd>− {formatMoney(own, currency)}</dd>
-        <dt>Schon erhalten</dt>
+        <dt>{t("Schon erhalten")}</dt>
         <dd>− {formatMoney(received, currency)}</dd>
-        <dt className="strong">Dir fehlen noch</dt>
+        <dt className="strong">{t("Dir fehlen noch")}</dt>
         <dd className="strong">{formatMoney(missing, currency)}</dd>
       </dl>
       {unassigned > 0 && snapshot.data.equalSplit && (
         <p className="hint">
-          {formatMoney(unassigned, currency)} entfallen auf Personen, die noch nicht beigetreten sind.
+          {t("{amount} entfallen auf Personen, die noch nicht beigetreten sind.", { amount: formatMoney(unassigned, currency) })}
         </p>
       )}
       {unassigned > 0 && !snapshot.data.equalSplit && (
         <p className="hint">
-          {formatMoney(unassigned, currency)} sind noch keiner Person zugeordnet – hast Du Deine eigenen Positionen schon
-          abgehakt?
-          {splitHeadCount(snapshot.data, snapshot.participants) > snapshot.participants.length &&
-            " Darin enthalten sind auch Anteile an Trinkgeld und Gebühren von Personen, die noch nicht beigetreten sind."}
+          {t("{amount} sind noch keiner Person zugeordnet – hast Du Deine eigenen Positionen schon abgehakt?", {
+            amount: formatMoney(unassigned, currency),
+          })}
+          {splitHeadCount(snapshot.data, snapshot.participants) > snapshot.participants.length && (
+            <> {t("Darin enthalten sind auch Anteile an Trinkgeld und Gebühren von Personen, die noch nicht beigetreten sind.")}</>
+          )}
         </p>
       )}
       {debtors.length > 0 && (
         <p className="hint muted">
-          Gleiche die Beträge mit den Eingängen in Deiner PayPal-App ab und hake „erhalten“ an, sobald das Geld da ist.
+          {t("Gleiche die Beträge mit den Eingängen in Deiner PayPal-App ab und hake „erhalten“ an, sobald das Geld da ist.")}
         </p>
       )}
     </section>

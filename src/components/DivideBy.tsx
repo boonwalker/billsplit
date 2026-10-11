@@ -1,8 +1,10 @@
+import { t } from "../lib/i18n";
+
 /** "/ 4" with pencilled arrows: what everything is divided by – the head count for the equal split. */
 export default function DivideBy({
   value,
   onChange,
-  label = "Alles geteilt durch",
+  label = t("Alles geteilt durch"),
   className = "",
 }: {
   /** undefined: not chosen yet ("?"). */
@@ -22,12 +24,12 @@ export default function DivideBy({
         {value ?? "?"}
       </span>
       <div className="divide-by-arrows">
-        <button type="button" onClick={() => onChange(Math.min(100, (value ?? 1) + 1))} aria-label="Eine Person mehr">
+        <button type="button" onClick={() => onChange(Math.min(100, (value ?? 1) + 1))} aria-label={t("Eine Person mehr")}>
           <svg viewBox="0 0 40 20" aria-hidden="true">
             <path d="M4 16 C 12 10, 16 6, 20 3 C 25 7, 30 11, 36 16" />
           </svg>
         </button>
-        <button type="button" onClick={() => onChange(value && value > 2 ? value - 1 : undefined)} aria-label="Eine Person weniger">
+        <button type="button" onClick={() => onChange(value && value > 2 ? value - 1 : undefined)} aria-label={t("Eine Person weniger")}>
           <svg viewBox="0 0 40 20" aria-hidden="true">
             <path d="M4 4 C 12 10, 16 14, 20 17 C 25 13, 30 9, 36 4" />
           </svg>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { BillItem } from "../lib/bill";
+import { rich, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 
 export const MAX_DIVISOR = 5;
@@ -23,11 +24,11 @@ export default function DivisorSheet({ item, currency, onApply, onClose }: Props
 
   return (
     <div className="sheet-backdrop divisor-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet divisor-sheet" role="dialog" aria-label={`${item.name} nur anteilig berechnen`}>
+      <div className="sheet divisor-sheet" role="dialog" aria-label={t("{name} nur anteilig berechnen", { name: item.name })}>
         <h2>{item.name}</h2>
-        <p className="muted">Nur einen Teil davon aufteilen – den Rest trägst Du selbst.</p>
+        <p className="muted">{t("Nur einen Teil davon aufteilen – den Rest trägst Du selbst.")}</p>
 
-        <div className="divide-by divisor-big" role="group" aria-label="Geteilt durch">
+        <div className="divide-by divisor-big" role="group" aria-label={t("Geteilt durch")}>
           <svg className="divide-by-sign" viewBox="0 0 40 90" aria-hidden="true">
             <path d="M33 5 C 28 28, 19 55, 7 86" />
             <path d="M35 9 C 29 33, 21 58, 10 84" className="divide-by-sign-thin" />
@@ -36,12 +37,12 @@ export default function DivisorSheet({ item, currency, onApply, onClose }: Props
             {divisor}
           </span>
           <div className="divide-by-arrows">
-            <button type="button" onClick={() => setDivisor((d) => Math.min(MAX_DIVISOR, d + 1))} disabled={divisor >= MAX_DIVISOR} aria-label="Kleinerer Teil">
+            <button type="button" onClick={() => setDivisor((d) => Math.min(MAX_DIVISOR, d + 1))} disabled={divisor >= MAX_DIVISOR} aria-label={t("Kleinerer Teil")}>
               <svg viewBox="0 0 40 20" aria-hidden="true">
                 <path d="M4 16 C 12 10, 16 6, 20 3 C 25 7, 30 11, 36 16" />
               </svg>
             </button>
-            <button type="button" onClick={() => setDivisor((d) => Math.max(1, d - 1))} disabled={divisor <= 1} aria-label="Größerer Teil">
+            <button type="button" onClick={() => setDivisor((d) => Math.max(1, d - 1))} disabled={divisor <= 1} aria-label={t("Größerer Teil")}>
               <svg viewBox="0 0 40 20" aria-hidden="true">
                 <path d="M4 4 C 12 10, 16 14, 20 17 C 25 13, 30 9, 36 4" />
               </svg>
@@ -51,12 +52,15 @@ export default function DivisorSheet({ item, currency, onApply, onClose }: Props
 
         <p className="divisor-result">
           {divisor === 1 ? (
-            <>Wird ganz aufgeteilt: <b>{formatMoney(full, currency)}</b></>
+            rich(t("Wird ganz aufgeteilt: <b>{amount}</b>", { amount: formatMoney(full, currency) }))
           ) : (
-            <>
-              Aufgeteilt werden <b>{formatMoney(billed, currency)}</b> statt {formatMoney(full, currency)} – {formatMoney(full - billed, currency)} trägst
-              Du.
-            </>
+            rich(
+              t("Aufgeteilt werden <b>{billed}</b> statt {full} – {rest} trägst Du.", {
+                billed: formatMoney(billed, currency),
+                full: formatMoney(full, currency),
+                rest: formatMoney(full - billed, currency),
+              }),
+            )
           )}
         </p>
 
@@ -68,7 +72,7 @@ export default function DivisorSheet({ item, currency, onApply, onClose }: Props
             onClose();
           }}
         >
-          Übernehmen
+          {t("Übernehmen@@Teiler")}
         </button>
       </div>
     </div>

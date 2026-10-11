@@ -5,6 +5,7 @@ import OpenInApp from "../components/OpenInApp";
 import { api } from "../lib/api";
 import { deviceLinkUrl } from "../lib/deviceTransfer";
 import { isIosBrowser } from "../lib/handoff";
+import { rich, t } from "../lib/i18n";
 import { finishMove, safeTarget } from "../lib/move";
 import { navigate } from "../lib/router";
 import { loadOwnProfile } from "../lib/storage";
@@ -42,31 +43,31 @@ export default function Move({ code, target, app }: { code: string; target?: str
     };
   }, [code, app, next]);
 
-  if (!install) return <BusyScreen message="klicksplit zieht um" />;
+  if (!install) return <BusyScreen message={t("klicksplit zieht um")} />;
 
   return (
     <div className="page">
       <div className="sheet-backdrop">
-        <div className="sheet install-hint" role="dialog" aria-label="klicksplit neu auf den Home-Bildschirm">
-          <h2>Fast geschafft!</h2>
+        <div className="sheet install-hint" role="dialog" aria-label={t("klicksplit neu auf den Home-Bildschirm")}>
+          <h2>{t("Fast geschafft!")}</h2>
           <p className="muted">
-            Deine Rechnungen sind jetzt auf <b>{window.location.host}</b>. Hol Dir klicksplit von hier neu auf Deinen Home-Bildschirm:
+            {rich(t("Deine Rechnungen sind jetzt auf <b>{host}</b>. Hol Dir klicksplit von hier neu auf Deinen Home-Bildschirm:", { host: window.location.host }))}
           </p>
           <ol className="install-steps">
             <li>
-              Tippe auf <b>„In der App öffnen“</b> – Deine Rechnungen kommen mit.
+              {rich(t("Tippe auf <b>„In der App öffnen“</b> – Deine Rechnungen kommen mit."))}
             </li>
             <li>
-              Dann unten in Safari auf <b>Teilen</b> <ShareIcon /> und <b>„Zum Home-Bildschirm“</b>.
+              {rich(t("Dann unten in Safari auf <b>Teilen</b>"))} <ShareIcon /> {rich(t("und <b>„Zum Home-Bildschirm“</b>."))}
             </li>
             <li>
-              klicksplit dort öffnen und <b>„Kopierten Link öffnen“</b> tippen.
+              {rich(t("klicksplit dort öffnen und <b>„Kopierten Link öffnen“</b> tippen."))}
             </li>
-            <li>Die alte klicksplit-App vom Home-Bildschirm löschen.</li>
+            <li>{t("Die alte klicksplit-App vom Home-Bildschirm löschen.")}</li>
           </ol>
           <OpenInApp url={deviceLinkUrl(install)} compact />
           <button type="button" className="btn btn-ghost" onClick={() => navigate(next, { replace: true })}>
-            Später
+            {t("Später")}
           </button>
         </div>
       </div>

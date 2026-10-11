@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
 import { Wordmark } from "./Logo";
 
@@ -13,13 +14,13 @@ export default function Header({ title, back, action }: Props) {
     <header className="topbar">
       <div className="topbar-left">
         {back !== undefined ? (
-          <button className="icon-btn" aria-label="Zurück" onClick={() => navigate(back)}>
+          <button className="icon-btn" aria-label={t("Zurück")} onClick={() => navigate(back)}>
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         ) : (
-          <button className="brand-btn" onClick={() => navigate("/")} aria-label="klicksplit Startseite">
+          <button className="brand-btn" onClick={() => navigate("/")} aria-label={t("klicksplit Startseite")}>
             <Wordmark />
           </button>
         )}

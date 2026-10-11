@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { REMIND_COOLDOWN_MS } from "../lib/billCore";
+import { formatDate, t } from "../lib/i18n";
 import { whatsappLink } from "../lib/whatsapp";
 
 /** "vor 5 Min.", "vor 2 Std." – when the last reminder went out. */
 export function remindedAgo(iso: string, now = Date.now()): string {
   const minutes = Math.max(0, Math.round((now - Date.parse(iso)) / 60000));
-  if (minutes < 1) return "gerade eben";
-  if (minutes < 60) return `vor ${minutes} Min.`;
+  if (minutes < 1) return t("gerade eben");
+  if (minutes < 60) return t("vor {n} Min.", { n: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `vor ${hours} Std.`;
-  return `am ${new Date(iso).toLocaleDateString("de-DE")}`;
+  if (hours < 24) return t("vor {n} Std.", { n: hours });
+  return t("am {date}", { date: formatDate(iso) });
 }
 
 /** A notification may go out: it reaches the person and the last one is long enough ago. */
@@ -39,8 +40,8 @@ export default function RemindButton({
 
   if (!canRemindByPush(reachable, remindedAt)) {
     return (
-      <a className="remind-btn" href={whatsappLink(whatsappText)} aria-label={`${name} per WhatsApp erinnern`}>
-        Erinnern
+      <a className="remind-btn" href={whatsappLink(whatsappText)} aria-label={t("{name} per WhatsApp erinnern", { name })}>
+        {t("Erinnern")}
       </a>
     );
   }
@@ -50,20 +51,20 @@ export default function RemindButton({
         type="button"
         className="remind-btn"
         disabled={busy}
-        aria-label={`${name} per Mitteilung erinnern`}
+        aria-label={t("{name} per Mitteilung erinnern", { name })}
         onClick={async () => {
           setBusy(true);
           setError(null);
           try {
             await onPush();
           } catch (e) {
-            setError(e instanceof Error ? e.message : "Das hat nicht geklappt.");
+            setError(e instanceof Error ? e.message : t("Das hat nicht geklappt."));
           } finally {
             setBusy(false);
           }
         }}
       >
-        Erinnern
+        {t("Erinnern")}
       </button>
       {error && (
         <span className="remind-error" role="alert">

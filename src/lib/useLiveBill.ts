@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
+import { t } from "./i18n";
 import type { BillSnapshot, ItemClaims } from "./bill";
 import { DEVICE_CHANGED } from "./storage";
 
@@ -61,7 +62,7 @@ export function useLiveBill(id: string): LiveBill {
       .catch((e: unknown) => {
         if (cancelled) return;
         if (e instanceof ApiError && e.status === 404) setNotFound(true);
-        else setError(e instanceof Error ? e.message : "Die Rechnung konnte nicht geladen werden.");
+        else setError(e instanceof Error ? e.message : t("Die Rechnung konnte nicht geladen werden."));
       });
 
     return () => {
@@ -82,7 +83,7 @@ export function useLiveBill(id: string): LiveBill {
         p.saving = api
           .setClaims(id, claims, splits)
           .then((snap) => setServerSnap(snap))
-          .catch((e: unknown) => setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."))
+          .catch((e: unknown) => setError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")))
           .finally(() => {
             p.inFlight--;
             // Only drop the optimistic state once nothing newer is queued.

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { t } from "../lib/i18n";
 import Header from "./Header";
 
 /**
@@ -46,7 +47,7 @@ export default function BusyScreen({
           {preview && (
             // As large as the screen allows in the photo's own shape, so the payer can already look it over.
             <div className="scan-photo" style={{ "--ar": previewRatio } as CSSProperties}>
-              <img className="scan-photo-img" src={preview} alt="Dein Beleg" decoding="async" />
+              <img className="scan-photo-img" src={preview} alt={t("Dein Beleg")} decoding="async" />
               <div className="scan-beam" aria-hidden="true">
                 <i />
               </div>

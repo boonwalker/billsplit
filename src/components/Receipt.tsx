@@ -19,6 +19,7 @@ import {
   type BillSnapshot,
   type PublicParticipant,
 } from "../lib/bill";
+import { formatDate as formatLocaleDate, locale, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 import { vibrate } from "../lib/haptics";
 import ClaimDemo, { onceInView, useClaimDemo } from "./ClaimDemo";
@@ -42,7 +43,7 @@ interface Props {
 }
 
 export function formatDate(iso: string): string {
-  return iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+  return iso ? formatLocaleDate(`${iso}T12:00:00`, { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
 }
 
 /** Short pulse when a claim appears that the viewer did not make (live update from a friend). */
@@ -53,8 +54,8 @@ function useFlash(key: string): boolean {
     if (prev.current === key) return;
     prev.current = key;
     setFlash(true);
-    const t = window.setTimeout(() => setFlash(false), 900);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setFlash(false), 900);
+    return () => window.clearTimeout(timer);
   }, [key]);
   return flash;
 }
@@ -73,7 +74,7 @@ function formatUnits(units: number): string {
     [1 / 5, "⅕"],
   ].find(([value]) => Math.abs((value as number) - rest) < 1e-6)?.[1];
   if (glyph) return `${whole || ""}${glyph}`;
-  return units.toFixed(1).replace(".", ",");
+  return units.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 function ReceiptLine({
@@ -249,6 +250,7 @@ function ReceiptLine({
 
   // How much of the line is mine: a shared unit fills the circle only halfway.
   const fill = Math.min(1, (me ? unitShare(item, participants, me) : 0) / item.qty);
+  const lineLabel = `${item.qty > 1 ? `${item.qty} × ` : ""}${item.name}, ${formatMoney(item.total, currency)}`;
 
   return (
     <li
@@ -271,9 +273,13 @@ function ReceiptLine({
         onContextMenu={onLongPress ? (e) => e.preventDefault() : undefined}
         disabled={!interactive && !onLongPress}
         aria-pressed={onToggleExcluded ? excluded : myUnits > 0}
-        aria-label={`${item.qty > 1 ? `${item.qty} × ` : ""}${item.name}, ${formatMoney(item.total, currency)}${
-          onToggleExcluded ? (excluded ? " – gestrichen, antippen zum Wiederaufnehmen" : " – antippen zum Streichen") : ""
-        }`}
+        aria-label={
+          onToggleExcluded
+            ? excluded
+              ? t("{line} – gestrichen, antippen zum Wiederaufnehmen", { line: lineLabel })
+              : t("{line} – antippen zum Streichen", { line: lineLabel })
+            : lineLabel
+        }
       >
         <span className="tick" aria-hidden="true" style={{ "--fill": fill } as CSSProperties}>
           <svg viewBox="0 0 24 24">
@@ -296,11 +302,11 @@ function ReceiptLine({
             </span>
             {item.divisor && <span className="pencil rline-divisor">/{item.divisor}</span>}
           </span>
-          {item.qty > 1 && <span className="rline-unit">à {formatMoney(Math.round(item.total / item.qty), currency)}</span>}
+          {item.qty > 1 && <span className="rline-unit">{t("à {price}", { price: formatMoney(Math.round(item.total / item.qty), currency) })}</span>}
         </span>
         <span className="rline-dots" aria-hidden="true" />
         {each !== undefined && !excluded && (
-          <span className="pencil rline-each" title="Anteil pro Person">
+          <span className="pencil rline-each" title={t("Anteil pro Person")}>
             {formatMoney(each, currency)}
           </span>
         )}
@@ -314,17 +320,17 @@ function ReceiptLine({
 
       {canEdit && item.qty > 1 && myUnits > 0 && (
         <div className="rline-stepper">
-          <button type="button" onClick={() => onSetSlots!(item.id, mySlots.slice(0, -1), mySplits)} aria-label="Eins weniger">
+          <button type="button" onClick={() => onSetSlots!(item.id, mySlots.slice(0, -1), mySplits)} aria-label={t("Eins weniger")}>
             −
           </button>
           <span>
-            {formatUnits(me ? unitShare(item, participants, me) : 0)} von {item.qty} für Dich
+            {t("{units} von {qty} für Dich", { units: formatUnits(me ? unitShare(item, participants, me) : 0), qty: item.qty })}
           </span>
           <button
             type="button"
             onClick={() => onSetSlots!(item.id, [...mySlots, freeSlots[0]], mySplits)}
             disabled={freeSlots.length === 0}
-            aria-label="Eins mehr"
+            aria-label={t("Eins mehr")}
           >
             +
           </button>
@@ -341,7 +347,7 @@ function ReceiptLine({
             const label = (
               <>
                 <span className="claim-dot" aria-hidden="true">✓</span>
-                {isMe ? "Du" : p.name}
+                {isMe ? t("Du") : p.name}
                 {(item.qty > 1 || units < 1) && <> ×{formatUnits(units)}</>}
                 <span className="claim-cost">{formatMoney(claimCost(item, units), currency)}</span>
               </>
@@ -358,11 +364,11 @@ function ReceiptLine({
                     aria-label={
                       isMe
                         ? sharing
-                          ? "Doch nicht teilen"
-                          : "Zum Teilen freigeben und nur die Hälfte zahlen"
+                          ? t("Doch nicht teilen")
+                          : t("Zum Teilen freigeben und nur die Hälfte zahlen")
                         : sharing
-                          ? `Nicht mehr mit ${p.name} teilen`
-                          : `Ein Stück mit ${p.name} teilen`
+                          ? t("Nicht mehr mit {name} teilen", { name: p.name })
+                          : t("Ein Stück mit {name} teilen", { name: p.name })
                     }
                   >
                     {label}
@@ -373,25 +379,26 @@ function ReceiptLine({
               </li>
             );
           })}
-          {shared && <li className="shared-note">geteilt</li>}
-          {iAmWaiting && <li className="shared-note">wartest auf jemanden</li>}
-          {someoneElseWaiting && <li className="shared-note">wartet auf jemanden</li>}
+          {shared && <li className="shared-note">{t("geteilt")}</li>}
+          {iAmWaiting && <li className="shared-note">{t("wartest auf jemanden")}</li>}
+          {someoneElseWaiting && <li className="shared-note">{t("wartet auf jemanden")}</li>}
         </ul>
       )}
       {canEdit && myWaiting && (
         <p className="rline-hint">
-          Du zahlst {item.qty > 1 ? "von einem Stück nur " : ""}die Hälfte. Die andere Hälfte bleibt offen, bis jemand auf Deinen
-          Namen tippt.
+          {item.qty > 1
+            ? t("Du zahlst von einem Stück nur die Hälfte. Die andere Hälfte bleibt offen, bis jemand auf Deinen Namen tippt.")
+            : t("Du zahlst die Hälfte. Die andere Hälfte bleibt offen, bis jemand auf Deinen Namen tippt.")}
         </p>
       )}
       {canEdit &&
         othersWaiting.map((p) => (
           <p key={p.id} className="rline-hint offer">
-            {p.name} möchte teilen – tippe auf den Kreis oder den Namen, um die andere Hälfte zu übernehmen.
+            {t("{name} möchte teilen – tippe auf den Kreis oder den Namen, um die andere Hälfte zu übernehmen.", { name: p.name })}
           </p>
         ))}
       {canEdit && item.qty > 1 && done && myUnits === 0 && (
-        <p className="rline-hint">Alle Stück sind vergeben. Tippe auf einen Namen, um ein Stück zu teilen.</p>
+        <p className="rline-hint">{t("Alle Stück sind vergeben. Tippe auf einen Namen, um ein Stück zu teilen.")}</p>
       )}
     </li>
   );
@@ -437,7 +444,13 @@ export function FeeLine({
         role={onToggle ? "button" : undefined}
         tabIndex={onToggle ? 0 : undefined}
         aria-pressed={onToggle ? Boolean(excluded) : undefined}
-        aria-label={onToggle ? `${name}, ${formatMoney(amount, currency)} – ${excluded ? "gestrichen, antippen zum Wiederaufnehmen" : "antippen zum Streichen"}` : undefined}
+        aria-label={
+          onToggle
+            ? excluded
+              ? t("{line} – gestrichen, antippen zum Wiederaufnehmen", { line: `${name}, ${formatMoney(amount, currency)}` })
+              : t("{line} – antippen zum Streichen", { line: `${name}, ${formatMoney(amount, currency)}` })
+            : undefined
+        }
         onKeyDown={onToggle ? (e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onToggle()) : undefined}
       >
         <span className="fee-strike">{name}</span>
@@ -468,7 +481,7 @@ export function PencilFilter() {
 /** Equal split: the total over a hand-drawn fraction bar, the head count below, and the share next to it. */
 function EqualFraction({ total, people, share, currency }: { total: number; people: number; share: number; currency: string }) {
   return (
-    <span className="fraction" aria-label={`${formatMoney(total, currency)} geteilt durch ${people} ist ${formatMoney(share, currency)} pro Person`}>
+    <span className="fraction" aria-label={t("{total} geteilt durch {people} ist {share} pro Person", { total: formatMoney(total, currency), people, share: formatMoney(share, currency) })}>
       <span className="fraction-stack" aria-hidden="true">
         <span>{formatMoney(total, currency)}</span>
         {/* A swung pencil stroke: a filled, tapering shape plus a fainter second pass. */}
@@ -480,7 +493,7 @@ function EqualFraction({ total, people, share, currency }: { total: number; peop
       </span>
       <span className="pencil fraction-result" aria-hidden="true">
         = {formatMoney(share, currency)}
-        <small>pro Person</small>
+        <small>{t("pro Person")}</small>
       </span>
     </span>
   );
@@ -533,8 +546,8 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
     if (!maybePersonal) return null;
     const item = data.items[idx];
     const before = data.items[idx - 1];
-    if (item.maybePersonal && (!before || !before.maybePersonal)) return <li className="rline-group" aria-hidden="true">Vielleicht nicht für alle?</li>;
-    if (!item.maybePersonal && before?.maybePersonal) return <li className="rline-group" aria-hidden="true">Für alle</li>;
+    if (item.maybePersonal && (!before || !before.maybePersonal)) return <li className="rline-group" aria-hidden="true">{t("Vielleicht nicht für alle?")}</li>;
+    if (!item.maybePersonal && before?.maybePersonal) return <li className="rline-group" aria-hidden="true">{t("Für alle")}</li>;
     return null;
   };
   const people = splitHeadCount(data, participants);
@@ -550,21 +563,21 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
   const otherName = participants.find((p) => p.id !== me && p.name.trim())?.name.trim() ?? "Anna";
 
   return (
-    <article className="receipt" aria-label="Digitale Rechnung">
+    <article className="receipt" aria-label={t("Digitale Rechnung")}>
       <PencilFilter />
       <div className="receipt-paper">
         <header className="receipt-head">
           <div className="receipt-logo" aria-hidden="true">
             ✦
           </div>
-          <h2>{data.title || "Rechnung"}</h2>
+          <h2>{data.title || t("Rechnung")}</h2>
           <p>{formatDate(data.date)}</p>
-          <p className="receipt-paidby">bezahlt von {ownerName || "?"}</p>
+          <p className="receipt-paidby">{t("bezahlt von {name}", { name: ownerName || "?" })}</p>
         </header>
 
         <div className="receipt-rule" aria-hidden="true" />
         <div className="receipt-cols" aria-hidden="true">
-          <span>Artikel</span>
+          <span>{t("Artikel")}</span>
           <span>{data.currency}</span>
         </div>
 
@@ -599,7 +612,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
           {/* Also when everything here is crossed out: the lines stay, struck through. */}
           {((data.fees ?? []).length > 0 || hasTip(data)) && (
             <>
-              <dt>Zwischensumme</dt>
+              <dt>{t("Zwischensumme")}</dt>
               <dd>
                 {equal && <span className="pencil rline-each">{formatMoney(perPerson(sub)!, data.currency)}</span>}
                 {formatMoney(sub, data.currency)}
@@ -619,7 +632,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
               ))}
               {hasTip(data) && (
                 <FeeLine
-                  name={`Trinkgeld${data.tipAmount ? "" : ` ${data.tipPercent} %`}`}
+                  name={data.tipAmount ? t("Trinkgeld") : t("Trinkgeld {percent} %", { percent: data.tipPercent })}
                   amount={tipOnReceipt(data)}
                   currency={data.currency}
                   each={perPerson(tipOnReceipt(data))}
@@ -633,13 +646,16 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
           {sharedTotal(data) !== 0 && !equal && (
             <>
               <dt className="tip-split">
-                {(data.fees ?? []).length > 0 ? (hasTip(data) ? "Gebühren & Trinkgeld" : "Gebühren") : "Trinkgeld"} ÷{" "}
-                {splitHeadCount(data, participants)} Personen
+                {(data.fees ?? []).length > 0
+                  ? hasTip(data)
+                    ? t("Gebühren & Trinkgeld ÷ {count} Personen", { count: splitHeadCount(data, participants) })
+                    : t("Gebühren ÷ {count} Personen", { count: splitHeadCount(data, participants) })
+                  : t("Trinkgeld ÷ {count} Personen", { count: splitHeadCount(data, participants) })}
               </dt>
-              <dd className="tip-split">je {formatMoney(sharedPerPerson(data, participants), data.currency)}</dd>
+              <dd className="tip-split">{t("je {amount}", { amount: formatMoney(sharedPerPerson(data, participants), data.currency) })}</dd>
             </>
           )}
-          <dt className="grand">SUMME</dt>
+          <dt className="grand">{t("SUMME")}</dt>
           {equal ? (
             <dd className="grand">
               <EqualFraction total={total} people={people} share={equalShare(data, participants)} currency={data.currency} />
@@ -650,13 +666,15 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
         </dl>
         <div className="receipt-rule double" aria-hidden="true" />
         <p className="receipt-progress">
-          {equal ? `Gleichmäßig auf ${people} Personen verteilt` : `${assigned} von ${billed.length} Positionen vollständig zugeordnet`}
+          {equal
+            ? t("Gleichmäßig auf {people} Personen verteilt", { people })
+            : t("{assigned} von {count} Positionen vollständig zugeordnet", { assigned, count: billed.length })}
         </p>
         <div className="receipt-barcode" aria-hidden="true" />
-        <p className="receipt-thanks">Danke &amp; bis zum nächsten Mal!</p>
+        <p className="receipt-thanks">{t("Danke & bis zum nächsten Mal!")}</p>
         {onShowOriginal && (
           <button type="button" className="receipt-original" onClick={onShowOriginal}>
-            Zum Originalbeleg
+            {t("Zum Originalbeleg")}
           </button>
         )}
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { t } from "../lib/i18n";
 import type { InkPoint, Stroke } from "../lib/ink";
 
 interface Props {
@@ -177,7 +178,7 @@ export default function InkLayer({ onInk, onStart, onTap, onLongPress }: Props) 
     <canvas
       ref={canvas}
       className="ink-layer"
-      aria-label="Fläche zum Durchstreichen und Antippen der Zeilen"
+      aria-label={t("Fläche zum Durchstreichen und Antippen der Zeilen")}
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
