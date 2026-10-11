@@ -259,9 +259,15 @@ immer in Safari öffnen, nie in der Home-Bildschirm-App).
 - **Schutz:** Codes gelten 15 Minuten und einmal, nach 5 falschen Versuchen ist ein Code ungültig; höchstens 5 Codes
   pro Adresse und 15 pro Gerät/IP und Stunde. Ein Gerät gehört zu höchstens einem Konto.
 - **Versand:** über Resend (`RESEND_API_KEY`, `MAIL_FROM`, z. B. `klicksplit <code@klicksplit.de>`; der Name vor der
-  Adresse steht auch im Mail-Text). Die Mail ist im App-Design gebaut (Logo, Wortmarke, Code groß in einer
-  Mint-Box, „Hi,“; Tabellen und Inline-Stile für Mail-Programme); der Code steht ohne Leerzeichen, damit das iPhone ihn
-  zum Einfügen vorschlägt. Das Logo kommt von `PUBLIC_URL` bzw. der Railway-Domain (`/icon-192.png`). Ohne diese
+  Adresse steht auch im Mail-Text). Die Mails sehen aus wie der digitale Kassenbon der App: Logo und Wortmarke, darunter
+  ein Bon mit abgerissenen Zacken oben und unten, der in Apple Mail wie aus dem Drucker hereinfährt (andere
+  Mail-Programme zeigen ihn ruhig, ohne Zacken, wo sie keine Verläufe können). Anrede „Hi Niklas,“ mit dem Profilnamen,
+  sofern schon einer eingegeben ist, sonst „Hi,“. Der Code steht groß in einer Mint-Box, ohne Leerzeichen, damit das
+  iPhone ihn zum Einfügen vorschlägt. Am Ende stehen nach drei Leerzeilen „klicksplit •“ und darunter groß „Einer zahlt.“ /
+  „Alle splitten.“ in Schrift und Farben der Startseite (dunkel, „Alle splitten.“ in Mint).
+- **Willkommensmail:** Nach der ersten erfolgreichen Code-Eingabe, wenn das Konto neu angelegt wird, kommt einmalig
+  „Willkommen bei klicksplit!“ – herzlich, mit den drei Schritten, wie man von überall per Browser ins Konto kommt
+  (Adresse aus `PUBLIC_URL`, nach dem Umzug `klicksplit.de`), einem Knopf zur App und dem Home-Bildschirm-Tipp. Das Logo kommt von `PUBLIC_URL` bzw. der Railway-Domain (`/icon-192.png`). Ohne diese
   Variablen steht der Code nur im Server-Log. Konten liegen in
   `DATA_DIR/accounts.json`. In der Demo gibt es keine Konten.
 

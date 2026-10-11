@@ -35,7 +35,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 140 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 141 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -174,7 +174,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   hat (bevorzugt), sonst bzw. innerhalb von 12 h danach WhatsApp; auch bei Freunden ohne Häkchen („Bitte hake in … ab,
   was Du hattest.“) und im Dashboard („Carl hat noch nicht bezahlt?“). Status „per Mitteilung erinnert vor …“.
   Regeln in `BillCore.remind`/`remindPerson` (`REMIND_COOLDOWN_MS`), Knopf `RemindButton`.
-- Code-Mail: „Hi,“ / „hier ist Dein Code für klicksplit:“, Code ohne Leerzeichen in Mint-Box (App-Design)
+- Code-Mail: Kassenbon mit Zacken (fährt in Apple Mail herein), „Hi Name,“ bzw. „Hi,“ / „hier ist Dein Code für
+  klicksplit:“, Code ohne Leerzeichen in Mint-Box; Schluss nach 3 Leerzeilen: „klicksplit •“, darunter groß „Einer
+  zahlt.“ / „Alle splitten.“ (dunkel, mint). Willkommensmail „Willkommen bei klicksplit!“ nach Kontoanlage.
 - Konto: „Deine E-Mail-Adresse“, „Code senden“, „Code eingeben“, „Überspringen“, Startseite „Schon ein Konto?
   Anmelden“, Profil ganz oben „Konto“: „● Angemeldet“ + Adresse bzw. „Nicht angemeldet“ + „Anmelden oder Konto
   anlegen“, „Abmelden“, „Konto löschen“; grüner Haken am Profil-Knopf der Startseite

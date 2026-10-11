@@ -11,7 +11,7 @@ import { isAiConfigured, isSupportedMediaType, observeAi, parseReceiptImage, Rec
 import { limitsFromEnv, RateLimiter, type Limits } from "./rateLimit.ts";
 import { DeviceLinks } from "./deviceLink.ts";
 import { AccountStore, normalizeEmail } from "./accounts.ts";
-import { mailerFromEnv, type SendCode } from "./mail.ts";
+import { mailerFromEnv, type SendCode, type SendWelcome } from "./mail.ts";
 import { HandoffBoard, networkKey } from "./handoff.ts";
 import { isPushEndpoint, type PushService } from "./push.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
@@ -63,6 +63,8 @@ export interface AppOptions {
   accounts?: AccountStore;
   /** Sends a sign-in code (default: Resend, or the log without a mail service). */
   sendCode?: SendCode;
+  /** Sends the welcome after an account was created (default: as above). */
+  sendWelcome?: SendWelcome;
 }
 
 function clientAddress(req: IncomingMessage, trustProxy: boolean): string {
@@ -157,7 +159,9 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const handoffs = new HandoffBoard();
   const deviceLinks = new DeviceLinks();
   const accounts = options.accounts ?? new AccountStore(null);
-  const sendCode = options.sendCode ?? mailerFromEnv();
+  const mailer = options.sendCode && options.sendWelcome ? null : mailerFromEnv();
+  const sendCode = options.sendCode ?? mailer!.sendCode;
+  const sendWelcome = options.sendWelcome ?? mailer!.sendWelcome;
   /** Sign-in codes: per address (nobody floods a mailbox through billsplit) and per client. */
   const codesPerEmail = new RateLimiter(5, 60 * 60 * 1000);
   const codesPerClient = new RateLimiter(15, 60 * 60 * 1000);
@@ -427,13 +431,14 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         return sendJson(res, 200, { account: null });
       }
       if (parts[2] === "code" && parts.length === 3 && method === "POST") {
-        const body = parse(z.object({ email }), await readJson(req, MAX_JSON_BODY));
+        // name: the profile name so far, for "Hi Niklas," in the mail.
+        const body = parse(z.object({ email, name: z.string().trim().max(40).optional() }), await readJson(req, MAX_JSON_BODY));
         const address = normalizeEmail(body.email);
         const tooMany = "Zu viele Codes angefordert. Bitte warte etwas und versuche es dann nochmal.";
         enforce(codesPerClient, clientAddress(req, trustProxy), tooMany);
         enforce(codesPerEmail, address, tooMany);
         try {
-          await sendCode(address, accounts.newCode(address));
+          await sendCode(address, accounts.newCode(address), body.name || undefined);
         } catch (error) {
           monitor?.error("server", `Mail an ${address.replace(/^(.).*@/, "$1…@")} fehlgeschlagen`, error instanceof Error ? error.message : String(error));
           throw new HttpError("Die Mail konnte gerade nicht verschickt werden. Bitte versuche es gleich nochmal.", 502);
@@ -458,6 +463,10 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         if (current) throw new HttpError(`Dieses Gerät ist schon mit ${current.email} verbunden. Melde Dich dort erst ab.`, 409);
         if (!existing) {
           const account = accounts.create(body.email, key, cleanProfile(body.profile ?? {}));
+          // A warm welcome – and how to get into the account from anywhere (not waited for).
+          sendWelcome(account.email, account.profile.name).catch((error: unknown) =>
+            monitor?.error("server", "Willkommensmail fehlgeschlagen", error instanceof Error ? error.message : String(error)),
+          );
           return sendJson(res, 200, { status: "created", email: account.email });
         }
         // Signing in on another device: what this device did so far moves into the account.

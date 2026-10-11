@@ -98,7 +98,7 @@ export async function mailedCode(email: string): Promise<string> {
   const { readFile } = await import("node:fs/promises");
   for (let attempt = 0; attempt < 40; attempt++) {
     const lines = (await readFile(process.env.MAIL_OUTBOX!, "utf8").catch(() => "")).trim().split("\n").filter(Boolean);
-    const mail = lines.map((l) => JSON.parse(l) as { email: string; code: string }).filter((m) => m.email === email).at(-1);
+    const mail = lines.map((l) => JSON.parse(l) as { email: string; code: string }).filter((m) => m.email === email && m.code).at(-1);
     if (mail) return mail.code;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }

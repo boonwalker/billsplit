@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { confirmCode, type SignInResult } from "../lib/account";
 import { api } from "../lib/api";
 import { isValidEmail } from "../lib/payment";
+import { loadOwnProfile } from "../lib/storage";
 
 /**
  * E-mail and code, the two steps of the optional account. Used in the profile assistant
@@ -37,7 +38,7 @@ export default function AccountForm({
     setBusy(true);
     setError(null);
     try {
-      await api.requestCode(email.trim());
+      await api.requestCode(email.trim(), loadOwnProfile().name.trim() || undefined);
       setStep("code");
       setCode("");
     } catch (err) {

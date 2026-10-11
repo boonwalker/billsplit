@@ -58,7 +58,7 @@ export interface Api {
   /** The optional e-mail account of this device (null: none). */
   account(): Promise<{ account: { email: string } | null }>;
   /** Sends a six-digit sign-in code to the address. */
-  requestCode(email: string): Promise<{ ok: true }>;
+  requestCode(email: string, name?: string): Promise<{ ok: true }>;
   /**
    * Checks the code: creates the account for this device, or – when the address already has
    * one – signs this device in (it gets the account's key, profile and bills).
@@ -153,7 +153,7 @@ const serverApi: Api = {
   claimDeviceLink: (code) => request("POST", `/api/device-link/${encodeURIComponent(code)}`, {}),
   mergeDevice: (code) => request("POST", "/api/merge-device", { code }),
   account: () => request("GET", "/api/account"),
-  requestCode: (email) => request("POST", "/api/account/code", { email }),
+  requestCode: (email, name) => request("POST", "/api/account/code", { email, ...(name ? { name } : {}) }),
   verifyCode: (email, code, profile) => request("POST", "/api/account/verify", { email, code, profile }),
   saveAccountProfile: (profile) => request("PUT", "/api/account/profile", { profile }),
   deleteAccount: () => request("DELETE", "/api/account"),

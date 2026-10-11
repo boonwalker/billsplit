@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccountStore, CODE_TTL_MS } from "../server/accounts";
 import { createApp } from "../server/app";
-import { codeMail, senderName } from "../server/mail";
+import { codeMail, greeting, senderName, welcomeMail } from "../server/mail";
 import { BillStore } from "../server/store";
 import type { BillData, BillSnapshot } from "../src/lib/bill";
 
@@ -43,10 +43,25 @@ describe("code mail", () => {
     const mail = codeMail("482913", "klicksplit <code@klicksplit.de>", "https://app.example/icon-192.png");
     expect(mail.text.startsWith("Hi,\n\nhier ist Dein Code für klicksplit: 482913")).toBe(true);
     expect(mail.html).toContain(">Hi,</p>");
+    expect(codeMail("482913", undefined, undefined, " Niklas ").html).toContain(">Hi Niklas,</p>");
+    expect(greeting("")).toBe("Hi,");
+    // The app's line at the end: three empty lines above, the name, then "Einer zahlt." / "Alle splitten." (green).
+    expect(mail.html).toContain("<br><br><br>");
+    expect(mail.html).toMatch(/color:#3ddc97">Alle splitten\.<\/div>/);
+    expect(mail.text.endsWith("klicksplit •\nEiner zahlt.\nAlle splitten.\n")).toBe(true);
     expect(mail.html).toContain(">482913</span>");
     expect(mail.html).toContain('src="https://app.example/icon-192.png"');
     expect(mail.html).toContain('klick<b style="font-weight:700;color:#0f7a4d">split</b>');
     expect(codeMail("482913", undefined).html).not.toContain("<img");
+  });
+
+  it("welcomes a new account holder and shows how to sign in from anywhere", () => {
+    const mail = welcomeMail("klicksplit <code@klicksplit.de>", "https://klicksplit.de", undefined, "Anna");
+    expect(mail.subject).toBe("Willkommen bei klicksplit!");
+    expect(mail.html).toContain(">Hi Anna,</p>");
+    expect(mail.html).toContain('href="https://klicksplit.de"');
+    expect(mail.html).toContain("<b>klicksplit.de</b> im Browser öffnen");
+    expect(mail.text).toContain("1. klicksplit.de im Browser öffnen");
   });
 });
 
@@ -54,13 +69,15 @@ describe("/api/account", () => {
   const PHONE = "anna-phone-key-0123456789";
   const LAPTOP = "anna-laptop-key-0123456789";
   const OWNER = "owner-device-key-0123456789";
-  const sent: { email: string; code: string }[] = [];
+  const sent: { email: string; code: string; name?: string }[] = [];
+  const welcomed: { email: string; name?: string }[] = [];
   let server: Server;
   let base: string;
 
   beforeAll(async () => {
-    const sendCode = async (email: string, code: string) => void sent.push({ email, code });
-    server = createServer(createApp(new BillStore(null), "/nonexistent", { accounts: new AccountStore(null), sendCode }));
+    const sendCode = async (email: string, code: string, name?: string) => void sent.push({ email, code, name });
+    const sendWelcome = async (email: string, name?: string) => void welcomed.push({ email, name });
+    server = createServer(createApp(new BillStore(null), "/nonexistent", { accounts: new AccountStore(null), sendCode, sendWelcome }));
     await new Promise<void>((resolve) => server.listen(0, resolve));
     base = `http://localhost:${(server.address() as AddressInfo).port}`;
   });
@@ -76,7 +93,7 @@ describe("/api/account", () => {
   }
 
   async function signIn(key: string, email: string, profile?: Record<string, string>) {
-    expect((await call(key, "POST", "/api/account/code", { email })).status).toBe(200);
+    expect((await call(key, "POST", "/api/account/code", { email, ...(profile?.name ? { name: profile.name } : {}) })).status).toBe(200);
     const code = sent.at(-1)!.code;
     return call<{ status: string; key?: string; profile?: Record<string, string>; bills?: { id: string }[] }>(key, "POST", "/api/account/verify", {
       email,
@@ -101,7 +118,9 @@ describe("/api/account", () => {
     expect((await call(PHONE, "GET", "/api/account")).json).toEqual({ account: null });
     const created = await signIn(PHONE, "Anna@Example.de", { name: "Anna", paypalMe: "anna" });
     expect(created.json.status).toBe("created");
-    expect(sent.at(-1)!.email).toBe("anna@example.de");
+    expect(sent.at(-1)).toMatchObject({ email: "anna@example.de", name: "Anna" });
+    // The first sign-in creates the account: a welcome mail goes out (once).
+    expect(welcomed).toEqual([{ email: "anna@example.de", name: "Anna" }]);
     expect((await call(PHONE, "GET", "/api/account")).json).toEqual({ account: { email: "anna@example.de" } });
 
     // Wrong codes are refused.
