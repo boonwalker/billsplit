@@ -4,9 +4,7 @@ import OwnerBar from "../components/bill/OwnerBar";
 import QrHero from "../components/bill/QrHero";
 import ReceiptPeek from "../components/bill/ReceiptPeek";
 import DemoBar from "../components/DemoBar";
-import InstallHint from "../components/InstallHint";
 import GestureHelp from "../components/GestureHelp";
-import ProfileWizard from "../components/ProfileWizard";
 import DivisorSheet from "../components/DivisorSheet";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
@@ -22,6 +20,7 @@ import { DEMO } from "../lib/demo";
 import { isIosBrowser } from "../lib/handoff";
 import { confirmScan, knock } from "../lib/haptics";
 import { navigate } from "../lib/router";
+import { askOnStartPage, SHOW_PAID_MS, takeProfileQuestion } from "../lib/onboarding";
 import { paymentFromProfile, samePayment } from "../lib/payment";
 import { forgetBill, hasPaymentMethod, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
@@ -32,7 +31,6 @@ import { scrollBehavior } from "../lib/motion";
  * receipt (to check the amount and tick "erhalten"), a friend sees the end of the receipt with
  * their share. back: where "Zurück" leads (the list it was opened from).
  */
-const PROFILE_ASKED_KEY = "billsplit.profileAsked";
 
 export default function BillPage({ id, focus, back }: { id: string; focus?: string; back?: string }) {
   const { snapshot, error, notFound, live, setMyClaims, flushClaims, replace } = useLiveBill(id);
@@ -45,19 +43,17 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   const scroller = useRef<HTMLDivElement>(null);
   const [ownerBarHeight, setOwnerBarHeight] = useState(0);
   /**
-   * A friend who just paid and has no way to get paid yet: "Wie willst Du bezahlt werden?" –
-   * once per device. Afterwards, in Safari on the iPhone, the way onto the home screen.
+   * A friend who just paid for the first time and has no way to get paid yet: after a moment
+   * on the confirmation, the start page opens and asks there (see lib/onboarding).
    */
-  const [onboarding, setOnboarding] = useState<"profile" | "install" | null>(null);
+  const toStartPage = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (toStartPage.current) window.clearTimeout(toStartPage.current);
+  }, []);
   function askForProfile() {
-    if (DEMO || hasPaymentMethod(loadOwnProfile())) return;
-    try {
-      if (localStorage.getItem(PROFILE_ASKED_KEY)) return;
-      localStorage.setItem(PROFILE_ASKED_KEY, "1");
-    } catch {
-      // without storage it may come again next time
-    }
-    setOnboarding("profile");
+    if (!takeProfileQuestion()) return;
+    askOnStartPage(id);
+    toStartPage.current = window.setTimeout(() => navigate("/"), SHOW_PAID_MS);
   }
   /** Height of the friend's pay bar: the receipt can always be scrolled up above it. */
   const [payBarHeight, setPayBarHeight] = useState<number | null>(null);
@@ -347,8 +343,6 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         />
       )}
 
-      {onboarding === "profile" && <ProfileWizard role="guest" onDone={(saved) => setOnboarding(saved && inBrowser ? "install" : null)} />}
-      {onboarding === "install" && <InstallHint url={url} onClose={() => setOnboarding(null)} />}
 
       {askName && (
         <NamePrompt

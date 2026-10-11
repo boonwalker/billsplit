@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
+import InstallHint from "../components/InstallHint";
+import ProfileWizard from "../components/ProfileWizard";
 import { ownerStatus } from "../components/OwnerPanel";
 import { guestStatus } from "../lib/balances";
+import { billUrl } from "../lib/bill";
+import { isIosBrowser } from "../lib/handoff";
 import { formatMoney } from "../lib/money";
+import { ASK_PROFILE_AFTER_MS, takeStartPageQuestion } from "../lib/onboarding";
 import { api } from "../lib/api";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
@@ -13,6 +18,17 @@ import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
   const [recent, setRecent] = useState<RecentBill[]>(loadRecent);
+  /**
+   * Right after a friend paid for the first time (see lib/onboarding): a moment on the start
+   * page, then the profile assistant – and in Safari afterwards the way onto the home screen.
+   */
+  const [onboarding, setOnboarding] = useState<{ step: "profile" | "install"; billId: string } | null>(null);
+  useEffect(() => {
+    const billId = takeStartPageQuestion();
+    if (!billId) return;
+    const timer = window.setTimeout(() => setOnboarding({ step: "profile", billId }), ASK_PROFILE_AFTER_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
   /** The bill whose ✕ was tapped: asked once more before it leaves the list. */
   const [removing, setRemoving] = useState<RecentBill | null>(null);
   // The home screen always belongs to the device owner, also in the demo.
@@ -73,7 +89,7 @@ export default function Home() {
       <Header
         action={
           <button className="avatar-btn" aria-label={account ? `Profil – angemeldet als ${account}` : "Profil"} onClick={() => navigate("/profile")}>
-            {profile.name ? profile.name.slice(0, 1).toUpperCase() : "?"}
+            {profile.name.trim() ? profile.name.trim().slice(0, 1).toUpperCase() : "?"}
             {/* Signed in with the e-mail account: a small tick on the avatar. */}
             {account && (
               <span className="avatar-badge" aria-hidden="true">
@@ -254,6 +270,18 @@ export default function Home() {
           </ol>
         </section>
       </main>
+
+      {onboarding?.step === "profile" && (
+        <ProfileWizard
+          role="guest"
+          onDone={(saved) => {
+            // Signing in to an existing account may have brought more bills.
+            setRecent(loadRecent());
+            setOnboarding(saved && isIosBrowser() ? { step: "install", billId: onboarding.billId } : null);
+          }}
+        />
+      )}
+      {onboarding?.step === "install" && <InstallHint url={billUrl(onboarding.billId, window.location.href)} onClose={() => setOnboarding(null)} />}
 
       {removing && (
         <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && setRemoving(null)}>

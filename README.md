@@ -47,8 +47,10 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
    Kommt man danach in die App zurück, fragt sie gleich „Hast Du 11,80 € an Niklas gesendet?“ – ein Tipp auf
    „✓ Ja, gesendet“ markiert den Anteil als bezahlt (auch nach Überweisung oder Wero).
 
-Neue Freunde landen meist im Browser (WhatsApp-Link oder Kamera-App). Dort geben sie ihren Namen ein; nach dem
-Bezahlen fragt billsplit einmal „Wie willst Du bezahlt werden?“ (überspringbar) und legt damit das Profil an. In
+Neue Freunde landen meist im Browser (WhatsApp-Link oder Kamera-App). Dort geben sie ihren Namen ein. Nach dem
+ersten „✓ Ja, gesendet“ (bzw. „Als bezahlt markieren“) sehen sie die Bestätigung eine Sekunde lang, dann öffnet sich
+die Startseite (der Profil-Knopf zeigt schon ihre Initiale) und 1,5 Sekunden später einmalig der Profil-Assistent:
+E-Mail-Adresse für das Konto und „Wie willst Du bezahlt werden?“ (beides überspringbar). In
 Safari auf dem iPhone folgt die Anleitung „klicksplit auf Deinen Home-Bildschirm“ – mit „In der App öffnen“, sodass die
 Rechnung samt Häkchen in die App mitkommt.
 
