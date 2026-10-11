@@ -35,7 +35,7 @@ describe("code mail", () => {
   it("takes the product name from the sender", () => {
     expect(senderName("klicksplit <code@klicksplit.de>")).toBe("klicksplit");
     expect(senderName('"billsplit" <code@klicksplit.de>')).toBe("billsplit");
-    expect(senderName("code@klicksplit.de")).toBe("billsplit");
+    expect(senderName("code@klicksplit.de")).toBe("klicksplit");
     expect(codeMail("482913", "klicksplit <code@klicksplit.de>").subject).toBe("Dein klicksplit-Code: 482 913");
   });
 });

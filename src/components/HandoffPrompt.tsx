@@ -45,7 +45,7 @@ export default function HandoffPrompt() {
       return navigate(`/geraet/${device}`);
     }
     if (!id) {
-      setError("In der Zwischenablage ist kein billsplit-Link. Tippe in Safari nochmal auf „In der App öffnen“.");
+      setError("In der Zwischenablage ist kein klicksplit-Link. Tippe in Safari nochmal auf „In der App öffnen“.");
       return;
     }
     // Whatever was ticked or paid in Safari comes along (best effort: the bill opens anyway).

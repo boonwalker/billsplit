@@ -46,7 +46,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
   const others = otherMethods(data.payment);
   const [sheet, setSheet] = useState<OtherMethod | null>(null);
   const myName = participants.find((p) => p.id === me)?.name ?? "";
-  const reference = `billsplit · ${data.title}${myName ? ` · ${myName}` : ""}`.slice(0, 140);
+  const reference = `klicksplit · ${data.title}${myName ? ` · ${myName}` : ""}`.slice(0, 140);
   const otherLabel = others.map((m) => (m === "bank" ? "Überweisung" : "Wero")).join(" oder ");
 
   /**

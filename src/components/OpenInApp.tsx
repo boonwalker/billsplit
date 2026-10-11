@@ -51,14 +51,14 @@ export default function OpenInApp({ url, carry = false, compact = false }: { url
   if (copied) {
     return (
       <div className="open-in-app done" role="status">
-        <b>✓ Link kopiert.</b> Öffne jetzt billsplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“
+        <b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“
         {carry && code ? " – was Du hier abgehakt hast, kommt mit" : ""}.
       </div>
     );
   }
   return (
     <div className={`open-in-app${compact ? " compact" : ""}`}>
-      {!compact && <span>billsplit auf dem Home-Bildschirm?</span>}
+      {!compact && <span>klicksplit auf dem Home-Bildschirm?</span>}
       <button
         type="button"
         className={compact ? "btn btn-primary btn-large" : "btn btn-small"}

@@ -31,7 +31,7 @@ test("Beleg fotografieren: Erkennung → Trinkgeld nachfragen → fertige Rechnu
   await page.goto("/");
   await page.locator(".action-card.primary input[type=file]").setInputFiles({ name: "beleg.png", mimeType: "image/png", buffer: PHOTO });
 
-  // A confident reading goes straight on; no tip on the receipt, so billsplit asks for it.
+  // A confident reading goes straight on; no tip on the receipt, so klicksplit asks for it.
   const sheet = page.locator(".sheet");
   const create = page.getByRole("button", { name: "Rechnung erstellen" }).first();
   await expect(sheet.or(create).first()).toBeVisible({ timeout: 15_000 });

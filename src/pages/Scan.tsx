@@ -40,7 +40,7 @@ export default function Scan() {
             navigate(id ? `/b/${id}` : `/geraet/${device}`, { replace: true });
             return;
           }
-          setHint("Das ist kein billsplit-QR-Code.");
+          setHint("Das ist kein klicksplit-QR-Code.");
         }
       }
       raf = requestAnimationFrame(tick);

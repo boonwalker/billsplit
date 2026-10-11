@@ -92,7 +92,7 @@ export default function DeviceTransfer() {
             <>
               <QrCode value={link.url} label="QR-Code zum Übertragen auf ein neues Gerät" />
               <p className="small">
-                Auf dem neuen Gerät billsplit öffnen und <b>„QR-Code scannen“</b> antippen. Gilt noch{" "}
+                Auf dem neuen Gerät klicksplit öffnen und <b>„QR-Code scannen“</b> antippen. Gilt noch{" "}
                 {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")} Minuten und nur einmal.
               </p>
               <button

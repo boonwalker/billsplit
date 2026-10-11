@@ -44,7 +44,7 @@ const server = createServer(createApp(store, path.join(root, "dist"), { trustPro
 
 server.listen(PORT, () => {
   console.log(
-    `billsplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${ADMIN_TOKEN ? "an" : "aus"}, Mail: ${process.env.RESEND_API_KEY && process.env.MAIL_FROM ? "Resend" : "nur Log"})`,
+    `klicksplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${ADMIN_TOKEN ? "an" : "aus"}, Mail: ${process.env.RESEND_API_KEY && process.env.MAIL_FROM ? "Resend" : "nur Log"})`,
   );
 });
 

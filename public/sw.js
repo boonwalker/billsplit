@@ -15,7 +15,7 @@ self.addEventListener("push", (event) => {
   }
   // iOS requires every push to show a notification.
   event.waitUntil(
-    self.registration.showNotification(notice.title || "billsplit", {
+    self.registration.showNotification(notice.title || "klicksplit", {
       body: notice.body || "",
       icon: "/icon-192.png",
       badge: "/icon-192.png",

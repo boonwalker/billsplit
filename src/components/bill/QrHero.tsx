@@ -24,7 +24,7 @@ export default function QrHero({ snapshot: snap, url }: { snapshot: BillSnapshot
 
   async function share() {
     try {
-      if (navigator.share) await navigator.share({ title: `billsplit · ${snap.data.title}`, url });
+      if (navigator.share) await navigator.share({ title: `klicksplit · ${snap.data.title}`, url });
       else {
         await navigator.clipboard.writeText(url);
         setCopied(true);

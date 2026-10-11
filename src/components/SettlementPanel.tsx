@@ -162,7 +162,7 @@ export function PlanPaySheet({
     }
   }
 
-  const reference = `billsplit · Ausgleich ${myName ? `von ${myName}` : ""}`.trim().slice(0, 140);
+  const reference = `klicksplit · Ausgleich ${myName ? `von ${myName}` : ""}`.trim().slice(0, 140);
 
   return (
     <div className="sheet-backdrop settle-backdrop" onClick={(e) => e.target === e.currentTarget && stage !== "booking" && onClose()}>

@@ -8,8 +8,8 @@ import OpenInApp from "./OpenInApp";
 export default function InstallHint({ url, onClose }: { url: string; onClose: () => void }) {
   return (
     <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet install-hint" role="dialog" aria-label="billsplit auf den Home-Bildschirm">
-        <h2>billsplit auf Deinen Home-Bildschirm</h2>
+      <div className="sheet install-hint" role="dialog" aria-label="klicksplit auf den Home-Bildschirm">
+        <h2>klicksplit auf Deinen Home-Bildschirm</h2>
         <p className="muted">Dann hast Du Deine Rechnungen, Deine Bilanz und Benachrichtigungen immer dabei – und Deine Freunde zahlen Dir mit einem Tipp.</p>
         <ol className="install-steps">
           <li>
@@ -24,7 +24,7 @@ export default function InstallHint({ url, onClose }: { url: string; onClose: ()
             und <b>„Zum Home-Bildschirm“</b>.
           </li>
           <li>
-            billsplit dort öffnen und <b>„Kopierten Link öffnen“</b> tippen.
+            klicksplit dort öffnen und <b>„Kopierten Link öffnen“</b> tippen.
           </li>
         </ol>
         <OpenInApp url={url} carry compact />

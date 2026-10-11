@@ -31,7 +31,7 @@ export function adminPage(input: {
     .join("");
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>billsplit · Betrieb</title>
+<meta name="robots" content="noindex"><title>klicksplit · Betrieb</title>
 <style>
   :root { color-scheme: light dark; --bg: #f6f7f4; --fg: #14201a; --muted: #5d6b63; --line: #d9ded8; --accent: #0f7a4d; --bad: #b42318; }
   @media (prefers-color-scheme: dark) { :root { --bg: #0e1612; --fg: #e8eee9; --muted: #9aa8a0; --line: #2a3530; --accent: #22a86a; --bad: #f97066; } }
@@ -47,7 +47,7 @@ export function adminPage(input: {
   time { color: var(--muted); font-variant-numeric: tabular-nums; } b.server, b.ai { color: var(--bad); } b.app { color: var(--accent); }
   pre { white-space: pre-wrap; font-size: 12px; } a { color: var(--accent); }
 </style></head><body>
-<h1>billsplit · Betrieb</h1>
+<h1>klicksplit · Betrieb</h1>
 <p class="muted">Version ${escape(input.version)} · Speicher: ${escape(input.storage)} · ${int(input.bills)} Rechnungen
 ${input.backupUrl ? ` · <a href="${escape(input.backupUrl)}">Datenbank herunterladen</a>` : ""}</p>
 <div class="tiles">

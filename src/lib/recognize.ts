@@ -8,7 +8,7 @@ export type ProgressFn = (message: string, progress?: number) => void;
 class AiUnavailableError extends Error {}
 
 async function recognizeWithAi(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
-  onProgress("billsplit analysiert den Beleg …");
+  onProgress("klicksplit analysiert den Beleg …");
   let res: Response;
   try {
     res = await fetch("/api/parse-receipt", {
@@ -88,9 +88,9 @@ const SAMPLE_ERRORS: Record<string, string> = {
 async function recognizeWithSample(image: PreparedImage, onProgress: ProgressFn): Promise<ParsedReceipt> {
   const sample = await getSample();
   if (!sample) throw new Error("Die KI-Erkennung ist nur in der claude.ai-Ansicht verfügbar. Trag die Positionen unten selbst ein.");
-  onProgress("billsplit analysiert den Beleg …");
+  onProgress("klicksplit analysiert den Beleg …");
   return readWithSumCheck((hint) => {
-    if (hint) onProgress("billsplit rechnet nach …");
+    if (hint) onProgress("klicksplit rechnet nach …");
     return sampleOnce(sample, image, hint);
   });
 }

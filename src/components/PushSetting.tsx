@@ -52,7 +52,7 @@ export default function PushSetting({ variant }: { variant: "prompt" | "setting"
     return (
       <div className="card push-prompt">
         <h4>Benachrichtigen, wenn Geld eingeht?</h4>
-        <p className="muted small">billsplit sagt Dir Bescheid, wenn Dir jemand etwas sendet, eine Zahlung Deine Bestätigung braucht oder Deine Zahlung bestätigt wurde.</p>
+        <p className="muted small">klicksplit sagt Dir Bescheid, wenn Dir jemand etwas sendet, eine Zahlung Deine Bestätigung braucht oder Deine Zahlung bestätigt wurde.</p>
         {error && <p className="alert">{error}</p>}
         <div className="inbox-actions">
           <button
@@ -76,11 +76,11 @@ export default function PushSetting({ variant }: { variant: "prompt" | "setting"
     <div className="card push-setting">
       {state === "needs-app" ? (
         <p className="muted small">
-          Benachrichtigungen gibt es auf dem iPhone nur in der billsplit-App vom Home-Bildschirm: In Safari auf „Teilen“ → „Zum
-          Home-Bildschirm“ tippen und billsplit dort öffnen.
+          Benachrichtigungen gibt es auf dem iPhone nur in der klicksplit-App vom Home-Bildschirm: In Safari auf „Teilen“ → „Zum
+          Home-Bildschirm“ tippen und klicksplit dort öffnen.
         </p>
       ) : state === "denied" ? (
-        <p className="muted small">Benachrichtigungen sind für billsplit blockiert. Du kannst sie in den Einstellungen Deines Geräts wieder erlauben.</p>
+        <p className="muted small">Benachrichtigungen sind für klicksplit blockiert. Du kannst sie in den Einstellungen Deines Geräts wieder erlauben.</p>
       ) : (
         <>
           <label className="push-switch">

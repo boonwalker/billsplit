@@ -76,7 +76,7 @@ export default function Home() {
       />
       <main className="content">
         <section className="hero">
-          <p className="eyebrow">{profile.name ? `Hi ${profile.name}!` : "Willkommen bei billsplit"}</p>
+          <p className="eyebrow">{profile.name ? `Hi ${profile.name}!` : "Willkommen bei klicksplit"}</p>
           <h2>
             Einer zahlt.
             <br />
@@ -234,7 +234,7 @@ export default function Home() {
             <li>
               <span>2</span>
               <div>
-                <b>QR-Code zeigen.</b> Freunde scannen ihn mit billsplit und erscheinen sofort bei Dir.
+                <b>QR-Code zeigen.</b> Freunde scannen ihn mit klicksplit und erscheinen sofort bei Dir.
               </div>
             </li>
             <li>

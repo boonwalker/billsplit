@@ -21,7 +21,7 @@ for (const url of urls) {
   css = css.split(`url(${url})`).join(`url(data:${fontTypes[path.extname(file)]};base64,${data})`);
 }
 
-const page = `<title>billsplit</title>
+const page = `<title>klicksplit</title>
 <style>
 ${css}
 </style>

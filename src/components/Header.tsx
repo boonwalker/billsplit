@@ -19,7 +19,7 @@ export default function Header({ title, back, action }: Props) {
             </svg>
           </button>
         ) : (
-          <button className="brand-btn" onClick={() => navigate("/")} aria-label="billsplit Startseite">
+          <button className="brand-btn" onClick={() => navigate("/")} aria-label="klicksplit Startseite">
             <Wordmark />
           </button>
         )}

@@ -80,9 +80,9 @@ test("Freund im Safari: nach dem Bezahlen „Wie willst Du bezahlt werden?“, d
   await wizard.getByRole("button", { name: "Profil speichern" }).click();
   expect(await anna.evaluate(() => JSON.parse(localStorage.getItem("billsplit.profile") ?? "{}"))).toMatchObject({ name: "Anna", iban: "DE89370400440532013000" });
 
-  // In Safari: how to get billsplit onto the home screen, taking this bill along.
+  // In Safari: how to get klicksplit onto the home screen, taking this bill along.
   const hint = anna.locator(".install-hint");
-  await expect(hint).toContainText("billsplit auf Deinen Home-Bildschirm");
+  await expect(hint).toContainText("klicksplit auf Deinen Home-Bildschirm");
   await hint.getByRole("button", { name: "In der App öffnen" }).click();
   expect(await anna.evaluate(() => navigator.clipboard.readText())).toMatch(/von=/);
 });

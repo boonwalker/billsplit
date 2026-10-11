@@ -116,7 +116,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl }: Pro
   const currency = snapshot.data.currency;
   const openOf = (d: Debtor) => (d.received ? 0 : openShare(d.amount, d, (d.credited ?? 0) + (d.creditPending ?? 0)));
   const reminder = (d: Debtor, open: number) =>
-    `Hi ${d.name}, kleine Erinnerung von billsplit: Für „${snapshot.data.title || "die Rechnung"}“ sind bei Dir noch ${formatMoney(open, currency)} offen. Hier kannst Du direkt begleichen: ${shareUrl}`;
+    `Hi ${d.name}, kleine Erinnerung von klicksplit: Für „${snapshot.data.title || "die Rechnung"}“ sind bei Dir noch ${formatMoney(open, currency)} offen. Hier kannst Du direkt begleichen: ${shareUrl}`;
   const debtors = snapshot.debtors ?? [];
   const { total, own, received, missing, unassigned } = ownerSummary(snapshot);
 

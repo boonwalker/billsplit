@@ -14,6 +14,10 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 ## Zusammenarbeit (verbindlich)
 
 - **Sprache:** Antworten auf Deutsch, den Auftraggeber mit **„Sie“** ansprechen. Knapp, mit Ergebnis zuerst.
+- **Name:** In allen App-Texten heißt das Produkt **„klicksplit“** (seit 11.10.2026, Logo B „Beleg mit Tipp“: Beleg
+  mit Haken und Tipp-Ring, `src/components/Logo.tsx`, `public/icon.svg`, PNG-Icons mit `e2e/icons.mjs`). Repo, Ordner
+  und interne Schlüssel (`billsplit.*`, `x-billsplit-key`, Ereignisnamen, Backup-Dateien) bleiben „billsplit“ – nie
+  umbenennen, sonst gehen gespeicherte Daten verloren. Logo-Entwürfe A–C: https://claude.ai/artifact/997z19NSsceErabgCCqXuv
 - **App-Texte:** „Dir“ wird in der gesamten App **immer großgeschrieben** (ausdrücklich gewünscht). Ebenso werden
   „Du“, „Dein“, „Deine“ in neuen Texten großgeschrieben.
 - **Fragen sind Fragen:** Fragt der Auftraggeber etwas („Kannst Du …?“, „Was wäre, wenn …?“), erst antworten bzw.
@@ -139,8 +143,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Bezahl-Knopf „Anteil begleichen · Betrag“, danach „Mit PayPal bezahlen · Betrag“, darunter „Als bezahlt markieren“
 - PayPal-Hinweis zweizeilig: „xx,xx € in die Zwischenablage kopiert –“ / kleiner, einzeilig: „in PayPal ins
   Betragsfeld tippen und „Einfügen“ wählen.“
-- „Rechnung erstellen“ (nie „QR-Code erstellen“) · Scan: „billsplit analysiert den Beleg“ · nach „Rechnung erstellen“
-  nur drei Punkte + „billsplit generiert die interaktive Rechnung“
+- „Rechnung erstellen“ (nie „QR-Code erstellen“) · Scan: „klicksplit analysiert den Beleg“ · nach „Rechnung erstellen“
+  nur drei Punkte + „klicksplit generiert die interaktive Rechnung“
 - Startseite: „Du hast bezahlt und willst anteilig Geld zurück“, „Für digitale Rechnungen aus App oder Mail“,
   „Anteil“ statt „Teil“
 - Rechnungsliste: „Du schuldest · Betrag“ (immer der aktuell noch offene), „✓ als bezahlt markiert“, „✓ beglichen“,
@@ -166,8 +170,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 
 - Datenschutzerklärung und Impressum (nötig, sobald die App öffentlich E-Mail-Adressen sammelt; braucht Name/Anschrift
   des Betreibers).
-- Möglicher Umzug der App auf `klicksplit.de` (Konten machen ihn verlustfrei: anmelden, alles ist da) und Umbenennung
-  in „klicksplit“ – vom Auftraggeber angedacht, nicht beauftragt.
+- Möglicher Umzug der App auf `klicksplit.de` (Konten machen ihn verlustfrei: anmelden, alles ist da) – angedacht,
+  nicht beauftragt. Umbenennung in „klicksplit“ und Logo B sind erledigt (11.10.2026).
 
 Erledigt am 11.10.2026: optionales E-Mail-Konto. Erledigt am 11.10.2026 (Bedienbarkeits-Analyse vom 10.10.2026 komplett umgesetzt):
 Safari- und App-Identität zusammenführen (`?von=`-Code, `mergeParticipant`), „Hast Du … gesendet?“ nach Rückkehr von

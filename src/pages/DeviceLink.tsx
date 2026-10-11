@@ -45,7 +45,7 @@ export default function DeviceLink({ code }: { code: string }) {
           </div>
         ) : (
           <>
-            {/* Safari and the home-screen app keep separate data: take it over where billsplit is used. */}
+            {/* Safari and the home-screen app keep separate data: take it over where klicksplit is used. */}
             {isIosBrowser() && <OpenInApp url={deviceLinkUrl(code)} />}
             <div className="card device-card">
               <h3>Rechnungen von Deinem anderen Gerät übernehmen?</h3>

@@ -2,6 +2,10 @@
 
 **Einer zahlt. Alle splitten.**
 
+> In der App heißt das Produkt seit dem 11.10.2026 **klicksplit** (Name, Logo „Beleg mit Tipp“, Mails von
+> `klicksplit.de`). Repo, Ordner und interne Schlüssel (`billsplit.*` im Browser-Speicher, Header `x-billsplit-key`,
+> Backup-Dateien) heißen bewusst weiter billsplit – sonst gingen gespeicherte Daten verloren.
+
 billsplit teilt Restaurantrechnungen unter Freunden auf: Wer bezahlt hat, fotografiert den Beleg und zeigt einen
 QR-Code. Die Freunde scannen ihn, haken auf der digitalen Rechnung ab, was sie hatten, und zahlen ihren Anteil per
 PayPal. Alle sehen live, wer welche Position übernommen hat.
@@ -40,7 +44,7 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
 
 Neue Freunde landen meist im Browser (WhatsApp-Link oder Kamera-App). Dort geben sie ihren Namen ein; nach dem
 Bezahlen fragt billsplit einmal „Wie willst Du bezahlt werden?“ (überspringbar) und legt damit das Profil an. In
-Safari auf dem iPhone folgt die Anleitung „billsplit auf Deinen Home-Bildschirm“ – mit „In der App öffnen“, sodass die
+Safari auf dem iPhone folgt die Anleitung „klicksplit auf Deinen Home-Bildschirm“ – mit „In der App öffnen“, sodass die
 Rechnung samt Häkchen in die App mitkommt.
 
 Freunde sehen die Schuldnerliste des Rechnungsstellers nicht. Wer was abgehakt hat, sehen sie dagegen schon.
@@ -65,7 +69,7 @@ der Betrag nur noch eingefügt werden. Zwei Tipps, weil iOS das Kopieren verwirf
 Neben PayPal kann der Bezahler im Profil eine **IBAN** (jede Bank, auch Trade Republic, N26 oder Revolut; die
 Prüfziffer wird kontrolliert) und eine **Wero**-Handynummer bzw. -E-Mail hinterlegen. Banking-Apps lassen sich nicht
 mit vorausgefüllter Überweisung öffnen, deshalb zeigt billsplit Empfänger, IBAN, Betrag und Verwendungszweck
-(„billsplit · Titel · Name“) bzw. die Wero-Nummer mit je einem Kopier-Knopf. Hat der Bezahler PayPal hinterlegt,
+(„klicksplit · Titel · Name“) bzw. die Wero-Nummer mit je einem Kopier-Knopf. Hat der Bezahler PayPal hinterlegt,
 bleibt „Anteil begleichen“ der PayPal-Weg und darunter steht „Lieber per Überweisung oder Wero“; ohne PayPal öffnet
 „Anteil begleichen“ direkt die Überweisungsdaten. Danach geht es wie gewohnt mit „Als bezahlt markieren“ weiter.
 
@@ -273,7 +277,7 @@ auf der digitalen Rechnung führt „Zum Originalbeleg“ dorthin – für alle,
 
 Auf dem iPhone öffnen geteilte Links immer Safari, nie die Web-App auf dem Home-Bildschirm, und beide haben getrennte
 Speicher. Wer eine Rechnung in Safari öffnet, wird deshalb nicht automatisch beigetreten, sondern gefragt; darunter
-steht „billsplit auf dem Home-Bildschirm? In der App öffnen“. Das kopiert den Link und vermerkt die Weiterleitung für
+steht „klicksplit auf dem Home-Bildschirm? In der App öffnen“. Das kopiert den Link und vermerkt die Weiterleitung für
 ein paar Minuten auf dem Server (zur Netzwerkadresse des Handys, nicht zum Link). Nur dann zeigt die App beim Öffnen
 „Aus Safari weitergeleitet – Kopierten Link öffnen“; iOS fragt einmal mit „Einfügen“ nach, dann ist man in der
 Rechnung. Ist iCloud Private Relay aktiv, haben Safari und App verschiedene Adressen und der Hinweis erscheint nicht.

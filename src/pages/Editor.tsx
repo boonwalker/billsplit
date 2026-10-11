@@ -60,7 +60,7 @@ export default function Editor({ billId }: { billId?: string }) {
   useEffect(() => () => void (preview && URL.revokeObjectURL(preview)), [preview]);
 
   async function publish(data: BillData) {
-    setBusy({ message: "billsplit generiert die interaktive Rechnung", create: true });
+    setBusy({ message: "klicksplit generiert die interaktive Rechnung", create: true });
     try {
       const snap = await api.createBill(data, loadProfile().name.trim() || "Ich");
       // Keep the photo the bill was read from, so everyone can check it later.

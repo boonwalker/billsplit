@@ -351,7 +351,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
           const day = new Date().toISOString().slice(0, 10);
           res.writeHead(200, {
             "content-type": "application/octet-stream",
-            "content-disposition": `attachment; filename="billsplit-${day}.${store.storage === "sqlite" ? "db" : "json"}"`,
+            "content-disposition": `attachment; filename="klicksplit-${day}.${store.storage === "sqlite" ? "db" : "json"}"`,
             "cache-control": "no-store",
           });
           return void res.end(data);

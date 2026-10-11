@@ -168,7 +168,7 @@ export default function Profile({ next }: { next?: string }) {
             <div className="alert">
               Dein Browser lässt diese Seite gerade nichts dauerhaft speichern. Dein Profil gilt deshalb nur, bis Du den Tab
               schließt. Das passiert z. B. in einem privaten Tab, im eingebauten Browser anderer Apps oder wenn Cookies
-              blockiert sind. Öffne billsplit am besten direkt in Safari bzw. Chrome. Tippe erneut auf den Knopf, um
+              blockiert sind. Öffne klicksplit am besten direkt in Safari bzw. Chrome. Tippe erneut auf den Knopf, um
               trotzdem fortzufahren.
             </div>
           )}

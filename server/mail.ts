@@ -12,7 +12,7 @@ export type SendCode = (email: string, code: string) => Promise<void>;
 /** The sender's display name ("klicksplit" in "klicksplit <code@klicksplit.de>"), used in the text too. */
 export function senderName(from: string | undefined): string {
   const name = from?.match(/^\s*"?([^"<]+?)"?\s*</)?.[1]?.trim();
-  return name || "billsplit";
+  return name || "klicksplit";
 }
 
 export function codeMail(code: string, from: string | undefined): { subject: string; text: string; html: string } {
