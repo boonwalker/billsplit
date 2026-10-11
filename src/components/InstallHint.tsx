@@ -17,10 +17,7 @@ export default function InstallHint({ url, onClose }: { url: string; onClose: ()
           </li>
           <li>
             Dann unten in Safari auf <b>Teilen</b>{" "}
-            <svg className="install-share" viewBox="0 0 24 24" aria-label="Teilen-Symbol">
-              <path d="M12 3v12M8 7l4-4 4 4" />
-              <path d="M6 11v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8" />
-            </svg>{" "}
+            <ShareIcon />{" "}
             und <b>„Zum Home-Bildschirm“</b>.
           </li>
           <li>
@@ -33,5 +30,15 @@ export default function InstallHint({ url, onClose }: { url: string; onClose: ()
         </button>
       </div>
     </div>
+  );
+}
+
+/** Safari's share symbol, as it looks in the toolbar. */
+export function ShareIcon() {
+  return (
+    <svg className="install-share" viewBox="0 0 24 24" aria-label="Teilen-Symbol">
+      <path d="M12 3v12M8 7l4-4 4 4" />
+      <path d="M6 11v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8" />
+    </svg>
   );
 }

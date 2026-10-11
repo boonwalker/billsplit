@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import HandoffPrompt from "./components/HandoffPrompt";
+import MovedNotice from "./components/MovedNotice";
 import { useAppEvents } from "./lib/liveEvents";
 import { useRoute } from "./lib/router";
 import BillPage from "./pages/BillPage";
@@ -12,6 +13,7 @@ import OriginalReceipt from "./pages/OriginalReceipt";
 import Profile from "./pages/Profile";
 import SignIn from "./pages/SignIn";
 import Expense from "./pages/Expense";
+import Move from "./pages/Move";
 
 // The scanner pulls in the QR decoder; only load it when needed.
 const Scan = lazy(() => import("./pages/Scan"));
@@ -23,6 +25,7 @@ export default function App() {
       <ErrorBoundary>
         <Page />
         <HandoffPrompt />
+        <MovedNotice />
       </ErrorBoundary>
     </>
   );
@@ -55,6 +58,8 @@ function Page(): ReactNode {
       return <Dashboard key={route.transfer ?? ""} focusTransfer={route.transfer} />;
     case "device":
       return <DeviceLink code={route.code} />;
+    case "move":
+      return <Move code={route.code} target={route.target} app={route.app} />;
     default:
       return <Home />;
   }

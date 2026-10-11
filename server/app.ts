@@ -65,6 +65,20 @@ export interface AppOptions {
   sendCode?: SendCode;
   /** Sends the welcome after an account was created (default: as above). */
   sendWelcome?: SendWelcome;
+  /**
+   * The app's address (PUBLIC_URL, e.g. https://klicksplit.de). Pages opened at any other
+   * address move there and take the device's data along (see src/lib/move.ts).
+   */
+  homeUrl?: string;
+}
+
+/** The origin of an address like "https://klicksplit.de/", or null when there is none. */
+export function originOf(url: string | undefined): string | null {
+  try {
+    return url?.trim() ? new URL(url.trim()).origin : null;
+  } catch {
+    return null;
+  }
 }
 
 function clientAddress(req: IncomingMessage, trustProxy: boolean): string {
@@ -166,6 +180,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const codesPerEmail = new RateLimiter(5, 60 * 60 * 1000);
   const codesPerClient = new RateLimiter(15, 60 * 60 * 1000);
   const verifiesPerClient = new RateLimiter(40, 60 * 60 * 1000);
+  const home = originOf(options.homeUrl ?? process.env.PUBLIC_URL);
   const monitor = options.monitor;
   if (monitor) observeAi({ call: (usage) => monitor.aiCall(usage), failure: (message) => monitor.aiFailure(message) });
   /** Error reports from the app, per client address (a broken page must not flood the log). */
@@ -413,6 +428,25 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       }
     }
 
+    // Moving to the new address: the old one hands over its key with a one-time code (see move.ts).
+    if (parts[1] === "move" && parts.length === 2 && method === "POST") {
+      const viewer = requireViewer(req, url);
+      const key = (req.headers["x-billsplit-key"] as string | undefined) ?? url.searchParams.get("key")!;
+      const body = parse(z.object({ code: z.string().regex(/^[A-Za-z0-9_-]{16,64}$/) }), await readJson(req, MAX_JSON_BODY));
+      const link = deviceLinks.claim(body.code);
+      if (!link) throw new HttpError("Die Übergabe ist abgelaufen. Öffne klicksplit an der alten Adresse nochmal.", 410);
+      const old = participantIdFromKey(link.key);
+      // The code proves the old key, the request this browser's own: one person, so the payer's role moves too.
+      if (accounts.byKey(key) && link.key !== key) {
+        // This browser is signed in here already: the account's key stays, the old address's bills join it.
+        store.mergeParticipant(old, viewer);
+        return sendJson(res, 200, { key, profile: link.profile, bills: store.myBills(viewer) });
+      }
+      // Usually: the old key moves in, and whatever this browser did here so far joins it.
+      store.mergeParticipant(viewer, old);
+      return sendJson(res, 200, { key: link.key, profile: link.profile, bills: store.myBills(old) });
+    }
+
     // Optional e-mail account (see accounts.ts): sign in with a code from the mail.
     if (parts[1] === "account") {
       const viewer = requireViewer(req, url);
@@ -644,7 +678,9 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       filePath = path.join(distDir, "index.html");
     }
     try {
-      const data = await readFile(filePath);
+      let data: Buffer | string = await readFile(filePath);
+      // The app's address, for pages opened at an old one (see src/lib/move.ts).
+      if (home && filePath.endsWith(".html")) data = data.toString("utf8").replace("</head>", `<meta name="klicksplit-home" content="${home}"></head>`);
       const cacheControl = urlPath.startsWith("/assets/")
         ? "public, max-age=31536000, immutable"
         : urlPath.startsWith("/ocr/")

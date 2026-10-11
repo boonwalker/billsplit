@@ -111,6 +111,11 @@ export function deviceKey(): string {
   return memoryKey;
 }
 
+/** Whether this browser has used klicksplit already (without making up a key for it). */
+export function hasDeviceData(): boolean {
+  return read<string | null>(DEVICE_KEY, null) !== null || loadRecent().length > 0 || Boolean(loadOwnProfile().name.trim());
+}
+
 /** Device keys are random (two UUIDs); anything else cannot be one. */
 export const isDeviceKey = (key: string) => /^[A-Za-z0-9_-]{16,128}$/.test(key);
 

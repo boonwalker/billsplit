@@ -35,7 +35,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 141 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 145 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -100,6 +100,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   DNS-Einträge für Resend), `MAIL_FROM=klicksplit <code@klicksplit.de>`.
 - **Safari → App:** „In der App öffnen“ hängt `?von=<Einmal-Code>` an den kopierten Link; die App ruft
   `/api/merge-device` auf, `mergeParticipant` legt die Safari-Identität mit der App-Identität zusammen.
+- **Umzug der Adresse:** `PUBLIC_URL` ist die maßgebliche Adresse (Meta-Tag `klicksplit-home`, `src/lib/move.ts`).
+  Browser an anderen Adressen springen mit Einmal-Code (`#/umzug/<code>?ziel=…`, `/api/move`) dorthin, die alte
+  Home-Bildschirm-App zeigt `MovedNotice`. Stand 11.10.2026: vorbereitet, `PUBLIC_URL` auf Railway noch nicht gesetzt
+  (erst nach erfolgreicher Domain-Einrichtung, Schritte im README).
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
   max. 2000 px Kantenlänge). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
 - **Seiten:** `Home`, `Expense` (Ausgabe eingeben), `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in
@@ -187,8 +191,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 
 - Datenschutzerklärung und Impressum (nötig, sobald die App öffentlich E-Mail-Adressen sammelt; braucht Name/Anschrift
   des Betreibers).
-- Möglicher Umzug der App auf `klicksplit.de` (Konten machen ihn verlustfrei: anmelden, alles ist da) – angedacht,
-  nicht beauftragt. Umbenennung in „klicksplit“ und Logo B sind erledigt (11.10.2026).
+- Umzug der App auf `klicksplit.de`: technisch vorbereitet (Weiterleitung mit Datenübergabe), fehlt nur Domain bei
+  Railway/INWX und `PUBLIC_URL`. Umbenennung in „klicksplit“ und Logo B sind erledigt (11.10.2026).
 
 Erledigt am 11.10.2026: optionales E-Mail-Konto. Erledigt am 11.10.2026 (Bedienbarkeits-Analyse vom 10.10.2026 komplett umgesetzt):
 Safari- und App-Identität zusammenführen (`?von=`-Code, `mergeParticipant`), „Hast Du … gesendet?“ nach Rückkehr von

@@ -55,6 +55,8 @@ export interface Api {
   mergeDevice(code: string): Promise<{ merged: string[]; bills: MyBill[]; profile: Partial<Profile> }>;
   /** Trades such a code for the key and profile. */
   claimDeviceLink(code: string): Promise<{ key: string; profile: Partial<Profile> }>;
+  /** At the new address: takes over the old address's key (see move.ts). */
+  move(code: string): Promise<{ key: string; profile: Partial<Profile>; bills: MyBill[] }>;
   /** The optional e-mail account of this device (null: none). */
   account(): Promise<{ account: { email: string } | null }>;
   /** Sends a six-digit sign-in code to the address. */
@@ -152,6 +154,7 @@ const serverApi: Api = {
   createDeviceLink: (profile) => request("POST", "/api/device-link", { profile }),
   claimDeviceLink: (code) => request("POST", `/api/device-link/${encodeURIComponent(code)}`, {}),
   mergeDevice: (code) => request("POST", "/api/merge-device", { code }),
+  move: (code) => request("POST", "/api/move", { code }),
   account: () => request("GET", "/api/account"),
   requestCode: (email, name) => request("POST", "/api/account/code", { email, ...(name ? { name } : {}) }),
   verifyCode: (email, code, profile) => request("POST", "/api/account/verify", { email, code, profile }),

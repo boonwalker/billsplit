@@ -13,6 +13,8 @@ export type Route =
   /** transfer: a settlement payment to bring into view (from a notification). */
   | { name: "dashboard"; transfer?: string }
   | { name: "device"; code: string }
+  /** At the new address: take over the old address's data, then on to `target` (see move.ts). */
+  | { name: "move"; code: string; target?: string; app: boolean }
   /**
    * focus: a participant whose place on the bill to show (the payer's list of friends, or the
    * friend's own share) · back: where "Zurück" leads (e.g. "dashboard" when opened from a list).
@@ -38,6 +40,8 @@ export function parseHash(hash: string): Route {
       return { name: "scan" };
     case "dashboard":
       return { name: "dashboard", transfer: params.get("zahlung") ?? undefined };
+    case "umzug":
+      return second ? { name: "move", code: second, target: params.get("ziel") ?? undefined, app: params.get("app") === "1" } : { name: "home" };
     case "geraet":
       return second ? { name: "device", code: second } : { name: "home" };
     case "b":

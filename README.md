@@ -392,7 +392,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
   gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
   abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
-  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`).
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte).
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait
@@ -424,6 +424,40 @@ Hinweise:
 - Missbrauchsschutz: Belegfotos sind pro Gerät/IP und Stunde (`RECEIPT_LIMIT_PER_HOUR`) und insgesamt pro Tag
   (`RECEIPT_LIMIT_PER_DAY`) begrenzt. Ist das Limit erreicht, liest das Handy den Beleg selbst. Neue Rechnungen
   sind pro Gerät/IP und Stunde begrenzt (`BILL_LIMIT_PER_HOUR`).
+
+### Umzug auf eine neue Adresse (klicksplit.de)
+
+Die App kann ihre Adresse wechseln, ohne dass jemand Daten verliert. Maßgeblich ist `PUBLIC_URL`: Der Server schreibt
+die Adresse als `<meta name="klicksplit-home">` in die Seite (`server/app.ts`), die App vergleicht sie beim Start mit
+der eigenen (`src/lib/move.ts`).
+
+- **Im Browser an der alten Adresse** geht es sofort weiter zur neuen – auf dieselbe Seite (alte Rechnungslinks
+  funktionieren also weiter). Hat der Browser schon Daten, holt er vorher einen Einmal-Code (wie bei „Gerät
+  wechseln“) und hängt ihn an: `#/umzug/<code>?ziel=/b/…`. Die neue Adresse tauscht ihn bei `/api/move` gegen
+  Gerätekennung, Profil und Rechnungsliste; was dort vorher schon passiert war, wird zusammengelegt
+  (`mergeParticipant`). Der Code beweist die alte Kennung, deshalb bleibt die Rechnungssteller-Rolle erhalten. Ist der
+  Browser an der neuen Adresse schon mit einem Konto angemeldet, bleibt dessen Kennung.
+- **Die Home-Bildschirm-App an der alten Adresse** läuft weiter, zeigt aber beim Start „klicksplit ist umgezogen“ mit
+  dem Knopf „klicksplit.de öffnen“ (öffnet Safari mit Übergabe-Code; „Später“ bis zum nächsten Start). In Safari
+  erklärt dann „Fast geschafft!“, wie klicksplit neu auf den Home-Bildschirm kommt („In der App öffnen“ kopiert einen
+  „Gerät wechseln“-Link, die neue App übernimmt damit alles) und dass die alte App gelöscht werden kann.
+- Ohne `PUBLIC_URL` (oder wenn sie der eigenen Adresse entspricht) passiert nichts.
+
+**Schritte für klicksplit.de (Railway + INWX):**
+
+1. Railway: Service → **Settings → Networking → Custom Domain** → `klicksplit.de` (bzw. `www.klicksplit.de`, siehe
+   unten) eintragen. Railway zeigt einen **CNAME**-Eintrag (Ziel `….up.railway.app`) und einen **TXT**-Eintrag zur
+   Bestätigung.
+2. INWX: Domain `klicksplit.de` → **Nameserver-Einträge (DNS)** → beide Einträge genau so anlegen. Die vorhandenen
+   Resend-Einträge (DKIM, SPF, MX unter `send`) bleiben unverändert. Ein vorhandener A-Eintrag für `klicksplit.de`
+   ohne Namen muss weg (er hätte Vorrang).
+   Railway braucht für die Hauptdomain ohne `www` einen CNAME an der Wurzel (CNAME-Flattening bzw. ALIAS). Bietet INWX
+   das nicht an, gibt es zwei Wege: `www.klicksplit.de` per CNAME an Railway und `klicksplit.de` bei INWX per
+   URL-Weiterleitung (301) auf `https://www.klicksplit.de`, oder die Nameserver zu Cloudflare (kostenlos, mit
+   CNAME-Flattening) umziehen und dort alle Einträge inkl. Resend übernehmen.
+3. Warten, bis Railway die Domain als aktiv mit Zertifikat zeigt, und `https://klicksplit.de` im Browser prüfen.
+4. Erst dann in Railway unter **Variables** `PUBLIC_URL=https://klicksplit.de` setzen (bzw. die `www`-Adresse). Ab
+   dem nächsten Deploy leitet die alte Railway-Adresse um, Mails verlinken die neue.
 
 ### Daten und Backups
 
@@ -483,7 +517,7 @@ claude.ai-Artifact gedacht:
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional: eigene Schlüssel für Push (sonst einmal erzeugt und in `DATA_DIR/vapid.json` gespeichert) |
 | `VAPID_SUBJECT` | optional: Kontakt für die Push-Dienste (Standard `mailto:hallo@billsplit.app`) |
 | `ADMIN_TOKEN` | optional: schaltet die Betriebsseite `/api/admin?token=…` frei (Nutzung, Kosten, Fehler, Datenbank-Download) |
-| `PUBLIC_URL` | optional: öffentliche Adresse der App für das Logo in der Code-Mail (auf Railway automatisch über `RAILWAY_PUBLIC_DOMAIN`) |
+| `PUBLIC_URL` | optional: öffentliche Adresse der App (Logo und Links in den Mails; ohne sie die Railway-Domain). Andere Adressen leiten dorthin um und nehmen die Daten mit (siehe „Umzug auf eine neue Adresse“) |
 | `RESEND_API_KEY`, `MAIL_FROM` | optional: Versand der Anmelde-Codes über Resend, z. B. `MAIL_FROM=klicksplit <code@klicksplit.de>` (ohne: Code nur im Log) |
 
 ## API
