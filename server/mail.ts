@@ -286,7 +286,7 @@ export function welcomeMail(from: string | undefined, appUrl: string, logoUrl?: 
   const receipt = `${receiptHead("Willkommen", now)}
           <p style="margin:0 0 4px">${escapeHtml(hi)}</p>
           <p style="margin:0 0 12px">schön, dass Du dabei bist! Dein ${escapeHtml(name)}-Konto ist angelegt.</p>
-          <p style="margin:0">Ab jetzt sind Deine Rechnungen, Dein Profil und Deine Bilanz sicher bei Dir – auf jedem Gerät, auch wenn Du mal das Handy wechselst.</p>
+          <p style="margin:0">Ab jetzt sind Deine Rechnungen, Dein Profil und Deine Bilanz sicher bei Dir auf jedem Gerät.</p>
           ${rule}
           <p style="margin:0 0 6px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;font-size:13px">So einfach geht's</p>
           ${demo.html}
@@ -306,7 +306,7 @@ export function welcomeMail(from: string | undefined, appUrl: string, logoUrl?: 
           <p style="margin:0;font-size:13px;color:${C.inkSoft}">Tipp: Auf dem iPhone in Safari auf „Teilen“ und „Zum Home-Bildschirm“ tippen – dann ist ${escapeHtml(name)} wie eine App immer dabei, mit Benachrichtigungen, wenn Geld eingeht.</p>`;
   return {
     subject: `Willkommen bei ${name}!`,
-    text: `${hi}\n\nschön, dass Du dabei bist! Dein ${name}-Konto ist angelegt. Ab jetzt sind Deine Rechnungen, Dein Profil und Deine Bilanz sicher bei Dir – auf jedem Gerät, auch wenn Du mal das Handy wechselst.\n\nSo kommst Du von überall rein:\n1. ${host} im Browser öffnen – am Handy, Tablet oder Laptop.\n2. „Anmelden“ tippen und Deine E-Mail-Adresse eingeben.\n3. Den Code aus der Mail eintippen – fertig. Kein Passwort, nichts zu merken.\n\n${appUrl}\n\nTipp: Auf dem iPhone in Safari auf „Teilen“ und „Zum Home-Bildschirm“ tippen – dann ist ${name} wie eine App immer dabei.\n\n\n\n${name} •\nEiner zahlt.\nAlle splitten.\n`,
+    text: `${hi}\n\nschön, dass Du dabei bist! Dein ${name}-Konto ist angelegt. Ab jetzt sind Deine Rechnungen, Dein Profil und Deine Bilanz sicher bei Dir auf jedem Gerät.\n\nSo kommst Du von überall rein:\n1. ${host} im Browser öffnen – am Handy, Tablet oder Laptop.\n2. „Anmelden“ tippen und Deine E-Mail-Adresse eingeben.\n3. Den Code aus der Mail eintippen – fertig. Kein Passwort, nichts zu merken.\n\n${appUrl}\n\nTipp: Auf dem iPhone in Safari auf „Teilen“ und „Zum Home-Bildschirm“ tippen – dann ist ${name} wie eine App immer dabei.\n\n\n\n${name} •\nEiner zahlt.\nAlle splitten.\n`,
     html: layout({ title: `Willkommen bei ${name}`, preheader: "Dein Konto ist angelegt – so kommst Du von überall rein.", name, logoUrl, receipt, style: demo.style }),
   };
 }
