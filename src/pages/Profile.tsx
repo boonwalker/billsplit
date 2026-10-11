@@ -57,6 +57,13 @@ export default function Profile({ next }: { next?: string }) {
     <div className="page">
       <Header back="/" title="Profil" />
       <main className="content">
+        {/* At the top: whether this device is signed in, and signing out. Not while setting up the first bill, not in the demo. */}
+        {!next && accountsAvailable && (
+          <section className="stack account-section" id="konto">
+            <h3 className="section-title">Konto</h3>
+            <AccountSection />
+          </section>
+        )}
         <form className="stack" onSubmit={save}>
           <p className="muted">
             {loadAccountEmail() ? "Dein Profil ist in Deinem Konto gesichert." : "Dein Profil bleibt auf diesem Gerät."} Beim Erstellen einer Rechnung werden Name und Zahlungsdaten in den QR-Code
@@ -177,12 +184,6 @@ export default function Profile({ next }: { next?: string }) {
         </form>
 
         {/* Not while setting up the profile for a first bill, and not in the demo (no server). */}
-        {!next && accountsAvailable && (
-          <section className="stack account-section" id="konto">
-            <h3 className="section-title">Konto</h3>
-            <AccountSection />
-          </section>
-        )}
         {!next && !DEMO && (
           <section className="stack push-section">
             <PushSetting variant="setting" />

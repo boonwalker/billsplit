@@ -37,15 +37,22 @@ test("Konto: Anna legt es nach dem Bezahlen an und meldet sich auf einem neuen G
   await laptop.getByRole("button", { name: "Code senden" }).click();
   await laptop.getByLabel("Code aus der Mail").fill(await mailedCode(email));
   await expect(laptop.locator(".list-title")).toHaveText(["Trattoria"]);
+  // Signed in is visible right away: a tick on the avatar, the account at the top of the profile.
+  await expect(laptop.getByRole("button", { name: `Profil – angemeldet als ${email}` })).toBeVisible();
   expect(await laptop.evaluate(() => JSON.parse(localStorage.getItem("billsplit.deviceKey")!))).toBe(annaKey);
   expect(await laptop.evaluate(() => JSON.parse(localStorage.getItem("billsplit.profile")!))).toMatchObject({ name: "Anna", paypalMe: "anna" });
 
   // The profile shows the account; signing out leaves an empty device.
   await laptop.goto("/#/profile");
   const account = laptop.locator(".account-card");
-  await expect(account).toContainText(`Angemeldet als ${email}`);
+  await expect(laptop.locator(".section-title").first()).toHaveText("Konto");
+  await expect(account).toContainText("Angemeldet");
+  await expect(account).toContainText(email);
   await account.getByRole("button", { name: "Abmelden" }).click();
   await account.getByRole("button", { name: "Ja, abmelden" }).click();
   await expect(laptop.getByRole("button", { name: /Schon ein Konto\? Anmelden/ })).toBeVisible();
   await expect(laptop.locator(".list-title")).toHaveCount(0);
+  await expect(laptop.getByRole("button", { name: "Profil", exact: true })).toBeVisible();
+  await laptop.goto("/#/profile");
+  await expect(laptop.locator(".account-card")).toContainText("Nicht angemeldet");
 });

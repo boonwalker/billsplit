@@ -58,6 +58,7 @@ export default function Home() {
       .catch(() => {});
   }, []);
   const profile = loadOwnProfile();
+  const account = loadAccountEmail();
   const ready = Boolean(profile.name.trim() && hasPaymentMethod(profile));
 
   function onPhoto(file: File | undefined) {
@@ -71,8 +72,16 @@ export default function Home() {
     <div className="page home">
       <Header
         action={
-          <button className="avatar-btn" aria-label="Profil" onClick={() => navigate("/profile")}>
+          <button className="avatar-btn" aria-label={account ? `Profil – angemeldet als ${account}` : "Profil"} onClick={() => navigate("/profile")}>
             {profile.name ? profile.name.slice(0, 1).toUpperCase() : "?"}
+            {/* Signed in with the e-mail account: a small tick on the avatar. */}
+            {account && (
+              <span className="avatar-badge" aria-hidden="true">
+                <svg viewBox="0 0 12 12">
+                  <path d="M3 6.2l2 2 4-4.2" />
+                </svg>
+              </span>
+            )}
           </button>
         }
       />

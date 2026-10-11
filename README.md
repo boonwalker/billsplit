@@ -240,7 +240,9 @@ immer in Safari öffnen, nie in der Home-Bildschirm-App).
 
 - **Wo gefragt wird:** im Profil-Assistenten direkt nach dem Namen – beim Rechnungssteller während der Beleg gelesen
   wird, bei Freunden nach dem Bezahlen („✓ Erledigt. Damit Du Deine Rechnungen überall wiederfindest:“). Immer mit
-  „Überspringen“. Außerdem im Profil unter „Konto“.
+  „Überspringen“. Außerdem ganz oben im Profil unter „Konto“: dort steht „● Angemeldet“ mit der Adresse (oder „Nicht
+  angemeldet“ mit „Anmelden oder Konto anlegen“), daneben „Abmelden“ und „Konto löschen“. Auf der Startseite trägt der
+  Profil-Knopf oben rechts einen kleinen grünen Haken, solange das Gerät angemeldet ist.
 - **Neues Gerät:** auf der Startseite „Schon ein Konto? Anmelden“ (solange dort noch keine Rechnungen sind) oder im
   Profil. Nach dem Code hat das Gerät die Gerätekennung des Kontos, das Profil und alle Rechnungen. Was das Gerät
   vorher schon hatte (z. B. eine Rechnung, der man im Browser beigetreten ist), wird ins Konto übernommen.

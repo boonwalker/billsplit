@@ -136,3 +136,85 @@
   align-self: center;
   font-weight: 500;
 }
+
+/* Who is signed in, at the top of the profile; a tick on the avatar on the start page. */
+.account-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-who > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--mint);
+  color: var(--brand);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.account-email {
+  overflow-wrap: anywhere;
+}
+
+.account-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--claim);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.account-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--claim);
+}
+
+.account-dot.off {
+  background: var(--ink-faint);
+}
+
+p.account-status:has(.off) {
+  color: var(--muted);
+}
+
+.avatar-btn {
+  position: relative;
+}
+
+.avatar-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--claim);
+  border: 2px solid var(--bg);
+}
+
+.avatar-badge svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
