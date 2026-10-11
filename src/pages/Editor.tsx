@@ -435,7 +435,7 @@ export default function Editor({ billId }: { billId?: string }) {
                 className="btn btn-ghost"
                 onClick={() => {
                   const items = askTip;
-                  const noTip: Draft = { ...draft, tip: { ...draft.tip, mode: "percent", percent: "0", total: "", amount: "" } };
+                  const noTip: Draft = { ...draft, tip: { ...draft.tip, mode: "amount", percent: "0", total: "", amount: "" } };
                   setDraft(noTip);
                   setAskTip(null);
                   void publish(toBillData(noTip, items));

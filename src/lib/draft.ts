@@ -85,7 +85,8 @@ export function emptyDraft(): Draft {
     title: "",
     date: new Date().toISOString().slice(0, 10),
     currency: "EUR",
-    tip: { mode: "percent", percent: "0", total: "", persons: "" },
+    // "absolut" is where the tip is entered first.
+    tip: { mode: "amount", percent: "0", total: "", amount: "", persons: "" },
     tipOnReceipt: false,
     rows: [newRow()],
     fees: [],
@@ -101,8 +102,8 @@ export function draftFromData(data: BillData): Draft {
     date: data.date,
     currency: data.currency,
     tip: {
-      ...(data.tipAmount
-        ? { mode: "amount" as const, percent: "0", total: "", amount: centsToInput(data.tipAmount) }
+      ...(data.tipAmount || !data.tipPercent
+        ? { mode: "amount" as const, percent: "0", total: "", amount: data.tipAmount ? centsToInput(data.tipAmount) : "" }
         : { mode: "percent" as const, percent: String(data.tipPercent), total: "" }),
       persons: data.tipSplitCount ? String(data.tipSplitCount) : "",
     },
