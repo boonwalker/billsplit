@@ -165,6 +165,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
 - Rechnungssteller: „Erinnern“ (WhatsApp mit offenem Betrag und Link)
+- Code-Mail: „Hi,“ / „hier ist Dein Code für klicksplit:“, Code ohne Leerzeichen in Mint-Box (App-Design)
 - Konto: „Deine E-Mail-Adresse“, „Code senden“, „Code eingeben“, „Überspringen“, Startseite „Schon ein Konto?
   Anmelden“, Profil ganz oben „Konto“: „● Angemeldet“ + Adresse bzw. „Nicht angemeldet“ + „Anmelden oder Konto
   anlegen“, „Abmelden“, „Konto löschen“; grüner Haken am Profil-Knopf der Startseite

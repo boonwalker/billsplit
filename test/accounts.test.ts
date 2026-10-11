@@ -36,7 +36,17 @@ describe("code mail", () => {
     expect(senderName("klicksplit <code@klicksplit.de>")).toBe("klicksplit");
     expect(senderName('"billsplit" <code@klicksplit.de>')).toBe("billsplit");
     expect(senderName("code@klicksplit.de")).toBe("klicksplit");
-    expect(codeMail("482913", "klicksplit <code@klicksplit.de>").subject).toBe("Dein klicksplit-Code: 482 913");
+    expect(codeMail("482913", "klicksplit <code@klicksplit.de>").subject).toBe("Dein klicksplit-Code: 482913");
+  });
+
+  it("greets with „Hi,“ and shows the code in the app's look", () => {
+    const mail = codeMail("482913", "klicksplit <code@klicksplit.de>", "https://app.example/icon-192.png");
+    expect(mail.text.startsWith("Hi,\n\nhier ist Dein Code für klicksplit: 482913")).toBe(true);
+    expect(mail.html).toContain(">Hi,</p>");
+    expect(mail.html).toContain(">482913</span>");
+    expect(mail.html).toContain('src="https://app.example/icon-192.png"');
+    expect(mail.html).toContain('klick<b style="font-weight:700;color:#0f7a4d">split</b>');
+    expect(codeMail("482913", undefined).html).not.toContain("<img");
   });
 });
 

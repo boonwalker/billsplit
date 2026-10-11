@@ -251,7 +251,10 @@ immer in Safari öffnen, nie in der Home-Bildschirm-App).
 - **Schutz:** Codes gelten 15 Minuten und einmal, nach 5 falschen Versuchen ist ein Code ungültig; höchstens 5 Codes
   pro Adresse und 15 pro Gerät/IP und Stunde. Ein Gerät gehört zu höchstens einem Konto.
 - **Versand:** über Resend (`RESEND_API_KEY`, `MAIL_FROM`, z. B. `klicksplit <code@klicksplit.de>`; der Name vor der
-  Adresse steht auch im Mail-Text). Ohne diese Variablen steht der Code nur im Server-Log. Konten liegen in
+  Adresse steht auch im Mail-Text). Die Mail ist im App-Design gebaut (Logo, Wortmarke, Code groß in einer
+  Mint-Box, „Hi,“; Tabellen und Inline-Stile für Mail-Programme); der Code steht ohne Leerzeichen, damit das iPhone ihn
+  zum Einfügen vorschlägt. Das Logo kommt von `PUBLIC_URL` bzw. der Railway-Domain (`/icon-192.png`). Ohne diese
+  Variablen steht der Code nur im Server-Log. Konten liegen in
   `DATA_DIR/accounts.json`. In der Demo gibt es keine Konten.
 
 ### Gerät wechseln und sichern
@@ -452,6 +455,7 @@ claude.ai-Artifact gedacht:
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional: eigene Schlüssel für Push (sonst einmal erzeugt und in `DATA_DIR/vapid.json` gespeichert) |
 | `VAPID_SUBJECT` | optional: Kontakt für die Push-Dienste (Standard `mailto:hallo@billsplit.app`) |
 | `ADMIN_TOKEN` | optional: schaltet die Betriebsseite `/api/admin?token=…` frei (Nutzung, Kosten, Fehler, Datenbank-Download) |
+| `PUBLIC_URL` | optional: öffentliche Adresse der App für das Logo in der Code-Mail (auf Railway automatisch über `RAILWAY_PUBLIC_DOMAIN`) |
 | `RESEND_API_KEY`, `MAIL_FROM` | optional: Versand der Anmelde-Codes über Resend, z. B. `MAIL_FROM=klicksplit <code@klicksplit.de>` (ohne: Code nur im Log) |
 
 ## API
