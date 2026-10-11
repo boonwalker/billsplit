@@ -20,6 +20,8 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
 5. Unter der Rechnung siehst du deine Freunde, sobald sie beigetreten sind. Hat jemand auf „Bezahlen“ getippt,
    erscheint der Betrag hinter seinem Namen. Diese Angaben gleichst du mit den PayPal-Eingängen ab und hakst
    „erhalten“ an. Unten steht immer, wie viel dir noch fehlt.
+   Wer noch etwas offen hat, bekommt einen Knopf „Erinnern“: Er öffnet WhatsApp mit einer freundlichen Nachricht
+   samt offenem Betrag und Link zur Rechnung.
 
 **Freunde**
 

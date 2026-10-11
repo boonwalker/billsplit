@@ -3,6 +3,7 @@ import type { BillData, BillSnapshot } from "../../lib/bill";
 import { DEMO } from "../../lib/demo";
 import { navigate } from "../../lib/router";
 import { useOneLine } from "../../lib/useOneLine";
+import { whatsappLink } from "../../lib/whatsapp";
 import QrCode from "../QrCode";
 
 /** "(paypal.me/niklas, Überweisung, Wero)" – what the QR code passes on. */
@@ -13,12 +14,6 @@ function paymentSummary(payment: BillData["payment"]): string {
     payment.wero && "Wero",
   ].filter(Boolean);
   return parts.length ? ` (${parts.join(", ")})` : "";
-}
-
-/** Opens WhatsApp itself with the message ready to send (the web address on desktops). */
-function whatsappLink(text: string): string {
-  const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
-  return `${mobile ? "whatsapp://send" : "https://wa.me/"}?text=${encodeURIComponent(text)}`;
 }
 
 /** The payer's top of the bill: the QR code to scan, WhatsApp, sharing the link, editing the items. */

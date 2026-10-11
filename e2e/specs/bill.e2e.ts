@@ -23,6 +23,13 @@ test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungsste
   await anna.locator(".rline-main", { hasText: "Pizza" }).click();
   await expect(owner.locator(".receipt")).toContainText("Anna");
 
+  // Still open: the payer can send Anna a reminder via WhatsApp, with the amount and the link.
+  const remind = owner.locator(".debtor", { hasText: "Anna" }).getByRole("link", { name: "Anna per WhatsApp erinnern" });
+  await expect(remind).toBeVisible();
+  const text = decodeURIComponent((await remind.getAttribute("href"))!.replace(/^.*?text=/, ""));
+  expect(text.replace(/\s/g, " ")).toContain("Für „Trattoria“ sind bei Dir noch 9,50 € offen");
+  expect(text).toContain(`#/b/${id}`);
+
   // Pay: the amount goes to the clipboard first, then PayPal opens with recipient and amount.
   await anna.getByRole("button", { name: /Anteil begleichen · 9,50/ }).click();
   await expect(anna.locator(".paybar-copied")).toContainText("9,50 € in die Zwischenablage kopiert");

@@ -1,4 +1,5 @@
 import {
+  openShare,
   billTotal,
   equalShare,
   participantShare,
@@ -13,10 +14,13 @@ import {
   type Debtor,
 } from "../lib/bill";
 import { formatMoney } from "../lib/money";
+import { whatsappLink } from "../lib/whatsapp";
 
 interface Props {
   snapshot: BillSnapshot;
   onToggleReceived: (debtor: Debtor, received: boolean) => void;
+  /** The bill's link, for reminders via WhatsApp. */
+  shareUrl?: string;
 }
 
 /** Switch for the payer: split the whole bill equally instead of ticking items (e.g. supermarket receipts). */
@@ -108,8 +112,11 @@ export function ownerSummary(snapshot: BillSnapshot) {
 }
 
 /** What only the payer sees below the bill: who scanned, who tapped pay, what is still missing. */
-export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
+export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl }: Props) {
   const currency = snapshot.data.currency;
+  const openOf = (d: Debtor) => (d.received ? 0 : openShare(d.amount, d, (d.credited ?? 0) + (d.creditPending ?? 0)));
+  const reminder = (d: Debtor, open: number) =>
+    `Hi ${d.name}, kleine Erinnerung von billsplit: Für „${snapshot.data.title || "die Rechnung"}“ sind bei Dir noch ${formatMoney(open, currency)} offen. Hier kannst Du direkt begleichen: ${shareUrl}`;
   const debtors = snapshot.debtors ?? [];
   const { total, own, received, missing, unassigned } = ownerSummary(snapshot);
 
@@ -159,6 +166,12 @@ export default function OwnerPanel({ snapshot, onToggleReceived }: Props) {
                   ))}
                 </span>
                 {d.payAmount !== undefined && <span className="debtor-amount">{formatMoney(d.payAmount, currency)}</span>}
+                {/* Still open: a friendly nudge via WhatsApp, with the amount and the link. */}
+                {shareUrl && openOf(d) > 0 && !d.markedPaidAt && (
+                  <a className="remind-btn" href={whatsappLink(reminder(d, openOf(d)))} aria-label={`${d.name} per WhatsApp erinnern`}>
+                    Erinnern
+                  </a>
+                )}
                 {d.payClickedAt && (
                   <label className="received-toggle" title="Geld ist auf PayPal angekommen">
                     <input type="checkbox" checked={d.received} onChange={(e) => onToggleReceived(d, e.target.checked)} />

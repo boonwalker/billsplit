@@ -320,7 +320,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
           />
         </div>
 
-        {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} />}
+        {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} shareUrl={url} />}
       </main>
       </div>
 
