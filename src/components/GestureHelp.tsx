@@ -13,7 +13,6 @@ const LEGEND: Record<Mode, [gesture: string, effect: string][]> = {
   strike: [
     ["Antippen", "streichen – nochmal tippen holt es zurück"],
     ["Gedrückt halten", "nur einen Teil in Rechnung stellen"],
-    ["„/2“ antippen", "wieder ganz in Rechnung stellen"],
   ],
 };
 

@@ -331,7 +331,7 @@ Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an
 
 Dauerhaft erklärt ein kleines „?“ neben der Anleitung über dem Beleg die Gesten: beim Abhaken „Antippen“, „Namen
 antippen“, „Eigenen Namen antippen“ und „− / +“; beim Rechnungssteller mit Gleichverteilung „Antippen“ (streichen),
-„Gedrückt halten“ (nur einen Teil) und „„/2“ antippen“ (wieder ganz).
+und „Gedrückt halten“ (nur einen Teil).
 
 Ist auf dem Gerät „Bewegung reduzieren“ eingeschaltet, springen alle Animationen sofort ans Ende, die Erklär-Animationen
 entfallen (das „?“ bleibt) und es wird nicht weich gescrollt.
