@@ -56,10 +56,11 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 | Was | Wo |
 | --- | --- |
-| Live-App | https://billsplit-production-af2e.up.railway.app (Railway, Free-Tarif, ein Service + Volume `/data`) |
+| Live-App | **https://www.klicksplit.de** (seit 11.10.2026; Railway, Free-Tarif, ein Service + Volume `/data`). Alte Adresse https://billsplit-production-af2e.up.railway.app bleibt und leitet um – nie löschen |
 | Demo (ohne Server) | https://claude.ai/artifact/UDuSsFPTSGVB8QNeGYoGVZ (Daten im Browser, „Ansicht als“ Anna/Ben) |
 | Repo | `boonwalker/billsplit`, Branch `main` |
-| Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse empfohlen und gesetzt |
+| Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse; `PUBLIC_URL=https://www.klicksplit.de` |
+| Domain | `klicksplit.de` bei INWX: CNAME `www` → Railway (Hauptdomain ohne www geht bei INWX nicht, Web-Weiterleitung von INWX nie benutzen – löscht alle CNAMEs). Einrichtung im README „Umzug auf eine neue Adresse“ |
 
 Render wird nicht mehr benutzt (zu teuer, `render.yaml` ist entfernt). Der Auftraggeber nutzt die App vor
 allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenheiten haben Vorrang.
@@ -102,8 +103,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   `/api/merge-device` auf, `mergeParticipant` legt die Safari-Identität mit der App-Identität zusammen.
 - **Umzug der Adresse:** `PUBLIC_URL` ist die maßgebliche Adresse (Meta-Tag `klicksplit-home`, `src/lib/move.ts`).
   Browser an anderen Adressen springen mit Einmal-Code (`#/umzug/<code>?ziel=…`, `/api/move`) dorthin, die alte
-  Home-Bildschirm-App zeigt `MovedNotice`. Stand 11.10.2026: vorbereitet, `PUBLIC_URL` auf Railway noch nicht gesetzt
-  (erst nach erfolgreicher Domain-Einrichtung, Schritte im README).
+  Home-Bildschirm-App zeigt `MovedNotice`. Seit 11.10.2026 aktiv (`PUBLIC_URL=https://www.klicksplit.de`).
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
   max. 2000 px Kantenlänge). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
 - **Seiten:** `Home`, `Expense` (Ausgabe eingeben), `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in
@@ -191,8 +191,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 
 - Datenschutzerklärung und Impressum (nötig, sobald die App öffentlich E-Mail-Adressen sammelt; braucht Name/Anschrift
   des Betreibers).
-- Umzug der App auf `klicksplit.de`: technisch vorbereitet (Weiterleitung mit Datenübergabe), fehlt nur Domain bei
-  Railway/INWX und `PUBLIC_URL`. Umbenennung in „klicksplit“ und Logo B sind erledigt (11.10.2026).
+- `klicksplit.de` ohne www (bei INWX nicht möglich): einzelner DNS-Eintrag vom Typ URL oder Nameserver zu Cloudflare.
+  Umzug auf www.klicksplit.de, Umbenennung in „klicksplit“ und Logo B sind erledigt (11.10.2026).
 
 Erledigt am 11.10.2026: optionales E-Mail-Konto. Erledigt am 11.10.2026 (Bedienbarkeits-Analyse vom 10.10.2026 komplett umgesetzt):
 Safari- und App-Identität zusammenführen (`?von=`-Code, `mergeParticipant`), „Hast Du … gesendet?“ nach Rückkehr von

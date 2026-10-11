@@ -448,21 +448,19 @@ der eigenen (`src/lib/move.ts`).
   „Gerät wechseln“-Link, die neue App übernimmt damit alles) und dass die alte App gelöscht werden kann.
 - Ohne `PUBLIC_URL` (oder wenn sie der eigenen Adresse entspricht) passiert nichts.
 
-**Schritte für klicksplit.de (Railway + INWX):**
+**So ist klicksplit.de eingerichtet (11.10.2026):** Die App läuft unter **https://www.klicksplit.de**.
 
-1. Railway: Service → **Settings → Networking → Custom Domain** → `klicksplit.de` (bzw. `www.klicksplit.de`, siehe
-   unten) eintragen. Railway zeigt einen **CNAME**-Eintrag (Ziel `….up.railway.app`) und einen **TXT**-Eintrag zur
-   Bestätigung.
-2. INWX: Domain `klicksplit.de` → **Nameserver-Einträge (DNS)** → beide Einträge genau so anlegen. Die vorhandenen
-   Resend-Einträge (DKIM, SPF, MX unter `send`) bleiben unverändert. Ein vorhandener A-Eintrag für `klicksplit.de`
-   ohne Namen muss weg (er hätte Vorrang).
-   Railway braucht für die Hauptdomain ohne `www` einen CNAME an der Wurzel (CNAME-Flattening bzw. ALIAS). Bietet INWX
-   das nicht an, gibt es zwei Wege: `www.klicksplit.de` per CNAME an Railway und `klicksplit.de` bei INWX per
-   URL-Weiterleitung (301) auf `https://www.klicksplit.de`, oder die Nameserver zu Cloudflare (kostenlos, mit
-   CNAME-Flattening) umziehen und dort alle Einträge inkl. Resend übernehmen.
-3. Warten, bis Railway die Domain als aktiv mit Zertifikat zeigt, und `https://klicksplit.de` im Browser prüfen.
-4. Erst dann in Railway unter **Variables** `PUBLIC_URL=https://klicksplit.de` setzen (bzw. die `www`-Adresse). Ab
-   dem nächsten Deploy leitet die alte Railway-Adresse um, Mails verlinken die neue.
+1. Railway: Service → **Settings → Networking → Custom Domain** → `www.klicksplit.de`, Port `8080`. Der Free-Tarif
+   erlaubt nur eine eigene Domain. Die Railway-Adresse `billsplit-production-af2e.up.railway.app` bleibt bestehen –
+   über sie laufen alte Links und Home-Bildschirm-Apps.
+2. INWX → Domain `klicksplit.de` → **DNS-Einträge**: CNAME `www` → `jdowg88e.up.railway.app` und TXT
+   `_railway-verify.www` (Wert aus Railway, „Show DNS records“). Einen CNAME auf der Hauptdomain selbst lehnt INWX ab
+   („Der NS-Eintrag ist ungültig“), deshalb `www`. Die Resend-Einträge (`resend._domainkey`, `send`, `_dmarc`) bleiben.
+3. Die „Weiterleitung → Web“ von INWX **nicht** benutzen: Sie löscht alle A-, AAAA- und CNAME-Einträge (also auch
+   `www`) und kann kein HTTPS. Wer `klicksplit.de` ohne www erreichen soll, bekommt einen einzelnen DNS-Eintrag vom
+   Typ URL oder später Cloudflare als Nameserver (CNAME-Flattening).
+4. Railway → **Variables** `PUBLIC_URL=https://www.klicksplit.de`. Damit leitet die alte Adresse um (siehe oben) und
+   die Mails verlinken die neue.
 
 ### Daten und Backups
 
