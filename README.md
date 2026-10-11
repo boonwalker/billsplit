@@ -330,7 +330,7 @@ eigenen Stücks zum Teilen anbietet („Eigenen Namen antippen = Du willst mit j
 Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an der Rechnung.
 
 Dauerhaft erklärt ein kleines „?“ neben der Anleitung über dem Beleg die Gesten: beim Abhaken „Antippen“, „Namen
-antippen“, „Eigenen Namen antippen“ und „− / +“; beim Rechnungssteller mit Gleichverteilung „Antippen“ (streichen),
+antippen“, „Eigenen Namen antippen“ und „− / +“; beim Rechnungssteller mit Gleichverteilung „Antippen“ (streichen)
 und „Gedrückt halten“ (nur einen Teil).
 
 Ist auf dem Gerät „Bewegung reduzieren“ eingeschaltet, springen alle Animationen sofort ans Ende, die Erklär-Animationen
