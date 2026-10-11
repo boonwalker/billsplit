@@ -88,8 +88,9 @@ export default function PushSetting({ variant }: { variant: "prompt" | "setting"
               <b>Benachrichtigungen</b>
               <small className="muted">Wenn Dir jemand etwas sendet, bezahlt oder Deine Zahlung bestätigt.</small>
             </span>
-            {/* Safari draws it as an iOS switch with the "switch" attribute (React does not know it yet). */}
-            <input ref={(el) => el?.setAttribute("switch", "")} type="checkbox" role="switch" checked={state === "on"} disabled={busy} onChange={(e) => void change(e.target.checked)} />
+            {/* The real checkbox stays for screen readers and keyboards; drawn like the app's other switches. */}
+            <input type="checkbox" role="switch" checked={state === "on"} disabled={busy} onChange={(e) => void change(e.target.checked)} />
+            <span className="switch" aria-hidden="true" />
           </label>
           {error && <p className="alert">{error}</p>}
         </>
