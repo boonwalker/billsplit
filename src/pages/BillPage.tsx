@@ -4,6 +4,8 @@ import OwnerBar from "../components/bill/OwnerBar";
 import QrHero from "../components/bill/QrHero";
 import ReceiptPeek from "../components/bill/ReceiptPeek";
 import DemoBar from "../components/DemoBar";
+import InstallHint from "../components/InstallHint";
+import ProfileWizard from "../components/ProfileWizard";
 import DivisorSheet from "../components/DivisorSheet";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
@@ -28,8 +30,10 @@ import { useLiveBill } from "../lib/useLiveBill";
  * receipt (to check the amount and tick "erhalten"), a friend sees the end of the receipt with
  * their share. back: where "Zurück" leads (the list it was opened from).
  */
+const PROFILE_ASKED_KEY = "billsplit.profileAsked";
+
 export default function BillPage({ id, focus, back }: { id: string; focus?: string; back?: string }) {
-  const { snapshot, error, notFound, live, setMyClaims, replace } = useLiveBill(id);
+  const { snapshot, error, notFound, live, setMyClaims, flushClaims, replace } = useLiveBill(id);
   const [askName, setAskName] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   /** Scrolled to the very end, where the owner panel shows what the bar at the bottom says. */
@@ -38,6 +42,21 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   const [divisorFor, setDivisorFor] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const [ownerBarHeight, setOwnerBarHeight] = useState(0);
+  /**
+   * A friend who just paid and has no way to get paid yet: "Wie willst Du bezahlt werden?" –
+   * once per device. Afterwards, in Safari on the iPhone, the way onto the home screen.
+   */
+  const [onboarding, setOnboarding] = useState<"profile" | "install" | null>(null);
+  function askForProfile() {
+    if (DEMO || hasPaymentMethod(loadOwnProfile())) return;
+    try {
+      if (localStorage.getItem(PROFILE_ASKED_KEY)) return;
+      localStorage.setItem(PROFILE_ASKED_KEY, "1");
+    } catch {
+      // without storage it may come again next time
+    }
+    setOnboarding("profile");
+  }
   /** Height of the friend's pay bar: the receipt can always be scrolled up above it. */
   const [payBarHeight, setPayBarHeight] = useState<number | null>(null);
   // Hides the payer's bar at the end of the page (with some slack, so it does not flicker),
@@ -224,13 +243,19 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   const toggleTip = () => edit(toggleTipExcluded(snap.data));
 
   function pay() {
-    api.pay(id).catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
+    // Ticks of the last moment go first, so the amount noted is the one being paid.
+    void flushClaims()
+      .then(() => api.pay(id))
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
   }
 
   function markPaid(paid: boolean) {
     api
       .markPaid(id, paid)
-      .then(replace)
+      .then((snap) => {
+        replace(snap);
+        if (paid) askForProfile();
+      })
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : "Konnte Zahlung nicht vermerken."));
   }
 
@@ -315,6 +340,9 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
           onClose={() => setDivisorFor(null)}
         />
       )}
+
+      {onboarding === "profile" && <ProfileWizard role="guest" onDone={(saved) => setOnboarding(saved && inBrowser ? "install" : null)} />}
+      {onboarding === "install" && <InstallHint url={url} onClose={() => setOnboarding(null)} />}
 
       {askName && (
         <NamePrompt

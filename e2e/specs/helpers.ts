@@ -47,19 +47,27 @@ export async function joinAndClaim(person: { key: string; name: string }, billId
 export async function phone(
   browser: Browser,
   deviceKey: string,
-  options: { profile?: { name: string; paypalMe?: string }; recent?: { id: string; title: string; role: "owner" | "guest" }[]; seen?: string[] } = {},
+  options: {
+    profile?: { name: string; paypalMe?: string };
+    recent?: { id: string; title: string; role: "owner" | "guest" }[];
+    seen?: string[];
+    /** Let a friend be asked "Wie willst Du bezahlt werden?" after paying (off by default). */
+    askProfile?: boolean;
+    userAgent?: string;
+  } = {},
 ): Promise<Page> {
-  const context = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"] });
+  const context = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"], ...(options.userAgent ? { userAgent: options.userAgent } : {}) });
   await context.addInitScript(
-    ([k, profile, recent, seen]) => {
+    ([k, profile, recent, seen, askProfile]) => {
       if (localStorage.getItem("billsplit.deviceKey")) return;
       localStorage.setItem("billsplit.deviceKey", JSON.stringify(k));
       if (profile) localStorage.setItem("billsplit.profile", JSON.stringify({ paypalMe: "", paypalEmail: "", ...profile }));
       localStorage.setItem("billsplit.recent", JSON.stringify(recent.map((b) => ({ ...b, createdAt: new Date().toISOString() }))));
       for (const id of seen) for (const flag of ["claimDemo", "tapDemo", "peekShown"]) localStorage.setItem(`billsplit.${flag}.${id}`, "1");
       localStorage.setItem("billsplit.pushAsked", "1");
+      if (!askProfile) localStorage.setItem("billsplit.profileAsked", "1");
     },
-    [deviceKey, options.profile ?? null, options.recent ?? [], options.seen ?? []] as const,
+    [deviceKey, options.profile ?? null, options.recent ?? [], options.seen ?? [], Boolean(options.askProfile)] as const,
   );
   return context.newPage();
 }

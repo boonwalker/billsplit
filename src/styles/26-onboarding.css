@@ -1,0 +1,76 @@
+/* ───────────────────────── first steps: profile assistant, home screen ───────────────────────── */
+
+.wizard {
+  text-align: left;
+}
+
+.wizard h2 {
+  margin: 0;
+}
+
+.wizard p {
+  margin: 0;
+}
+
+.wizard-step {
+  color: var(--claim);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.wizard-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wizard-method {
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.wizard-method small {
+  font-weight: 500;
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
+/* Above everything else in the editor (tip question, supermarket sheet), while the receipt is read. */
+.wizard-backdrop {
+  z-index: 60;
+}
+
+.install-hint h2 {
+  margin: 0;
+}
+
+.install-steps {
+  margin: 0;
+  padding-left: 1.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.install-share {
+  width: 18px;
+  height: 18px;
+  vertical-align: -3px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* In the home-screen hint the button stands on its own. */
+.open-in-app.compact {
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.open-in-app.compact .btn {
+  width: 100%;
+}

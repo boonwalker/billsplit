@@ -95,66 +95,36 @@ export default function Home() {
         )}
 
         <section className="actions">
-          {ready ? (
-            <label className="action-card primary">
-              <span className="action-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.2-1.8A1.5 1.5 0 0 1 10.5 3.5h3a1.5 1.5 0 0 1 1.2.7L15.9 6h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" />
-                  <circle cx="12" cy="12.5" r="3.5" />
-                </svg>
-              </span>
-              <span className="action-text">
-                <b>Rechnung fotografieren</b>
-                <small>Du hast bezahlt und willst anteilig Geld zurück</small>
-              </span>
-              <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
-            </label>
-          ) : (
-            <button className="action-card primary" onClick={() => navigate("/profile?next=new")}>
-              <span className="action-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.2-1.8A1.5 1.5 0 0 1 10.5 3.5h3a1.5 1.5 0 0 1 1.2.7L15.9 6h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" />
-                  <circle cx="12" cy="12.5" r="3.5" />
-                </svg>
-              </span>
-              <span className="action-text">
-                <b>Rechnung fotografieren</b>
-                <small>Einmalig: Name &amp; Zahlungsweg hinterlegen</small>
-              </span>
-            </button>
-          )}
+          {/* Always straight to the camera: a first-time payer is asked for name and payment while the receipt is read. */}
+          <label className="action-card primary">
+            <span className="action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.2-1.8A1.5 1.5 0 0 1 10.5 3.5h3a1.5 1.5 0 0 1 1.2.7L15.9 6h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" />
+                <circle cx="12" cy="12.5" r="3.5" />
+              </svg>
+            </span>
+            <span className="action-text">
+              <b>Rechnung fotografieren</b>
+              <small>Du hast bezahlt und willst anteilig Geld zurück</small>
+            </span>
+            <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
+          </label>
 
           {/* Digital receipts (app, e-mail, delivery service): pick a screenshot instead of taking a photo. */}
-          {ready ? (
-            <label className="action-card secondary">
-              <span className="action-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
-                  <path d="M9.5 7.5h5M9.5 10.5h5M9.5 13.5h3" />
-                  <path d="M10.5 18.5h3" />
-                </svg>
-              </span>
-              <span className="action-text">
-                <b>Screenshot hochladen</b>
-                <small>Für digitale Rechnungen aus App oder Mail</small>
-              </span>
-              <input type="file" accept="image/*" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
-            </label>
-          ) : (
-            <button className="action-card secondary" onClick={() => navigate("/profile?next=new")}>
-              <span className="action-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
-                  <path d="M9.5 7.5h5M9.5 10.5h5M9.5 13.5h3" />
-                  <path d="M10.5 18.5h3" />
-                </svg>
-              </span>
-              <span className="action-text">
-                <b>Screenshot hochladen</b>
-                <small>Für digitale Rechnungen aus App oder Mail</small>
-              </span>
-            </button>
-          )}
+          <label className="action-card secondary">
+            <span className="action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+                <path d="M9.5 7.5h5M9.5 10.5h5M9.5 13.5h3" />
+                <path d="M10.5 18.5h3" />
+              </svg>
+            </span>
+            <span className="action-text">
+              <b>Screenshot hochladen</b>
+              <small>Für digitale Rechnungen aus App oder Mail</small>
+            </span>
+            <input type="file" accept="image/*" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
+          </label>
 
           {DEMO ? (
             <button className="action-card" onClick={() => (ready ? navigate(`/b/${createSampleBill()}`) : navigate("/profile?next=sample"))}>

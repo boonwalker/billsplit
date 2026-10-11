@@ -31,7 +31,7 @@ function mergeCode(): Promise<string | null> {
  * Copies the link and tells the app (via the server) to offer opening it. With `carry`, the
  * link takes Safari's identity along, so whatever was ticked or paid here shows up in the app.
  */
-export default function OpenInApp({ url, carry = false }: { url: string; carry?: boolean }) {
+export default function OpenInApp({ url, carry = false, compact = false }: { url: string; carry?: boolean; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
   const [code, setCode] = useState<string | null>(null);
 
@@ -57,11 +57,11 @@ export default function OpenInApp({ url, carry = false }: { url: string; carry?:
     );
   }
   return (
-    <div className="open-in-app">
-      <span>billsplit auf dem Home-Bildschirm?</span>
+    <div className={`open-in-app${compact ? " compact" : ""}`}>
+      {!compact && <span>billsplit auf dem Home-Bildschirm?</span>}
       <button
         type="button"
-        className="btn btn-small"
+        className={compact ? "btn btn-primary btn-large" : "btn btn-small"}
         onClick={() => {
           copyText(carry && code ? withMergeCode(url, code) : url);
           announceHandoff();

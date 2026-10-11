@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import BusyScreen from "../components/BusyScreen";
 import Header from "../components/Header";
+import ProfileWizard from "../components/ProfileWizard";
 import SupermarketSheet from "../components/SupermarketSheet";
 import { looksPersonal } from "../lib/personal";
 import TipControl, { tipCents, tipPersons } from "../components/TipControl";
@@ -121,9 +122,9 @@ export default function Editor({ billId }: { billId?: string }) {
     setBusy(null);
   }
 
-  useEffect(() => {
-    if (!editing && !profileReady()) navigate("/profile?next=new", { replace: true });
-  }, [editing]);
+  // First bill on this device: the profile is asked for while the receipt is being read.
+  const [needProfile, setNeedProfile] = useState(() => !editing && !profileReady());
+  const wizard = needProfile ? <ProfileWizard role="payer" onDone={() => setNeedProfile(false)} /> : null;
 
   useEffect(() => {
     if (started.current || !pendingPhoto || editing) return;
@@ -176,7 +177,12 @@ export default function Editor({ billId }: { billId?: string }) {
 
   // After "Rechnung erstellen": never the scan screen, only the dots and a line of text.
   if (busy) {
-    return <BusyScreen message={busy.message} progress={busy.progress} preview={preview} previewRatio={previewRatio} creating={busy.create} />;
+    return (
+      <>
+        <BusyScreen message={busy.message} progress={busy.progress} preview={preview} previewRatio={previewRatio} creating={busy.create} />
+        {wizard}
+      </>
+    );
   }
 
   return (
@@ -436,6 +442,7 @@ export default function Editor({ billId }: { billId?: string }) {
           </form>
         </div>
       )}
+      {wizard}
     </div>
   );
 }

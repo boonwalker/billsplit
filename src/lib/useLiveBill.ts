@@ -11,6 +11,8 @@ export interface LiveBill {
   /** False while the live connection is (re)connecting. */
   live: boolean;
   setMyClaims: (claims: ItemClaims, splits: ItemClaims) => void;
+  /** Sends ticks that still wait for the debounce right away and resolves once all are saved. */
+  flushClaims: () => Promise<void>;
   replace: (snapshot: BillSnapshot) => void;
 }
 
@@ -26,7 +28,12 @@ export function useLiveBill(id: string): LiveBill {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [live, setLive] = useState(false);
-  const pending = useRef<{ timer: number | null; inFlight: number }>({ timer: null, inFlight: 0 });
+  const pending = useRef<{ timer: number | null; inFlight: number; send: (() => void) | null; saving: Promise<unknown> }>({
+    timer: null,
+    inFlight: 0,
+    send: null,
+    saving: Promise.resolve(),
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -59,10 +66,11 @@ export function useLiveBill(id: string): LiveBill {
       setLocalClaims({ claims, splits });
       const p = pending.current;
       if (p.timer) window.clearTimeout(p.timer);
-      p.timer = window.setTimeout(() => {
+      p.send = () => {
         p.timer = null;
+        p.send = null;
         p.inFlight++;
-        api
+        p.saving = api
           .setClaims(id, claims, splits)
           .then((snap) => setServerSnap(snap))
           .catch((e: unknown) => setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen."))
@@ -71,10 +79,19 @@ export function useLiveBill(id: string): LiveBill {
             // Only drop the optimistic state once nothing newer is queued.
             if (p.inFlight === 0 && !p.timer) setLocalClaims(null);
           });
-      }, CLAIM_DEBOUNCE_MS);
+      };
+      p.timer = window.setTimeout(p.send, CLAIM_DEBOUNCE_MS);
     },
     [id],
   );
+
+  // Paying right after ticking: the server must know the ticks first, or the amount is old.
+  const flushClaims = useCallback(async () => {
+    const p = pending.current;
+    if (p.timer) window.clearTimeout(p.timer);
+    p.send?.();
+    await p.saving;
+  }, []);
 
   // Overlay own optimistic claims on top of the server state.
   let snapshot = serverSnap;
@@ -85,5 +102,5 @@ export function useLiveBill(id: string): LiveBill {
     };
   }
 
-  return { snapshot, error, notFound, live, setMyClaims, replace: setServerSnap };
+  return { snapshot, error, notFound, live, setMyClaims, flushClaims, replace: setServerSnap };
 }
