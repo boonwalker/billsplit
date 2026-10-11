@@ -213,11 +213,13 @@ function demoReceipt(): { html: string; style: string } {
         ? `<span style="position:relative;display:inline-block"><span class="ks-a ks-full">${price(item.total)}</span><span class="ks-a ks-half" style="${hidden};position:absolute;right:0;bottom:0;text-align:right;white-space:nowrap;line-height:1.2"><span style="font-size:11px;font-weight:400;color:${C.inkSoft};text-decoration:line-through">${price(item.total)}</span><br>${price(item.total / 2)}</span></span>`
         : price(item.total);
     const strike = i === STRUCK ? " ks-a ks-a-strike" : "";
-    return `<label for="ks-i${i}" class="ks-row ks-r${i}" style="display:block;position:relative;padding:7px 2px;cursor:pointer">
-            <span style="display:table;width:100%"><span style="display:table-cell;vertical-align:bottom"><span class="ks-t${strike}" style="background:${line}">${escapeHtml(item.name)}</span>${
+    return `<label for="ks-i${i}" class="ks-row ks-r${i}" style="display:block;padding:7px 2px;cursor:pointer">
+            <span style="display:table;width:100%"><span style="display:table-cell;vertical-align:bottom"><span style="position:relative;display:inline-block"><span class="ks-t${strike}" style="background:${line}">${escapeHtml(item.name)}</span>${
+              // The finger taps (and holds) right on the word, as in the app's explainer.
+              ring ? `<span class="ks-a ${ring}" style="${hidden};position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:2.5px solid ${C.mint};background:rgba(61,220,151,0.18);box-sizing:border-box"></span>` : ""
+            }</span>${
               i === HALVED ? `<span class="ks-a ks-div" style="${hidden};margin-left:8px;font-family:${HAND};font-size:22px;line-height:1;color:${PENCIL}">/2</span>` : ""
             }</span><span style="display:table-cell;vertical-align:bottom;text-align:right;white-space:nowrap;font-weight:700"><span class="ks-t${strike}" style="background:${line}">${amount}</span></span></span>
-            ${ring ? `<span class="ks-a ${ring}" style="${hidden};position:absolute;left:46%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2.5px solid ${C.mint};box-sizing:border-box"></span>` : ""}
           </label>`;
   }).join("\n          ");
 
