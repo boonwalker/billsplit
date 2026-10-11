@@ -63,6 +63,21 @@ describe("code mail", () => {
     expect(mail.html).toContain("<b>klicksplit.de</b> im Browser öffnen");
     expect(mail.text).toContain("1. klicksplit.de im Browser öffnen");
   });
+
+  it("shows the app's receipt in the welcome mail: animated, and lines can be tapped", () => {
+    const { html } = welcomeMail("klicksplit <code@klicksplit.de>", "https://klicksplit.de");
+    // A plain receipt for every mail program …
+    expect(html).toContain("Abgerechnet werden");
+    expect(html).toContain('<span class="ks-a ks-sum0">16,13 €</span>');
+    // … the explainer loop (crossing out, "/2") …
+    expect(html).toContain("@keyframes ks-strike");
+    expect(html).toMatch(/class="ks-a ks-div"[^>]*>\/2<\/span>/);
+    expect(html).toContain("<br>3,95</span>");
+    // … and tappable lines, with the total for each combination (Spaghetti and Parmesan crossed out: 10,85 €).
+    expect(html.match(/<input type="checkbox" id="ks-i\d"/g)).toHaveLength(4);
+    expect(html).toContain(".ks-c0:checked ~ .ks-c1:not(:checked) ~ .ks-c2:not(:checked) ~ .ks-c3:checked ~ .ks-demo .ks-m9");
+    expect(html).toMatch(/class="ks-m9"[^>]*>10,85 €<\/span>/);
+  });
 });
 
 describe("/api/account", () => {

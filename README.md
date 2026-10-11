@@ -277,7 +277,12 @@ immer in Safari öffnen, nie in der Home-Bildschirm-App).
   „Alle splitten.“ in der Schrift der Startseite („Alle splitten.“ in Mint) – alles noch auf dem Kassenbon, kein dunkler Kasten.
 - **Willkommensmail:** Nach der ersten erfolgreichen Code-Eingabe, wenn das Konto neu angelegt wird, kommt einmalig
   „Willkommen bei klicksplit!“ – herzlich, mit den drei Schritten, wie man von überall per Browser ins Konto kommt
-  (Adresse aus `PUBLIC_URL`, nach dem Umzug `klicksplit.de`), einem Knopf zur App und dem Home-Bildschirm-Tipp. Das Logo kommt von `PUBLIC_URL` bzw. der Railway-Domain (`/icon-192.png`). Ohne diese
+  (Adresse aus `PUBLIC_URL`, nach dem Umzug `klicksplit.de`), einem Knopf zur App und dem Home-Bildschirm-Tipp. Darüber steht unter „So einfach geht's“ ein kleiner
+  Einkaufsbon wie in der App: In Apple Mail läuft die Erklär-Animation in Schleife (Antippen streicht „Duschgel“
+  durch, Gedrückt halten macht aus „Olivenöl“ „/2“ mit halbem Preis, „Abgerechnet werden“ rechnet mit), und die
+  Zeilen lassen sich direkt in der Mail antippen und durchstreichen (versteckte Checkboxen, die Summe steht für jede
+  Kombination fertig im HTML; der erste Tipp beendet die Animation). Wo ein Mail-Programm keine Animationen oder
+  Checkboxen kann (z. B. Gmail), bleibt ein normaler Bon stehen und der Hinweis „Probier's aus“ fehlt. Das Logo kommt von `PUBLIC_URL` bzw. der Railway-Domain (`/icon-192.png`). Ohne diese
   Variablen steht der Code nur im Server-Log. Konten liegen in
   `DATA_DIR/accounts.json`. In der Demo gibt es keine Konten.
 
