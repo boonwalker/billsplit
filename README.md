@@ -349,11 +349,11 @@ sie mit einem Tipp auf den Namen.
 
 Beim ersten Öffnen einer Rechnung (ohne Gleichverteilung) führt eine kurze Animation auf den ersten Zeilen vor, wie
 man abhakt („Antippen = abhaken“), ein Stück mit jemandem teilt („Namen antippen = mit Anna teilen“, mit dem Namen einer Person aus der Rechnung) und die Hälfte des
-eigenen Stücks zum Teilen anbietet („Eigenen Namen antippen = Du willst mit jemandem teilen“). Sie läuft zweimal, einmal pro
+eigenen Stücks zum Teilen anbietet („„Du“ antippen = Du willst mit jemandem teilen“). Sie läuft zweimal, einmal pro
 Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an der Rechnung.
 
 Dauerhaft erklärt ein kleines „?“ neben der Anleitung über dem Beleg die Gesten: beim Abhaken „Antippen“, „Namen
-antippen“, „Eigenen Namen antippen“ und „− / +“; beim Rechnungssteller mit Gleichverteilung „Antippen“ (streichen)
+antippen“, „„Du“ antippen“ und „− / +“; beim Rechnungssteller mit Gleichverteilung „Antippen“ (streichen)
 und „Gedrückt halten“ (nur einen Teil).
 
 Ist auf dem Gerät „Bewegung reduzieren“ eingeschaltet, springen alle Animationen sofort ans Ende, die Erklär-Animationen

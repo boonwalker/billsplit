@@ -7,7 +7,7 @@ const LEGEND: Record<Mode, [gesture: string, effect: string][]> = {
   claim: [
     ["Antippen", "abhaken"],
     ["Namen antippen", "mit dieser Person teilen"],
-    ["Eigenen Namen antippen", "Du willst mit jemandem teilen"],
+    ["„Du“ antippen", "Du willst mit jemandem teilen"],
     ["− / +", "bei mehrfacher Menge weniger oder mehr nehmen"],
   ],
   strike: [

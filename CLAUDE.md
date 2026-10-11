@@ -162,7 +162,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Trinkgeld-Reiter: „absolut“, „in Prozent“, „als Endbetrag“ (Endbetrag → Trinkgeld = Differenz)
 - Supermarkt-Frage: „Soll etwas nicht oder nur teilweise in Rechnung gestellt werden?“ / kleiner „z.B. Gewürze,
   Duschgel, Pfand?“; Knöpfe „Alles aufteilen“, „Manches nicht“, „Jeder selber abhaken“; Personenzahl „inklusive Dir“
-- Sprechblasen: „Antippen = abhaken“, „Namen antippen = mit Anna teilen“, „Eigenen Namen antippen = Du willst mit
+- Sprechblasen: „Antippen = abhaken“, „Namen antippen = mit Anna teilen“, „„Du“ antippen = Du willst mit
   jemandem teilen“, „Gedrückt halten = nur einen Teil in Rechnung stellen“
 - Teilen: „Du wartest auf jemanden“ / „wartet auf jemanden“; „geteilt“ erst, wenn wirklich vollständig geteilt
 - Kassenbon-Vorschau: „Deine interaktive Rechnung ist fertig ↓“ (für den Rechnungssteller immer „interaktive“; für
