@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 180 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 181 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -95,7 +95,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   `src/lib/push.ts`). VAPID-Schlüssel und Abos liegen in `DATA_DIR` (`vapid.json`, `push.json`).
 - **Monitoring:** `server/monitor.ts` (KI-Aufrufe, Tokens, Kosten, Fehler pro Tag → `monitor.json`), Besuche/Geräte
   `server/visits.ts` (`/api/visit` von `src/lib/visits.ts` → `visits.json`), Betriebsseite
-  `server/adminPage.ts` unter `/api/admin?token=ADMIN_TOKEN` (Nutzung, Konten, Geräte, Rechnungen, KI, Fehler); die App meldet Fehler über `src/lib/errorReport.ts` und
+  `server/adminPage.ts` unter `/api/admin` (Token-Formular bzw. `?token=ADMIN_TOKEN`, ≥ 12 Zeichen, `adminSecret`; Nutzung, Konten, Geräte, Rechnungen, KI, Fehler); die App meldet Fehler über `src/lib/errorReport.ts` und
   `ErrorBoundary`.
 - **Gerät wechseln:** Einmal-Code (`server/deviceLink.ts`, Route `#/geraet/<code>`) bzw. Wiederherstellungs-Code
   (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.

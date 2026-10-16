@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { AccountStore } from "./accounts.ts";
-import { createApp } from "./app.ts";
+import { adminSecret, createApp } from "./app.ts";
 import { dataDir, ephemeralDataProblem } from "./dataDir.ts";
 import { Monitor } from "./monitor.ts";
 import { isAiConfigured } from "./parseReceipt.ts";
@@ -60,7 +60,7 @@ const server = createServer(createApp(store, path.join(root, "dist"), { trustPro
 
 server.listen(PORT, () => {
   console.log(
-    `klicksplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${ADMIN_TOKEN ? "an" : "aus"}, Mail: ${process.env.RESEND_API_KEY && process.env.MAIL_FROM ? "Resend" : "nur Log"})`,
+    `klicksplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${adminSecret(ADMIN_TOKEN) ? "an" : ADMIN_TOKEN ? "aus (ADMIN_TOKEN kürzer als 12 Zeichen)" : "aus"}, Mail: ${process.env.RESEND_API_KEY && process.env.MAIL_FROM ? "Resend" : "nur Log"})`,
   );
 });
 

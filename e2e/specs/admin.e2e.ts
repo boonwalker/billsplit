@@ -12,9 +12,10 @@ test("Betriebsseite: Besuche, Geräte, Konten und Rechnungen", async ({ browser 
   await page.goto("/");
   await visit;
 
-  // Without the token there is nothing to see.
-  expect((await page.request.get("/api/admin")).status()).toBe(404);
-  await page.goto("/api/admin?token=e2e-admin-token-123456");
+  // Without the token: a form asks for it.
+  await page.goto("/api/admin");
+  await page.getByLabel("Admin-Token").fill("e2e-admin-token-123456");
+  await page.getByRole("button", { name: "Öffnen" }).click();
   await expect(page.locator("h1")).toHaveText("klicksplit · Betrieb");
   await expect(page.locator(".tiles")).toContainText("Aktiv (24 h)");
   await expect(page.locator("#nutzung + p + .scroll tbody tr").first()).not.toContainText("Noch keine Daten");

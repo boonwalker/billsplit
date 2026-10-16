@@ -1,7 +1,7 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp } from "../server/app";
+import { adminSecret, createApp } from "../server/app";
 import { costOf, Monitor } from "../server/monitor";
 import { BillStore } from "../server/store";
 
@@ -41,12 +41,26 @@ describe("admin page and error reports", () => {
       body: JSON.stringify({ message: "TypeError: x is <undefined>", path: "#/dashboard", device: "iPhone" }),
     });
     expect(res.status).toBe(200);
-    expect((await fetch(`${base}/api/admin`)).status).toBe(404);
-    expect((await fetch(`${base}/api/admin?token=wrong-token-123456`)).status).toBe(404);
+    // Without the token: a form to type it in; with a wrong one: the form again, with a hint.
+    const form = await fetch(`${base}/api/admin`);
+    expect(form.status).toBe(200);
+    expect(await form.text()).toContain('name="token"');
+    const wrong = await fetch(`${base}/api/admin?token=wrong-token-123456`);
+    expect(wrong.status).toBe(403);
+    expect(await wrong.text()).toContain("Der Token passt nicht");
+    expect(await (await fetch(`${base}/api/admin?token=${TOKEN}`)).text()).not.toContain("Der Token passt nicht");
     const page = await fetch(`${base}/api/admin?token=${TOKEN}`);
     const html = await page.text();
     expect(page.headers.get("content-type")).toContain("text/html");
     expect(html).toContain("TypeError: x is &lt;undefined&gt; (#/dashboard)");
     expect(html).toContain("Speicher: memory");
+  });
+});
+
+describe("ADMIN_TOKEN", () => {
+  it("ignores spaces and quotes around it and needs 12 characters", () => {
+    expect(adminSecret('  "KsAdmin2026xyQ7" ')).toBe("KsAdmin2026xyQ7");
+    expect(adminSecret("kurz123")).toBeNull();
+    expect(adminSecret(undefined)).toBeNull();
   });
 });

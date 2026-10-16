@@ -6,7 +6,7 @@ import { timingSafeEqual } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fill, isLang, msg, pickLang, translate, type Lang, type Msg, type Vars } from "../src/i18n/index.ts";
-import { adminPage } from "./adminPage.ts";
+import { adminLogin, adminPage } from "./adminPage.ts";
 import type { VisitLog } from "./visits.ts";
 import type { Monitor } from "./monitor.ts";
 import { isAiConfigured, isSupportedMediaType, observeAi, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
@@ -87,6 +87,15 @@ export interface AppOptions {
    * address move there and take the device's data along (see src/lib/move.ts).
    */
   homeUrl?: string;
+}
+
+/**
+ * ADMIN_TOKEN as compared: without surrounding spaces or quotes (pasted into Railway with them by
+ * accident), and only from 12 characters on – a shorter one opens nothing.
+ */
+export function adminSecret(value: string | undefined): string | null {
+  const clean = (value ?? "").trim().replace(/^["']+|["']+$/g, "").trim();
+  return clean.length >= 12 ? clean : null;
 }
 
 /** The origin of an address like "https://klicksplit.de/", or null when there is none. */
@@ -381,10 +390,17 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
 
     // The operator's page: usage, cost and errors – and a copy of the data.
     if (parts[1] === "admin" && method === "GET") {
-      const token = url.searchParams.get("token") ?? "";
-      const expected = options.adminToken ?? "";
-      const ok = expected.length >= 12 && token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
-      if (!ok) throw new HttpError("Nicht gefunden.", 404);
+      const expected = adminSecret(options.adminToken);
+      if (!expected) throw new HttpError("Nicht gefunden.", 404);
+      const sent = url.searchParams.get("token");
+      const token = adminSecret(sent ?? "") ?? "";
+      const ok = token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+      if (!ok) {
+        // A form instead of a bare "not found": the token can be typed (or filled in by the password manager).
+        if (sent !== null) console.warn(`Betriebsseite: Token passt nicht (${token.length} Zeichen geschickt, ${expected.length} erwartet)`);
+        res.writeHead(sent === null ? 200 : 403, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" });
+        return void res.end(adminLogin(sent !== null));
+      }
       if (parts.length === 2) {
         const { days, errors } = monitor?.stats() ?? { days: [], errors: [] };
         const html = adminPage({

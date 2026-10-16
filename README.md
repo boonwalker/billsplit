@@ -572,7 +572,11 @@ Zurückspielen: Dienst stoppen, die gewünschte Sicherung als `billsplit.db` in 
 ### Monitoring
 
 Setzt man auf Railway unter **Variables** `ADMIN_TOKEN` (ein langes Zufallswort, mindestens 12 Zeichen), gibt es die
-Betriebsseite `https://<adresse>/api/admin?token=<ADMIN_TOKEN>` (ohne gültiges Token: „Not found“). Sie ist auch
+Betriebsseite `https://<adresse>/api/admin`: Sie fragt nach dem Token (Feld „Admin-Token“, der Passwort-Manager kann
+ihn speichern) bzw. nimmt ihn direkt aus `?token=<ADMIN_TOKEN>`. Ohne `ADMIN_TOKEN` (oder mit weniger als 12 Zeichen) gibt
+es die Seite nicht; Leerzeichen und Anführungszeichen um den Wert in Railway werden ignoriert. Ein falscher Token steht
+mit seiner Länge im Deploy-Log („Betriebsseite: Token passt nicht (… Zeichen geschickt, … erwartet)“), die Startzeile
+zeigt „Admin-Seite: an“ nur bei gültigem Token. Sie ist auch
 fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
 
 - **Kacheln:** gerade online (App offen), aktive Geräte in 24 h / 7 / 30 Tagen, Geräte gesamt (davon mit

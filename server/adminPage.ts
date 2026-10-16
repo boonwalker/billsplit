@@ -201,3 +201,28 @@ ${input.backupUrl ? ` · <a href="${escape(input.backupUrl)}">Datenbank herunter
 <ul>${errors || `<li class="muted">Keine.</li>`}</ul>
 </body></html>`;
 }
+
+/** Asks for the token (also offered by the password manager); `wrong` after a token that did not fit. */
+export function adminLogin(wrong: boolean): string {
+  return `<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>klicksplit · Betrieb</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f6f7f4; --fg: #14201a; --muted: #5d6b63; --line: #d9ded8; --accent: #0f7a4d; --bad: #b42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0e1612; --fg: #e8eee9; --muted: #9aa8a0; --line: #2a3530; --accent: #22a86a; --bad: #f97066; } }
+  body { margin: 0; padding: 24px 16px; font: 16px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  form { max-width: 360px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  h1 { font-size: 20px; margin: 0; } p { margin: 0; } .muted { color: var(--muted); font-size: 14px; } .bad { color: var(--bad); }
+  input, button { font: inherit; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: inherit; }
+  button { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+</style></head><body>
+<form method="get" action="/api/admin">
+  <h1>klicksplit · Betrieb</h1>
+  ${wrong ? `<p class="bad">Der Token passt nicht. Er muss genau dem Wert von ADMIN_TOKEN in Railway entsprechen (mindestens 12 Zeichen).</p>` : ""}
+  <input type="text" name="username" value="klicksplit-admin" autocomplete="username" hidden>
+  <input type="password" name="token" placeholder="Admin-Token" autocomplete="current-password" required autofocus aria-label="Admin-Token">
+  <button type="submit">Öffnen</button>
+  <p class="muted">Der Token ist der Wert der Variable ADMIN_TOKEN in Railway.</p>
+</form>
+</body></html>`;
+}
