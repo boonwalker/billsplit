@@ -157,7 +157,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Rechnung werden nie zusammengelegt (`mergeParticipant` lässt solche Rechnungen aus).
 - **Rechnungsliste** (`billsplit.recent`) liegt auf dem Gerät, immer nach Datum sortiert (neueste oben, `newestFirst` –
   Öffnen verschiebt nichts), ohne Obergrenze (20 sichtbar, dann „Ältere anzeigen“); die Startseite ergänzt beim Öffnen und bei Live-Änderungen
-  fehlende Rechnungen aus `/api/my-bills` (`syncRecentBills`, z. B. zugeordnete Ausgaben). Mit ✕ entfernte bleiben über
+  fehlende Rechnungen aus `/api/my-bills` (`syncRecentBills`, z. B. zugeordnete Ausgaben) – als ungelesen (`unread`, grün
+  umrandet, bis `rememberBill` sie beim Öffnen ersetzt). Mit ✕ entfernte bleiben über
   `billsplit.hidden` draußen – ✕ immer über `hideBill`, nie nur `forgetBill`.
   Rechnungen mit offenem Geld oder ausstehender Bestätigung lassen sich nicht entfernen (`stillOpen`). Das Dashboard
   rechnet mit allen Rechnungen vom Server (lokale Liste ∪ `/api/my-bills`), sonst widerspricht der Ring dem Planer.

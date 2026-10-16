@@ -280,9 +280,10 @@ export default function Home() {
             <h3 className="section-title">{t("Deine Rechnungen")}</h3>
             <ul className="list">
               {(showAll ? recent : recent.slice(0, LIST_PAGE)).map((b) => (
-                <li key={b.id} className={`list-item${b.gone ? " gone" : ""}`}>
+                <li key={b.id} className={`list-item${b.gone ? " gone" : ""}${b.unread && !b.gone ? " unread" : ""}`}>
                   <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
                     <span className="list-title">{b.title || t("Rechnung")}</span>
+                    {b.unread && !b.gone && <span className="sr-only">{t("ungelesen")}</span>}
                     <span className="muted small">
                       {formatDate(b.createdAt)} · {b.gone ? (
                         t("nicht mehr verfügbar")

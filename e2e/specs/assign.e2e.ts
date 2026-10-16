@@ -41,5 +41,13 @@ test("Ausgabe zuweisen: 5 € Taxi direkt Andy zuordnen – oder 10 € mit Andy
   const list = andyPhone.locator("ul.list");
   await expect(list.getByText("Taxi", { exact: true })).toHaveCount(2);
   await expect(list).toContainText("Du schuldest · 5,00 €");
+  // Not opened yet: highlighted until Andy opens it.
+  const taxis = list.locator(".list-item", { hasText: "Taxi" });
+  await expect(taxis.and(andyPhone.locator(".unread"))).toHaveCount(2);
+  await expect(list.locator(".list-item", { hasText: "Pizzeria" })).not.toHaveClass(/unread/);
   await andyPhone.screenshot({ path: process.env.SHOT_ANDY ?? "/dev/null", fullPage: true }).catch(() => undefined);
+  await taxis.first().locator(".list-main").click();
+  await expect(andyPhone).toHaveURL(/#\/b\//);
+  await andyPhone.goto("/");
+  await expect(taxis.and(andyPhone.locator(".unread"))).toHaveCount(1);
 });

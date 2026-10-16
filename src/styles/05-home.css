@@ -119,6 +119,22 @@
   padding-right: 4px;
 }
 
+/* Not opened on this device yet (e.g. an expense a friend assigned to me): a highlighted frame until it is. */
+.list-item.unread {
+  border-color: var(--claim);
+  box-shadow: 0 0 0 1px var(--claim);
+}
+
+/* Read out, not shown. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* The server did not know it (any more): stays visible, faded, until removed with ✕. */
 .list-item.gone .list-main {
   opacity: 0.55;
