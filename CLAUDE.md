@@ -203,7 +203,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
 - „Ausgabe zuweisen“ (bis 16.10.2026 „Ausgabe eingeben“; Startseite, Karte wie die anderen direkt unter „QR-Code scannen“,
-  Untertitel „Ohne Beleg – z. B. Taxi oder Kiosk, auch direkt an Freunde“, `src/pages/Expense.tsx`, `#/ausgabe`): Betrag,
+  Untertitel „Ohne Beleg – z.B. Taxi oder Kiosk, auch direkt an Freunde“, `src/pages/Expense.tsx`, `#/ausgabe`): Betrag,
   „Wofür?“ mit Schnellauswahl, „Wann?“, „Direkt zuordnen“ (runde Knöpfe der Kontakte, „Du bist auch dabei“, „Andy zahlt
   5,00 €“) bzw. „Wie viele teilen sich das?“ / „inklusive Dir“, „Rechnung erstellen“; ergibt **immer eine Rechnung mit
   Gleichverteilung** (ohne „Du bist auch dabei“ mit `ownerExcluded`: „… – Du bist nicht dabei“)

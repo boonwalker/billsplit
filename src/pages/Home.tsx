@@ -228,7 +228,7 @@ export default function Home() {
             </span>
             <span className="action-text">
               <b>{t("Ausgabe zuweisen")}</b>
-              <small>{t("Ohne Beleg – z. B. Taxi oder Kiosk, auch direkt an Freunde")}</small>
+              <small>{t("Ohne Beleg – z.B. Taxi oder Kiosk, auch direkt an Freunde")}</small>
             </span>
           </button>
         </section>
