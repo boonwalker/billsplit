@@ -91,10 +91,18 @@ hast. Beim Endbetrag ist das Trinkgeld die Differenz zum Rechnungsbetrag; das Fe
 bezahlt?“ (früher stand dort grau der Rechnungsbetrag, der auf dem iPhone wie ein gesperrtes Feld aussah). Bei einer erkannten Lieferbestellung stehen unter
 „absolut“ Schnellknöpfe für den Fahrer: 0,50 €, 1 €, 2 €.
 
-Das Trinkgeld wird gleichmäßig pro Person verteilt. Gezählt wird automatisch, wer der Rechnung per QR-Code
-beigetreten ist, plus der Rechnungssteller. Optional gibt der Rechnungssteller eine erwartete Personenzahl an,
-vorab im Trinkgeld-Schritt oder später direkt unter der Rechnung. Sie gilt, solange noch nicht alle beigetreten sind,
-etwa wenn jemand erst am nächsten Tag scannt. Treten mehr Personen bei als erwartet, zählen alle.
+Das Trinkgeld wird **anteilig nach dem verteilt, was jeder hatte** (seit 16.10.2026, `BillData.tipByShare`,
+`itemShare` in `src/lib/bill.ts`): Es erhöht jede Position um denselben Prozentsatz – wie ein Rabatt, nur umgekehrt.
+Beispiel C.C. Kowalski: 22 € Trinkgeld auf 208 € sind +10,6 %; wer ein Schnitzel für 31,50 € hatte, zahlt 34,83 €. Auf
+dem Beleg steht dazu „Trinkgeld auf jede Position +10,6 %“, im Trinkgeld-Schritt „Das Trinkgeld geht anteilig auf die
+Positionen …“. Der Anteil des Trinkgelds an noch nicht abgehakten Positionen bleibt mit diesen offen. Bei
+Gleichverteilung zahlt ohnehin jeder dasselbe, Trinkgeld eingeschlossen.
+
+Ältere Rechnungen (ohne `tipByShare`) behalten ihr Trinkgeld pro Kopf – sonst würden sich bezahlte Anteile nachträglich
+ändern. Pro Kopf zählt dort (und für Gebühren über null) automatisch, wer der Rechnung per QR-Code beigetreten ist,
+plus der Rechnungssteller. Optional gibt der Rechnungssteller eine erwartete Personenzahl an, vorab im Trinkgeld-Schritt
+(nur noch gefragt, wenn es Gebühren pro Kopf gibt) oder später direkt unter der Rechnung. Sie gilt, solange noch nicht
+alle beigetreten sind, etwa wenn jemand erst am nächsten Tag scannt. Treten mehr Personen bei als erwartet, zählen alle.
 
 ### Liefer- und Servicegebühren
 

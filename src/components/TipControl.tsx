@@ -55,15 +55,20 @@ interface Props {
   showPersons?: boolean;
   /** A delivery order: quick amounts for the driver under "absolut". */
   delivery?: boolean;
+  /** The tip follows what everyone had (BillData.tipByShare); false only for older bills (per head). */
+  tipByShare?: boolean;
 }
 
 /** Tip input as percentage or fixed amount, optional head count, and a live preview. */
-export default function TipControl({ value, onChange, subtotal, currency, fees = 0, perHeadFees = fees, showPersons = true, delivery = false }: Props) {
+export default function TipControl({ value, onChange, subtotal, currency, fees = 0, perHeadFees = fees, showPersons = true, delivery = false, tipByShare = true }: Props) {
   const uid = useId();
   const tip = tipCents(value, subtotal, fees);
   const billAmount = subtotal + fees;
   const enteredTotal = value.mode === "total" ? parseMoney(value.total) : null;
   const persons = tipPersons(value);
+  // What is shared per head: fees above zero, and the tip only on older bills.
+  const headTip = tipByShare ? 0 : tip;
+  const askPersons = showPersons && (!tipByShare || perHeadFees !== 0);
   const set = (patch: Partial<TipValue>) => onChange({ ...value, ...patch });
 
   return (
@@ -149,7 +154,7 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
         </>
       )}
 
-      {showPersons && (
+      {askPersons && (
       <label className="tip-persons">
         <span>
           {t("Aufteilen auf")}
@@ -166,11 +171,19 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
         <span>{t("Personen")}</span>
       </label>
       )}
-      {showPersons && (
+      {askPersons && (
         <p className="tip-hint">
           {persons
             ? t("Inklusive Dir. Wer später scannt, wird mitgezählt – es werden aber mindestens {n} Personen angenommen.", { n: persons })
             : t("Leer lassen: Gezählt wird automatisch, wer den QR-Code scannt, plus Du.")}
+        </p>
+      )}
+
+      {tipByShare && tip > 0 && subtotal > 0 && (
+        <p className="tip-hint">
+          {t("Das Trinkgeld geht anteilig auf die Positionen: +{percent} auf jede – wer mehr hatte, gibt mehr.", {
+            percent: new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(tip / subtotal),
+          })}
         </p>
       )}
 
@@ -185,10 +198,10 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
         )}
         <dt>{t("+ Trinkgeld")}</dt>
         <dd>{formatMoney(tip, currency)}</dd>
-        {persons && tip + perHeadFees !== 0 && (
+        {persons && askPersons && headTip + perHeadFees !== 0 && (
           <>
-            <dt>{perHeadFees !== 0 ? t("Gebühren & Trinkgeld pro Person") : t("Trinkgeld pro Person")}</dt>
-            <dd>{formatMoney(Math.round((tip + perHeadFees) / persons), currency)}</dd>
+            <dt>{perHeadFees !== 0 ? (headTip !== 0 ? t("Gebühren & Trinkgeld pro Person") : t("Gebühren pro Person")) : t("Trinkgeld pro Person")}</dt>
+            <dd>{formatMoney(Math.round((headTip + perHeadFees) / persons), currency)}</dd>
           </>
         )}
         <dt className="strong">{t("Du hast bezahlt")}</dt>

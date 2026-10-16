@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { key, phone } from "./helpers";
+import { api, joinAndClaim, key, phone } from "./helpers";
 
 /** A tiny valid PNG: what the photo shows does not matter, the recognition is simulated. */
 const PHOTO = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
@@ -51,8 +51,9 @@ test("Beleg fotografieren: Erkennung → Trinkgeld nachfragen → fertige Rechnu
   await expect(page.locator("main")).toContainText("Trattoria Da Mario");
 });
 
-test("Trinkgeld als Endbetrag: leeres Feld mit Frage, „230“ eintippen ergibt 22,00 € Trinkgeld", async ({ browser }) => {
-  const page = await phone(browser, key("niklas"), { profile: { name: "Niklas", paypalMe: "nik" } });
+test("Trinkgeld als Endbetrag: leeres Feld mit Frage, „230“ eintippen ergibt 22,00 € Trinkgeld – anteilig verteilt", async ({ browser }) => {
+  const niklasKey = key("niklas");
+  const page = await phone(browser, niklasKey, { profile: { name: "Niklas", paypalMe: "nik" } });
   await page.route("**/api/parse-receipt", (route) =>
     route.fulfill({
       status: 200,
@@ -93,4 +94,15 @@ test("Trinkgeld als Endbetrag: leeres Feld mit Frage, „230“ eintippen ergibt
   await sheet.getByRole("button", { name: "Rechnung erstellen" }).click();
   await expect(page).toHaveURL(/#\/b\//, { timeout: 15_000 });
   await expect(page.locator(".receipt-sums")).toContainText("230,00 €");
+  // The tip goes on every item by the same percentage (22/208 = 10,6 %), not per head.
+  await expect(page.locator(".receipt-sums")).toContainText("Trinkgeld auf jede Position");
+  await expect(page.locator(".receipt-sums")).toContainText("+10,6 %");
+  const billId = page.url().match(/#\/b\/([^/?]+)/)![1];
+  const items = (await api<{ data: { items: { id: string; name: string }[] } }>(niklasKey, "GET", `/api/bills/${billId}`)).data.items;
+  const schnitzel = items.find((i) => i.name === "Wiener Schnitzel")!.id;
+  // Andy had one Schnitzel (31,50 €): plus 10,6 % tip = 34,83 €.
+  await joinAndClaim({ key: key("andy"), name: "Andy" }, billId, { [schnitzel]: [0] });
+  const owner = await api<{ debtors: { name: string; amount: number }[] }>(niklasKey, "GET", `/api/bills/${billId}`);
+  expect(owner.debtors.find((d) => d.name === "Andy")?.amount).toBe(3483);
+  await page.locator(".receipt-sums").screenshot({ path: process.env.SHOT_BILL ?? "/dev/null" }).catch(() => undefined);
 });

@@ -18,6 +18,7 @@ export function createSampleBill(): string {
     date: new Date().toISOString().slice(0, 10),
     currency: "EUR",
     tipPercent: 10,
+    tipByShare: true,
     payment: paymentFromProfile(profile),
     items: [
       { id: ids.pizza, name: "Pizza Margherita", qty: 1, total: 950 },

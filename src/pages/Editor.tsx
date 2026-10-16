@@ -159,6 +159,10 @@ export default function Editor({ billId }: { billId?: string }) {
   const removeFee = (id: string) => setDraft((d) => ({ ...d, fees: d.fees.filter((f) => f.id !== id) }));
   const addFee = () => setDraft((d) => ({ ...d, fees: [...d.fees, newFeeRow()] }));
   const persons = tipPersons(draft.tip);
+  // New bills: the tip follows the items; older ones being edited keep it per head.
+  const byShare = draft.tipByShare !== false;
+  /** A tip from the receipt that is split per head (older bills only). */
+  const headTip = draft.tipOnReceipt && !byShare;
   const setPersons = (n: number | undefined) => update({ tip: { ...draft.tip, persons: n ? String(Math.min(100, Math.max(1, n))) : "" } });
 
   async function submit(confirmed = false) {
@@ -328,9 +332,9 @@ export default function Editor({ billId }: { billId?: string }) {
                 </p>
               )}
               <div className="field">
-                <span>{t("Trinkgeld – wird gleichmäßig auf alle Personen verteilt")}</span>
+                <span>{byShare ? t("Trinkgeld – geht anteilig auf die Positionen") : t("Trinkgeld – wird gleichmäßig auf alle Personen verteilt")}</span>
                 {draft.tipOnReceipt && <small className="muted">{t("Vom Beleg übernommen.")}</small>}
-                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} fees={feeSum} perHeadFees={headFeeSum} delivery={draft.delivery} />
+                <TipControl value={draft.tip} onChange={(tip) => update({ tip })} subtotal={sum} currency={draft.currency} fees={feeSum} perHeadFees={headFeeSum} delivery={draft.delivery} tipByShare={byShare} />
               </div>
             </div>
 
@@ -389,10 +393,10 @@ export default function Editor({ billId }: { billId?: string }) {
                 <h2>{t("Wie viele haben mitbestellt?")}</h2>
                 <p className="muted">
                   {headFeeSum !== 0
-                    ? draft.tipOnReceipt
+                    ? headTip
                       ? t("Gebühren ({amount}) und Trinkgeld werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.", { amount: formatMoney(headFeeSum, draft.currency) })
                       : t("Gebühren ({amount}) werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.", { amount: formatMoney(headFeeSum, draft.currency) })
-                    : draft.tipOnReceipt
+                    : headTip
                       ? t("Gebühren und Trinkgeld werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.")
                       : t("Gebühren werden gleichmäßig auf alle verteilt – inklusive Dir. Wer den QR-Code scannt, wird automatisch mitgezählt.")}
                 </p>
@@ -419,8 +423,8 @@ export default function Editor({ billId }: { billId?: string }) {
                 {persons && headFeeSum !== 0 && (
                   <p className="muted small center-text">
                     {(() => {
-                      const amount = formatMoney(Math.round((headFeeSum + (draft.tipOnReceipt ? tipCents(draft.tip, subtotal(askTip), feeSum) : 0)) / persons), draft.currency);
-                      return draft.tipOnReceipt ? t("{amount} pro Person (Gebühren & Trinkgeld)", { amount }) : t("{amount} pro Person an Gebühren", { amount });
+                      const amount = formatMoney(Math.round((headFeeSum + (headTip ? tipCents(draft.tip, subtotal(askTip), feeSum) : 0)) / persons), draft.currency);
+                      return headTip ? t("{amount} pro Person (Gebühren & Trinkgeld)", { amount }) : t("{amount} pro Person an Gebühren", { amount });
                     })()}
                   </p>
                 )}
@@ -431,9 +435,13 @@ export default function Editor({ billId }: { billId?: string }) {
               <>
                 <h2 className={draft.delivery ? "sheet-subtitle" : undefined}>{t("Trinkgeld gegeben?")}</h2>
                 <p className="muted">
-                  {draft.engine
-                    ? t("Auf dem Beleg steht kein Trinkgeld. Wenn Du Trinkgeld gegeben hast, trag es hier ein – es wird gleichmäßig auf alle Personen verteilt.")
-                    : t("Wenn Du Trinkgeld gegeben hast, trag es hier ein – es wird gleichmäßig auf alle Personen verteilt.")}
+                  {byShare
+                    ? draft.engine
+                      ? t("Auf dem Beleg steht kein Trinkgeld. Wenn Du Trinkgeld gegeben hast, trag es hier ein – es geht anteilig auf das, was jeder hatte.")
+                      : t("Wenn Du Trinkgeld gegeben hast, trag es hier ein – es geht anteilig auf das, was jeder hatte.")
+                    : draft.engine
+                      ? t("Auf dem Beleg steht kein Trinkgeld. Wenn Du Trinkgeld gegeben hast, trag es hier ein – es wird gleichmäßig auf alle Personen verteilt.")
+                      : t("Wenn Du Trinkgeld gegeben hast, trag es hier ein – es wird gleichmäßig auf alle Personen verteilt.")}
                 </p>
                 <TipControl
                   value={draft.tip}
@@ -444,6 +452,7 @@ export default function Editor({ billId }: { billId?: string }) {
                   perHeadFees={headFeeSum}
                   showPersons={!draft.delivery}
                   delivery={draft.delivery}
+                  tipByShare={byShare}
                 />
               </>
             )}

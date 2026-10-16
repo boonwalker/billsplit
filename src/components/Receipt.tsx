@@ -12,6 +12,8 @@ import {
   sharedPerPerson,
   sharedTotal,
   splitHeadCount,
+  tipPerHead,
+  tipTotal,
   subtotal,
   slotHolders,
   slotParts,
@@ -650,7 +652,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
             <>
               <dt className="tip-split">
                 {perHeadFees(data) !== 0
-                  ? hasTip(data)
+                  ? tipPerHead(data) !== 0
                     ? t("Gebühren & Trinkgeld ÷ {count} Personen", { count: splitHeadCount(data, participants) })
                     : t("Gebühren ÷ {count} Personen", { count: splitHeadCount(data, participants) })
                   : t("Trinkgeld ÷ {count} Personen", { count: splitHeadCount(data, participants) })}
@@ -658,7 +660,16 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
               <dd className="tip-split">{t("je {amount}", { amount: formatMoney(sharedPerPerson(data, participants), data.currency) })}</dd>
             </>
           )}
-          {/* Discounts lower every item by the same percentage (see discountShare). */}
+          {/* The tip raises every item by the same percentage (see itemShare). */}
+          {data.tipByShare && tipTotal(data) > 0 && sub > 0 && !equal && (
+            <>
+              <dt className="tip-split">{t("Trinkgeld auf jede Position")}</dt>
+              <dd className="tip-split">
+                +{new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(tipTotal(data) / sub)}
+              </dd>
+            </>
+          )}
+          {/* Discounts lower every item by the same percentage (see itemShare). */}
           {discountTotal(data) !== 0 && sub > 0 && !equal && (
             <>
               <dt className="tip-split">{t("Rabatt auf jede Position")}</dt>

@@ -67,6 +67,7 @@ export default function Expense() {
       date,
       currency: "EUR",
       tipPercent: 0,
+      tipByShare: true,
       // Always an equal split, also straight to people: they share the expense (with me, if I
       // was there too – otherwise I am not part of the split). Their claims below only matter
       // when the payer switches the equal split off later.

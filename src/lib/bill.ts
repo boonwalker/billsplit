@@ -57,6 +57,11 @@ export interface BillData {
   /** The payer crossed the tip out: it stays visible on the receipt, but is not billed. */
   tipExcluded?: boolean;
   /**
+   * The tip follows what everyone had: it raises every item by the same percentage (see
+   * itemShare). Set for every bill since 16.10.2026; older bills keep their tip per head.
+   */
+  tipByShare?: boolean;
+  /**
    * Number of people (payer included) that tip and fees are split among, as expected by the payer.
    * Without it, everyone who joined the bill counts; with it, people who scan late are covered.
    */
@@ -340,9 +345,24 @@ export function discountShare(data: BillData, items: Cents): Cents {
   return discount && all > 0 ? Math.round((discount * items) / all) : 0;
 }
 
-/** Costs that everyone shares equally: tip plus fees (not discounts, see discountShare). */
+/**
+ * The part of discounts – and of the tip (tipByShare) – that falls on items worth `items` cents:
+ * both change every item by the same percentage, so whoever had more pays more tip and saves more.
+ */
+export function itemShare(data: BillData, items: Cents): Cents {
+  const byValue = discountTotal(data) + (data.tipByShare ? tipTotal(data) : 0);
+  const all = subtotal(billedItems(data));
+  return byValue && all > 0 ? Math.round((byValue * items) / all) : 0;
+}
+
+/** The tip split per head – only on bills from before 16.10.2026 (see tipByShare). */
+export function tipPerHead(data: BillData): Cents {
+  return data.tipByShare ? 0 : tipTotal(data);
+}
+
+/** Costs that everyone shares equally: fees above zero (and the tip on older bills, see tipPerHead). */
 export function sharedTotal(data: BillData): Cents {
-  return tipTotal(data) + perHeadFees(data);
+  return tipPerHead(data) + perHeadFees(data);
 }
 
 export function billTotal(data: BillData): Cents {
@@ -427,12 +447,13 @@ export function equalShare(data: BillData, participants: PublicParticipant[]): C
 export function participantShare(data: BillData, participants: PublicParticipant[], participantId: string): ShareSummary {
   if (!splitPeople(data, participants).some((p) => p.id === participantId)) return { subtotal: 0, shared: 0, total: 0 };
   if (data.equalSplit) {
+    // Everything is split per head here, the tip included.
     const total = equalShare(data, participants);
-    const shared = sharedPerPerson(data, participants);
+    const shared = Math.round((tipTotal(data) + perHeadFees(data)) / splitHeadCount(data, participants));
     return { subtotal: total - shared, shared, total };
   }
   const sub = billedItems(data).reduce((sum, item) => sum + claimCost(item, unitShare(item, participants, participantId)), 0);
-  const shared = sharedPerPerson(data, participants) + discountShare(data, sub);
+  const shared = sharedPerPerson(data, participants) + itemShare(data, sub);
   return { subtotal: sub, shared, total: sub + shared };
 }
 
@@ -442,7 +463,7 @@ export function unassignedAmount(data: BillData, participants: PublicParticipant
   const missingPeople = splitHeadCount(data, participants) - splitPeople(data, participants).length;
   if (data.equalSplit) return missingPeople * equalShare(data, participants);
   const sub = billedItems(data).reduce((sum, item) => sum + claimCost(item, item.qty - assignedUnits(item, participants)), 0);
-  return sub + discountShare(data, sub) + missingPeople * sharedPerPerson(data, participants);
+  return sub + itemShare(data, sub) + missingPeople * sharedPerPerson(data, participants);
 }
 
 /**

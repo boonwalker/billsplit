@@ -2,6 +2,7 @@
 export default {
   en: {
     "Rabatt auf jede Position": "Discount on every item",
+    "Trinkgeld auf jede Position": "Tip on every item",
     // src/pages/BillPage.tsx
     "Beitreten fehlgeschlagen.": "Couldn't join.",
     "Rechnung nicht gefunden": "Bill not found",
@@ -136,6 +137,7 @@ export default {
   } as Record<string, string>,
   es: {
     "Rabatt auf jede Position": "Descuento en cada artículo",
+    "Trinkgeld auf jede Position": "Propina en cada artículo",
     // src/pages/BillPage.tsx
     "Beitreten fehlgeschlagen.": "No se ha podido unir a la cuenta.",
     "Rechnung nicht gefunden": "Cuenta no encontrada",
