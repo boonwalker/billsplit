@@ -3,7 +3,7 @@ import { confirmCode, type SignInResult } from "../lib/account";
 import { api } from "../lib/api";
 import { rich, t } from "../lib/i18n";
 import { isValidEmail } from "../lib/payment";
-import { loadOwnProfile } from "../lib/storage";
+import { loadAccountLost, loadOwnProfile } from "../lib/storage";
 
 /**
  * E-mail and code, the two steps of the optional account. Used in the profile assistant
@@ -25,7 +25,8 @@ export default function AccountForm({
   heading?: boolean;
 }) {
   const [step, setStep] = useState<"email" | "code">("email");
-  const [email, setEmail] = useState("");
+  // Signed out because the server lost the account: the address is already filled in.
+  const [email, setEmail] = useState(() => loadAccountLost() ?? "");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

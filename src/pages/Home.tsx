@@ -13,9 +13,10 @@ import { api } from "../lib/api";
 import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
-import { accountsAvailable } from "../lib/account";
+import { accountsAvailable, refreshAccount } from "../lib/account";
+import { reportError } from "../lib/errorReport";
 import { useBillChanges } from "../lib/liveEvents";
-import { clearDraft, forgetBill, hasPaymentMethod, hideBill, loadAccountEmail, loadOwnProfile, loadRecent, syncRecentBills, updateRecent, type RecentBill } from "../lib/storage";
+import { clearDraft, hasPaymentMethod, hideBill, markGone, loadAccountEmail, loadAccountLost, loadOwnProfile, loadRecent, syncRecentBills, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
@@ -51,15 +52,24 @@ export default function Home() {
     const toConfirm = new Set(
       (transfers?.transfers ?? []).filter((tr) => tr.toId === transfers?.me && tr.status === "pending").flatMap((tr) => tr.allocations.map((a) => a.billId)),
     );
+    let gone = 0;
     for (const b of list) {
       const snap = snaps[b.id];
-      if (snap === null) forgetBill(b.id);
-      else if (!snap) continue;
+      if (snap === null) {
+        if (markGone(b.id)) gone++;
+      } else if (!snap) continue;
       else {
-        const status = { ...(snap.isOwner ? ownerStatus(snap) : snap.me ? guestStatus(snap) : {}), open: stillOpen(snap) || toConfirm.has(b.id) };
+        const status = {
+          ...(snap.isOwner ? ownerStatus(snap) : snap.me ? guestStatus(snap) : {}),
+          open: stillOpen(snap) || toConfirm.has(b.id),
+          // Known again (e.g. the server's data came back).
+          gone: undefined,
+        };
         if (Object.entries(status).some(([k, v]) => (b as unknown as Record<string, unknown>)[k] !== v)) updateRecent(b.id, status);
       }
     }
+    // Bills vanishing from the server is never normal: it shows on the admin page.
+    if (gone > 0) reportError(new Error("Rechnungen auf dem Server nicht gefunden"), `${gone} von ${list.length} in der Liste`);
   }, []);
   const mounted = useRef(true);
   useEffect(() => {
@@ -86,6 +96,12 @@ export default function Home() {
       .transfers()
       .then((list) => setToConfirm(list.transfers.filter((tr) => tr.toId === list.me && tr.status === "pending").length))
       .catch(() => {});
+  }, []);
+  // Is this device still signed in? If the server lost the account, the start page says so.
+  const [lostAccount, setLostAccount] = useState(loadAccountLost);
+  useEffect(() => {
+    if (!accountsAvailable || !loadAccountEmail()) return;
+    void refreshAccount().then(() => setLostAccount(loadAccountLost()));
   }, []);
   const profile = loadOwnProfile();
   const account = loadAccountEmail();
@@ -199,6 +215,15 @@ export default function Home() {
         </section>
 
         {/* A new device (or a wiped browser): the bills come back with the e-mail account. */}
+        {lostAccount && !account && (
+          <div className="card account-lost" role="status">
+            <p>{t("Du wurdest abgemeldet: Der Server kannte Dein Konto {email} nicht mehr. Melde Dich bitte noch einmal an.", { email: lostAccount })}</p>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate("/anmelden")}>
+              {t("Wieder anmelden")}
+            </button>
+          </div>
+        )}
+
         {recent.length === 0 && accountsAvailable && !loadAccountEmail() && (
           <button type="button" className="btn btn-ghost signin-link" onClick={() => navigate("/anmelden")}>
             {rich(t("Schon ein Konto? <b>Anmelden</b>"))}
@@ -221,11 +246,13 @@ export default function Home() {
             <h3 className="section-title">{t("Deine Rechnungen")}</h3>
             <ul className="list">
               {recent.map((b) => (
-                <li key={b.id} className="list-item">
+                <li key={b.id} className={`list-item${b.gone ? " gone" : ""}`}>
                   <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
                     <span className="list-title">{b.title || t("Rechnung")}</span>
                     <span className="muted small">
-                      {formatDate(b.createdAt)} · {b.role === "owner" ? (
+                      {formatDate(b.createdAt)} · {b.gone ? (
+                        t("nicht mehr verfügbar")
+                      ) : b.role === "owner" ? (
                         <>
                           {t("Du leihst")}
                           {b.settled ? (
@@ -252,7 +279,13 @@ export default function Home() {
                   <button
                     className="icon-btn subtle"
                     aria-label={t("Aus Liste entfernen")}
-                    onClick={() => setRemoving(b)}
+                    onClick={() => {
+                      // Gone anyway: nothing to ask.
+                      if (b.gone) {
+                        hideBill(b.id);
+                        setRecent(loadRecent());
+                      } else setRemoving(b);
+                    }}
                   >
                     ✕
                   </button>

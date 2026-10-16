@@ -119,6 +119,11 @@
   padding-right: 4px;
 }
 
+/* The server did not know it (any more): stays visible, faded, until removed with ✕. */
+.list-item.gone .list-main {
+  opacity: 0.55;
+}
+
 .list-main {
   flex: 1;
   display: flex;
@@ -327,4 +332,17 @@
 
 .expense-me {
   align-self: flex-start;
+}
+
+/* Signed out because the server no longer knew the account (see refreshAccount). */
+.account-lost {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  border-color: var(--owed);
+}
+
+.account-lost p {
+  margin: 0;
 }

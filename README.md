@@ -180,6 +180,12 @@ Startseite beim Öffnen und bei jeder Live-Änderung `/api/my-bills` und ergänz
 Mit ✕ entfernte Rechnungen merkt sich das Gerät (`billsplit.hidden`) und holt sie nicht zurück, bis man sie wieder öffnet.
 Das gilt mit und ohne Konto.
 
+Kennt der Server eine Rechnung nicht mehr, verschwindet sie nicht einfach: Sie bleibt ausgegraut mit „nicht mehr
+verfügbar“ stehen (`markGone`), bis man sie mit ✕ entfernt (ohne Rückfrage), und die App meldet das an die
+Betriebsseite. Nur Rechnungen älter als 60 Tage (auf dem Server abgelaufen) verschwinden still. Ebenso meldet die App
+nicht still ab, wenn der Server das Konto nicht mehr kennt: Startseite und Profil sagen „Du wurdest abgemeldet: Der
+Server kannte Dein Konto … nicht mehr“, „Wieder anmelden“ hat die Adresse schon eingetragen (`billsplit.accountLost`).
+
 ### Dashboard
 
 Über „Deine Rechnungen“ auf der Startseite (damit er bei vielen Rechnungen nicht nach unten rutscht) führt
@@ -471,7 +477,11 @@ Das Repo enthält eine `railway.json` mit Build- und Startbefehl und Health-Chec
    verbinden.
 2. **New Project → Deploy from GitHub repo** wählen und `billsplit` auswählen.
 3. Am Service ein **Volume** anlegen (Rechtsklick auf den Service bzw. „+ New → Volume“), z. B. mit Mount-Pfad
-   `/data`. billsplit erkennt das Volume automatisch über `RAILWAY_VOLUME_MOUNT_PATH`.
+   `/data`. billsplit erkennt das Volume automatisch über `RAILWAY_VOLUME_MOUNT_PATH`. **`DATA_DIR` auf Railway
+   nicht setzen** (oder nur auf einen Ordner im Volume): Mit `DATA_DIR=data` lagen die Daten im Container und waren
+   nach jedem Deploy weg (16.10.2026). Seitdem startet der Server auf Railway gar nicht erst, wenn sein Datenordner
+   nicht auf dem Volume liegt (`server/dataDir.ts`) – Railway lässt dann die alte Version weiterlaufen, im Deploy-Log
+   steht „klicksplit startet nicht: …“. Richtig ist die Startzeile „Daten: /data, Speicher: sqlite“.
 4. Unter **Settings → Networking → Generate Domain** eine öffentliche Adresse erzeugen.
 5. Optional: Unter **Variables** `ANTHROPIC_API_KEY` setzen (KI-Belegerkennung).
 6. Optional, aber empfohlen im Free-Tarif: Unter **Settings** „Serverless“ (App Sleeping) einschalten. Der
@@ -572,7 +582,7 @@ claude.ai-Artifact gedacht:
 | `ANTHROPIC_API_KEY` | aktiviert die KI-Belegerkennung |
 | `BILLSPLIT_MODEL` | anderes Claude-Modell (Standard: `claude-opus-5-5`) |
 | `PORT` | Port des Servers (Standard 8787) |
-| `DATA_DIR` | Ordner für Datenbank, Belegfotos, Backups und Push-Schlüssel (Standard `data`; auf Railway das Volume) |
+| `DATA_DIR` | Ordner für Datenbank, Belegfotos, Backups und Push-Schlüssel (Standard `data`; auf Railway das Volume – dort nicht setzen bzw. nur auf einen Ordner im Volume, sonst startet der Server nicht) |
 | `TRUST_PROXY` | `1` hinter einem Reverse-Proxy: Client-Adresse aus `X-Forwarded-For` lesen |
 | `RECEIPT_LIMIT_PER_HOUR` | Belegfotos pro Gerät/IP und Stunde (Standard 10) |
 | `RECEIPT_LIMIT_PER_DAY` | Belegfotos insgesamt pro Tag (Standard 300) |

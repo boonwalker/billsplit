@@ -1,7 +1,8 @@
 import { api } from "./api";
 import { DEMO } from "./demo";
 import { disablePush, resubscribePush } from "./push";
-import { adoptDevice, loadAccountEmail, loadOwnProfile, resetDevice, saveAccountEmail, saveProfile, type Profile } from "./storage";
+import { reportError } from "./errorReport";
+import { adoptDevice, loadAccountEmail, loadOwnProfile, resetDevice, saveAccountEmail, saveAccountLost, saveProfile, type Profile } from "./storage";
 
 /**
  * The optional e-mail account (see server/accounts.ts): no password, a six-digit code from the
@@ -45,6 +46,13 @@ export async function refreshAccount(): Promise<string | null> {
   if (!accountsAvailable) return null;
   try {
     const { account } = await api.account();
+    const before = loadAccountEmail();
+    // Signed in here, but the server does not know the account (any more): never silently –
+    // the app says so and offers the address for signing in again (and the admin page hears of it).
+    if (before && !account) {
+      saveAccountLost(before);
+      reportError(new Error("Konto auf dem Server nicht gefunden"));
+    }
     saveAccountEmail(account?.email ?? null);
     return account?.email ?? null;
   } catch {

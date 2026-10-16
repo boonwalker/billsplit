@@ -22,7 +22,7 @@ import { confirmScan, knock } from "../lib/haptics";
 import { navigate } from "../lib/router";
 import { askOnStartPage, SHOW_PAID_MS, takeProfileQuestion } from "../lib/onboarding";
 import { paymentFromProfile, samePayment } from "../lib/payment";
-import { forgetBill, hasPaymentMethod, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
+import { hasPaymentMethod, markGone, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
 import { rich, t } from "../lib/i18n";
 import { newRefunds, type NewRefund } from "../lib/refunds";
@@ -173,7 +173,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
 
   // An invalid bill does not stay in the list of bills.
   useEffect(() => {
-    if (notFound) forgetBill(id);
+    if (notFound) markGone(id);
   }, [notFound, id]);
 
   if (notFound) {

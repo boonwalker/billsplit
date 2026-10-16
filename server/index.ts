@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { AccountStore } from "./accounts.ts";
 import { createApp } from "./app.ts";
+import { dataDir, ephemeralDataProblem } from "./dataDir.ts";
 import { Monitor } from "./monitor.ts";
 import { isAiConfigured } from "./parseReceipt.ts";
 import { PushService } from "./push.ts";
@@ -18,8 +19,14 @@ try {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.env.PORT ?? process.env.API_PORT ?? 8787);
 // Railway mounts the attached volume at RAILWAY_VOLUME_MOUNT_PATH.
-const DATA_DIR = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || "data";
-const DATA_FILE = path.resolve(root, DATA_DIR, "bills.json");
+const DATA_DIR = dataDir(process.env, root);
+const dataProblem = ephemeralDataProblem(process.env, DATA_DIR);
+if (dataProblem) {
+  // Better no new version than one that starts empty: Railway keeps the old one running.
+  console.error(`klicksplit startet nicht: ${dataProblem}`);
+  process.exit(1);
+}
+const DATA_FILE = path.join(DATA_DIR, "bills.json");
 // Render and Railway put a proxy in front; the client address is then in X-Forwarded-For.
 const TRUST_PROXY = process.env.TRUST_PROXY === "1" || Boolean(process.env.RAILWAY_ENVIRONMENT);
 

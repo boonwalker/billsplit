@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { deleteAccount, refreshAccount, signOut } from "../lib/account";
 import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
-import { loadAccountEmail, loadOwnProfile } from "../lib/storage";
+import { loadAccountEmail, loadAccountLost, loadOwnProfile } from "../lib/storage";
 import AccountForm from "./AccountForm";
 
 /**
@@ -22,6 +22,8 @@ export default function AccountSection() {
     void refreshAccount().then(setEmail);
   }, []);
 
+  const lost = email ? null : loadAccountLost();
+
   if (!email && !signingIn) {
     return (
       <div className="card account-card">
@@ -29,9 +31,13 @@ export default function AccountSection() {
           <span className="account-dot off" aria-hidden="true" />
           {t("Nicht angemeldet")}
         </p>
-        <p className="muted small">{t("Mit Deiner E-Mail-Adresse sind Deine Rechnungen auf jedem Gerät da – ohne Passwort, mit einem Code per Mail.")}</p>
+        {lost ? (
+          <p className="alert">{t("Du wurdest abgemeldet: Der Server kannte Dein Konto {email} nicht mehr. Melde Dich bitte noch einmal an.", { email: lost })}</p>
+        ) : (
+          <p className="muted small">{t("Mit Deiner E-Mail-Adresse sind Deine Rechnungen auf jedem Gerät da – ohne Passwort, mit einem Code per Mail.")}</p>
+        )}
         <button type="button" className="btn btn-secondary" onClick={() => setSigningIn(true)}>
-          {t("Anmelden oder Konto anlegen")}
+          {lost ? t("Wieder anmelden") : t("Anmelden oder Konto anlegen")}
         </button>
       </div>
     );

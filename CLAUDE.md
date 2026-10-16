@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 171 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 173 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -62,7 +62,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 | Live-App | **https://www.klicksplit.de** (seit 11.10.2026; Railway, Free-Tarif, ein Service + Volume `/data`). Alte Adresse https://billsplit-production-af2e.up.railway.app bleibt und leitet um – nie löschen |
 | Demo (ohne Server) | https://claude.ai/artifact/UDuSsFPTSGVB8QNeGYoGVZ (Daten im Browser, „Ansicht als“ Anna/Ben) |
 | Repo | `boonwalker/billsplit`, Branch `main` |
-| Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse; `PUBLIC_URL=https://www.klicksplit.de` |
+| Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse; `PUBLIC_URL=https://www.klicksplit.de`; **kein `DATA_DIR`** (Volume `billsplit-volume` auf `/data`, seit 16.10.2026 geprüft); `ADMIN_TOKEN` noch nicht gesetzt |
 | Domain | `klicksplit.de` bei INWX: CNAME `www` → Railway (Hauptdomain ohne www geht bei INWX nicht, Web-Weiterleitung von INWX nie benutzen – löscht alle CNAMEs). Einrichtung im README „Umzug auf eine neue Adresse“ |
 
 Render wird nicht mehr benutzt (zu teuer, `render.yaml` ist entfernt). Der Auftraggeber nutzt die App vor
@@ -158,6 +158,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   `billsplit.hidden` draußen – ✕ immer über `hideBill`, nie nur `forgetBill`.
   Rechnungen mit offenem Geld oder ausstehender Bestätigung lassen sich nicht entfernen (`stillOpen`). Das Dashboard
   rechnet mit allen Rechnungen vom Server (lokale Liste ∪ `/api/my-bills`), sonst widerspricht der Ring dem Planer.
+- **Datenverlust 16.10.2026:** Railway-Variable `DATA_DIR=data` → Daten im Container statt auf dem Volume, nach jedem
+  Deploy leer (Konten weg, Listen geleert). Seitdem: Server startet auf Railway nur mit Daten auf dem Volume
+  (`server/dataDir.ts`), die App löscht unbekannte Rechnungen nicht (`markGone`, „nicht mehr verfügbar“) und meldet
+  nicht still ab (`billsplit.accountLost`, Hinweis auf Startseite/Profil). Beides meldet sie an die Betriebsseite.
 - **Lange Drücken („/2“)** nur für den Rechnungssteller und nicht im Modus „Jeder selber abhaken“; ein präziser Tipp
   auf „/2“ hebt den Teiler auf, statt die Zeile zu streichen.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit

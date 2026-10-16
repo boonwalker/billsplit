@@ -68,6 +68,8 @@ const DEVICE_KEY = "billsplit.deviceKey";
 const RECENT_KEY = "billsplit.recent";
 const DRAFT_KEY = "billsplit.draft";
 const ACCOUNT_KEY = "billsplit.account";
+/** The account address the server suddenly no longer knew (see refreshAccount): offered for signing in again. */
+const ACCOUNT_LOST_KEY = "billsplit.accountLost";
 /** Bills the user removed from the list (✕): the sync with the server does not bring them back. */
 const HIDDEN_KEY = "billsplit.hidden";
 /** Fired when this device takes on another identity (sign-in, new device, sign-out). */
@@ -138,14 +140,19 @@ export function adoptDevice(key: string, profile: Partial<Profile> | null, bills
 /** The e-mail address of this device's account (as last confirmed by the server), or null. */
 export const loadAccountEmail = (): string | null => read<string | null>(ACCOUNT_KEY, null);
 export function saveAccountEmail(email: string | null): void {
-  if (email) write(ACCOUNT_KEY, email);
-  else remove(ACCOUNT_KEY);
+  if (email) {
+    write(ACCOUNT_KEY, email);
+    remove(ACCOUNT_LOST_KEY);
+  } else remove(ACCOUNT_KEY);
 }
+
+export const loadAccountLost = (): string | null => read<string | null>(ACCOUNT_LOST_KEY, null);
+export const saveAccountLost = (email: string) => write(ACCOUNT_LOST_KEY, email);
 
 /** Signing out: this device starts over with a new identity (the account keeps everything). */
 export function resetDevice(): void {
   memoryKey = null;
-  for (const key of [DEVICE_KEY, PROFILE_KEY, RECENT_KEY, ACCOUNT_KEY, DRAFT_KEY, HIDDEN_KEY]) remove(key);
+  for (const key of [DEVICE_KEY, PROFILE_KEY, RECENT_KEY, ACCOUNT_KEY, DRAFT_KEY, HIDDEN_KEY, ACCOUNT_LOST_KEY]) remove(key);
   window.dispatchEvent(new Event(DEVICE_CHANGED));
 }
 
@@ -165,6 +172,8 @@ export interface RecentBill {
   currency?: string;
   /** Money is still open or a payment waits for my confirmation: ✕ cannot remove it (see stillOpen). */
   open?: boolean;
+  /** The server did not know the bill (any more) – shown as "nicht mehr verfügbar" instead of vanishing. */
+  gone?: boolean;
 }
 
 export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, []);
@@ -207,6 +216,25 @@ export function addRecentBills(bills: RecentBill[]): void {
 /** Updates a remembered bill in place (keeps its position in the list). */
 export function updateRecent(id: string, patch: Partial<RecentBill>): void {
   write(RECENT_KEY, loadRecent().map((b) => (b.id === id ? { ...b, ...patch } : b)));
+}
+
+/** Bills are deleted on the server after 60 days (server/store.ts). */
+const BILL_LIFETIME_MS = 60 * 24 * 60 * 60 * 1000;
+
+/**
+ * The server does not know a bill: an expired one leaves the list, any other stays, marked as
+ * no longer available – a server that lost its data (16.10.2026) must not empty everyone's list.
+ * True when it was marked (not expired).
+ */
+export function markGone(id: string, now = Date.now()): boolean {
+  const entry = loadRecent().find((b) => b.id === id);
+  if (!entry) return false;
+  if (now - Date.parse(entry.createdAt) > BILL_LIFETIME_MS) {
+    forgetBill(id);
+    return false;
+  }
+  if (!entry.gone) updateRecent(id, { gone: true, open: false });
+  return !entry.gone;
 }
 
 export function forgetBill(id: string): void {
