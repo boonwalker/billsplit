@@ -62,6 +62,23 @@
   align-self: stretch;
 }
 
+/* Bill with ticking: who had the line, as circles (like "Ausgabe zuweisen"), above the "/ N". */
+.divisor-section {
+  align-self: stretch;
+  margin: 10px 0 0;
+  font-size: 1rem;
+}
+
+.assign-people {
+  align-self: stretch;
+  justify-content: flex-start;
+  text-align: center;
+}
+
+.assign-people .person-pick-avatar {
+  font-size: 1.05rem;
+}
+
 .divisor-big {
   gap: 10px;
   margin: 6px 0 2px;

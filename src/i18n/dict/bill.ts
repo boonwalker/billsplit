@@ -120,6 +120,10 @@ export default {
     // src/components/DivisorSheet.tsx
     "{name} nur anteilig berechnen": "Bill only part of {name}",
     "Nur einen Teil davon aufteilen – den Rest trägst Du selbst.": "Split only part of it – you cover the rest yourself.",
+    "Wer hatte das?": "Who had this?",
+    "Antippen = direkt zuordnen · mehrere = teilen": "Tap = assign directly · several = share",
+    "Nur einen Teil aufteilen": "Split only part of it",
+    "jemandem direkt zuordnen oder nur einen Teil in Rechnung stellen": "assign it to someone directly or only bill part of it",
     "Geteilt durch": "Divided by",
     "Kleinerer Teil": "Smaller part",
     "Größerer Teil": "Larger part",
@@ -256,6 +260,10 @@ export default {
     // src/components/DivisorSheet.tsx
     "{name} nur anteilig berechnen": "Cobrar solo una parte de {name}",
     "Nur einen Teil davon aufteilen – den Rest trägst Du selbst.": "Reparte solo una parte: el resto lo pagas tú.",
+    "Wer hatte das?": "¿Quién tomó esto?",
+    "Antippen = direkt zuordnen · mehrere = teilen": "Toca = asignar directamente · varios = compartir",
+    "Nur einen Teil aufteilen": "Repartir solo una parte",
+    "jemandem direkt zuordnen oder nur einen Teil in Rechnung stellen": "asignarlo directamente a alguien o cobrar solo una parte",
     "Geteilt durch": "Dividido entre",
     "Kleinerer Teil": "Parte más pequeña",
     "Größerer Teil": "Parte más grande",

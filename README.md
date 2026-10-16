@@ -138,7 +138,16 @@ Hält der Bezahler eine Position auf der Rechnung gedrückt, öffnet sich ein Bl
 (/1 bis /5): Vom Liter Milch geht dann z. B. nur die Hälfte in die Aufteilung, die andere Hälfte trägt er selbst. Auf
 dem Beleg steht „/2“ hinter dem Namen und der Belegpreis klein durchgestrichen über dem berechneten Teil; /1 stellt die
 Position wieder her, ebenso ein Tipp direkt auf das „/2“. Kurzes Antippen anderswo auf der Zeile streicht wie gewohnt.
-Das gibt es nur mit Gleichverteilung – bei „Jeder selber abhaken“ hakt jeder ab, was er hatte.
+
+### Direkt zuordnen (Rechnungssteller, „Jeder selber abhaken“)
+
+Bei Rechnungen mit Abhaken öffnet langes Drücken auf eine Position dasselbe Blatt, oben zusätzlich mit **„Wer hatte
+das?“**: runde Knöpfe wie bei „Ausgabe zuweisen“ – „Du“, alle Beigetretenen und bis zu zehn Personen aus früheren
+Rechnungen. Antippen gibt der Person die ganze Position (alle Stücke), nochmal antippen nimmt sie ihr wieder weg;
+mehrere Personen teilen sich die Position zu gleichen Teilen. Wer noch nicht in der Rechnung war, kommt dazu
+(„von Dir zugeordnet“) und bekommt eine Mitteilung wie bei „Ausgabe zuweisen“ (`BillCore.assign`, die App schickt die
+vollständigen Häkchen der Person). Darunter „Nur einen Teil aufteilen“ mit dem „/ N“ wie oben; „Übernehmen“ speichert
+nur, wenn sich der Teiler geändert hat. Die Gesten-Hilfe „?“ nennt dafür „Gedrückt halten“.
 
 ### Supermarkt-Einkäufe
 
@@ -437,8 +446,8 @@ eigenen Stücks zum Teilen anbietet („„Du“ antippen = Du willst mit jemand
 Rechnung und Gerät, endet beim ersten eigenen Antippen und verändert nichts an der Rechnung.
 
 Dauerhaft erklärt ein kleines „?“ neben der Anleitung über dem Beleg die Gesten: beim Abhaken „Antippen“, „Namen
-antippen“, „„Du“ antippen“ und „− / +“; beim Rechnungssteller mit Gleichverteilung „Antippen“ (streichen)
-und „Gedrückt halten“ (nur einen Teil).
+antippen“, „„Du“ antippen“ und „− / +“, beim Rechnungssteller zusätzlich „Gedrückt halten“ (direkt zuordnen oder nur
+einen Teil); beim Rechnungssteller mit Gleichverteilung „Antippen“ (streichen) und „Gedrückt halten“ (nur einen Teil).
 
 Ist auf dem Gerät „Bewegung reduzieren“ eingeschaltet, springen alle Animationen sofort ans Ende, die Erklär-Animationen
 entfallen (das „?“ bleibt) und es wird nicht weich gescrollt.

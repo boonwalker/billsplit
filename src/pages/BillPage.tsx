@@ -5,7 +5,7 @@ import QrHero from "../components/bill/QrHero";
 import ReceiptPeek from "../components/bill/ReceiptPeek";
 import DemoBar from "../components/DemoBar";
 import GestureHelp from "../components/GestureHelp";
-import DivisorSheet from "../components/DivisorSheet";
+import DivisorSheet, { type AssignPeople } from "../components/DivisorSheet";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
 import OpenInApp from "../components/OpenInApp";
@@ -14,7 +14,7 @@ import PayBar from "../components/PayBar";
 import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
 import { guestStatus } from "../lib/balances";
-import { billUrl, sharedTotal, type BillData, type Debtor } from "../lib/bill";
+import { billUrl, sharedTotal, type BillData, type Contact, type Debtor } from "../lib/bill";
 import { setItemDivisor, toggleFeeExcluded, toggleItemExcluded, toggleTipExcluded } from "../lib/billEdits";
 import { DEMO } from "../lib/demo";
 import { isIosBrowser } from "../lib/handoff";
@@ -28,6 +28,9 @@ import { rich, t } from "../lib/i18n";
 import { newRefunds, type NewRefund } from "../lib/refunds";
 import RefundConfirm from "../components/RefundConfirm";
 import { scrollBehavior } from "../lib/motion";
+
+/** People from earlier bills offered in the long-press sheet, besides those in the bill. */
+const MAX_ASSIGN_CONTACTS = 10;
 
 /**
  * focus: open at a participant's place – the payer sees that friend in the list below the
@@ -43,6 +46,9 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   const [atEnd, setAtEnd] = useState(false);
   /** Payer: the line whose settings are open (after holding it). */
   const [divisorFor, setDivisorFor] = useState<string | null>(null);
+  // Long press in a bill with ticking: people from earlier bills to give the line to.
+  const [contacts, setContacts] = useState<Contact[] | null>(null);
+  const [assigning, setAssigning] = useState(false);
   /** A change that leaves friends having paid too much, waiting for the payer's yes. */
   const [refundAsk, setRefundAsk] = useState<{ refunds: NewRefund[]; apply: () => void } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -125,6 +131,16 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Beitreten fehlgeschlagen.")))
       .finally(() => (joining.current = false));
   }, [snapshot, id, replace]);
+
+  // Payer, bill with ticking: the people from earlier bills, once a line is long-pressed.
+  const wantContacts = Boolean(divisorFor && snapshot?.isOwner && !snapshot.data.equalSplit);
+  useEffect(() => {
+    if (!wantContacts || contacts) return;
+    api
+      .contacts()
+      .then(setContacts)
+      .catch(() => setContacts([]));
+  }, [wantContacts, contacts]);
 
   // The payment details are copied from the profile when the bill is created. If the payer
   // has changed them since (e.g. added PayPal.Me), bring their open bill up to date.
@@ -273,6 +289,44 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Konnte Zahlung nicht vermerken.")));
   }
 
+  /**
+   * Payer, bill with ticking (long press on a line): who had it. Tapping a person gives them all
+   * of the line, or takes it back; several people with it share it.
+   */
+  function assignPeople(itemId: string): AssignPeople | undefined {
+    const item = snap.data.items.find((i) => i.id === itemId);
+    if (!snap.isOwner || equal || !item || !snap.me) return undefined;
+    const people: AssignPeople["people"] = [{ id: snap.me, name: snap.ownerName, me: true }];
+    const add = (id: string, name: string) => {
+      if (name.trim() && !people.some((p) => p.id === id)) people.push({ id, name: name.trim(), me: false });
+    };
+    for (const p of snap.participants) add(p.id, p.name);
+    for (const c of (contacts ?? []).slice(0, MAX_ASSIGN_CONTACTS)) add(c.id, c.name);
+    const holders = snap.participants.filter((p) => (p.claims[itemId]?.length ?? 0) > 0).map((p) => p.id);
+    return {
+      people,
+      holders,
+      busy: assigning,
+      onToggle: (personId) => {
+        const all = Array.from({ length: item.qty }, (_, slot) => slot);
+        const on = !holders.includes(personId);
+        if (personId === snap.me) {
+          setSlots(itemId, on ? all : [], []);
+          return;
+        }
+        const claims = { ...snap.participants.find((p) => p.id === personId)?.claims };
+        if (on) claims[itemId] = all;
+        else delete claims[itemId];
+        setAssigning(true);
+        void flushClaims()
+          .then(() => api.assign(id, [{ id: personId, claims }]))
+          .then(replace)
+          .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")))
+          .finally(() => setAssigning(false));
+      },
+    };
+  }
+
   const summary = snap.isOwner ? ownerSummary(snap) : null;
 
   return (
@@ -319,7 +373,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         <div id="receipt" className="receipt-anchor">
           {snap.isOwner && <EqualSplitToggle snapshot={snap} onUpdateData={updateData} />}
           {snap.isOwner && (sharedTotal(snap.data) !== 0 || equal) && <TipSplit snapshot={snap} onUpdateData={updateData} />}
-          {snap.isOwner && !equal && <p className="receipt-instruction">{t("Hake Deine eigenen Positionen ab:")} <GestureHelp mode="claim" /></p>}
+          {snap.isOwner && !equal && <p className="receipt-instruction">{t("Hake Deine eigenen Positionen ab:")} <GestureHelp mode="claim" hold /></p>}
           {snap.isOwner && equal && (
             <p className="receipt-instruction">
               {t("Etwas war nicht für alle? Tippe es an, um es zu streichen – nochmal tippen holt es zurück.")} <GestureHelp mode="strike" />
@@ -331,9 +385,9 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
             onShowOriginal={snap.hasReceiptImage ? () => navigate(`/b/${id}/beleg`) : undefined}
             onToggleExcluded={snap.isOwner && equal ? toggleExcluded : undefined}
             onToggleFee={snap.isOwner && equal ? toggleFee : undefined}
-            // Only in the equal split: in "Jeder selber abhaken" everyone ticks what they had.
-            onEditDivisor={snap.isOwner && equal ? setDivisorFor : undefined}
-            onResetDivisor={snap.isOwner && equal ? (itemId) => applyDivisor(itemId, 1) : undefined}
+            // Payer only: "/ N" – and with ticking also who had the line (see assignPeople).
+            onEditDivisor={snap.isOwner ? setDivisorFor : undefined}
+            onResetDivisor={snap.isOwner ? (itemId) => applyDivisor(itemId, 1) : undefined}
             onToggleTip={snap.isOwner && equal ? toggleTip : undefined}
           />
         </div>
@@ -367,6 +421,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
           currency={snap.data.currency}
           onApply={(divisor) => applyDivisor(divisorFor, divisor)}
           onClose={() => setDivisorFor(null)}
+          assign={assignPeople(divisorFor)}
         />
       )}
 

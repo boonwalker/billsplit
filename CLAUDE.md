@@ -166,8 +166,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Deploy leer (Konten weg, Listen geleert). Seitdem: Server startet auf Railway nur mit Daten auf dem Volume
   (`server/dataDir.ts`), die App löscht unbekannte Rechnungen nicht (`markGone`, „nicht mehr verfügbar“) und meldet
   nicht still ab (`billsplit.accountLost`, Hinweis auf Startseite/Profil). Beides meldet sie an die Betriebsseite.
-- **Lange Drücken („/2“)** nur für den Rechnungssteller und nicht im Modus „Jeder selber abhaken“; ein präziser Tipp
-  auf „/2“ hebt den Teiler auf, statt die Zeile zu streichen.
+- **Lange Drücken** nur für den Rechnungssteller: öffnet `DivisorSheet` („/ N“); im Modus „Jeder selber abhaken“
+  oben zusätzlich „Wer hatte das?“ mit Personenkreisen (`assignPeople` in `BillPage`, `api.assign` mit den
+  vollständigen Häkchen der Person – `assign` ersetzt sie). Ein präziser Tipp auf „/2“ hebt den Teiler auf, statt die
+  Zeile zu streichen.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit
   `ps -eo pid,comm,args | awk '$2=="node" && /dist-server/ {print $1}' | xargs -r kill` – **nicht** `pkill -f …` und
   nicht `grep` auf die Kommandozeile im selben Befehl wie den Teststart (trifft die eigene Shell). Temporäre vitest-Tests in `test/` anlegen (`vitest --root /` hängt).

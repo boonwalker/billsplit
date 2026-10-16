@@ -5,11 +5,21 @@ import { formatMoney } from "../lib/money";
 
 export const MAX_DIVISOR = 5;
 
+/** Payer, bill with ticking: who had the line – tapping a person gives it to them, several share it. */
+export interface AssignPeople {
+  people: { id: string; name: string; me: boolean }[];
+  /** Who holds the line now. */
+  holders: string[];
+  onToggle: (personId: string) => void;
+  busy: boolean;
+}
+
 interface Props {
   item: BillItem;
   currency: string;
   onApply: (divisor: number) => void;
   onClose: () => void;
+  assign?: AssignPeople;
 }
 
 /**
@@ -17,7 +27,7 @@ interface Props {
  * goes into the split, the payer takes the other half. Big pencilled "/ 2" with arrows, like
  * the head count in "Manches nicht".
  */
-export default function DivisorSheet({ item, currency, onApply, onClose }: Props) {
+export default function DivisorSheet({ item, currency, onApply, onClose, assign }: Props) {
   const full = item.fullTotal ?? item.total;
   const [divisor, setDivisor] = useState(Math.min(MAX_DIVISOR, item.divisor ?? 1));
   const billed = Math.round(full / divisor);
@@ -26,6 +36,34 @@ export default function DivisorSheet({ item, currency, onApply, onClose }: Props
     <div className="sheet-backdrop divisor-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet divisor-sheet" role="dialog" aria-label={t("{name} nur anteilig berechnen", { name: item.name })}>
         <h2>{item.name}</h2>
+
+        {assign && (
+          <>
+            <h3 className="divisor-section">{t("Wer hatte das?")}</h3>
+            <p className="muted small">{t("Antippen = direkt zuordnen · mehrere = teilen")}</p>
+            <div className="expense-people assign-people" role="group" aria-label={t("Wer hatte das?")} aria-busy={assign.busy}>
+              {assign.people.map((p) => {
+                const on = assign.holders.includes(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`person-pick${on ? " on" : ""}`}
+                    aria-pressed={on}
+                    disabled={assign.busy}
+                    onClick={() => assign.onToggle(p.id)}
+                  >
+                    <span className="person-pick-avatar" aria-hidden="true">
+                      {p.me ? t("Du") : p.name.trim().slice(0, 1).toUpperCase() || "?"}
+                    </span>
+                    <span className="person-pick-name">{p.me ? t("Du") : p.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <h3 className="divisor-section">{t("Nur einen Teil aufteilen")}</h3>
+          </>
+        )}
         <p className="muted">{t("Nur einen Teil davon aufteilen – den Rest trägst Du selbst.")}</p>
 
         <div className="divide-by divisor-big" role="group" aria-label={t("Geteilt durch")}>
@@ -68,7 +106,8 @@ export default function DivisorSheet({ item, currency, onApply, onClose }: Props
           type="button"
           className="btn btn-primary btn-large"
           onClick={() => {
-            onApply(divisor);
+            // Only the people changed (bill with ticking): nothing to save here.
+            if (divisor !== (item.divisor ?? 1)) onApply(divisor);
             onClose();
           }}
         >
