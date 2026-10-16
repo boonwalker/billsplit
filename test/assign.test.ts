@@ -87,4 +87,27 @@ describe("Ausgabe eingeben: directly to people from earlier bills", () => {
     store.assign(bill, "niklas", [{ id: "andy", claims: { taxi: [0] } }]);
     expect(store.myBills("andy").map((b) => [b.id, b.role])).toContainEqual([bill, "guest"]);
   });
+
+  it("taken back before anything happened: Andy leaves the bill again (and his list)", () => {
+    const { store } = setup();
+    const bill = store.createBill({ ...taxi(500), items: [{ id: "taxi", name: "Taxi", qty: 1, total: 500 }, { id: "snack", name: "Snack", qty: 1, total: 200 }] }, "niklas", "Niklas");
+    store.assign(bill, "niklas", [{ id: "andy", claims: { taxi: [0] } }]);
+    expect(store.snapshot(bill, "niklas").debtors?.map((d) => d.name)).toEqual(["Andy"]);
+    store.assign(bill, "niklas", [{ id: "andy", claims: {} }]);
+    expect(store.snapshot(bill, "niklas").debtors).toEqual([]);
+    expect(store.myBills("andy").map((b) => b.id)).not.toContain(bill);
+
+    // Once Andy did something himself (here: marked it as paid), he stays.
+    store.assign(bill, "niklas", [{ id: "andy", claims: { taxi: [0] } }]);
+    store.setMarkedPaid(bill, "andy", true);
+    store.assign(bill, "niklas", [{ id: "andy", claims: {} }]);
+    expect(store.snapshot(bill, "niklas").debtors?.map((d) => d.name)).toEqual(["Andy"]);
+
+    // … as does someone who ticked something themselves.
+    const other = store.createBill({ ...taxi(500), items: [{ id: "taxi", name: "Taxi", qty: 1, total: 500 }, { id: "snack", name: "Snack", qty: 1, total: 200 }] }, "niklas", "Niklas");
+    store.assign(other, "niklas", [{ id: "andy", claims: { taxi: [0] } }]);
+    store.setClaims(other, "andy", { taxi: [0], snack: [0] });
+    store.assign(other, "niklas", [{ id: "andy", claims: {} }]);
+    expect(store.myBills("andy").map((b) => b.id)).toContain(other);
+  });
 });

@@ -37,6 +37,10 @@ test("Rechnungssteller: gedrückt halten ordnet eine Zeile direkt zu – mehrere
   await people.getByRole("button", { name: /Andy/ }).click();
   await expect(people.getByRole("button", { name: /Andy/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".debtor", { hasText: "Andy" })).toContainText("von Dir zugeordnet · 12,00 € offen");
+  // Andy finds it in his list (never opened).
+  const andyPhone = await phone(browser, andy.key, { profile: { name: "Andy" }, recent: [{ id: earlier, title: "Pizzeria", role: "guest" }] });
+  await andyPhone.goto("/");
+  await expect(andyPhone.locator("ul.list")).toContainText("Trattoria");
   // Shared with Ben: half each.
   await people.getByRole("button", { name: /Ben/ }).click();
   await expect(people.getByRole("button", { name: /Ben/ })).toHaveAttribute("aria-pressed", "true");
@@ -45,7 +49,11 @@ test("Rechnungssteller: gedrückt halten ordnet eine Zeile direkt zu – mehrere
   // Andy after all not: Ben has all of it.
   await people.getByRole("button", { name: /Andy/ }).click();
   await expect(people.getByRole("button", { name: /Andy/ })).toHaveAttribute("aria-pressed", "false");
-  await expect(page.locator(".debtor", { hasText: "Andy" })).toContainText("0,00 € offen");
+  // He had done nothing in it yet: he leaves the bill – and Andy's list – again.
+  await expect(page.locator(".debtor", { hasText: "Andy" })).toHaveCount(0);
+  await andyPhone.reload();
+  await expect(andyPhone.locator("ul.list")).toContainText("Pizzeria");
+  await expect(andyPhone.locator("ul.list")).not.toContainText("Trattoria");
   await page.getByRole("button", { name: "Übernehmen" }).click();
   await expect(people).toHaveCount(0);
   await expect(page.locator("li[data-item='pasta']")).toContainText("Ben");

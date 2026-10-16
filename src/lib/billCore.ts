@@ -300,6 +300,8 @@ export class BillCore {
       .filter(([id]) => id !== participantId)
       .map(([, other]) => other.claims);
     p.claims = sanitizeClaims(claims, bill.data.items, p.claims, others);
+    // Ticking themselves: a participant of their own now, no longer just assigned by the payer.
+    delete p.assigned;
     p.splits = sanitizeSplits(splits ?? p.splits ?? {}, p.claims);
     this.changed(billId);
   }
@@ -345,6 +347,11 @@ export class BillCore {
         .filter(([pid]) => pid !== id)
         .map(([, p]) => p.claims);
       bill.participants[id].claims = sanitizeClaims(claims, bill.data.items, bill.participants[id].claims, others);
+      // Taken back before anything happened: they leave the bill again, as if never assigned.
+      if (this.untouchedAssignee(billId, id)) {
+        delete bill.participants[id];
+        if (added.includes(id)) added.splice(added.indexOf(id), 1);
+      }
     }
     this.changed(billId);
     const from = bill.participants[bill.ownerId]?.name ?? "";
@@ -357,6 +364,20 @@ export class BillCore {
         path: `/b/${billId}?an=${id}`,
       });
     }
+  }
+
+  /**
+   * Put in by the payer only (not scanned, nothing ticked themselves), with nothing assigned
+   * any more and no payment of any kind: they can leave the bill without a trace.
+   */
+  private untouchedAssignee(billId: string, participantId: string): boolean {
+    const p = this.bills.get(billId)?.participants[participantId];
+    if (!p?.assigned || Object.keys(p.claims).length > 0) return false;
+    if (p.payClickedAt || p.markedPaidAt || p.received) return false;
+    for (const t of this.transfers.values()) {
+      if (t.allocations.some((a) => a.billId === billId && (a.debtorId === participantId || a.creditorId === participantId))) return false;
+    }
+    return true;
   }
 
   /** Records that a friend tapped "Bezahlen" and with which amount; returns that amount. */

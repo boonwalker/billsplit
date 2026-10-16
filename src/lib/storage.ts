@@ -221,6 +221,8 @@ export interface RecentBill {
   gone?: boolean;
   /** Came into the list without being opened on this device (e.g. an expense assigned to me) – until it is opened. */
   unread?: boolean;
+  /** Came from the server's list of my bills (see syncRecentBills), not from opening it here. */
+  synced?: boolean;
 }
 
 /** The list is always by date, newest first – opening a bill again does not move it (no limit on its length). */
@@ -251,7 +253,7 @@ export function hideBill(id: string): void {
 export function syncRecentBills(mine: MyBill[]): boolean {
   const known = new Set([...loadRecent().map((b) => b.id), ...loadHidden()]);
   const fresh = mine.filter((b) => !known.has(b.id));
-  addRecentBills(fresh.map((b) => ({ id: b.id, title: b.title, role: b.role, createdAt: b.createdAt, currency: b.currency, unread: true })));
+  addRecentBills(fresh.map((b) => ({ id: b.id, title: b.title, role: b.role, createdAt: b.createdAt, currency: b.currency, unread: true, synced: true })));
   return fresh.length > 0;
 }
 

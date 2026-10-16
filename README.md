@@ -148,7 +148,10 @@ das?“**: runde Knöpfe wie bei „Ausgabe zuweisen“ – „Du“, alle Beige
 Rechnungen. Antippen gibt der Person die ganze Position (alle Stücke), nochmal antippen nimmt sie ihr wieder weg;
 mehrere Personen teilen sich die Position zu gleichen Teilen. Wer noch nicht in der Rechnung war, kommt dazu
 („von Dir zugeordnet“) und bekommt eine Mitteilung wie bei „Ausgabe zuweisen“ (`BillCore.assign`, die App schickt die
-vollständigen Häkchen der Person). Darunter „Nur einen Teil aufteilen“ mit dem „/ N“ wie oben; „Übernehmen“ speichert
+vollständigen Häkchen der Person). Nimmt der Rechnungssteller einer so hinzugefügten Person alles wieder weg, bevor sie selbst
+etwas getan hat (abgehakt, auf Bezahlen getippt, als bezahlt markiert, Ausgleich), verlässt sie die Rechnung wieder –
+aus der Freundesliste und aus ihrer eigenen Rechnungsliste (`untouchedAssignee`; Listeneinträge vom Server tragen
+`synced` und fallen weg, wenn die Rechnung noch existiert, man aber nicht mehr dabei ist). Darunter „Nur einen Teil aufteilen“ mit dem „/ N“ wie oben; „Übernehmen“ speichert
 nur, wenn sich der Teiler geändert hat. Die Gesten-Hilfe „?“ nennt dafür „Gedrückt halten“.
 
 ### Supermarkt-Einkäufe

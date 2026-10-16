@@ -16,7 +16,7 @@ import { createSampleBill } from "../lib/sampleBill";
 import { accountsAvailable, refreshAccount } from "../lib/account";
 import { reportError } from "../lib/errorReport";
 import { useBillChanges } from "../lib/liveEvents";
-import { clearDraft, hasPaymentMethod, hideBill, markGone, loadAccountEmail, loadAccountLost, markAsked, loadOwnProfile, loadRecent, sessionCount, startedFresh, startedOnHome, syncRecentBills, wasAsked, updateRecent, type RecentBill } from "../lib/storage";
+import { clearDraft, forgetBill, hasPaymentMethod, hideBill, markGone, loadAccountEmail, loadAccountLost, markAsked, loadOwnProfile, loadRecent, sessionCount, startedFresh, startedOnHome, syncRecentBills, wasAsked, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 /** Bills shown before "Ältere anzeigen". */
@@ -76,7 +76,10 @@ export default function Home() {
       if (snap === null) {
         if (markGone(b.id)) gone++;
       } else if (!snap) continue;
-      else {
+      else if (b.synced && !snap.isOwner && !snap.me) {
+        // Assigned to me and taken back by the payer before I did anything: gone from my list, too.
+        forgetBill(b.id);
+      } else {
         const status = {
           ...(snap.isOwner ? ownerStatus(snap) : snap.me ? guestStatus(snap) : {}),
           open: stillOpen(snap) || toConfirm.has(b.id),
