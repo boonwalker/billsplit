@@ -234,7 +234,7 @@ export default function Editor({ billId }: { billId?: string }) {
             <div className="card">
               <label className="field">
                 <span>{t("Restaurant / Titel")}</span>
-                <input value={draft.title} onChange={(e) => update({ title: e.target.value })} placeholder={t("z. B. Trattoria Da Mario")} maxLength={80} />
+                <input value={draft.title} onChange={(e) => update({ title: e.target.value })} placeholder={t("z.B. Trattoria Da Mario")} maxLength={80} />
               </label>
               <label className="field">
                 <span>{t("Datum")}</span>
@@ -291,7 +291,7 @@ export default function Editor({ billId }: { billId?: string }) {
                 const invalid = showErrors && feeRowToFee(fee) === null && (fee.name.trim() !== "" || fee.amount.trim() !== "");
                 return (
                   <div key={fee.id} className={`fee-row${invalid ? " invalid" : ""}`}>
-                    <input aria-label={t("Gebühr")} value={fee.name} placeholder={t("z. B. Liefergebühr")} maxLength={80} onChange={(e) => updateFee(fee.id, { name: e.target.value })} />
+                    <input aria-label={t("Gebühr")} value={fee.name} placeholder={t("z.B. Liefergebühr")} maxLength={80} onChange={(e) => updateFee(fee.id, { name: e.target.value })} />
                     <input
                       className="price-input"
                       inputMode="decimal"

@@ -7,7 +7,7 @@ await ctx.addInitScript(() => {
 const page = await ctx.newPage();
 await page.goto("http://localhost:8810/");
 await page.getByRole("button", { name: "Profil" }).click();
-await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await page.getByPlaceholder("du@beispiel.de").fill("niklas@web.de");
 await page.getByRole("button", { name: "Speichern" }).click();
 await page.waitForTimeout(300);

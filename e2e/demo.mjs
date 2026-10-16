@@ -12,7 +12,7 @@ await page.waitForTimeout(600);
 await page.screenshot({ path: out("01-home") });
 
 await page.getByRole("button", { name: /Beispielrechnung ansehen/ }).click();
-await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await page.getByPlaceholder("deinname").fill("niklasb");
 await page.getByRole("button", { name: "Weiter zur Beispielrechnung" }).click();
 await page.waitForTimeout(1500);

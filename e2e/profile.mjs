@@ -7,7 +7,7 @@ const ctx = await chromium.launchPersistentContext(`${SP}/chrome-profile`, {
 let page = await ctx.newPage();
 await page.goto("http://localhost:8810/");
 await page.getByRole("button", { name: "Profil" }).click();
-await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await page.getByPlaceholder("du@beispiel.de").fill("niklas@web.de");
 await page.getByRole("button", { name: "Speichern" }).click();
 await page.waitForTimeout(500);
@@ -19,5 +19,5 @@ await page.waitForTimeout(500);
 console.log("neuer Tab | localStorage:", await page.evaluate(() => localStorage.getItem("billsplit.profile")));
 console.log("Avatar:", await page.getByRole("button", { name: "Profil" }).innerText());
 await page.getByRole("button", { name: "Profil" }).click();
-console.log("Profilfelder:", await page.getByPlaceholder("z. B. Niklas").inputValue(), "|", await page.getByPlaceholder("du@beispiel.de").inputValue());
+console.log("Profilfelder:", await page.getByPlaceholder("z.B. Niklas").inputValue(), "|", await page.getByPlaceholder("du@beispiel.de").inputValue());
 await ctx.close();

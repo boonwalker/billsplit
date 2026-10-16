@@ -32,7 +32,7 @@ await owner.waitForTimeout(500);
 await owner.screenshot({ path: `${SP}/shots/01-home.png` });
 
 await owner.getByRole("button", { name: "Rechnung fotografieren" }).click();
-await owner.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await owner.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await owner.getByPlaceholder("du@beispiel.de").fill("niklas@web.de");
 await owner.getByPlaceholder("deinname").fill("niklasb");
 await owner.screenshot({ path: `${SP}/shots/02-profile.png` });

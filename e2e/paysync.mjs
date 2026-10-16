@@ -6,7 +6,7 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 await page.goto("http://localhost:8793/");
 await page.locator(".action-card.primary").click();
-await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await page.getByLabel(/E-Mail/i).first().fill("niklas@web.de");
 await page.getByRole("button", { name: "Weiter zur Kamera" }).click();
 await page.waitForTimeout(400);

@@ -40,7 +40,7 @@ export function EqualSplitToggle({ snapshot, onUpdateData }: { snapshot: BillSna
     >
       <span className="equal-toggle-text">
         <b>{t("Gleichverteilung")}</b>
-        <small>{on ? t("Alle zahlen gleich viel – Abhaken ist aus.") : t("Alle zahlen gleich viel, z. B. beim Supermarkt-Einkauf.")}</small>
+        <small>{on ? t("Alle zahlen gleich viel – Abhaken ist aus.") : t("Alle zahlen gleich viel, z.B. beim Supermarkt-Einkauf.")}</small>
       </span>
       <span className="switch" aria-hidden="true" />
     </button>

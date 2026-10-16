@@ -8,7 +8,7 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 await page.goto("http://localhost:8790/");
 await page.getByRole("button", { name: /Beispielrechnung ansehen/ }).click();
-await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await page.getByPlaceholder("deinname").fill("niklasb");
 await page.getByRole("button", { name: "Weiter zur Beispielrechnung" }).click();
 await page.waitForTimeout(1200);

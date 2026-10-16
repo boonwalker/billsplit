@@ -5,11 +5,11 @@ const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, de
 const page = await ctx.newPage();
 await page.goto("http://localhost:8791/");
 await page.locator(".action-card.primary").click();
-await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await page.getByPlaceholder("deinname").fill("niklasb");
 await page.getByRole("button", { name: "Weiter zur Kamera" }).click();
 await page.waitForTimeout(400);
-await page.getByPlaceholder("z. B. Trattoria Da Mario").fill("Takumi");
+await page.getByPlaceholder("z.B. Trattoria Da Mario").fill("Takumi");
 await page.getByLabel("Anzahl").first().fill("2");
 await page.getByLabel("Bezeichnung").first().fill("Karaage Tan Tan Men mit extra Ei und Nori");
 await page.getByLabel("Preis gesamt").first().fill("37,60");

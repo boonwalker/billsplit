@@ -13,7 +13,7 @@ test("Ausgabe zuweisen: Betrag, wofür, mit wie vielen – daraus wird eine Rech
 
   await page.getByLabel("Betrag in Euro").fill("36,00");
   await page.getByRole("button", { name: "Taxi" }).click();
-  await expect(page.getByPlaceholder("z. B. Taxi zum Konzert")).toHaveValue("Taxi");
+  await expect(page.getByPlaceholder("z.B. Taxi zum Konzert")).toHaveValue("Taxi");
   await expect(page.locator(".expense-each")).toContainText("18,00 € pro Person");
   await page.getByRole("button", { name: "Eine Person mehr" }).click();
   await expect(page.locator(".expense-each")).toContainText("12,00 € pro Person");

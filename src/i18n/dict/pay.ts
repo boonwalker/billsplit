@@ -51,7 +51,7 @@ export default {
     // src/components/OwnerPanel.tsx
     "Gleichverteilung": "Split equally",
     "Alle zahlen gleich viel – Abhaken ist aus.": "Everyone pays the same – ticking off is turned off.",
-    "Alle zahlen gleich viel, z. B. beim Supermarkt-Einkauf.": "Everyone pays the same, e.g. for a grocery shop.",
+    "Alle zahlen gleich viel, z.B. beim Supermarkt-Einkauf.": "Everyone pays the same, e.g. for a grocery shop.",
     "<b>Rechnung {amount}</b> aufteilen auf": "Split the <b>bill of {amount}</b> among",
     "<b>Gebühren & Trinkgeld {amount}</b> aufteilen auf": "Split <b>fees & tip of {amount}</b> among",
     "<b>Gebühren {amount}</b> aufteilen auf": "Split <b>fees of {amount}</b> among",
@@ -113,7 +113,7 @@ export default {
     "Verwendungszweck": "Reference",
     "An": "To",
     "Nachricht": "Message",
-    "Öffne Deine Banking-App (z. B. Sparkasse, ING oder Trade Republic), lege eine neue Überweisung an und füge die Angaben ein.": "Open your banking app (e.g. Sparkasse, ING or Trade Republic), start a new transfer and paste in the details.",
+    "Öffne Deine Banking-App (z.B. Sparkasse, ING oder Trade Republic), lege eine neue Überweisung an und füge die Angaben ein.": "Open your banking app (e.g. Sparkasse, ING or Trade Republic), start a new transfer and paste in the details.",
     "Öffne Deine Banking-App, tippe auf <b>Wero</b> → <b>Senden</b> und füge die Nummer bzw. E-Mail von {name} ein.": "Open your banking app, tap <b>Wero</b> → <b>Send</b> and paste in {name}'s number or email.",
     "Fertig": "Done",
 
@@ -281,7 +281,7 @@ export default {
     // src/components/OwnerPanel.tsx
     "Gleichverteilung": "A partes iguales",
     "Alle zahlen gleich viel – Abhaken ist aus.": "Todos pagan lo mismo – no hace falta marcar.",
-    "Alle zahlen gleich viel, z. B. beim Supermarkt-Einkauf.": "Todos pagan lo mismo, p. ej. en la compra del súper.",
+    "Alle zahlen gleich viel, z.B. beim Supermarkt-Einkauf.": "Todos pagan lo mismo, p. ej. en la compra del súper.",
     "<b>Rechnung {amount}</b> aufteilen auf": "Repartir la <b>cuenta de {amount}</b> entre",
     "<b>Gebühren & Trinkgeld {amount}</b> aufteilen auf": "Repartir <b>cargos y propina de {amount}</b> entre",
     "<b>Gebühren {amount}</b> aufteilen auf": "Repartir <b>cargos de {amount}</b> entre",
@@ -343,7 +343,7 @@ export default {
     "Verwendungszweck": "Concepto",
     "An": "Para",
     "Nachricht": "Mensaje",
-    "Öffne Deine Banking-App (z. B. Sparkasse, ING oder Trade Republic), lege eine neue Überweisung an und füge die Angaben ein.": "Abre la app de tu banco (p. ej. Sparkasse, ING o Trade Republic), crea una transferencia nueva y pega los datos.",
+    "Öffne Deine Banking-App (z.B. Sparkasse, ING oder Trade Republic), lege eine neue Überweisung an und füge die Angaben ein.": "Abre la app de tu banco (p. ej. Sparkasse, ING o Trade Republic), crea una transferencia nueva y pega los datos.",
     "Öffne Deine Banking-App, tippe auf <b>Wero</b> → <b>Senden</b> und füge die Nummer bzw. E-Mail von {name} ein.": "Abre la app de tu banco, toca <b>Wero</b> → <b>Enviar</b> y pega el número o el correo de {name}.",
     "Fertig": "Listo",
 

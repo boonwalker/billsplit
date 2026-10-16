@@ -7,11 +7,11 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 await page.goto("http://localhost:8800/");
 await page.locator(".action-card.primary").click();
-await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await page.getByPlaceholder("deinname").fill("niklasb");
 await page.getByRole("button", { name: "Weiter zur Kamera" }).click();
 await page.waitForTimeout(400);
-await page.getByPlaceholder("z. B. Trattoria Da Mario").fill("REWE");
+await page.getByPlaceholder("z.B. Trattoria Da Mario").fill("REWE");
 const items = [["Bio Vollmilch 1l", "1", "1,49"], ["Bananen", "1", "2,29"], ["Bergkäse", "1", "4,99"], ["Mineralwasser 6x1,5l", "2", "5,98"]];
 for (let i = 0; i < items.length; i++) {
   if (i > 0) await page.getByRole("button", { name: "+ Position hinzufügen" }).click();

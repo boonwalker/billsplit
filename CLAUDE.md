@@ -175,7 +175,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 
 ## Feste Formulierungen (vom Auftraggeber so gewünscht)
 
-- „Dir fehlen noch“ (nicht „Fehlt Dir noch“) · „beigetreten“ (nicht „gescannt“)
+- „Dir fehlen noch“ (nicht „Fehlt Dir noch“) · „beigetreten“ (nicht „gescannt“) · in App-Texten immer „z.B.“ ohne Leerzeichen
 - Bezahl-Knopf „Anteil begleichen · Betrag“, danach „Mit PayPal bezahlen · Betrag“, darunter „Als bezahlt markieren“
 - PayPal-Hinweis zweizeilig: „xx,xx € in die Zwischenablage kopiert –“ / kleiner, einzeilig: „in PayPal ins
   Betragsfeld tippen und „Einfügen“ wählen.“

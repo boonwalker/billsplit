@@ -4,7 +4,7 @@ const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, lo
 const page = await ctx.newPage();
 await page.goto("http://localhost:8796/");
 await page.locator(".action-card.primary").click();
-await page.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await page.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await page.getByPlaceholder("deinname").fill("niklasb");
 await page.getByRole("button", { name: "Weiter zur Kamera" }).click();
 await page.waitForTimeout(400);

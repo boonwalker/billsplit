@@ -70,7 +70,7 @@ export default function TransferSheet({ payment, methods, initial, amount, curre
             <CopyRow label={t("Verwendungszweck")} value={reference} />
             <p className="muted small">
               {t(
-                "Öffne Deine Banking-App (z. B. Sparkasse, ING oder Trade Republic), lege eine neue Überweisung an und füge die Angaben ein.",
+                "Öffne Deine Banking-App (z.B. Sparkasse, ING oder Trade Republic), lege eine neue Überweisung an und füge die Angaben ein.",
               )}
             </p>
           </>

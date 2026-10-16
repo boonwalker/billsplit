@@ -76,7 +76,7 @@ export default function Profile({ next }: { next?: string }) {
           <div className="card">
             <label className="field">
               <span>{t("Profilname")}</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("z. B. Niklas")} maxLength={40} autoComplete="given-name" aria-invalid={touched && !name.trim()} />
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("z.B. Niklas")} maxLength={40} autoComplete="given-name" aria-invalid={touched && !name.trim()} />
               <small className="muted">{t("So sehen Dich Deine Freunde auf der Rechnung.")}</small>
             </label>
           </div>
@@ -166,7 +166,7 @@ export default function Profile({ next }: { next?: string }) {
               {weroInvalid ? (
                 <small className="error">{t("Bitte gib eine Handynummer oder E-Mail-Adresse ein.")}</small>
               ) : (
-                <small className="muted">{t("Mit Wero in der Banking-App (z. B. Sparkasse, Volksbank, ING, Postbank) senden Dir Deine Freunde Geld an diese Nummer.")}</small>
+                <small className="muted">{t("Mit Wero in der Banking-App (z.B. Sparkasse, Volksbank, ING, Postbank) senden Dir Deine Freunde Geld an diese Nummer.")}</small>
               )}
             </label>
           </div>
@@ -176,7 +176,7 @@ export default function Profile({ next }: { next?: string }) {
           {notStored && (
             <div className="alert">
               {t(
-                "Dein Browser lässt diese Seite gerade nichts dauerhaft speichern. Dein Profil gilt deshalb nur, bis Du den Tab schließt. Das passiert z. B. in einem privaten Tab, im eingebauten Browser anderer Apps oder wenn Cookies blockiert sind. Öffne klicksplit am besten direkt in Safari bzw. Chrome. Tippe erneut auf den Knopf, um trotzdem fortzufahren.",
+                "Dein Browser lässt diese Seite gerade nichts dauerhaft speichern. Dein Profil gilt deshalb nur, bis Du den Tab schließt. Das passiert z.B. in einem privaten Tab, im eingebauten Browser anderer Apps oder wenn Cookies blockiert sind. Öffne klicksplit am besten direkt in Safari bzw. Chrome. Tippe erneut auf den Knopf, um trotzdem fortzufahren.",
               )}
             </div>
           )}

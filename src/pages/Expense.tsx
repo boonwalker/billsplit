@@ -126,7 +126,7 @@ export default function Expense() {
           <div className="card expense-card">
             <label className="field">
               <span>{t("Wofür?")}</span>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("z. B. Taxi zum Konzert")} maxLength={60} aria-invalid={touched && !title.trim()} />
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("z.B. Taxi zum Konzert")} maxLength={60} aria-invalid={touched && !title.trim()} />
             </label>
             <div className="expense-picks" role="group" aria-label={t("Schnellauswahl")}>
               {picks().map((pick) => (

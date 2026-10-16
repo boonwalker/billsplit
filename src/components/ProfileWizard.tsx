@@ -153,7 +153,7 @@ export default function ProfileWizard({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onBlur={() => method === "bank" && isValidIban(value) && setValue(formatIban(value))}
-              placeholder={method === "paypal" ? t("z. B. niklas oder du@beispiel.de") : method === "bank" ? "DE00 0000 0000 0000 0000 00" : "+49 170 1234567"}
+              placeholder={method === "paypal" ? t("z.B. niklas oder du@beispiel.de") : method === "bank" ? "DE00 0000 0000 0000 0000 00" : "+49 170 1234567"}
               inputMode={method === "wero" || method === "paypal" ? "email" : "text"}
               autoCapitalize={method === "bank" ? "characters" : "off"}
               autoCorrect="off"
@@ -174,7 +174,7 @@ export default function ProfileWizard({
                   ? t("Mit PayPal.Me landen Deine Freunde direkt im ausgefüllten Bezahlschritt (Empfänger und Betrag).")
                   : method === "bank"
                     ? t("Deine Freunde kopieren IBAN und Betrag in ihre Banking-App.")
-                    : t("Mit Wero in der Banking-App (z. B. Sparkasse, Volksbank, ING) senden Dir Deine Freunde Geld.")}
+                    : t("Mit Wero in der Banking-App (z.B. Sparkasse, Volksbank, ING) senden Dir Deine Freunde Geld.")}
               </small>
             )}
           </label>

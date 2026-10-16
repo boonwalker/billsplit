@@ -137,7 +137,7 @@ export default function DeviceTransfer() {
           </button>
           <p className="muted small">
             {t(
-              "Bewahre ihn sicher auf, z. B. in Deinem Passwort-Manager. Damit holst Du Deine Rechnungen auf jedes Gerät zurück – und wer ihn hat, kann in Deinem Namen abhaken und Zahlungen bestätigen. Gib ihn niemandem.",
+              "Bewahre ihn sicher auf, z.B. in Deinem Passwort-Manager. Damit holst Du Deine Rechnungen auf jedes Gerät zurück – und wer ihn hat, kann in Deinem Namen abhaken und Zahlungen bestätigen. Gib ihn niemandem.",
             )}
           </p>
         </div>

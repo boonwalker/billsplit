@@ -10,7 +10,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const pc = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: "de-DE" });
 const pp = await pc.newPage();
 await pp.goto("http://localhost:3250/#/profile?next=new");
-await pp.getByPlaceholder("z. B. Niklas").fill("Niklas");
+await pp.getByPlaceholder("z.B. Niklas").fill("Niklas");
 await pp.getByPlaceholder("DE00 0000 0000 0000 0000 00").fill("DE88 3704 0044 0532 0130 00");
 await pp.getByRole("button", { name: "Weiter zur Kamera" }).click(); await wait(300);
 console.log("invalid IBAN error:", await pp.locator(".error").allTextContents());
