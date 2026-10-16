@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 182 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 183 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -199,7 +199,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Kassenbon-Vorschau: „Deine interaktive Rechnung ist fertig ↓“ (für den Rechnungssteller immer „interaktive“; für
   Freunde bei Gleichverteilung „digitale“)
 - Dashboard: „Dashboard · Deine Bilanz“ (Knopf über „Deine Rechnungen“, immer sichtbar – auch ohne Rechnungen); Personen-Ringe
-  immer antippbar („Verlauf ansehen ›“, Fenster „Du und Anna“ mit „Gemeinsame Rechnungen“), „Du leihst“ (grün) / „Du schuldest“
+  immer antippbar („Verlauf ansehen ›“, Fenster „Du und Anna“ mit „Gemeinsame Rechnungen“), ebenso die Gesamtbilanz
+  (Ring-Mitte bzw. „Alle Rechnungen ansehen ›“, Fenster „Deine Bilanz“: links „Du leihst“, rechts „Du schuldest“, Rechnung
+  für Rechnung, `BalanceSheet`), „Du leihst“ (grün) / „Du schuldest“
   (orange), „N Eingang bestätigen“
 - ✕ in der Rechnungsliste: „Bist Du sicher, dass Du diese Rechnung löschen möchtest?“ mit „Löschen“ / „Abbrechen“
 - Profil-Assistent: „Wie heißt Du?“, dann „Wie willst Du bezahlt werden?“ mit PayPal / Überweisung / Wero

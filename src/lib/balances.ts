@@ -32,6 +32,26 @@ export interface HistoryEntry {
   participantId: string;
 }
 
+/**
+ * One bill in the overall balance – settled or not: one I paid (others' shares, "Du leihst") or
+ * one someone else paid (my share, "Du schuldest"). A refund owed back is a line of its own.
+ */
+export interface BillLine {
+  billId: string;
+  title: string;
+  createdAt: string;
+  currency: string;
+  side: "lent" | "owed";
+  /** The others' shares in my bill, or my share in theirs (a refund: its amount). */
+  share: Cents;
+  /** What of it is still open (in my bill also what nobody ticked yet). */
+  open: Cents;
+  /** Where to open the bill. */
+  participantId?: string;
+  /** Money paid too much that goes back. */
+  refund?: boolean;
+}
+
 /** What is open with one person across all bills, in one currency. */
 export interface PersonBalance {
   /** Their participant id: the same in every bill they joined from the same device. */
@@ -60,6 +80,8 @@ export interface Balances {
   /** Part of `lent` that nobody ticked yet, so it belongs to no one in particular. */
   unassigned: Cents;
   people: PersonBalance[];
+  /** Every bill, newest first – also the settled ones (see BillLine). */
+  bills: BillLine[];
 }
 
 /**
@@ -89,7 +111,7 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
   const sheet = (currency: string) => {
     let b = byCurrency.get(currency);
     if (!b) {
-      b = { currency, lent: 0, owed: 0, unassigned: 0, people: [], byId: new Map() };
+      b = { currency, lent: 0, owed: 0, unassigned: 0, people: [], bills: [], byId: new Map() };
       byCurrency.set(currency, b);
     }
     return b;
@@ -109,8 +131,12 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
   for (const snap of snapshots) {
     const b = sheet(snap.data.currency);
     const bill = { billId: snap.id, title: snap.data.title || t("Rechnung"), createdAt: snap.createdAt };
+    const line = { ...bill, currency: snap.data.currency };
     if (snap.isOwner) {
       const { missing, unassigned } = ownerSummary(snap);
+      let shares = 0;
+      let opens = 0;
+      let refunds = 0;
       for (const d of snap.debtors ?? []) {
         const p = person(b, d.id, d.name);
         p.bills++;
@@ -119,8 +145,11 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
           p.owed += d.refund;
           b.owed += d.refund;
           p.entries.push({ ...bill, direction: "owed", amount: d.refund });
+          refunds += d.refund;
         }
         const open = debtorOpen(d);
+        shares += d.amount;
+        opens += open;
         p.history.push({ ...bill, currency: snap.data.currency, mine: true, share: d.amount, open, participantId: d.id });
         if (open === 0) continue;
         p.lent += open;
@@ -130,6 +159,8 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
       const rest = Math.min(missing, unassigned);
       b.lent += rest;
       b.unassigned += rest;
+      if (shares > 0 || opens + rest > 0) b.bills.push({ ...line, side: "lent", share: shares + rest, open: opens + rest });
+      if (refunds > 0) b.bills.push({ ...line, side: "owed", share: refunds, open: refunds, refund: true });
     } else if (snap.me) {
       const payer = snap.participants.find((x) => x.isOwner);
       const p = person(b, payer?.id ?? `owner:${snap.id}`, snap.ownerName);
@@ -139,13 +170,16 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
         p.lent += snap.myRefund;
         b.lent += snap.myRefund;
         p.entries.push({ ...bill, direction: "lent", amount: snap.myRefund });
+        b.bills.push({ ...line, side: "lent", share: snap.myRefund, open: snap.myRefund, participantId: snap.me, refund: true });
       }
       const open = myOpen(snap);
+      const share = participantShare(snap.data, snap.participants, snap.me).total;
+      if (share > 0 || open > 0) b.bills.push({ ...line, side: "owed", share, open, participantId: snap.me });
       p.history.push({
         ...bill,
         currency: snap.data.currency,
         mine: false,
-        share: participantShare(snap.data, snap.participants, snap.me).total,
+        share,
         open,
         participantId: snap.me,
       });
@@ -163,6 +197,7 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
   return [...byCurrency.values()]
     .map(({ byId, ...b }) => ({
       ...b,
+      bills: b.bills.sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
       // Biggest open amounts first (either way), settled people last.
       people: [...byId.values()]
         .map(({ paymentAt: _, ...p }) => ({
@@ -207,7 +242,7 @@ export interface MergedBalances extends Balances {
  */
 export function mergeBalances(list: Balances[], home: string, rates: Rates): MergedBalances | null {
   if (!list.length || (list.length === 1 && list[0].currency === home)) return null;
-  const merged: MergedBalances = { currency: home, lent: 0, owed: 0, unassigned: 0, people: [], mainCurrency: {}, ratesDate: rates.date };
+  const merged: MergedBalances = { currency: home, lent: 0, owed: 0, unassigned: 0, people: [], bills: [], mainCurrency: {}, ratesDate: rates.date };
   const people = new Map<string, PersonBalance>();
   const weight = new Map<string, Map<string, number>>();
   for (const b of list) {
@@ -217,6 +252,8 @@ export function mergeBalances(list: Balances[], home: string, rates: Rates): Mer
     merged.lent += lent;
     merged.owed += owed;
     merged.unassigned += unassigned;
+    // Every bill keeps its own currency.
+    merged.bills.push(...b.bills);
     for (const p of b.people) {
       const pl = to(p.lent)!;
       const po = to(p.owed)!;
@@ -235,6 +272,7 @@ export function mergeBalances(list: Balances[], home: string, rates: Rates): Mer
     }
   }
   for (const [id, w] of weight) merged.mainCurrency[id] = [...w].sort((x, y) => y[1] - x[1])[0][0];
+  merged.bills.sort((x, y) => y.createdAt.localeCompare(x.createdAt));
   merged.people = [...people.values()].sort((x, y) => Math.abs(y.lent - y.owed) - Math.abs(x.lent - x.owed) || x.name.localeCompare(y.name, "de"));
   return merged;
 }

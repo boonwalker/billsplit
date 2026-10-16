@@ -5,6 +5,8 @@
 export type DashboardView =
   | { kind: "settle"; personId: string; currency: string }
   | { kind: "plan"; toId: string; currency: string }
+  /** The overall balance bill by bill; "all": in the home currency over all currencies. */
+  | { kind: "balance"; currency: string }
   | { kind: "page" };
 
 const KEY = "billsplit.dashboardReturn";

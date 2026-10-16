@@ -136,3 +136,25 @@ describe("shared history per person", () => {
     expect(anna.history).toHaveLength(2);
   });
 });
+
+describe("bills in the overall balance", () => {
+  it("lists my bills as lent and the others' as owed – also the settled ones", () => {
+    const [eur] = computeBalances([
+      owner([
+        { name: "Anna", amount: 800, item: "b", received: true },
+        { name: "Ben", amount: 600, item: "c" },
+      ]),
+      guest("Anna"),
+    ]);
+    expect(eur.bills.map((b) => [b.side, b.share, b.open])).toEqual(
+      expect.arrayContaining([
+        ["lent", 1400, 600],
+        ["owed", 800, 800],
+      ]),
+    );
+    expect(eur.bills).toHaveLength(2);
+    // The columns add up to the ring.
+    const sum = (side: string) => eur.bills.filter((b) => b.side === side).reduce((s, b) => s + b.open, 0);
+    expect([sum("lent"), sum("owed")]).toEqual([eur.lent, eur.owed]);
+  });
+});

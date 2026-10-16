@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Header from "../components/Header";
+import BalanceSheet from "../components/BalanceSheet";
 import PushSetting from "../components/PushSetting";
 import SettleSheet from "../components/SettleSheet";
 import { PlanCard, PlanPaySheet, TransferInbox } from "../components/SettlementPanel";
@@ -88,9 +89,10 @@ function RingSlices({
 
 /**
  * Ring chart of what is lent vs. owed over all bills; the net balance sits in the middle.
- * Tapping (or hovering) a slice shows that slice's amount in the middle instead.
+ * Tapping (or hovering) a slice shows that slice's amount in the middle instead; the middle
+ * and the link below open the balance bill by bill (BalanceSheet) – also when all is settled.
  */
-function BalanceRing({ balances }: { balances: Balances }) {
+function BalanceRing({ balances, onOpen }: { balances: Balances; onOpen: () => void }) {
   const [active, setActive] = useState<Slice | null>(null);
   const { lent, owed, currency } = balances;
   const total = lent + owed;
@@ -103,6 +105,7 @@ function BalanceRing({ balances }: { balances: Balances }) {
         <svg viewBox="0 0 200 200" role="img" aria-label={t("Du leihst {lent}, Du schuldest {owed}", { lent: formatMoney(lent, currency), owed: formatMoney(owed, currency) })}>
           <RingSlices lent={lent} owed={owed} currency={currency} active={active} onActive={setActive} />
         </svg>
+        <button type="button" className="balance-ring-hit" aria-label={t("Alle Rechnungen ansehen")} onClick={onOpen} />
         <div className="balance-ring-centre" aria-live="polite">
           {active ? (
             <>
@@ -143,6 +146,9 @@ function BalanceRing({ balances }: { balances: Balances }) {
             {t("Davon {amount} noch von niemandem abgehakt.", { amount: formatMoney(balances.unassigned, balances.currency) })}
           </p>
         )}
+        <button type="button" className="balance-open" onClick={onOpen}>
+          {t("Alle Rechnungen ansehen ›")}
+        </button>
       </figcaption>
     </figure>
   );
@@ -211,6 +217,9 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
   const merged = balances && rates ? mergeBalances(balances, home, rates) : null;
   /** The person opened from a ring – with the shared history (in all currencies when the balance is merged). */
   const [settle, setSettle] = useState<{ person: PersonBalance; currency: string; history?: HistoryEntry[] } | null>(null);
+  /** The overall balance opened bill by bill: a currency, or "all" for the merged one. */
+  const [overview, setOverview] = useState<string | null>(null);
+  const overviewBalances = overview === "all" ? merged : (balances?.find((b) => b.currency === overview) ?? null);
 
   /** Open shares in all my bills (for the plan) and the settlement payments that concern me. */
   const [network, setNetwork] = useState<{ me: string; edges: NetworkEdge[]; transfers: Transfer[] } | null>(null);
@@ -271,6 +280,8 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
     if (view.kind === "settle") {
       const person = balances.find((b) => b.currency === view.currency)?.people.find((p) => p.id === view.personId);
       if (person) setSettle({ person, currency: view.currency });
+    } else if (view.kind === "balance") {
+      setOverview(view.currency);
     } else if (view.kind === "plan") {
       const planned = plans.find((p) => p.currency === view.currency)?.transfers.find((tr) => tr.toId === view.toId);
       if (planned) setPaying({ planned, edges: network.edges, me: network.me });
@@ -317,7 +328,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
             <section className="dashboard-section">
               <h3 className="section-title">{t("Leihen oder schulden?")}</h3>
               <div className="card">
-                <BalanceRing balances={merged} />
+                <BalanceRing balances={merged} onOpen={() => setOverview("all")} />
                 <p className="muted small rates-note">
                   {t("Alle Währungen in {currency} umgerechnet – mit den Referenzkursen der Europäischen Zentralbank vom {date}.", {
                     currency: home,
@@ -353,7 +364,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
               </h3>
               {!merged && (
                 <div className="card">
-                  <BalanceRing balances={b} />
+                  <BalanceRing balances={b} onOpen={() => setOverview(b.currency)} />
                 </div>
               )}
               {/* On top of the balance: settle everything with as few payments as possible. */}
@@ -391,6 +402,16 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
           }}
           onClose={() => setPaying(null)}
           onOpenBill={openBill({ kind: "plan", toId: paying.planned.toId, currency: paying.planned.currency })}
+        />
+      )}
+      {overview && overviewBalances && (
+        <BalanceSheet
+          balances={overviewBalances}
+          onOpenBill={(billId, participantId) => {
+            rememberDashboard({ kind: "balance", currency: overview });
+            navigate(billPath(billId, participantId, "dashboard"));
+          }}
+          onClose={() => setOverview(null)}
         />
       )}
       {settle && network && (

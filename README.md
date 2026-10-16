@@ -235,6 +235,14 @@ ist, und darunter immer **„Gemeinsame Rechnungen“**: jede Rechnung mit der P
 hat, dem Anteil und „x,xx € offen“ bzw. „✓ beglichen“ (`PersonBalance.history` in `src/lib/balances.ts`). Ist alles
 beglichen, heißt das Fenster „Du und Anna“ mit „✓ Mit Anna ist alles ausgeglichen.“
 
+Genauso lässt sich die **Gesamtbilanz** immer antippen – die Mitte des großen Rings oder „Alle Rechnungen ansehen ›“
+unter der Legende. Das Fenster „Deine Bilanz“ stellt in zwei Spalten gegenüber: links „Du leihst“ (Rechnungen, die Du
+bezahlt hast, mit den Anteilen der anderen), rechts „Du schuldest“ (Rechnungen anderer mit Deinem Anteil), oben je die
+offene Summe wie im Ring. Jede Rechnung steht als Karte mit Datum, Anteil und „x,xx € offen“ bzw. „✓ beglichen“ –
+auch die beglichenen, neueste zuerst; Rückzahlungen aus Überzahlungen stehen als eigene Karte („Rückzahlung“).
+Ein Tipp öffnet die Rechnung, „Zurück“ führt wieder in das Fenster (`Balances.bills` in `src/lib/balances.ts`,
+`BalanceSheet`). Bei mehreren Währungen stehen alle Rechnungen in ihrer eigenen Währung in einem Fenster.
+
 **Rechnungen in den Listen:** In allen Aufstellungen des Dashboards (Ausgleich mit einer Person, Zahlungsplan,
 Eingänge) öffnet ein Tipp auf eine Rechnung diese direkt an der Stelle mit dem Betrag – beim eigenen Beleg bei der
 Person in der Freundesliste, beim fremden am Ende des Belegs mit dem eigenen Anteil. „Zurück“ führt wieder zur Liste,

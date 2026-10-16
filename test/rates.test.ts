@@ -54,7 +54,7 @@ describe("exchange rates", () => {
 
   it("adds up the balances of all currencies in the home currency", () => {
     const list: Balances[] = [
-      { currency: "EUR", lent: 1000, owed: 0, unassigned: 0, people: [{ id: "anna", name: "Anna", lent: 1000, owed: 0, bills: 1, entries: [], history: [] }] },
+      { currency: "EUR", lent: 1000, owed: 0, unassigned: 0, people: [{ id: "anna", name: "Anna", lent: 1000, owed: 0, bills: 1, entries: [], history: [] }], bills: [] },
       {
         currency: "USD",
         lent: 0,
@@ -64,6 +64,7 @@ describe("exchange rates", () => {
           { id: "anna", name: "Anna", lent: 0, owed: 540, bills: 1, entries: [], history: [] },
           { id: "ben", name: "Ben", lent: 0, owed: 1620, bills: 1, entries: [], history: [] },
         ],
+        bills: [],
       },
     ];
     const merged = mergeBalances(list, "EUR", rates)!;
