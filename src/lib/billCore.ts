@@ -8,6 +8,7 @@ import {
   sanitizeSplits,
   type BillData,
   type ClaimsInput,
+  type Contact,
   type BillSnapshot,
   type Debtor,
   type ItemClaims,
@@ -52,6 +53,8 @@ export interface StoredParticipant {
   markedPaidAt?: string;
   /** Last reminder the payer sent as a notification (at most one every REMIND_COOLDOWN_MS). */
   remindedAt?: string;
+  /** The payer put them in ("Ausgabe eingeben" → directly to Andy), they did not scan the QR code. */
+  assigned?: boolean;
 }
 
 /** A friend gets at most one reminder notification per bill in this time. */
@@ -269,6 +272,61 @@ export class BillCore {
     p.claims = sanitizeClaims(claims, bill.data.items, p.claims, others);
     p.splits = sanitizeSplits(splits ?? p.splits ?? {}, p.claims);
     this.changed(billId);
+  }
+
+  /** People the viewer shares bills with – most bills, then most recent first (for "Ausgabe eingeben"). */
+  contacts(viewerId: string, limit = 12): Contact[] {
+    const found = new Map<string, Contact>();
+    for (const bill of this.bills.values()) {
+      if (!bill.participants[viewerId]) continue;
+      for (const [pid, p] of Object.entries(bill.participants)) {
+        if (pid === viewerId) continue;
+        const c = found.get(pid) ?? { id: pid, name: p.name, bills: 0, lastAt: "" };
+        c.bills++;
+        if (bill.createdAt > c.lastAt) {
+          c.lastAt = bill.createdAt;
+          c.name = p.name;
+        }
+        found.set(pid, c);
+      }
+    }
+    return [...found.values()].sort((a, b) => b.bills - a.bills || b.lastAt.localeCompare(a.lastAt)).slice(0, limit);
+  }
+
+  /**
+   * The payer assigns items straight to people they know from earlier bills (a taxi for Andy, or
+   * shared with Andy) – they join the bill with those units and get a notification. Only people
+   * who share a bill with the payer; the payer's own units can be part of it.
+   */
+  assign(billId: string, requesterId: string, people: { id: string; claims: ClaimsInput }[]): void {
+    const bill = this.get(billId);
+    this.assertOwner(billId, requesterId);
+    const known = new Map(this.contacts(requesterId, Infinity).map((c) => [c.id, c]));
+    for (const { id } of people) {
+      if (id !== requesterId && !known.has(id)) throw new BillError("Diese Person kennst Du noch aus keiner Rechnung.", 403);
+    }
+    const added: string[] = [];
+    for (const { id, claims } of people) {
+      if (!bill.participants[id]) {
+        bill.participants[id] = { name: known.get(id)!.name, joinedAt: new Date().toISOString(), claims: {}, ...(id === requesterId ? {} : { assigned: true }) };
+        added.push(id);
+      }
+      const others = Object.entries(bill.participants)
+        .filter(([pid]) => pid !== id)
+        .map(([, p]) => p.claims);
+      bill.participants[id].claims = sanitizeClaims(claims, bill.data.items, bill.participants[id].claims, others);
+    }
+    this.changed(billId);
+    const from = bill.participants[bill.ownerId]?.name ?? "";
+    const participants = this.publicParticipants(bill);
+    for (const id of added) {
+      const amount = participantShare(bill.data, participants, id).total;
+      this.notify(id, {
+        title: msg("{name} hat Dir {amount} zugeordnet", { name: from, amount: { cents: amount, currency: bill.data.currency } }),
+        body: msg("Für „{title}“ – hier kannst Du direkt begleichen.", { title: bill.data.title }),
+        path: `/b/${billId}?an=${id}`,
+      });
+    }
   }
 
   /** Records that a friend tapped "Bezahlen" and with which amount; returns that amount. */
@@ -730,6 +788,7 @@ export class BillCore {
             receivedAmount: p.receivedAmount,
             markedPaidAt: p.markedPaidAt,
             refund: this.refundOf(bill, id) || undefined,
+            assigned: p.assigned,
             reachable: this.canNotify(id),
             remindedAt: p.remindedAt,
             ...this.debtorCredit(billId, id),

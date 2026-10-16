@@ -161,6 +161,14 @@ darunter steht sofort der Anteil pro Person. „Rechnung erstellen“ macht dara
 die wie jede andere per QR-Code oder Link geteilt wird. Fehlt noch das Profil, fragt vorher der Profil-Assistent nach
 Name und Bezahlweg.
 
+**Direkt zuordnen:** Darunter stehen als runde Knöpfe (Anfangsbuchstabe) die Leute, mit denen man schon in Rechnungen
+war – die häufigsten und jüngsten zuerst (`/api/contacts`, `BillCore.contacts`). Antippen ordnet die Ausgabe direkt
+zu: „5 € · Taxi · Andy“ → Andy zahlt 5,00 €; mit „Du bist auch dabei“ wird geteilt (10 € mit Andy → je 5,00 €), mehrere
+Personen teilen sich den Betrag. Die Rechnung entsteht wie gewohnt, die Gewählten stehen sofort mit ihrem Anteil drin
+(`/api/bills/:id/assign`, nur für den Rechnungssteller und nur mit bekannten Personen), bekommen eine Push-Mitteilung
+„Niklas hat Dir 5,00 € zugeordnet“ und sehen den Betrag in Rechnung und Dashboard. Beim Rechnungssteller steht „von Dir
+zugeordnet · 5,00 € offen“.
+
 ### Dashboard
 
 Über „Deine Rechnungen“ auf der Startseite (damit er bei vielen Rechnungen nicht nach unten rutscht) führt
@@ -434,7 +442,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
   gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
   abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
-  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch); Lieferbestellung mit Trinkgeld-Schnellknöpfen; nach dem Bezahlen streichen (Nachfrage, Rückzahlung); Bilanz über mehrere Währungen (feste Kurse in `rates.json`).
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch); Lieferbestellung mit Trinkgeld-Schnellknöpfen; nach dem Bezahlen streichen (Nachfrage, Rückzahlung); Bilanz über mehrere Währungen (feste Kurse in `rates.json`); Ausgabe direkt Andy zuordnen bzw. mit ihm teilen.
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait

@@ -122,6 +122,8 @@ export const localApi: Api = {
   updateBill: (id, data) => call(() => (localStore().updateData(id, me(), data), view(id))),
   join: (id, name) => call(() => (localStore().join(id, me(), name), view(id))),
   setClaims: (id, claims, splits) => call(() => (localStore().setClaims(id, me(), claims, splits), view(id))),
+  assign: (id, people) => call(() => (localStore().assign(id, me(), people), view(id))),
+  contacts: () => call(() => localStore().contacts(me())),
   async uploadReceiptImage(id, jpeg) {
     await call(() => localStore().assertOwner(id, me()));
     const dataUrl = await blobToDataUrl(jpeg);

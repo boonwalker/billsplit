@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 165 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 168 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -190,7 +190,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
 - „Ausgabe eingeben“ (Startseite, vorerst unter der Rechnungsliste, `src/pages/Expense.tsx`, `#/ausgabe`): Betrag,
-  „Wofür?“ mit Schnellauswahl, „Wann?“, „Wie viele teilen sich das?“ / „inklusive Dir“, „Rechnung erstellen“
+  „Wofür?“ mit Schnellauswahl, „Wann?“, „Direkt zuordnen“ (runde Knöpfe der Kontakte, „Du bist auch dabei“, „Andy zahlt
+  5,00 €“) bzw. „Wie viele teilen sich das?“ / „inklusive Dir“, „Rechnung erstellen“
 - „Erinnern“ (Knopf heißt immer nur so): Push-Mitteilung „Niklas erinnert Dich“, wenn der Freund Benachrichtigungen
   hat (bevorzugt), sonst bzw. innerhalb von 12 h danach WhatsApp; auch bei Freunden ohne Häkchen („Bitte hake in … ab,
   was Du hattest.“) und im Dashboard („Carl hat noch nicht bezahlt?“). Status „per Mitteilung erinnert vor …“.

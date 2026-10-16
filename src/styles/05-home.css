@@ -260,3 +260,71 @@
   font-size: 1.15rem;
   color: var(--text);
 }
+
+/* "Ausgabe eingeben": people from earlier bills as circles to assign the expense to. */
+.expense-people-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.expense-people {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: none;
+}
+
+.person-pick {
+  flex: none;
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.person-pick-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: var(--mint-soft);
+  color: var(--brand);
+  border: 2.5px solid transparent;
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.person-pick:active .person-pick-avatar {
+  transform: scale(0.94);
+}
+
+.person-pick.on .person-pick-avatar {
+  background: var(--brand);
+  color: var(--paper);
+  border-color: var(--mint);
+}
+
+.person-pick-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.expense-me {
+  align-self: flex-start;
+}

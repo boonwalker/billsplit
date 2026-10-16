@@ -1,6 +1,7 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. */
 export default {
   en: {
+    "von Dir zugeordnet · {amount} offen": "assigned by you · {amount} open",
     "Alle Währungen in {currency} umgerechnet – mit den Referenzkursen der Europäischen Zentralbank vom {date}.": "All currencies converted into {currency} – using the European Central Bank's reference rates of {date}.",
     "Ausgleichen in {currency}": "Settle in {currency}",
     "Du hast mehr bezahlt, als Dein Anteil jetzt beträgt – {name} schuldet Dir {amount}.": "You paid more than your share is now – {name} owes you {amount}.",
@@ -228,6 +229,7 @@ export default {
     "Unbekannt": "Unknown",
   } as Record<string, string>,
   es: {
+    "von Dir zugeordnet · {amount} offen": "asignado por ti · {amount} pendiente",
     "Alle Währungen in {currency} umgerechnet – mit den Referenzkursen der Europäischen Zentralbank vom {date}.": "Todas las monedas convertidas a {currency}, con los tipos de referencia del Banco Central Europeo del {date}.",
     "Ausgleichen in {currency}": "Liquidar en {currency}",
     "Du hast mehr bezahlt, als Dein Anteil jetzt beträgt – {name} schuldet Dir {amount}.": "Has pagado más de lo que es tu parte ahora: {name} te debe {amount}.",

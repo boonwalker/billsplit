@@ -1,6 +1,11 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. Area: start page, profile, account, devices. */
 export default {
   en: {
+    "Direkt zuordnen": "Assign directly",
+    "an Leute aus Deinen Rechnungen": "to people from your bills",
+    "Du bist auch dabei": "You're in too",
+    "<b>{name}</b> zahlt {amount}": "<b>{name}</b> pays {amount}",
+    "<b>{amount}</b> pro Person · {count} Personen": "<b>{amount}</b> per person · {count} people",
     "Heimwährung": "Home currency",
     "Automatisch ({currency})": "Automatic ({currency})",
     "Rechnungen in anderen Währungen rechnet das Dashboard mit den Tageskursen der Europäischen Zentralbank in diese Währung um.": "The dashboard converts bills in other currencies into this one, using the European Central Bank's rates of the day.",
@@ -276,6 +281,11 @@ export default {
     "Ansicht als": "View as",
   } as Record<string, string>,
   es: {
+    "Direkt zuordnen": "Asignar directamente",
+    "an Leute aus Deinen Rechnungen": "a personas de tus cuentas",
+    "Du bist auch dabei": "Tú también participas",
+    "<b>{name}</b> zahlt {amount}": "<b>{name}</b> paga {amount}",
+    "<b>{amount}</b> pro Person · {count} Personen": "<b>{amount}</b> por persona · {count} personas",
     "Heimwährung": "Moneda principal",
     "Automatisch ({currency})": "Automática ({currency})",
     "Rechnungen in anderen Währungen rechnet das Dashboard mit den Tageskursen der Europäischen Zentralbank in diese Währung um.": "El panel convierte las cuentas en otras monedas a esta, con los tipos de cambio del día del Banco Central Europeo.",

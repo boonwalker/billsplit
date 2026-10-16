@@ -1,6 +1,6 @@
 import { lang, t } from "./i18n";
 import { ApiError } from "./apiError";
-import type { BillData, BillSnapshot, ItemClaims, MyBill, NetworkEdge, TransferAllocation, TransferList } from "./bill";
+import type { BillData, BillSnapshot, Contact, ItemClaims, MyBill, NetworkEdge, TransferAllocation, TransferList } from "./bill";
 import { checkForUpdate } from "./updates";
 import { DEMO } from "./demo";
 import { localApi } from "./localApi";
@@ -25,6 +25,10 @@ export interface Api {
   updateBill(id: string, data: BillData): Promise<BillSnapshot>;
   join(id: string, name: string): Promise<BillSnapshot>;
   setClaims(id: string, claims: ItemClaims, splits: ItemClaims): Promise<BillSnapshot>;
+  /** Payer: puts people from earlier bills straight into the bill with the units they take. */
+  assign(id: string, people: { id: string; claims: ItemClaims }[]): Promise<BillSnapshot>;
+  /** People I share bills with, most frequent first. */
+  contacts(): Promise<Contact[]>;
   /** Stores the photo or screenshot the bill was read from (payer only). */
   uploadReceiptImage(id: string, jpeg: Blob): Promise<BillSnapshot>;
   /** Address of the stored receipt photo, or null if there is none. */
@@ -128,6 +132,8 @@ const serverApi: Api = {
   updateBill: (id, data) => request("PUT", bill(id), { data }),
   join: (id, name) => request("POST", `${bill(id)}/join`, { name }),
   setClaims: (id, claims, splits) => request("PUT", `${bill(id)}/claims`, { claims, splits }),
+  assign: (id, people) => request("POST", `${bill(id)}/assign`, { people }),
+  contacts: async () => (await request<{ contacts: Contact[] }>("GET", "/api/contacts")).contacts,
   async uploadReceiptImage(id, jpeg) {
     const res = await fetch(`${bill(id)}/receipt-image`, {
       method: "PUT",

@@ -1,6 +1,9 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. */
 export default {
   en: {
+    "Diese Person kennst Du noch aus keiner Rechnung.": "You don't know this person from any bill yet.",
+    "{name} hat Dir {amount} zugeordnet": "{name} assigned {amount} to you",
+    "Für „{title}“ – hier kannst Du direkt begleichen.": "For “{title}” – you can settle it right here.",
     // server/app.ts – where in a bill a problem is
     "Position {n}": "Item {n}",
     "Gebühr {n}": "Fee {n}",
@@ -168,6 +171,9 @@ export default {
     "Speichern fehlgeschlagen.": "Saving failed.",
   } as Record<string, string>,
   es: {
+    "Diese Person kennst Du noch aus keiner Rechnung.": "Aún no conoces a esta persona de ninguna cuenta.",
+    "{name} hat Dir {amount} zugeordnet": "{name} te ha asignado {amount}",
+    "Für „{title}“ – hier kannst Du direkt begleichen.": "Por «{title}»: puedes pagarlo aquí mismo.",
     // server/app.ts – where in a bill a problem is
     "Position {n}": "Artículo {n}",
     "Gebühr {n}": "Cargo {n}",

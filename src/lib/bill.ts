@@ -114,6 +114,8 @@ export interface Debtor {
   receivedAmount?: Cents;
   /** Paid more than the share is now: what the payer owes them back. */
   refund?: Cents;
+  /** The payer assigned them their part directly (see BillCore.assign). */
+  assigned?: boolean;
   /** The friend marked their share as paid. */
   markedPaidAt?: string;
   /** Settled by settlement payments (see Transfer): confirmed by their recipient … */
@@ -218,6 +220,17 @@ export interface MyBill {
 }
 
 /** An open share between two people in a bill the viewer takes part in (for settling up). */
+/** Someone I shared bills with (see BillCore.contacts): "Ausgabe eingeben" can assign them an expense directly. */
+export interface Contact {
+  /** Their participant id (the same in all bills from their device). */
+  id: string;
+  name: string;
+  /** Bills we share. */
+  bills: number;
+  /** When the newest of them was created. */
+  lastAt: string;
+}
+
 export interface NetworkEdge {
   billId: string;
   title: string;

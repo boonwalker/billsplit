@@ -177,6 +177,8 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                         ? t("hat um {time} als bezahlt markiert", { time: time(d.markedPaidAt) })
                         : d.payClickedAt
                         ? t("hat um {time} auf Bezahlen getippt", { time: time(d.payClickedAt) })
+                        : d.assigned
+                          ? t("von Dir zugeordnet · {amount} offen", { amount: formatMoney(d.amount, currency) })
                         : snapshot.data.equalSplit
                           ? t("ist beigetreten")
                           : t("ist beigetreten · wählt noch aus …")}

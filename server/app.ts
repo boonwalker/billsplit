@@ -432,6 +432,10 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     }
 
     // Moving to a new device (see deviceLink.ts) and the bills to show there.
+    // People I share bills with: "Ausgabe eingeben" can assign them an expense directly.
+    if (parts[1] === "contacts" && parts.length === 2 && method === "GET") {
+      return sendJson(res, 200, { contacts: store.contacts(requireViewer(req, url)) });
+    }
     if (parts[1] === "my-bills" && parts.length === 2 && method === "GET") {
       return sendJson(res, 200, { bills: store.myBills(requireViewer(req, url)) });
     }
@@ -640,6 +644,12 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       if (action === "join" && method === "POST") {
         const body = parse(z.object({ name: ParticipantNameSchema }), await readJson(req, MAX_JSON_BODY));
         store.join(billId, viewer, body.name);
+        return sendJson(res, 200, store.snapshot(billId, viewer));
+      }
+      if (action === "assign" && method === "POST") {
+        const claims = z.record(z.string().max(24), z.array(z.number().int().min(0).max(998)).max(999));
+        const body = parse(z.object({ people: z.array(z.object({ id: z.string().max(64), claims })).min(1).max(20) }), await readJson(req, MAX_JSON_BODY));
+        store.assign(billId, viewer, body.people);
         return sendJson(res, 200, store.snapshot(billId, viewer));
       }
       if (action === "claims" && method === "PUT") {

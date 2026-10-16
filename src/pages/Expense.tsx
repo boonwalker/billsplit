@@ -1,12 +1,12 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import BusyScreen from "../components/BusyScreen";
 import DivideBy from "../components/DivideBy";
 import Header from "../components/Header";
 import ProfileWizard from "../components/ProfileWizard";
 import { PencilFilter } from "../components/Receipt";
 import { api } from "../lib/api";
-import { newItemId, type BillData } from "../lib/bill";
-import { t } from "../lib/i18n";
+import { newItemId, type BillData, type Contact } from "../lib/bill";
+import { rich, t } from "../lib/i18n";
 import { formatMoney, parseMoney } from "../lib/money";
 import { paymentFromProfile } from "../lib/payment";
 import { navigate } from "../lib/router";
@@ -20,10 +20,14 @@ const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+/** People shown as circles to assign the expense to directly. */
+const MAX_PEOPLE = 8;
+
 /**
  * "Ausgabe eingeben": a single expense without a receipt (a taxi, concert tickets, …) – amount,
  * what for, when, and by how many it is split. It becomes a bill with an equal split, shared
- * like any other.
+ * like any other. Or it goes straight to people from earlier bills: "5 € Taxi → Andy", or
+ * shared with Andy ("Du bist auch dabei") – they get it as their share right away.
  */
 export default function Expense() {
   const [amount, setAmount] = useState("");
@@ -34,28 +38,46 @@ export default function Expense() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needProfile, setNeedProfile] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [meToo, setMeToo] = useState(false);
+  useEffect(() => {
+    api
+      .contacts()
+      .then((list) => setContacts(list.slice(0, MAX_PEOPLE)))
+      .catch(() => setContacts([]));
+  }, []);
+  const toggle = (id: string) => setChosen((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
+  const direct = chosen.length > 0;
+  const names = contacts.filter((c) => chosen.includes(c.id)).map((c) => c.name);
 
   const cents = parseMoney(amount);
   const valid = cents !== null && cents > 0 && title.trim() !== "";
-  const each = cents ? Math.ceil(cents / persons) : 0;
+  const heads = direct ? chosen.length + (meToo ? 1 : 0) : persons;
+  const each = cents ? Math.ceil(cents / heads) : 0;
 
   async function create() {
     if (cents === null) return;
     setBusy(true);
     setError(null);
     const name = title.trim();
+    const itemId = newItemId();
     const data: BillData = {
       title: name,
       date,
       currency: "EUR",
       tipPercent: 0,
-      equalSplit: true,
-      tipSplitCount: persons,
-      items: [{ id: newItemId(), name, qty: 1, total: cents }],
+      // Straight to people: they take the expense (shared with me, if I was there too).
+      ...(direct ? {} : { equalSplit: true, tipSplitCount: persons }),
+      items: [{ id: itemId, name, qty: 1, total: cents }],
       payment: paymentFromProfile(loadProfile()),
     };
     try {
-      const snap = await api.createBill(data, loadProfile().name.trim() || t("Ich"));
+      let snap = await api.createBill(data, loadProfile().name.trim() || t("Ich"));
+      if (direct) {
+        const people = [...chosen, ...(meToo && snap.me ? [snap.me] : [])].map((id) => ({ id, claims: { [itemId]: [0] } }));
+        snap = await api.assign(snap.id, people);
+      }
       rememberBill({ id: snap.id, title: name, role: "owner", createdAt: snap.createdAt });
       navigate(`/b/${snap.id}`, { replace: true });
     } catch (e) {
@@ -115,6 +137,42 @@ export default function Expense() {
             </label>
           </div>
 
+          {/* People from earlier bills: tap to give them the expense directly. */}
+          {contacts.length > 0 && (
+            <div className="card expense-people-card">
+              <p className="shop-persons">
+                {t("Direkt zuordnen")}
+                <span className="shop-persons-hint">{t("an Leute aus Deinen Rechnungen")}</span>
+              </p>
+              <div className="expense-people" role="group" aria-label={t("Direkt zuordnen")}>
+                {contacts.map((c) => (
+                  <button key={c.id} type="button" className={`person-pick${chosen.includes(c.id) ? " on" : ""}`} aria-pressed={chosen.includes(c.id)} onClick={() => toggle(c.id)}>
+                    <span className="person-pick-avatar" aria-hidden="true">
+                      {c.name.trim().slice(0, 1).toUpperCase() || "?"}
+                    </span>
+                    <span className="person-pick-name">{c.name}</span>
+                  </button>
+                ))}
+              </div>
+              {direct && (
+                <>
+                  <button type="button" className={`chip expense-me${meToo ? " active" : ""}`} aria-pressed={meToo} onClick={() => setMeToo((v) => !v)}>
+                    {meToo ? "✓ " : "+ "}
+                    {t("Du bist auch dabei")}
+                  </button>
+                  <p className="expense-each">
+                    {cents
+                      ? heads === 1
+                        ? rich(t("<b>{name}</b> zahlt {amount}", { name: names[0], amount: formatMoney(each, "EUR") }))
+                        : rich(t("<b>{amount}</b> pro Person · {count} Personen", { amount: formatMoney(each, "EUR"), count: heads }))
+                      : t("Betrag eingeben – dann siehst Du den Anteil pro Person.")}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
+          {!direct && (
           <div className="card expense-split">
             <p className="shop-persons">
               {t("Wie viele teilen sich das?")}
@@ -131,6 +189,7 @@ export default function Expense() {
               )}
             </p>
           </div>
+          )}
 
           {touched && !valid && <p className="alert">{cents === null || cents <= 0 ? t("Bitte gib einen Betrag ein.") : t("Wofür war die Ausgabe?")}</p>}
           {error && <p className="alert">{error}</p>}
