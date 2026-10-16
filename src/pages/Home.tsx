@@ -217,6 +217,14 @@ export default function Home() {
             </span>
           </button>
           )}
+
+          {/* A single expense without a receipt (taxi, tickets, …), right below the ways to start a bill. */}
+          <button type="button" className="btn btn-secondary expense-btn" onClick={() => navigate("/ausgabe")}>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+            </svg>
+            {t("Ausgabe eingeben")}
+          </button>
         </section>
 
         {/* A new device (or a wiped browser): the bills come back with the e-mail account. */}
@@ -304,14 +312,6 @@ export default function Home() {
             )}
           </section>
         )}
-
-        {/* A single expense without a receipt (taxi, tickets, …) – for now below the list. */}
-        <button type="button" className="btn btn-secondary expense-btn" onClick={() => navigate("/ausgabe")}>
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-          </svg>
-          {t("Ausgabe eingeben")}
-        </button>
 
         <section className="how">
           <h3 className="section-title">{t("So funktioniert's")}</h3>

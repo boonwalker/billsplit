@@ -201,7 +201,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
-- „Ausgabe eingeben“ (Startseite, vorerst unter der Rechnungsliste, `src/pages/Expense.tsx`, `#/ausgabe`): Betrag,
+- „Ausgabe eingeben“ (Startseite, Knopf direkt unter „QR-Code scannen“, `src/pages/Expense.tsx`, `#/ausgabe`): Betrag,
   „Wofür?“ mit Schnellauswahl, „Wann?“, „Direkt zuordnen“ (runde Knöpfe der Kontakte, „Du bist auch dabei“, „Andy zahlt
   5,00 €“) bzw. „Wie viele teilen sich das?“ / „inklusive Dir“, „Rechnung erstellen“; ergibt **immer eine Rechnung mit
   Gleichverteilung** (ohne „Du bist auch dabei“ mit `ownerExcluded`: „… – Du bist nicht dabei“)
