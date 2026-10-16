@@ -204,8 +204,8 @@ Server kannte Dein Konto … nicht mehr“, „Wieder anmelden“ hat die Adress
 
 ### Dashboard
 
-Über „Deine Rechnungen“ auf der Startseite (damit er bei vielen Rechnungen nicht nach unten rutscht) führt
-„Dashboard · Deine Bilanz“ zu einer Übersicht über alle Rechnungen, an denen Du beteiligt bist – auch über solche, die
+Über „Deine Rechnungen“ auf der Startseite (damit er bei vielen Rechnungen nicht nach unten rutscht) – und auch ohne
+eine einzige Rechnung auf dem Gerät – führt „Dashboard · Deine Bilanz“ zu einer Übersicht über alle Rechnungen, an denen Du beteiligt bist – auch über solche, die
 nicht (mehr) in der Liste auf dem Gerät stehen (`/api/my-bills`), damit Ring, Personen und Gesamtausgleich immer
 dasselbe zeigen. Das ✕ an einer Rechnung in der Liste fragt erst „Bist Du sicher, dass Du diese Rechnung löschen
 möchtest?“; „Löschen“ nimmt sie nur aus der eigenen Liste, für die anderen Teilnehmer bleibt sie erhalten. Solange in

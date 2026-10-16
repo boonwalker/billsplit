@@ -96,7 +96,6 @@ export default function Home() {
   // Settlement payments sent to me that wait for my confirmation (shown on the dashboard button).
   const [toConfirm, setToConfirm] = useState(0);
   useEffect(() => {
-    if (!loadRecent().length) return;
     api
       .transfers()
       .then((list) => setToConfirm(list.transfers.filter((tr) => tr.toId === list.me && tr.status === "pending").length))
@@ -243,19 +242,21 @@ export default function Home() {
           </button>
         )}
 
+        {/* Over all bills: lent vs. owed, and the balance with every person – always there (also before the first bill on
+          this device), above the list, so many bills never push it out of sight. */}
+        <button type="button" className="btn btn-secondary dashboard-btn" onClick={() => navigate("/dashboard")}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <g transform="rotate(-90 12 12)">
+              <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeDasharray="29 50.3" />
+              <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeDasharray="17.3 50.3" strokeDashoffset="-31" opacity="0.4" />
+            </g>
+          </svg>
+          {t("Dashboard · Deine Bilanz")}
+          {toConfirm > 0 && <span className="badge">{toConfirm === 1 ? t("1 Eingang bestätigen") : t("{n} Eingänge bestätigen", { n: toConfirm })}</span>}
+        </button>
+
         {recent.length > 0 && (
           <section>
-            {/* Over all bills: lent vs. owed, and the balance with every person – above the list, so many bills never push it out of sight. */}
-            <button type="button" className="btn btn-secondary dashboard-btn" onClick={() => navigate("/dashboard")}>
-              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                <g transform="rotate(-90 12 12)">
-                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeDasharray="29 50.3" />
-                  <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="3.5" strokeDasharray="17.3 50.3" strokeDashoffset="-31" opacity="0.4" />
-                </g>
-              </svg>
-              {t("Dashboard · Deine Bilanz")}
-              {toConfirm > 0 && <span className="badge">{toConfirm === 1 ? t("1 Eingang bestätigen") : t("{n} Eingänge bestätigen", { n: toConfirm })}</span>}
-            </button>
             <h3 className="section-title">{t("Deine Rechnungen")}</h3>
             <ul className="list">
               {(showAll ? recent : recent.slice(0, LIST_PAGE)).map((b) => (

@@ -88,3 +88,12 @@ test("Rechnungsliste: immer nach Datum (neueste oben), ohne Obergrenze – Älte
   await expect(titles.nth(0)).toHaveText("Rechnung 3");
   await expect(titles.nth(2)).toHaveText("Rechnung 1");
 });
+
+test("Startseite: „Dashboard · Deine Bilanz“ ist auch ohne Rechnungen da", async ({ browser }) => {
+  const page = await phone(browser, key("neu"), { profile: { name: "Neu", paypalMe: "neu" } });
+  await page.goto("/");
+  await expect(page.locator(".list-title")).toHaveCount(0);
+  await page.getByRole("button", { name: /Dashboard · Deine Bilanz/ }).click();
+  await expect(page).toHaveURL(/#\/dashboard/);
+  await expect(page.locator("main")).toContainText("Noch keine Rechnungen");
+});
