@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 175 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 176 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -115,7 +115,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   „Heimwährung“, Standard nach Geräteregion; `mergeBalances`), Kurse = EZB-Referenzkurse über `server/rates.ts`
   (`/api/rates`, `rates.json`). Ausgleichszahlungen bleiben in der Währung der Rechnung.
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
-  max. 2000 px Kantenlänge). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
+  max. 2000 px Kantenlänge; „Rückgeld“ bei Kartenzahlung = Trinkgeld, in `RECEIPT_INSTRUCTIONS` und im OCR-Parser). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
 - **Seiten:** `Home`, `Expense` (Ausgabe eingeben), `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in
   `src/lib/draft.ts`, Wartebildschirme in `BusyScreen`), `BillPage` (fertige Rechnung; Teile in
   `src/components/bill/`: `QrHero`, `LiveBadge`, `ReceiptPeek`, `OwnerBar`; Streichen/„/2“ als reine Funktionen in

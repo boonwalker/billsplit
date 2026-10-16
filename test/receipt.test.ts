@@ -65,6 +65,16 @@ describe("parseReceiptText", () => {
     expect(r.delivery).toBe(false);
   });
 
+  it("reads change on a card payment as a tip (a card cannot give change)", () => {
+    // C.C. Kowalski, 15.10.2026: "Summe 208.00", "KREDITKARTE 230.00", "RÜCKGELD 22.00".
+    const kowalski = "Wiener Schnitzel 126.00\nHirschgulasch 33.50\nSumme: 208.00 EUR\nKREDITKARTE: 230.00 EUR\nRÜCKGELD: 22.00 EUR";
+    expect(parseReceiptText(kowalski).tip).toBe(2200);
+    expect(parseReceiptText("Pizza 10,00\nSumme 10,00\nEC-Karte 12,00\nRückgeld 2,00").tip).toBe(200);
+    // Cash: the change went back to the guest.
+    expect(parseReceiptText("Pizza 10,00\nSumme 10,00\nBar 20,00\nRückgeld 10,00").tip).toBeNull();
+    expect(parseReceiptText("Pizza 10,00\nSumme 10,00\nGegeben 20,00\nWechselgeld 10,00").tip).toBeNull();
+  });
+
   it("reports no tip when none is printed", () => {
     expect(parseReceiptText("Pizza 10,00\nSumme 10,00").tip).toBeNull();
   });

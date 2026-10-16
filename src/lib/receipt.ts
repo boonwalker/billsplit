@@ -47,7 +47,8 @@ export const RECEIPT_INSTRUCTIONS = `This is a photo of a restaurant or shop rec
 - A tip is not an item: put its amount in tip. Look for it carefully, it appears in several ways:
   - a printed or handwritten line such as "Trinkgeld", "Tip", "Tipp" or "Gratuity";
   - a handwritten new total next to or below the printed total (the tip is the difference);
-  - a card or cash payment that is higher than the total without change given back, e.g. "Summe 36,50" and "Kartenzahlung 40,00" or "EC 40,00" means a tip of 3,50 (if "Rückgeld"/"Change" is printed, that difference is change, not tip).
+  - a card payment that is higher than the total: the whole difference is a tip, e.g. "Summe 36,50" and "Kartenzahlung 40,00" or "EC 40,00" means a tip of 3,50. A card payment cannot give change, so this holds even if the receipt prints the difference as "Rückgeld", "Wechselgeld" or "Change": "Summe 208,00", "Kreditkarte 230,00", "Rückgeld 22,00" means a tip of 22,00. Card payments are e.g. "Kreditkarte", "Karte", "Kartenzahlung", "EC", "EC-Karte", "Girocard", "Visa", "Mastercard", "Maestro", "Amex", "Apple Pay", "Google Pay";
+  - a cash payment ("Bar", "Gegeben", "Cash") that is higher than the total: a tip only if no change is printed – with "Rückgeld"/"Wechselgeld"/"Change" the difference went back to the guest and is not a tip.
   Use 0 only if none of these is present.
 - receipt_total is the printed total including fees but before any tip (if the printed total already contains a tip, subtract it), or 0 if not readable.
 - For each item, personal is true if it is most likely NOT part of a shared purchase (e.g. food for a meal or party together) but something one person keeps for their household: hygiene and drugstore products (shower gel, soap, shampoo, toothpaste, deodorant), household goods (toilet paper, kitchen roll, detergent, dish soap, bin bags, batteries) and pantry staples that last longer than one occasion (milk, spices, salt, pepper, oil, vinegar, flour, sugar, coffee, tea). Use brand names to decide (e.g. Balea, Nivea, Zewa, Hakle, Persil). False for everything else.
@@ -119,6 +120,9 @@ const SUPERMARKET_WORDS =
 
 const FEE_WORDS = /(liefergeb|lieferkosten|lieferpauschale|liefer\w*zuschlag|servicegeb|service ?fee|delivery|bedienungszuschlag|bearbeitungsgeb|mindestbestell|kleinbestell|verpackung|tütengeb)/i;
 const TIP_WORDS = /\b(trinkgeld|tip|tipp|gratuity)\b/i;
+const CHANGE_WORDS = /(rückgeld|rueckgeld|wechselgeld|\bchange\b)/i;
+const CARD_WORDS = /(kredit|karte|\bec\b|girocard|visa|mastercard|maestro|amex|apple ?pay|google ?pay)/i;
+const CASH_WORDS = /(\bbar\b|gegeben|\bcash\b)/i;
 const TOTAL_WORDS = /\b(summe|gesamt(?:betrag)?|total|zu zahlen|endbetrag|betrag)\b/i;
 const SKIP_WORDS = new RegExp(
   [
@@ -166,6 +170,10 @@ export function parseReceiptText(text: string): ParsedReceipt {
   const fees: ReceiptFee[] = [];
   let pendingQty: number | null = null;
   let merchant = "";
+  // Payment lines: by card, in cash, and change given back.
+  let paidByCard = false;
+  let paidInCash = false;
+  let change: Cents = 0;
 
   for (const line of lines) {
     // A line that only holds "2 x 4,50" belongs to the next item, which carries the line total.
@@ -204,6 +212,9 @@ export function parseReceiptText(text: string): ParsedReceipt {
       continue;
     }
     if (SKIP_WORDS.test(rest)) {
+      if (CHANGE_WORDS.test(rest)) change += Math.max(0, lineTotal);
+      else if (CARD_WORDS.test(rest)) paidByCard = true;
+      else if (CASH_WORDS.test(rest)) paidInCash = true;
       pendingQty = null;
       continue;
     }
@@ -230,6 +241,9 @@ export function parseReceiptText(text: string): ParsedReceipt {
 
     items.push({ name, qty: Math.max(1, qty), total: lineTotal });
   }
+
+  // A card payment cannot give change: "Rückgeld" next to it is what the guest added as a tip.
+  if (paidByCard && !paidInCash && change > 0) tip = (tip ?? 0) + change;
 
   const delivery = fees.length > 0 && /liefer|delivery|lieferando|wolt|uber ?eats/i.test(text);
   const supermarket = SUPERMARKET_WORDS.test(text);

@@ -82,7 +82,10 @@ bleibt „Anteil begleichen“ der PayPal-Weg und darunter steht „Lieber per �
 
 ### Trinkgeld
 
-Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen. Sonst fragt billsplit vor dem Erstellen des
+Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen – auch wenn es nur als Differenz erkennbar ist: Wurde
+mit Karte mehr als die Summe gezahlt, ist die Differenz Trinkgeld, selbst wenn die Kasse sie als „Rückgeld“ druckt
+(„Summe 208,00 · Kreditkarte 230,00 · Rückgeld 22,00“ → 22,00 € Trinkgeld; mit Karte gibt es kein Rückgeld). Nur bei
+Barzahlung ist Rückgeld wirklich Rückgeld. Sonst fragt billsplit vor dem Erstellen des
 QR-Codes nach: absolut (der Trinkgeldbetrag selbst, voreingestellt), in Prozent oder als Endbetrag, also was Du insgesamt bezahlt
 hast. Beim Endbetrag ist das Trinkgeld die Differenz zum Rechnungsbetrag. Bei einer erkannten Lieferbestellung stehen unter
 „absolut“ Schnellknöpfe für den Fahrer: 0,50 €, 1 €, 2 €.
