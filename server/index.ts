@@ -6,6 +6,7 @@ import { createApp } from "./app.ts";
 import { Monitor } from "./monitor.ts";
 import { isAiConfigured } from "./parseReceipt.ts";
 import { PushService } from "./push.ts";
+import { RateService } from "./rates.ts";
 import { BillStore } from "./store.ts";
 
 try {
@@ -40,7 +41,10 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN?.trim() || undefined;
 const accounts = new AccountStore(path.join(path.dirname(DATA_FILE), "accounts.json"));
 await accounts.load();
 
-const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts }));
+// Exchange rates (ECB, daily) for balances in the home currency, kept next to the bills.
+const rates = new RateService(path.dirname(DATA_FILE));
+await rates.load();
+const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts, rates }));
 
 server.listen(PORT, () => {
   console.log(

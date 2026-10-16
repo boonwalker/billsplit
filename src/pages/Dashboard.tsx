@@ -4,11 +4,12 @@ import PushSetting from "../components/PushSetting";
 import SettleSheet from "../components/SettleSheet";
 import { PlanCard, PlanPaySheet, TransferInbox } from "../components/SettlementPanel";
 import { api } from "../lib/api";
-import { computeBalances, type Balances, type PersonBalance } from "../lib/balances";
+import { computeBalances, mergeBalances, type Balances, type PersonBalance } from "../lib/balances";
+import { homeCurrency, loadRates, type Rates } from "../lib/currency";
 import type { BillSnapshot, NetworkEdge, Transfer } from "../lib/bill";
 import { useBillChanges } from "../lib/liveEvents";
 import { planSettlement, type PlannedTransfer } from "../lib/simplify";
-import { t } from "../lib/i18n";
+import { formatDate, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 import { rememberDashboard, takeDashboard, type DashboardView } from "../lib/dashboardReturn";
 import { billPath, navigate } from "../lib/router";
@@ -198,6 +199,11 @@ function PersonRing({ person, currency, onOpen }: { person: PersonBalance; curre
  */
 export default function Dashboard({ focusTransfer }: { focusTransfer?: string }) {
   const [balances, setBalances] = useState<Balances[] | null>(null);
+  /** Exchange rates of the day: several currencies add up to one balance in the home currency. */
+  const [rates, setRates] = useState<Rates | null>(null);
+  useEffect(() => void loadRates().then(setRates), []);
+  const home = homeCurrency();
+  const merged = balances && rates ? mergeBalances(balances, home, rates) : null;
   const [settle, setSettle] = useState<{ person: PersonBalance; currency: string } | null>(null);
 
   /** Open shares in all my bills (for the plan) and the settlement payments that concern me. */
@@ -293,12 +299,51 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
         ) : balances.length === 0 ? (
           <p className="muted empty">{t("Noch keine Rechnungen – sobald Du eine erstellst oder scannst, erscheint hier Deine Bilanz.")}</p>
         ) : (
-          balances.map((b) => (
-            <section key={b.currency} className="dashboard-section">
-              <h3 className="section-title">{balances.length > 1 ? t("Bilanz in {currency}", { currency: b.currency }) : t("Leihen oder schulden?")}</h3>
+          <>
+          {/* Several currencies: one balance in the home currency first, settling below per currency. */}
+          {merged && (
+            <section className="dashboard-section">
+              <h3 className="section-title">{t("Leihen oder schulden?")}</h3>
               <div className="card">
-                <BalanceRing balances={b} />
+                <BalanceRing balances={merged} />
+                <p className="muted small rates-note">
+                  {t("Alle Währungen in {currency} umgerechnet – mit den Referenzkursen der Europäischen Zentralbank vom {date}.", {
+                    currency: home,
+                    date: formatDate(merged.ratesDate),
+                  })}
+                </p>
               </div>
+              {merged.people.length > 0 && (
+                <>
+                  <h3 className="section-title">{t("Mit wem Du wie stehst")}</h3>
+                  <ul className="person-rings">
+                    {merged.people.map((p) => (
+                      <PersonRing
+                        key={p.id}
+                        person={p}
+                        currency={home}
+                        onOpen={() => {
+                          const currency = merged.mainCurrency[p.id];
+                          const person = balances.find((b) => b.currency === currency)?.people.find((x) => x.id === p.id);
+                          if (person) setSettle({ person, currency });
+                        }}
+                      />
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
+          {balances.map((b) => (
+            <section key={b.currency} className="dashboard-section">
+              <h3 className="section-title">
+                {merged ? t("Ausgleichen in {currency}", { currency: b.currency }) : balances.length > 1 ? t("Bilanz in {currency}", { currency: b.currency }) : t("Leihen oder schulden?")}
+              </h3>
+              {!merged && (
+                <div className="card">
+                  <BalanceRing balances={b} />
+                </div>
+              )}
               {/* On top of the balance: settle everything with as few payments as possible. */}
               {network &&
                 plans
@@ -308,7 +353,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
                   ))}
               {b.people.length > 0 && (
                 <>
-                  <h3 className="section-title">{t("Mit wem Du wie stehst")}</h3>
+                  {!merged && <h3 className="section-title">{t("Mit wem Du wie stehst")}</h3>}
                   <ul className="person-rings">
                     {b.people.map((p) => (
                       <PersonRing key={p.id} person={p} currency={b.currency} onOpen={() => setSettle({ person: p, currency: b.currency })} />
@@ -317,7 +362,8 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
                 </>
               )}
             </section>
-          ))
+          ))}
+          </>
         )}
       </main>
       {paying && (

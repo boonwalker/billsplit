@@ -15,6 +15,7 @@ import { AccountStore, normalizeEmail } from "./accounts.ts";
 import { mailerFromEnv, type SendCode, type SendWelcome } from "./mail.ts";
 import { HandoffBoard, networkKey } from "./handoff.ts";
 import { isPushEndpoint, type PushService } from "./push.ts";
+import type { RateService } from "./rates.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
 
 /** Base64 of a downscaled receipt photo is well below this. */
@@ -66,6 +67,8 @@ export interface AppOptions {
   trustProxy?: boolean;
   /** Push notifications; without it the app does not offer them. */
   push?: PushService;
+  /** Exchange rates for the balances in the home currency (ECB); without it there are none. */
+  rates?: RateService;
   /** Errors and AI usage for the admin page. */
   monitor?: Monitor;
   /** Opens the admin page (`/api/admin?token=…`); without it there is none. */
@@ -402,6 +405,12 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     }
 
     // Push notifications: the server's public key and the device's subscription.
+    // Exchange rates of the day (ECB), for balances in the home currency.
+    if (parts[1] === "rates" && parts.length === 2 && method === "GET") {
+      const rates = options.rates ? await options.rates.get() : null;
+      res.setHeader("cache-control", "public, max-age=3600");
+      return sendJson(res, 200, { rates });
+    }
     if (parts[1] === "push") {
       if (parts[2] === "key" && method === "GET") return sendJson(res, 200, { publicKey: push?.publicKey ?? null });
       if (!push) throw new HttpError("Benachrichtigungen sind auf diesem Server nicht eingerichtet.", 404);

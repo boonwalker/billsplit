@@ -1,4 +1,4 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { defineConfig } from "@playwright/test";
@@ -12,6 +12,8 @@ const PORT = 4173;
 const DATA_DIR = (process.env.E2E_DATA_DIR ??= mkdtempSync(path.join(tmpdir(), "billsplit-e2e-")));
 // Sign-in codes land in this file instead of a mailbox (see server/mail.ts); the tests read it.
 process.env.MAIL_OUTBOX = path.join(DATA_DIR, "outbox.jsonl");
+// Fixed exchange rates instead of the ECB's (the server is pointed nowhere and keeps these).
+writeFileSync(path.join(DATA_DIR, "rates.json"), JSON.stringify({ date: "2026-10-15", source: "ECB", rates: { EUR: 1, USD: 1.08, GBP: 0.85 } }));
 
 export default defineConfig({
   testDir: "e2e/specs",
@@ -39,6 +41,7 @@ export default defineConfig({
       PORT: String(PORT),
       DATA_DIR,
       MAIL_OUTBOX: process.env.MAIL_OUTBOX,
+      ECB_RATES_URL: "http://127.0.0.1:9/keine-kurse",
       // The app's address; 127.0.0.1 plays the old one (move.e2e.ts).
       PUBLIC_URL: `http://localhost:${PORT}`,
       RESEND_API_KEY: "",

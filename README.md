@@ -196,6 +196,14 @@ neue Aufstellung gezeigt. In den Rechnungen steht bei den betroffenen Anteilen e
 Ausgleich Niklas → Anna ✓“ oder „25,34 € gegenseitig verrechnet (Niklas ↔ Ben) ✓“). Eigene Ausgleichszahlungen
 bleiben nach der Bestätigung noch drei Tage im Dashboard sichtbar („✓ Anna hat 24,06 € erhalten“).
 
+
+**Mehrere Währungen:** Gibt es Rechnungen in verschiedenen Währungen, rechnet das Dashboard alles in die Heimwährung
+um und zeigt oben eine gemeinsame Bilanz samt „Mit wem Du wie stehst“ („Alle Währungen in EUR umgerechnet – mit den
+Referenzkursen der Europäischen Zentralbank vom …“). Darunter steht je Währung „Ausgleichen in USD“ usw. – bezahlt wird
+in der Währung der Rechnung. Die Kurse holt der Server werktäglich von der EZB (`server/rates.ts`, `/api/rates`,
+gespeichert als `rates.json` im Datenordner; ist die EZB nicht erreichbar, gelten die letzten). Die Heimwährung folgt
+der Region des Geräts (z. B. en-US → USD, sonst Euro) und lässt sich im Profil unter „Heimwährung“ festlegen.
+
 ### Kassenbon-Vorschau
 
 Beim ersten Öffnen einer neu erstellten Rechnung schiebt sich – während der Rechnungssteller oben bei QR-Code und
@@ -426,7 +434,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
   gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
   abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
-  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch); Lieferbestellung mit Trinkgeld-Schnellknöpfen; nach dem Bezahlen streichen (Nachfrage, Rückzahlung).
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch); Lieferbestellung mit Trinkgeld-Schnellknöpfen; nach dem Bezahlen streichen (Nachfrage, Rückzahlung); Bilanz über mehrere Währungen (feste Kurse in `rates.json`).
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait
@@ -549,6 +557,7 @@ claude.ai-Artifact gedacht:
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional: eigene Schlüssel für Push (sonst einmal erzeugt und in `DATA_DIR/vapid.json` gespeichert) |
 | `VAPID_SUBJECT` | optional: Kontakt für die Push-Dienste (Standard `mailto:hallo@billsplit.app`) |
 | `ADMIN_TOKEN` | optional: schaltet die Betriebsseite `/api/admin?token=…` frei (Nutzung, Kosten, Fehler, Datenbank-Download) |
+| `ECB_RATES_URL` | optional: andere Quelle für die Wechselkurse im EZB-XML-Format (Standard: Tageskurse der EZB) |
 | `PUBLIC_URL` | optional: öffentliche Adresse der App (Logo und Links in den Mails; ohne sie die Railway-Domain). Andere Adressen leiten dorthin um und nehmen die Daten mit (siehe „Umzug auf eine neue Adresse“) |
 | `RESEND_API_KEY`, `MAIL_FROM` | optional: Versand der Anmelde-Codes über Resend, z. B. `MAIL_FROM=klicksplit <code@klicksplit.de>` (ohne: Code nur im Log) |
 

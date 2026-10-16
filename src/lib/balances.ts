@@ -1,6 +1,7 @@
 import { openShare, participantShare, type BillSnapshot, type PaymentInfo } from "./bill";
 import { ownerSummary } from "../components/OwnerPanel";
 import { t } from "./i18n";
+import { convert, type Rates } from "./currency";
 import type { Cents } from "./money";
 
 /** One open amount between me and a person, in one bill. */
@@ -150,3 +151,47 @@ export function guestStatus(snap: BillSnapshot): { markedPaid: boolean; owed: Ce
   return { markedPaid: Boolean(snap.myPayment?.markedPaidAt), owed, settled: owed === 0 && covered, currency: snap.data.currency };
 }
 
+
+/** A balance in the home currency: all currencies converted and added up (see mergeBalances). */
+export interface MergedBalances extends Balances {
+  /** Per person: the currency most of it is in (settling happens in a bill's own currency). */
+  mainCurrency: Record<string, string>;
+  /** Day of the exchange rates. */
+  ratesDate: string;
+}
+
+/**
+ * Adds up the balances of all currencies in the home currency, with the rates of the day –
+ * null when there is only the home currency anyway, or a rate is missing.
+ */
+export function mergeBalances(list: Balances[], home: string, rates: Rates): MergedBalances | null {
+  if (!list.length || (list.length === 1 && list[0].currency === home)) return null;
+  const merged: MergedBalances = { currency: home, lent: 0, owed: 0, unassigned: 0, people: [], mainCurrency: {}, ratesDate: rates.date };
+  const people = new Map<string, PersonBalance>();
+  const weight = new Map<string, Map<string, number>>();
+  for (const b of list) {
+    const to = (cents: Cents) => convert(cents, b.currency, home, rates);
+    const [lent, owed, unassigned] = [to(b.lent), to(b.owed), to(b.unassigned)];
+    if (lent === null || owed === null || unassigned === null) return null;
+    merged.lent += lent;
+    merged.owed += owed;
+    merged.unassigned += unassigned;
+    for (const p of b.people) {
+      const pl = to(p.lent)!;
+      const po = to(p.owed)!;
+      const m = people.get(p.id) ?? { id: p.id, name: p.name, lent: 0, owed: 0, bills: 0, entries: [] };
+      m.lent += pl;
+      m.owed += po;
+      m.bills += p.bills;
+      m.entries = [...m.entries, ...p.entries.map((e) => ({ ...e, amount: to(e.amount)! }))];
+      m.payment ??= p.payment;
+      people.set(p.id, m);
+      const w = weight.get(p.id) ?? new Map<string, number>();
+      w.set(b.currency, (w.get(b.currency) ?? 0) + pl + po);
+      weight.set(p.id, w);
+    }
+  }
+  for (const [id, w] of weight) merged.mainCurrency[id] = [...w].sort((x, y) => y[1] - x[1])[0][0];
+  merged.people = [...people.values()].sort((x, y) => Math.abs(y.lent - y.owed) - Math.abs(x.lent - x.owed) || x.name.localeCompare(y.name, "de"));
+  return merged;
+}

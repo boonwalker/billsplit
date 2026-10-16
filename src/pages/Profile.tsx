@@ -1,3 +1,4 @@
+import { CURRENCIES, chosenCurrency, deviceCurrency, setHomeCurrency } from "../lib/currency";
 import { useState, type FormEvent } from "react";
 import AccountSection from "../components/AccountSection";
 import DeviceTransfer from "../components/DeviceTransfer";
@@ -197,6 +198,14 @@ export default function Profile({ next }: { next?: string }) {
             <LanguageSetting />
           </section>
         )}
+
+        {/* Balances in several currencies are added up in this one (ECB rates of the day). */}
+        {!next && (
+          <section className="stack currency-section">
+            <h3 className="section-title">{t("Heimwährung")}</h3>
+            <CurrencySetting />
+          </section>
+        )}
         {!next && !DEMO && (
           <section className="stack device-section">
             <h3 className="section-title">{t("Gerät wechseln & sichern")}</h3>
@@ -205,6 +214,32 @@ export default function Profile({ next }: { next?: string }) {
         )}
       </main>
     </div>
+  );
+}
+
+/** The currency the dashboard adds everything up in; "automatisch" follows the device's region. */
+function CurrencySetting() {
+  const [chosen, setChosen] = useState(chosenCurrency);
+  return (
+    <label className="field">
+      <select
+        aria-label={t("Heimwährung")}
+        value={chosen ?? ""}
+        onChange={(e) => {
+          const value = e.target.value || null;
+          setHomeCurrency(value);
+          setChosen(value);
+        }}
+      >
+        <option value="">{t("Automatisch ({currency})", { currency: deviceCurrency() })}</option>
+        {CURRENCIES.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+      <small className="muted">{t("Rechnungen in anderen Währungen rechnet das Dashboard mit den Tageskursen der Europäischen Zentralbank in diese Währung um.")}</small>
+    </label>
   );
 }
 

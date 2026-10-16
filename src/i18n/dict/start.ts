@@ -1,6 +1,9 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. Area: start page, profile, account, devices. */
 export default {
   en: {
+    "Heimwährung": "Home currency",
+    "Automatisch ({currency})": "Automatic ({currency})",
+    "Rechnungen in anderen Währungen rechnet das Dashboard mit den Tageskursen der Europäischen Zentralbank in diese Währung um.": "The dashboard converts bills in other currencies into this one, using the European Central Bank's rates of the day.",
     // Home
     "Profil – angemeldet als {account}": "Profile – signed in as {account}",
     "Profil": "Profile",
@@ -273,6 +276,9 @@ export default {
     "Ansicht als": "View as",
   } as Record<string, string>,
   es: {
+    "Heimwährung": "Moneda principal",
+    "Automatisch ({currency})": "Automática ({currency})",
+    "Rechnungen in anderen Währungen rechnet das Dashboard mit den Tageskursen der Europäischen Zentralbank in diese Währung um.": "El panel convierte las cuentas en otras monedas a esta, con los tipos de cambio del día del Banco Central Europeo.",
     // Home
     "Profil – angemeldet als {account}": "Perfil – sesión iniciada como {account}",
     "Profil": "Perfil",
