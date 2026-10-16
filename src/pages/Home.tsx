@@ -281,7 +281,14 @@ export default function Home() {
             <ul className="list">
               {(showAll ? recent : recent.slice(0, LIST_PAGE)).map((b) => (
                 <li key={b.id} className={`list-item${b.gone ? " gone" : ""}${b.unread && !b.gone ? " unread" : ""}`}>
-                  <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
+                  <button
+                    className="list-main"
+                    onClick={() => {
+                      // Read as soon as it is opened from here (the bill page remembers it as well).
+                      if (b.unread) updateRecent(b.id, { unread: undefined });
+                      navigate(`/b/${b.id}`);
+                    }}
+                  >
                     <span className="list-title">{b.title || t("Rechnung")}</span>
                     {b.unread && !b.gone && <span className="sr-only">{t("ungelesen")}</span>}
                     <span className="muted small">
