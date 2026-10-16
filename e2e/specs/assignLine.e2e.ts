@@ -4,12 +4,12 @@ import { api, createBill, joinAndClaim, key, phone } from "./helpers";
 /** Holds a finger on a receipt line until its sheet opens. */
 async function hold(page: Page, name: string) {
   const line = page.locator("li[data-item]", { hasText: name }).locator(".rline-main");
-  await line.scrollIntoViewIfNeeded();
-  const box = (await line.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  // hover() waits until the line stands still (it slides in) and moves the pointer onto it.
+  await line.hover();
   await page.mouse.down();
   await page.waitForTimeout(700);
   await page.mouse.up();
+  await expect(page.getByRole("dialog", { name: new RegExp(name) })).toBeVisible();
 }
 
 test("Rechnungssteller: gedrückt halten ordnet eine Zeile direkt zu – mehrere teilen sie", async ({ browser }) => {

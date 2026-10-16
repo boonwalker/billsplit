@@ -118,6 +118,10 @@ sondern anteilig nach Bestellwert verteilt: Jede Position wird um denselben Proz
 „Rabatt auf jede Position -25 %“). So kann kein Anteil unter null fallen, und „Dir fehlen noch“ liegt nie über der
 Rechnungssumme. „N von M haben auf Bezahlen getippt“ erscheint erst, wenn jemand beigetreten ist.
 
+**Rundung:** „Dir fehlen noch“ ist immer genau die Summe dessen, was die Freunde laut ihrer Rechnung zahlen (plus was noch
+niemand hat) – nie „Gesamt minus eigener Anteil“. Bei 6,55 € für zwei zahlt der Freund 3,28 €, also fehlen 3,28 €;
+den Rundungscent trägt der Rechnungssteller, „Dein eigener Anteil“ zeigt 3,27 € (`ownerSummary` in `OwnerPanel.tsx`).
+
 ### Gleichverteilung
 
 Für Rechnungen, bei denen niemand einzelne Positionen zuordnen will (z. B. ein gemeinsamer Supermarkt-Einkauf),

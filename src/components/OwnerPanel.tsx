@@ -4,7 +4,6 @@ import {
   billTotal,
   equalShare,
   poolTotal,
-  participantShare,
   perHeadFees,
   sharedPerPerson,
   sharedTotal,
@@ -118,16 +117,24 @@ export function isSettled(snapshot: BillSnapshot): boolean {
   return (snapshot.debtors ?? []).length > 0 && ownerSummary(snapshot).missing === 0;
 }
 
+/**
+ * The payer's sums. What is missing is exactly what the friends are asked to pay (their shares,
+ * as their bill shows them) plus what nobody has yet – never "total minus my share": with
+ * rounding (6,55 € / 2 = 3,28 € each) that would be a cent off. The payer's own share is what is
+ * left of the total, so the payer carries the rounding cent and the lines still add up.
+ */
 export function ownerSummary(snapshot: BillSnapshot) {
   const total = billTotal(snapshot.data);
-  const own = snapshot.me ? participantShare(snapshot.data, snapshot.participants, snapshot.me).total : 0;
   const debtors = snapshot.debtors ?? [];
+  const unassigned = unassignedAmount(snapshot.data, snapshot.participants);
+  const others = debtors.reduce((s, d) => s + d.amount, 0);
+  const own = Math.max(0, total - others - unassigned);
   // Confirmed as received, plus what confirmed settlement payments covered (never more than the share).
   const received = debtors.reduce(
     (s, d) => s + Math.min(d.amount, (d.received ? (d.payAmount ?? d.amount) : 0) + (d.credited ?? 0)),
     0,
   );
-  return { total, own, received, missing: Math.max(0, total - own - received), unassigned: unassignedAmount(snapshot.data, snapshot.participants) };
+  return { total, own, received, missing: Math.max(0, others + unassigned - received), unassigned };
 }
 
 /** What only the payer sees below the bill: who scanned, who tapped pay, what is still missing. */
