@@ -53,7 +53,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
      mitgeben, wenn sich ihr Hash geändert hat.)
    - In einer **neuen Sitzung** das Artifact vorher einmal mit `action: "read"` lesen (sonst wird der Publish
      abgelehnt) und mit `action: "list", scope: "files"` nachsehen, welche Asset-Namen aktuell veröffentlicht sind.
-   - Zuletzt veröffentlicht: `assets/index-tz3Wf65e.js`, `assets/Scan-OeEcoULa.js` (Version 169).
+   - Zuletzt veröffentlicht: `assets/index-CGUxcH6c.js`, `assets/Scan-BsbCS-jW.js` (Version 170).
 
 ## Betrieb
 
