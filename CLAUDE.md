@@ -216,7 +216,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   zahlt.“ / „Alle splitten.“ (noch auf dem Bon, „Alle splitten.“ mint, kein dunkler Kasten). Willkommensmail „Willkommen bei klicksplit!“ nach Kontoanlage, mit Bon „So einfach geht's“ (Animation Durchstreichen/„/2“, Zeilen antippbar in Apple Mail; `demoReceipt` in `server/mail.ts`).
 - Konto: „Deine E-Mail-Adresse“, „Code senden“, „Code eingeben“, „Überspringen“, Startseite „Schon ein Konto?
   Anmelden“, Profil ganz oben „Konto“: „● Angemeldet“ + Adresse bzw. „Nicht angemeldet“ + „Anmelden oder Konto
-  anlegen“, „Abmelden“, „Konto löschen“; grüner Haken am Profil-Knopf der Startseite
+  anlegen“, „Abmelden“, „Konto löschen“; grüner Haken am Profil-Knopf der Startseite; einmalige Fenster „Warst Du schon mal bei
+  klicksplit?“ („Anmelden“ / „Ich bin neu hier“, leerer Speicher auf der Startseite) und „Sichere Deine Rechnungen“
+  („Konto anlegen“ / „Später“, zweite Nutzung ohne Konto mit Rechnungen)
 
 ## Offene Ideen / Backlog (noch nicht beauftragt)
 

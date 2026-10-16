@@ -16,7 +16,7 @@ import { createSampleBill } from "../lib/sampleBill";
 import { accountsAvailable, refreshAccount } from "../lib/account";
 import { reportError } from "../lib/errorReport";
 import { useBillChanges } from "../lib/liveEvents";
-import { clearDraft, hasPaymentMethod, hideBill, markGone, loadAccountEmail, loadAccountLost, loadOwnProfile, loadRecent, syncRecentBills, updateRecent, type RecentBill } from "../lib/storage";
+import { clearDraft, hasPaymentMethod, hideBill, markGone, loadAccountEmail, loadAccountLost, markAsked, loadOwnProfile, loadRecent, sessionCount, startedFresh, startedOnHome, syncRecentBills, wasAsked, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 /** Bills shown before "Ältere anzeigen". */
@@ -29,6 +29,19 @@ export default function Home() {
    * page, then the profile assistant – and in Safari afterwards the way onto the home screen.
    */
   const [onboarding, setOnboarding] = useState<{ step: "profile" | "install"; billId: string } | null>(null);
+  /**
+   * The account, asked once at the right moment: opened with empty storage on the start page –
+   * maybe a returning user on a new phone or after the browser deleted its data – or the second
+   * use without an account, while there are bills worth keeping (see storage: startedFresh).
+   */
+  const [ask, setAsk] = useState<"returning" | "secure" | null>(() => {
+    if (!accountsAvailable || loadAccountEmail()) return null;
+    if (startedFresh) return startedOnHome && !wasAsked("returning") ? "returning" : null;
+    return sessionCount() >= 2 && loadRecent().length > 0 && !wasAsked("secure") ? "secure" : null;
+  });
+  useEffect(() => {
+    if (ask) markAsked(ask);
+  }, [ask]);
   useEffect(() => {
     const billId = takeStartPageQuestion();
     if (!billId) return;
@@ -359,6 +372,25 @@ export default function Home() {
       {onboarding?.step === "install" && <InstallHint url={billUrl(onboarding.billId, window.location.href)} onClose={() => setOnboarding(null)} />}
 
       {/* Money still open or a payment to confirm: the bill stays in the list until then. */}
+      {ask && !onboarding && (
+        <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && setAsk(null)}>
+          <div className="sheet confirm-sheet" role="dialog" aria-labelledby="ask-title" aria-describedby="ask-text">
+            <h2 id="ask-title">{ask === "returning" ? t("Warst Du schon mal bei klicksplit?") : t("Sichere Deine Rechnungen")}</h2>
+            <p id="ask-text" className="muted">
+              {ask === "returning"
+                ? t("Mit Deiner E-Mail-Adresse holst Du Deine Rechnungen auf dieses Gerät zurück.")
+                : t("Mit Deiner E-Mail-Adresse sind Deine Rechnungen auf jedem Gerät da – auch wenn Du das Handy wechselst oder der Browser seine Daten löscht. Ohne Passwort, mit einem Code per Mail.")}
+            </p>
+            <button type="button" className="btn btn-primary btn-large" onClick={() => navigate("/anmelden")}>
+              {ask === "returning" ? t("Anmelden") : t("Konto anlegen")}
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => setAsk(null)}>
+              {ask === "returning" ? t("Ich bin neu hier") : t("Später")}
+            </button>
+          </div>
+        </div>
+      )}
+
       {removing?.open && (
         <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && setRemoving(null)}>
           <div className="sheet confirm-sheet" role="alertdialog" aria-labelledby="keep-title" aria-describedby="keep-text">

@@ -75,6 +75,41 @@ const HIDDEN_KEY = "billsplit.hidden";
 /** Fired when this device takes on another identity (sign-in, new device, sign-out). */
 export const DEVICE_CHANGED = "billsplit:device-changed";
 
+/**
+ * How the app was opened this time, read before anything is stored: without a device key the
+ * storage is empty – a new phone, a new home-screen app, or the browser deleted its data (Safari
+ * does after 7 days without a visit). Only then can "Schon ein Konto?" bring bills back.
+ */
+export const startedFresh = (() => {
+  try {
+    return !localStorage.getItem(DEVICE_KEY);
+  } catch {
+    return false;
+  }
+})();
+/** Opened on the start page itself (not through a bill link, where a guest wants to pay first). */
+export const startedOnHome = typeof window !== "undefined" && ["", "#", "#/"].includes(window.location.hash);
+
+const SESSIONS_KEY = "billsplit.sessions";
+const SESSION_GAP_MS = 30 * 60 * 1000;
+
+/** Counts one use of the app (a start, or coming back after half an hour); returns how many there were. */
+export function countSession(now = Date.now()): number {
+  const { count, at } = read<{ count: number; at: number }>(SESSIONS_KEY, { count: 0, at: 0 });
+  if (now - at < SESSION_GAP_MS) {
+    write(SESSIONS_KEY, { count, at: now });
+    return count;
+  }
+  write(SESSIONS_KEY, { count: count + 1, at: now });
+  return count + 1;
+}
+
+export const sessionCount = (): number => read<{ count: number }>(SESSIONS_KEY, { count: 0 }).count;
+
+/** Questions asked only once per device. */
+export const wasAsked = (name: string): boolean => read<boolean>(`billsplit.asked.${name}`, false);
+export const markAsked = (name: string) => write(`billsplit.asked.${name}`, true);
+
 export function loadProfile(): Profile {
   // In the demo, friends are simulated personas with a fixed name.
   const friend = DEMO ? friendName(getPersona()) : null;

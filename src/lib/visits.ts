@@ -1,7 +1,7 @@
 import { DEMO } from "./demo";
 import { isStandalone } from "./handoff";
 import { lang } from "./i18n";
-import { deviceKey } from "./storage";
+import { countSession, deviceKey } from "./storage";
 
 /**
  * Tells the server that the app was opened – on start and when it comes back after a while –
@@ -12,6 +12,8 @@ const GAP_MS = 30 * 60 * 1000;
 let last = 0;
 
 function report(): void {
+  // Also on this device: the second use brings the question about an account (see Home).
+  countSession();
   if (Date.now() - last < GAP_MS) return;
   last = Date.now();
   void fetch("/api/visit", {

@@ -334,6 +334,12 @@ immer in Safari öffnen, nie in der Home-Bildschirm-App).
 - **Neues Gerät:** auf der Startseite „Schon ein Konto? Anmelden“ (solange dort noch keine Rechnungen sind) oder im
   Profil. Nach dem Code hat das Gerät die Gerätekennung des Kontos, das Profil und alle Rechnungen. Was das Gerät
   vorher schon hatte (z. B. eine Rechnung, der man im Browser beigetreten ist), wird ins Konto übernommen.
+- **Einmal nachfragen:** Öffnet jemand die Startseite mit leerem Speicher (neues Handy, neue Home-Bildschirm-App,
+  Browser hat die Daten gelöscht – nicht über einen Rechnungslink, da soll der Gast erst zahlen), fragt klicksplit
+  einmal „Warst Du schon mal bei klicksplit?“ mit „Anmelden“ / „Ich bin neu hier“. Wer klicksplit zum zweiten Mal nutzt
+  (Start oder Rückkehr nach mindestens 30 Minuten, `countSession`), noch kein Konto hat und Rechnungen in der Liste,
+  bekommt einmal „Sichere Deine Rechnungen“ mit „Konto anlegen“ / „Später“ (`startedFresh`, `billsplit.sessions`,
+  `billsplit.asked.*` in `src/lib/storage.ts`).
 - **Abmelden** (Profil): das Gerät startet leer, im Konto bleibt alles. **Konto löschen**: die Adresse wird
   gelöscht, die Rechnungen bleiben auf dem Gerät.
 - **Schutz:** Codes gelten 15 Minuten und einmal, nach 5 falschen Versuchen ist ein Code ungültig; höchstens 5 Codes
