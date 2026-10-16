@@ -220,6 +220,11 @@ Betrag und Anteil. Darunter stehen die Einzelbilanzen mit jeder Person als klein
 Kacheln (über alle Rechnungen zusammengefasst – zugeordnet über die Gerätekennung der Person, nicht über den Namen, sodass zwei Annas nie verrechnet werden; grün, was die Person Dir schuldet, orange, was Du ihr schuldest). Grün und Orange sind für Hell- und Dunkelmodus auf Farbenblindheit geprüft; bei mehreren Währungen
 gibt es je Währung eine eigene Übersicht.
 
+Jede Kachel lässt sich antippen – auch bei „✓ ausgeglichen“ („Verlauf ansehen ›“). Das Fenster zeigt oben, was offen
+ist, und darunter immer **„Gemeinsame Rechnungen“**: jede Rechnung mit der Person, neueste zuerst, mit Datum, wer bezahlt
+hat, dem Anteil und „x,xx € offen“ bzw. „✓ beglichen“ (`PersonBalance.history` in `src/lib/balances.ts`). Ist alles
+beglichen, heißt das Fenster „Du und Anna“ mit „✓ Mit Anna ist alles ausgeglichen.“
+
 **Rechnungen in den Listen:** In allen Aufstellungen des Dashboards (Ausgleich mit einer Person, Zahlungsplan,
 Eingänge) öffnet ein Tipp auf eine Rechnung diese direkt an der Stelle mit dem Betrag – beim eigenen Beleg bei der
 Person in der Freundesliste, beim fremden am Ende des Belegs mit dem eigenen Anteil. „Zurück“ führt wieder zur Liste,

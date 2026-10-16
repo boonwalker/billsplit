@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { api, type ReminderStatus } from "../lib/api";
 import { billUrl } from "../lib/bill";
 import type { NetworkEdge } from "../lib/bill";
-import { rich, t } from "../lib/i18n";
+import type { HistoryEntry } from "../lib/balances";
+import { formatDate, rich, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
 import { sameAllocations, settlementWith } from "../lib/settle";
 import PayButtons from "./PayButtons";
@@ -12,6 +13,8 @@ import { BillEntry } from "./SettlementPanel";
 interface Props {
   /** The person's participant id and name. */
   person: { id: string; name: string };
+  /** Every bill shared with them, newest first – also the settled ones. */
+  history?: HistoryEntry[];
   currency: string;
   me: string;
   edges: NetworkEdge[];
@@ -33,7 +36,7 @@ type Stage = "review" | "booking" | "done";
  * - It evens out exactly: offset both sides; they confirm.
  * Until it is confirmed the shares count as paid in every bill (nobody pays twice).
  */
-export default function SettleSheet({ person, currency, me, edges: shownEdges, myName, reload, onClose, onOpenBill }: Props) {
+export default function SettleSheet({ person, history = [], currency, me, edges: shownEdges, myName, reload, onClose, onOpenBill }: Props) {
   const [edges, setEdges] = useState(shownEdges);
   const [stage, setStage] = useState<Stage>("review");
   const [notice, setNotice] = useState<string | null>(null);
@@ -114,7 +117,7 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
   return (
     <div className="sheet-backdrop settle-backdrop" onClick={(e) => e.target === e.currentTarget && stage !== "booking" && onClose(stage === "done")}>
       <div className="sheet settle-sheet" role="dialog" aria-label={t("Mit {name} ausgleichen", { name: person.name })}>
-        <h2>{t("Mit {name} ausgleichen", { name: person.name })}</h2>
+        <h2>{s.edges.length || stage !== "review" ? t("Mit {name} ausgleichen", { name: person.name }) : t("Du und {name}", { name: person.name })}</h2>
 
         {stage === "done" && booked ? (
           <>
@@ -150,17 +153,19 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
         ) : (
           <>
             {/* Bill by bill, so every euro can be traced to its bill. */}
-            <ul className="settle-entries">
-              {s.edges.map((e) => (
-                <BillEntry
-                  key={`${e.billId}:${e.debtorId}:${e.creditorId}`}
-                  title={e.title}
-                  text={e.debtorId === me ? t("Du schuldest {name}", { name: person.name }) : t("{name} schuldet Dir", { name: person.name })}
-                  amount={`${e.debtorId === me ? "−" : "+"}${fmt(e.amount)}`}
-                  onOpen={onOpenBill && (() => onOpenBill(e.billId, e.debtorId))}
-                />
-              ))}
-            </ul>
+            {s.edges.length > 0 && (
+              <ul className="settle-entries">
+                {s.edges.map((e) => (
+                  <BillEntry
+                    key={`${e.billId}:${e.debtorId}:${e.creditorId}`}
+                    title={e.title}
+                    text={e.debtorId === me ? t("Du schuldest {name}", { name: person.name }) : t("{name} schuldet Dir", { name: person.name })}
+                    amount={`${e.debtorId === me ? "−" : "+"}${fmt(e.amount)}`}
+                    onOpen={onOpenBill && (() => onOpenBill(e.billId, e.debtorId))}
+                  />
+                ))}
+              </ul>
+            )}
             {s.edges.length > 0 && (
               <p className="settle-total">
                 {net < 0 ? (
@@ -172,6 +177,8 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
                 )}
               </p>
             )}
+
+            {s.edges.length === 0 && !notice && <p className="settle-done">{t("✓ Mit {name} ist alles ausgeglichen.", { name: person.name })}</p>}
 
             {notice && <p className="alert">{notice}</p>}
 
@@ -224,6 +231,34 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
               </>
             )}
             {stage === "booking" && net >= 0 && <p className="muted small">{t("Wird eingetragen …")}</p>}
+
+            {/* The shared history: every bill with them, settled or not, newest first. */}
+            {history.length > 0 && stage === "review" && (
+              <>
+                <h3 className="settle-history-title">{t("Gemeinsame Rechnungen")}</h3>
+                <ul className="settle-entries">
+                  {history.map((h) => (
+                    <BillEntry
+                      key={`${h.billId}:${h.participantId}`}
+                      title={h.title}
+                      text={`${formatDate(h.createdAt)} · ${
+                        h.mine
+                          ? t("Du hast bezahlt · Anteil {name} {amount}", { name: person.name, amount: formatMoney(h.share, h.currency) })
+                          : t("{name} hat bezahlt · Dein Anteil {amount}", { name: person.name, amount: formatMoney(h.share, h.currency) })
+                      }`}
+                      amount={
+                        h.open > 0 ? (
+                          t("{amount} offen", { amount: formatMoney(h.open, h.currency) })
+                        ) : (
+                          <span className="history-settled">{t("✓ beglichen")}</span>
+                        )
+                      }
+                      onOpen={onOpenBill && (() => onOpenBill(h.billId, h.participantId))}
+                    />
+                  ))}
+                </ul>
+              </>
+            )}
 
             {stage !== "booking" && (
               <button type="button" className="btn btn-ghost" onClick={() => onClose(false)}>

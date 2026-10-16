@@ -115,3 +115,24 @@ describe("stillOpen: bills that cannot leave the list", () => {
     expect(stillOpen({ ...guest("Anna", true), myRefund: 200 })).toBe(true);
   });
 });
+
+describe("shared history per person", () => {
+  it("keeps every bill with the person – also the settled ones", () => {
+    const [eur] = computeBalances([
+      owner([
+        { name: "Anna", amount: 800, item: "b", received: true },
+        { name: "Ben", amount: 600, item: "c" },
+      ]),
+      guest("Anna"),
+    ]);
+    const anna = eur.people.find((p) => p.name === "Anna")!;
+    // Settled in my bill, open in hers – both in the history.
+    expect(anna.history.map((h) => [h.mine, h.share, h.open])).toEqual(
+      expect.arrayContaining([
+        [true, 800, 0],
+        [false, 800, 800],
+      ]),
+    );
+    expect(anna.history).toHaveLength(2);
+  });
+});

@@ -16,6 +16,22 @@ export interface BalanceEntry {
   debtorId?: string;
 }
 
+/** One bill shared with a person – settled or not – for the shared history in the dashboard. */
+export interface HistoryEntry {
+  billId: string;
+  title: string;
+  createdAt: string;
+  currency: string;
+  /** I paid the bill (they had a share in it) – or they paid and I had a share. */
+  mine: boolean;
+  /** Their share in my bill, or my share in theirs. */
+  share: Cents;
+  /** What of it is still open. */
+  open: Cents;
+  /** Where to open the bill: the share's participant. */
+  participantId: string;
+}
+
 /** What is open with one person across all bills, in one currency. */
 export interface PersonBalance {
   /** Their participant id: the same in every bill they joined from the same device. */
@@ -31,6 +47,8 @@ export interface PersonBalance {
   entries: BalanceEntry[];
   /** How they want to be paid: from their newest bill in which I owe them something. */
   payment?: PaymentInfo;
+  /** Every bill shared with them, newest first – also the settled ones. */
+  history: HistoryEntry[];
 }
 
 export interface Balances {
@@ -82,7 +100,7 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
     const name = rawName.trim() || t("Unbekannt");
     let p = b.byId.get(id);
     if (!p) {
-      p = { id, name, lent: 0, owed: 0, bills: 0, entries: [] };
+      p = { id, name, lent: 0, owed: 0, bills: 0, entries: [], history: [] };
       b.byId.set(id, p);
     }
     return p;
@@ -103,6 +121,7 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
           p.entries.push({ ...bill, direction: "owed", amount: d.refund });
         }
         const open = debtorOpen(d);
+        p.history.push({ ...bill, currency: snap.data.currency, mine: true, share: d.amount, open, participantId: d.id });
         if (open === 0) continue;
         p.lent += open;
         b.lent += open;
@@ -122,6 +141,14 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
         p.entries.push({ ...bill, direction: "lent", amount: snap.myRefund });
       }
       const open = myOpen(snap);
+      p.history.push({
+        ...bill,
+        currency: snap.data.currency,
+        mine: false,
+        share: participantShare(snap.data, snap.participants, snap.me).total,
+        open,
+        participantId: snap.me,
+      });
       if (open === 0) continue;
       p.owed += open;
       b.owed += open;
@@ -138,7 +165,11 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
       ...b,
       // Biggest open amounts first (either way), settled people last.
       people: [...byId.values()]
-        .map(({ paymentAt: _, ...p }) => ({ ...p, entries: p.entries.sort((x, y) => y.createdAt.localeCompare(x.createdAt)) }))
+        .map(({ paymentAt: _, ...p }) => ({
+          ...p,
+          entries: p.entries.sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
+          history: p.history.sort((x, y) => y.createdAt.localeCompare(x.createdAt)),
+        }))
         .sort((x, y) => Math.abs(y.lent - y.owed) - Math.abs(x.lent - x.owed) || x.name.localeCompare(y.name, "de")),
     }))
     .sort((x, y) => y.lent + y.owed - (x.lent + x.owed));
@@ -189,11 +220,13 @@ export function mergeBalances(list: Balances[], home: string, rates: Rates): Mer
     for (const p of b.people) {
       const pl = to(p.lent)!;
       const po = to(p.owed)!;
-      const m = people.get(p.id) ?? { id: p.id, name: p.name, lent: 0, owed: 0, bills: 0, entries: [] };
+      const m = people.get(p.id) ?? { id: p.id, name: p.name, lent: 0, owed: 0, bills: 0, entries: [], history: [] };
       m.lent += pl;
       m.owed += po;
       m.bills += p.bills;
       m.entries = [...m.entries, ...p.entries.map((e) => ({ ...e, amount: to(e.amount)! }))];
+      // The history keeps every bill in its own currency.
+      m.history = [...m.history, ...p.history].sort((x, y) => y.createdAt.localeCompare(x.createdAt));
       m.payment ??= p.payment;
       people.set(p.id, m);
       const w = weight.get(p.id) ?? new Map<string, number>();

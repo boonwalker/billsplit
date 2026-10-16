@@ -247,7 +247,7 @@
   font-family: var(--font-mono);
 }
 
-/* A person with open amounts: the whole tile opens the settlement. */
+/* The whole tile opens the settlement (or, when all is settled, the shared bills). */
 .person-ring {
   position: relative;
 }
@@ -263,7 +263,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.person-ring.open:active {
+.person-ring:active {
   transform: scale(0.98);
 }
 
@@ -411,4 +411,17 @@
 .settle-remind small {
   font-size: 0.78rem;
   color: var(--claim);
+}
+
+/* Every bill shared with the person, settled or not. */
+.settle-history-title {
+  margin: 18px 0 6px;
+  font-size: 0.95rem;
+}
+
+.settle-entries .history-settled {
+  color: var(--lent);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
 }

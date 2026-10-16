@@ -4,7 +4,7 @@ import PushSetting from "../components/PushSetting";
 import SettleSheet from "../components/SettleSheet";
 import { PlanCard, PlanPaySheet, TransferInbox } from "../components/SettlementPanel";
 import { api } from "../lib/api";
-import { computeBalances, mergeBalances, type Balances, type PersonBalance } from "../lib/balances";
+import { computeBalances, mergeBalances, type Balances, type HistoryEntry, type PersonBalance } from "../lib/balances";
 import { homeCurrency, loadRates, type Rates } from "../lib/currency";
 import type { BillSnapshot, NetworkEdge, Transfer } from "../lib/bill";
 import { useBillChanges } from "../lib/liveEvents";
@@ -154,8 +154,13 @@ function PersonRing({ person, currency, onOpen }: { person: PersonBalance; curre
   const open = person.entries.length > 0;
   return (
     <li className={`person-ring${open ? " open" : ""}`}>
-      {/* Tapping a person with open amounts opens the settlement (pay or confirm, bill by bill). */}
-      {open && <button type="button" className="person-ring-hit" aria-label={t("Mit {name} ausgleichen", { name: person.name })} onClick={onOpen} />}
+      {/* Always tappable: the settlement where something is open (pay or confirm, bill by bill), and the shared bills. */}
+      <button
+        type="button"
+        className="person-ring-hit"
+        aria-label={open ? t("Mit {name} ausgleichen", { name: person.name }) : t("Gemeinsame Rechnungen mit {name}", { name: person.name })}
+        onClick={onOpen}
+      />
       <div className="person-ring-chart">
         <svg viewBox="0 0 200 200" role="img" aria-label={t("{name}: Dir geschuldet {lent}, Du schuldest {owed}", {
             name: person.name,
@@ -188,7 +193,7 @@ function PersonRing({ person, currency, onOpen }: { person: PersonBalance; curre
       <small className="muted person-ring-bills">
         {person.bills === 1 ? t("{n} Rechnung", { n: person.bills }) : t("{n} Rechnungen", { n: person.bills })}
       </small>
-      {open && <span className="person-ring-action">{net < 0 ? t("Ausgleich zahlen ›") : net > 0 ? t("Ausgleich ansehen ›") : t("Verrechnen ›")}</span>}
+      <span className="person-ring-action">{!open ? t("Verlauf ansehen ›") : net < 0 ? t("Ausgleich zahlen ›") : net > 0 ? t("Ausgleich ansehen ›") : t("Verrechnen ›")}</span>
     </li>
   );
 }
@@ -204,7 +209,8 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
   useEffect(() => void loadRates().then(setRates), []);
   const home = homeCurrency();
   const merged = balances && rates ? mergeBalances(balances, home, rates) : null;
-  const [settle, setSettle] = useState<{ person: PersonBalance; currency: string } | null>(null);
+  /** The person opened from a ring – with the shared history (in all currencies when the balance is merged). */
+  const [settle, setSettle] = useState<{ person: PersonBalance; currency: string; history?: HistoryEntry[] } | null>(null);
 
   /** Open shares in all my bills (for the plan) and the settlement payments that concern me. */
   const [network, setNetwork] = useState<{ me: string; edges: NetworkEdge[]; transfers: Transfer[] } | null>(null);
@@ -331,7 +337,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
                         onOpen={() => {
                           const currency = merged.mainCurrency[p.id];
                           const person = balances.find((b) => b.currency === currency)?.people.find((x) => x.id === p.id);
-                          if (person) setSettle({ person, currency });
+                          if (person) setSettle({ person, currency, history: p.history });
                         }}
                       />
                     ))}
@@ -390,6 +396,7 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
       {settle && network && (
         <SettleSheet
           person={settle.person}
+          history={settle.history ?? settle.person.history}
           currency={settle.currency}
           me={network.me}
           edges={network.edges}
