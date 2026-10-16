@@ -119,10 +119,50 @@
   padding-right: 4px;
 }
 
-/* Not opened on this device yet (e.g. an expense a friend assigned to me): a highlighted frame until it is. */
+/*
+ * Not opened on this device yet (e.g. an expense a friend assigned to me): a highlighted frame
+ * until it is – softly pulsing, with a gleam running round it now and then.
+ */
 .list-item.unread {
+  position: relative;
   border-color: var(--claim);
-  box-shadow: 0 0 0 1px var(--claim);
+  animation: unread-pulse 2.6s ease-in-out infinite;
+}
+
+.list-item.unread::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, var(--mint) 70%, white) 47%, white 50%, color-mix(in srgb, var(--mint) 70%, white) 53%, transparent 65%);
+  background-size: 300% 100%;
+  /* Only the frame: the inside is cut out. */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: unread-gleam 3.6s ease-in-out infinite;
+}
+
+@keyframes unread-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--claim), 0 0 0 0 color-mix(in srgb, var(--mint) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 1px var(--claim), 0 0 18px 4px color-mix(in srgb, var(--mint) 60%, transparent);
+  }
+}
+
+@keyframes unread-gleam {
+  0% {
+    background-position: 130% 0;
+  }
+  55%,
+  100% {
+    background-position: -30% 0;
+  }
 }
 
 /* Read out, not shown. */

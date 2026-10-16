@@ -193,7 +193,8 @@ den Rest.
 **In der Rechnungsliste des Empfängers:** Die Liste „Deine Rechnungen“ liegt auf dem Gerät (`billsplit.recent`). Damit
 zugeordnete Rechnungen dort sofort auftauchen, ohne dass man sie erst über Push oder Dashboard öffnet, holt die
 Startseite beim Öffnen und bei jeder Live-Änderung `/api/my-bills` und ergänzt fehlende Rechnungen (`syncRecentBills`).
-So ergänzte Rechnungen sind **ungelesen**: farbig umrandet, bis man sie auf dem Gerät einmal öffnet (`unread` in
+So ergänzte Rechnungen sind **ungelesen**: grün umrandet, sanft pulsierend und mit einem Lichtreflex, der ab und zu
+über den Rand läuft (bei „Bewegung reduzieren“ still), bis man sie auf dem Gerät einmal öffnet (`unread` in
 `billsplit.recent`).
 Mit ✕ entfernte Rechnungen merkt sich das Gerät (`billsplit.hidden`) und holt sie nicht zurück, bis man sie wieder öffnet.
 Das gilt mit und ohne Konto.
