@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import SignIn from "./pages/SignIn";
 import Expense from "./pages/Expense";
 import Move from "./pages/Move";
+import Legal from "./pages/Legal";
 
 // The scanner pulls in the QR decoder; only load it when needed.
 const Scan = lazy(() => import("./pages/Scan"));
@@ -60,6 +61,10 @@ function Page(): ReactNode {
       return <DeviceLink code={route.code} />;
     case "move":
       return <Move code={route.code} target={route.target} app={route.app} />;
+    case "privacy":
+      return <Legal kind="privacy" />;
+    case "imprint":
+      return <Legal kind="imprint" />;
     default:
       return <Home />;
   }

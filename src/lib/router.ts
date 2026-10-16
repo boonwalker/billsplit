@@ -21,7 +21,10 @@ export type Route =
    */
   | { name: "bill"; id: string; focus?: string; back?: string }
   | { name: "original"; id: string }
-  | { name: "edit"; id: string };
+  | { name: "edit"; id: string }
+  /** Privacy policy and imprint (pages/Legal). */
+  | { name: "privacy" }
+  | { name: "imprint" };
 
 export function parseHash(hash: string): Route {
   const [path, query = ""] = hash.replace(/^#/, "").split("?");
@@ -36,6 +39,10 @@ export function parseHash(hash: string): Route {
       return { name: "signin" };
     case "ausgabe":
       return { name: "expense" };
+    case "datenschutz":
+      return { name: "privacy" };
+    case "impressum":
+      return { name: "imprint" };
     case "scan":
       return { name: "scan" };
     case "dashboard":

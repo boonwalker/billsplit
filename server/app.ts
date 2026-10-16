@@ -18,6 +18,7 @@ import { HandoffBoard, networkKey } from "./handoff.ts";
 import { isPushEndpoint, type PushService } from "./push.ts";
 import type { RateService } from "./rates.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
+import { operatorFromEnv, operatorMeta, type Operator } from "./operator";
 
 /** Base64 of a downscaled receipt photo is well below this. */
 const MAX_IMAGE_BODY = 12 * 1024 * 1024;
@@ -87,6 +88,8 @@ export interface AppOptions {
    * address move there and take the device's data along (see src/lib/move.ts).
    */
   homeUrl?: string;
+  /** Who runs klicksplit, for imprint and privacy policy (default: OPERATOR_* variables, see operator.ts). */
+  operator?: Operator | null;
 }
 
 /**
@@ -216,6 +219,9 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const codesPerClient = new RateLimiter(15, 60 * 60 * 1000);
   const verifiesPerClient = new RateLimiter(40, 60 * 60 * 1000);
   const home = originOf(options.homeUrl ?? process.env.PUBLIC_URL);
+  const operator = options.operator === undefined ? operatorFromEnv() : options.operator;
+  // Added to every page's head: the app's address (see src/lib/move.ts) and who runs it.
+  const headExtra = `${home ? `<meta name="klicksplit-home" content="${home}">` : ""}${operator ? operatorMeta(operator) : ""}`;
   const monitor = options.monitor;
   if (monitor) observeAi({ call: (usage) => monitor.aiCall(usage), failure: (message) => monitor.aiFailure(message) });
   /** Error reports from the app, per client address (a broken page must not flood the log). */
@@ -751,8 +757,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     }
     try {
       let data: Buffer | string = await readFile(filePath);
-      // The app's address, for pages opened at an old one (see src/lib/move.ts).
-      if (home && filePath.endsWith(".html")) data = data.toString("utf8").replace("</head>", `<meta name="klicksplit-home" content="${home}"></head>`);
+      if (headExtra && filePath.endsWith(".html")) data = data.toString("utf8").replace("</head>", `${headExtra}</head>`);
       const cacheControl = urlPath.startsWith("/assets/")
         ? "public, max-age=31536000, immutable"
         : urlPath.startsWith("/ocr/")

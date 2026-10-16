@@ -187,6 +187,10 @@ export default {
     "Andere Zahlungsart": "Different payment method",
     // AccountForm
     "Überspringen": "Skip",
+    "Datenschutz": "Privacy",
+    "Impressum": "Legal notice",
+    "Rechtliches": "Legal",
+    "Diese Seite gibt es nur auf Deutsch.": "This page is only available in German.",
     "Damit findest Du Deine Rechnungen auf jedem Gerät wieder – auch auf einem neuen Handy. Kein Passwort: Du bekommst einen Code per Mail.": "This way you'll find your bills on any device – even on a new phone. No password: you'll get a code by email.",
     "E-Mail-Adresse": "Email address",
     "Wird gesendet …": "Sending …",
@@ -482,6 +486,10 @@ export default {
     "Andere Zahlungsart": "Otro método de pago",
     // AccountForm
     "Überspringen": "Omitir",
+    "Datenschutz": "Privacidad",
+    "Impressum": "Aviso legal",
+    "Rechtliches": "Información legal",
+    "Diese Seite gibt es nur auf Deutsch.": "Esta página solo está disponible en alemán.",
     "Damit findest Du Deine Rechnungen auf jedem Gerät wieder – auch auf einem neuen Handy. Kein Passwort: Du bekommst einen Code per Mail.": "Así encontrarás tus cuentas en cualquier dispositivo – también en un móvil nuevo. Sin contraseña: recibirás un código por correo.",
     "E-Mail-Adresse": "Correo electrónico",
     "Wird gesendet …": "Enviando …",

@@ -49,6 +49,9 @@ export default defineConfig({
       BILL_LIMIT_PER_HOUR: "500",
       // The admin page (admin.e2e.ts).
       ADMIN_TOKEN: "e2e-admin-token-123456",
+      OPERATOR_NAME: "Erika Muster",
+      OPERATOR_ADDRESS: "Musterweg 1, 12345 Musterstadt",
+      OPERATOR_EMAIL: "hallo@example.org",
       // No AI in tests (and no costs).
       ANTHROPIC_API_KEY: "",
     },

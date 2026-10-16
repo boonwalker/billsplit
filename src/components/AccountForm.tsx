@@ -86,7 +86,13 @@ export default function AccountForm({
         <button className="btn btn-primary btn-large" disabled={busy || !email.trim()}>
           {busy ? t("Wird gesendet …") : t("Code senden")}
         </button>
-        <small className="muted account-privacy">{t("Nur für die Anmeldung, keine Werbung. Löschen kannst Du das Konto jederzeit im Profil.")}</small>
+        <small className="muted account-privacy">
+          {t("Nur für die Anmeldung, keine Werbung. Löschen kannst Du das Konto jederzeit im Profil.")}{" "}
+          {/* A new tab: the form may sit in the assistant while a receipt is being read. */}
+          <a href="#/datenschutz" target="_blank" rel="noopener">
+            {t("Datenschutz")}
+          </a>
+        </small>
         {onSkip && (
           <button type="button" className="btn btn-ghost" onClick={onSkip}>
             {skipLabel}

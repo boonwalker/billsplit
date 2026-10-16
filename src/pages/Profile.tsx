@@ -4,6 +4,7 @@ import AccountSection from "../components/AccountSection";
 import DeviceTransfer from "../components/DeviceTransfer";
 import Header from "../components/Header";
 import PushSetting from "../components/PushSetting";
+import LegalLinks from "../components/LegalLinks";
 import { LANG_NAMES, LANGS, type Lang } from "../i18n";
 import { DEMO } from "../lib/demo";
 import { chosenLang, setLang, t } from "../lib/i18n";
@@ -212,6 +213,7 @@ export default function Profile({ next }: { next?: string }) {
             <DeviceTransfer />
           </section>
         )}
+        <LegalLinks />
       </main>
     </div>
   );

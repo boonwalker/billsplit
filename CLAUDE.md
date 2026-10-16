@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 183 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 186 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -170,6 +170,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   oben zusätzlich „Wer hatte das?“ mit Personenkreisen (`assignPeople` in `BillPage`, `api.assign` mit den
   vollständigen Häkchen der Person – `assign` ersetzt sie). Ein präziser Tipp auf „/2“ hebt den Teiler auf, statt die
   Zeile zu streichen.
+- **Datenschutzerklärung** (`src/pages/Legal.tsx`, Stand `AS_OF`): bei jedem neuen Datenfluss (neuer externer Dienst,
+  neue gespeicherte Angaben, andere Speicherdauer) mit anpassen. Betreiberangaben nur über `OPERATOR_*`, nie ins Repo.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit
   `ps -eo pid,comm,args | awk '$2=="node" && /dist-server/ {print $1}' | xargs -r kill` – **nicht** `pkill -f …` und
   nicht `grep` auf die Kommandozeile im selben Befehl wie den Teststart (trifft die eigene Shell). Temporäre vitest-Tests in `test/` anlegen (`vitest --root /` hängt).
@@ -229,8 +231,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 
 ## Offene Ideen / Backlog (noch nicht beauftragt)
 
-- Datenschutzerklärung und Impressum (nötig, sobald die App öffentlich E-Mail-Adressen sammelt; braucht Name/Anschrift
-  des Betreibers).
+- Railway-Variablen `OPERATOR_NAME`, `OPERATOR_ADDRESS`, `OPERATOR_EMAIL` setzen (Impressum/Datenschutz zeigen sonst
+  „Angaben zum Betreiber folgen.“).
+
 - `klicksplit.de` ohne www (bei INWX nicht möglich): einzelner DNS-Eintrag vom Typ URL oder Nameserver zu Cloudflare.
   Umzug auf www.klicksplit.de, Umbenennung in „klicksplit“ und Logo B sind erledigt (11.10.2026).
 

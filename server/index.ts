@@ -10,6 +10,7 @@ import { PushService } from "./push.ts";
 import { RateService } from "./rates.ts";
 import { VisitLog } from "./visits.ts";
 import { BillStore } from "./store.ts";
+import { operatorFromEnv } from "./operator";
 
 try {
   process.loadEnvFile();
@@ -60,7 +61,7 @@ const server = createServer(createApp(store, path.join(root, "dist"), { trustPro
 
 server.listen(PORT, () => {
   console.log(
-    `klicksplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${adminSecret(ADMIN_TOKEN) ? "an" : ADMIN_TOKEN ? "aus (ADMIN_TOKEN kürzer als 12 Zeichen)" : "aus"}, Mail: ${process.env.RESEND_API_KEY && process.env.MAIL_FROM ? "Resend" : "nur Log"})`,
+    `klicksplit läuft auf http://localhost:${PORT} (KI-Belegerkennung: ${isAiConfigured() ? "aktiv" : "aus"}, Daten: ${path.dirname(DATA_FILE)}, Speicher: ${store.storage}, Admin-Seite: ${adminSecret(ADMIN_TOKEN) ? "an" : ADMIN_TOKEN ? "aus (ADMIN_TOKEN kürzer als 12 Zeichen)" : "aus"}, Mail: ${process.env.RESEND_API_KEY && process.env.MAIL_FROM ? "Resend" : "nur Log"}, Impressum: ${operatorFromEnv()?.name ? "an" : "OPERATOR_NAME fehlt"})`,
   );
 });
 

@@ -1,0 +1,85 @@
+/* Privacy policy and imprint (pages/Legal), and the links to them. */
+.legal {
+  gap: 0;
+  line-height: 1.55;
+}
+
+.legal .legal-title {
+  margin: 4px 0 6px;
+  font-size: 1.6rem;
+}
+
+.legal h3 {
+  margin: 22px 0 6px;
+  font-size: 1.05rem;
+}
+
+.legal p,
+.legal ul,
+.legal address {
+  margin: 0 0 10px;
+}
+
+.legal ul {
+  padding-left: 20px;
+}
+
+.legal li + li {
+  margin-top: 4px;
+}
+
+.legal address {
+  font-style: normal;
+}
+
+.legal a,
+.link-btn {
+  color: var(--link);
+}
+
+.legal-missing {
+  color: var(--owed);
+  font-weight: 600;
+}
+
+.legal-lang {
+  margin-bottom: 12px;
+}
+
+.legal-switch {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.link-btn {
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.legal-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  margin: 24px 0 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.legal-links button {
+  padding: 6px 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-privacy a {
+  color: inherit;
+  text-decoration: underline;
+}

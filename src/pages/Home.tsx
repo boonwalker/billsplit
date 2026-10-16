@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import InstallHint from "../components/InstallHint";
 import ProfileWizard from "../components/ProfileWizard";
+import LegalLinks from "../components/LegalLinks";
 import { ownerStatus } from "../components/OwnerPanel";
 import { guestStatus, stillOpen } from "../lib/balances";
 import { billUrl } from "../lib/bill";
@@ -368,6 +369,7 @@ export default function Home() {
             </li>
           </ol>
         </section>
+        <LegalLinks />
       </main>
 
       {onboarding?.step === "profile" && (

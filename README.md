@@ -645,6 +645,18 @@ claude.ai-Artifact gedacht:
 - Echtzeit-Sync zwischen verschiedenen Geräten gibt es in der Demo nicht. Der QR-Code öffnet auf anderen Handys
   deshalb noch keine Rechnung.
 
+### Datenschutz und Impressum
+
+`#/datenschutz` und `#/impressum` (`src/pages/Legal.tsx`, nur auf Deutsch; in Englisch/Spanisch mit dem Hinweis „Diese
+Seite gibt es nur auf Deutsch.“). Erreichbar über „Datenschutz · Impressum“ unten auf Startseite und Profil und im
+Konto-Formular unter „Code senden“ (dort in einem neuen Tab, damit ein laufender Scan nicht verloren geht). Name, Anschrift
+und E-Mail des Betreibers kommen aus den Railway-Variablen `OPERATOR_*` (`server/operator.ts`, als Meta-Tag
+`klicksplit-operator` in jede Seite). Die Erklärung beschreibt: Gerätespeicher (keine Cookies), Rechnungen samt
+Zahlungsdaten und Belegfoto, Belegerkennung über Anthropic, Konto und Mails über Resend, Push, Statistik/Fehlerberichte,
+IP nur im Arbeitsspeicher, Backups 14 Tage, Hosting Railway, USA-Übermittlung, Speicherdauer (Rechnungen ohne Frist,
+Löschung auf Anfrage) und die Betroffenenrechte. Bei neuen Datenflüssen (neuer Dienst, neue gespeicherte Angaben) hier
+mit anpassen und das Datum `AS_OF` erhöhen.
+
 ### Konfiguration
 
 | Variable | Bedeutung |
@@ -660,6 +672,7 @@ claude.ai-Artifact gedacht:
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional: eigene Schlüssel für Push (sonst einmal erzeugt und in `DATA_DIR/vapid.json` gespeichert) |
 | `VAPID_SUBJECT` | optional: Kontakt für die Push-Dienste (Standard `mailto:hallo@billsplit.app`) |
 | `ADMIN_TOKEN` | optional: schaltet die Betriebsseite `/api/admin?token=…` frei (Nutzung, Kosten, Fehler, Datenbank-Download) |
+| `OPERATOR_NAME`, `OPERATOR_ADDRESS`, `OPERATOR_EMAIL` | Betreiber für Impressum und Datenschutzerklärung (`#/impressum`, `#/datenschutz`); Adresszeilen mit „,“ oder „|“ getrennt. Ohne: „Angaben zum Betreiber folgen.“ – stehen bewusst nicht im Repo |
 | `ECB_RATES_URL` | optional: andere Quelle für die Wechselkurse im EZB-XML-Format (Standard: Tageskurse der EZB) |
 | `PUBLIC_URL` | optional: öffentliche Adresse der App (Logo und Links in den Mails; ohne sie die Railway-Domain). Andere Adressen leiten dorthin um und nehmen die Daten mit (siehe „Umzug auf eine neue Adresse“) |
 | `RESEND_API_KEY`, `MAIL_FROM` | optional: Versand der Anmelde-Codes über Resend, z. B. `MAIL_FROM=klicksplit <code@klicksplit.de>` (ohne: Code nur im Log) |
