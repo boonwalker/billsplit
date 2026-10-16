@@ -1,4 +1,5 @@
 import { DEMO, friendName, getPersona, personaDeviceKey } from "./demo";
+import type { MyBill } from "./bill";
 
 /**
  * localStorage can throw (blocked storage) or be wiped when the tab closes (private
@@ -67,6 +68,8 @@ const DEVICE_KEY = "billsplit.deviceKey";
 const RECENT_KEY = "billsplit.recent";
 const DRAFT_KEY = "billsplit.draft";
 const ACCOUNT_KEY = "billsplit.account";
+/** Bills the user removed from the list (✕): the sync with the server does not bring them back. */
+const HIDDEN_KEY = "billsplit.hidden";
 /** Fired when this device takes on another identity (sign-in, new device, sign-out). */
 export const DEVICE_CHANGED = "billsplit:device-changed";
 
@@ -142,7 +145,7 @@ export function saveAccountEmail(email: string | null): void {
 /** Signing out: this device starts over with a new identity (the account keeps everything). */
 export function resetDevice(): void {
   memoryKey = null;
-  for (const key of [DEVICE_KEY, PROFILE_KEY, RECENT_KEY, ACCOUNT_KEY, DRAFT_KEY]) remove(key);
+  for (const key of [DEVICE_KEY, PROFILE_KEY, RECENT_KEY, ACCOUNT_KEY, DRAFT_KEY, HIDDEN_KEY]) remove(key);
   window.dispatchEvent(new Event(DEVICE_CHANGED));
 }
 
@@ -167,6 +170,28 @@ export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, [])
 export function rememberBill(entry: RecentBill): void {
   const others = loadRecent().filter((b) => b.id !== entry.id);
   write(RECENT_KEY, [entry, ...others].slice(0, 30));
+  // Opened again: it belongs in the list again.
+  if (loadHidden().includes(entry.id)) write(HIDDEN_KEY, loadHidden().filter((id) => id !== entry.id));
+}
+
+const loadHidden = (): string[] => read<string[]>(HIDDEN_KEY, []);
+
+/** The user removed a bill from the list (✕). */
+export function hideBill(id: string): void {
+  forgetBill(id);
+  write(HIDDEN_KEY, [id, ...loadHidden().filter((x) => x !== id)].slice(0, 200));
+}
+
+/**
+ * Brings bills this device takes part in into the list that it does not know yet – above all
+ * expenses a friend assigned to me ("Ausgabe eingeben"), which I never opened myself. Bills
+ * removed with ✕ stay out. True when something was added.
+ */
+export function syncRecentBills(mine: MyBill[]): boolean {
+  const known = new Set([...loadRecent().map((b) => b.id), ...loadHidden()]);
+  const fresh = mine.filter((b) => !known.has(b.id));
+  addRecentBills(fresh.map((b) => ({ id: b.id, title: b.title, role: b.role, createdAt: b.createdAt, currency: b.currency })));
+  return fresh.length > 0;
 }
 
 /** Adds bills that are not in the list yet (newest first among them), keeping the others as they are. */

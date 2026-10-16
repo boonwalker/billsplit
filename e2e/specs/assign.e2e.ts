@@ -20,6 +20,9 @@ test("Ausgabe eingeben: 5 € Taxi direkt Andy zuordnen – oder 10 € mit Andy
   await expect(page).toHaveURL(/#\/b\//);
   await expect(page.locator(".debtors")).toContainText("Andy");
   await expect(page.locator(".debtors")).toContainText("5,00 €");
+  // An equal split without me: Andy pays all of it.
+  await expect(page.locator(".tip-split-panel")).toContainText("5,00 € für eine Person – Du bist nicht dabei");
+  await page.screenshot({ path: process.env.SHOT_BILL ?? "/dev/null", fullPage: true }).catch(() => undefined);
 
   // 10 € shared with Andy: half each.
   await page.goto("/#/ausgabe");
@@ -31,4 +34,12 @@ test("Ausgabe eingeben: 5 € Taxi direkt Andy zuordnen – oder 10 € mit Andy
   await page.getByRole("button", { name: "Rechnung erstellen" }).click();
   await expect(page).toHaveURL(/#\/b\//);
   await expect(page.locator(".debtors")).toContainText("5,00 €");
+
+  // Andy never opened the taxis – they are in his list anyway (and open, as an equal split).
+  const andyPhone = await phone(browser, andy.key, { profile: { name: "Andy" }, recent: [{ id: earlier, title: "Pizzeria", role: "guest" }] });
+  await andyPhone.goto("/");
+  const list = andyPhone.locator("ul.list");
+  await expect(list.getByText("Taxi", { exact: true })).toHaveCount(2);
+  await expect(list).toContainText("Du schuldest · 5,00 €");
+  await andyPhone.screenshot({ path: process.env.SHOT_ANDY ?? "/dev/null", fullPage: true }).catch(() => undefined);
 });

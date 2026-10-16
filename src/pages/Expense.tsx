@@ -67,8 +67,11 @@ export default function Expense() {
       date,
       currency: "EUR",
       tipPercent: 0,
-      // Straight to people: they take the expense (shared with me, if I was there too).
-      ...(direct ? {} : { equalSplit: true, tipSplitCount: persons }),
+      // Always an equal split, also straight to people: they share the expense (with me, if I
+      // was there too – otherwise I am not part of the split). Their claims below only matter
+      // when the payer switches the equal split off later.
+      equalSplit: true,
+      ...(direct ? (meToo ? {} : { ownerExcluded: true }) : { tipSplitCount: persons }),
       items: [{ id: itemId, name, qty: 1, total: cents }],
       payment: paymentFromProfile(loadProfile()),
     };

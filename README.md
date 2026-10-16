@@ -169,6 +169,17 @@ Personen teilen sich den Betrag. Die Rechnung entsteht wie gewohnt, die Gewählt
 „Niklas hat Dir 5,00 € zugeordnet“ und sehen den Betrag in Rechnung und Dashboard. Beim Rechnungssteller steht „von Dir
 zugeordnet · 5,00 € offen“.
 
+Auch zugeordnete Ausgaben sind immer Rechnungen mit **Gleichverteilung** (keine Abhak-Rechnung). Ohne „Du bist auch
+dabei“ zählt der Rechnungssteller dabei nicht mit (`BillData.ownerExcluded`, `splitPeople` in `src/lib/bill.ts`): Andy
+zahlt die ganzen 5,00 €, über der Rechnung steht „5,00 € für eine Person – Du bist nicht dabei“. Schaltet der
+Rechnungssteller die Gleichverteilung später aus, gelten die Zuordnungen von vorher (Andy hat das Taxi abgehakt).
+
+**In der Rechnungsliste des Empfängers:** Die Liste „Deine Rechnungen“ liegt auf dem Gerät (`billsplit.recent`). Damit
+zugeordnete Rechnungen dort sofort auftauchen, ohne dass man sie erst über Push oder Dashboard öffnet, holt die
+Startseite beim Öffnen und bei jeder Live-Änderung `/api/my-bills` und ergänzt fehlende Rechnungen (`syncRecentBills`).
+Mit ✕ entfernte Rechnungen merkt sich das Gerät (`billsplit.hidden`) und holt sie nicht zurück, bis man sie wieder öffnet.
+Das gilt mit und ohne Konto.
+
 ### Dashboard
 
 Über „Deine Rechnungen“ auf der Startseite (damit er bei vielen Rechnungen nicht nach unten rutscht) führt

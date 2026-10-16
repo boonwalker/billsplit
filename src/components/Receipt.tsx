@@ -553,7 +553,8 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
     return null;
   };
   const people = splitHeadCount(data, participants);
-  const perPerson = (amount: number) => (equal ? Math.round(amount / people) : undefined);
+  // One person (an expense assigned to one friend): nothing to divide.
+  const perPerson = (amount: number) => (equal && people > 1 ? Math.round(amount / people) : undefined);
   const list = useRef<HTMLUListElement>(null);
   const [demo, endDemo] = useTapDemo(snapshot.id, Boolean(onToggleExcluded), Boolean(onEditDivisor), list);
   const demoLoop = useDemoLoop(demo, Boolean(demo));
@@ -667,7 +668,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
             </>
           )}
           <dt className="grand">{t("SUMME")}</dt>
-          {equal ? (
+          {equal && people > 1 ? (
             <dd className="grand">
               <EqualFraction total={total} people={people} share={equalShare(data, participants)} currency={data.currency} />
             </dd>
@@ -678,7 +679,9 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
         <div className="receipt-rule double" aria-hidden="true" />
         <p className="receipt-progress">
           {equal
-            ? t("Gleichmäßig auf {people} Personen verteilt", { people })
+            ? people === 1
+              ? t("Geht komplett an eine Person")
+              : t("Gleichmäßig auf {people} Personen verteilt", { people })
             : t("{assigned} von {count} Positionen vollständig zugeordnet", { assigned, count: billed.length })}
         </p>
         <div className="receipt-barcode" aria-hidden="true" />

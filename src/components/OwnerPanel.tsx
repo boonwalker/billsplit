@@ -9,6 +9,7 @@ import {
   sharedPerPerson,
   sharedTotal,
   splitHeadCount,
+  splitPeople,
   unassignedAmount,
   type BillData,
   type BillSnapshot,
@@ -52,7 +53,9 @@ export function EqualSplitToggle({ snapshot, onUpdateData }: { snapshot: BillSna
  */
 export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; onUpdateData: (data: BillData) => void }) {
   const { data, participants } = snapshot;
-  const joined = participants.length;
+  const joined = splitPeople(data, participants).length;
+  // "Andy zahlt 5,00 €": the payer is not part of the equal split.
+  const withoutMe = Boolean(data.equalSplit && data.ownerExcluded);
   const count = splitHeadCount(data, participants);
   const missing = count - joined;
   const setCount = (n: number) => onUpdateData({ ...data, tipSplitCount: n <= joined ? undefined : n });
@@ -85,7 +88,11 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
         </div>
       </div>
       <p className="muted small">
-        {missing > 0
+        {withoutMe
+          ? count === 1
+            ? t("{amount} für eine Person – Du bist nicht dabei", { amount: perPerson })
+            : t("{amount} pro Person · {count} Personen – Du bist nicht dabei", { amount: perPerson, count })
+          : missing > 0
           ? missing === 1
             ? t("{amount} pro Person · {joined} beigetreten (inkl. Dir), {missing} kommt noch dazu", { amount: perPerson, joined, missing })
             : t("{amount} pro Person · {joined} beigetreten (inkl. Dir), {missing} kommen noch dazu", { amount: perPerson, joined, missing })

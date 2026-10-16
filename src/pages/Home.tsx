@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import InstallHint from "../components/InstallHint";
 import ProfileWizard from "../components/ProfileWizard";
@@ -14,7 +14,8 @@ import { DEMO, getPersona, setPersona } from "../lib/demo";
 import { navigate } from "../lib/router";
 import { createSampleBill } from "../lib/sampleBill";
 import { accountsAvailable } from "../lib/account";
-import { clearDraft, forgetBill, hasPaymentMethod, loadAccountEmail, loadOwnProfile, loadRecent, updateRecent, type RecentBill } from "../lib/storage";
+import { useBillChanges } from "../lib/liveEvents";
+import { clearDraft, forgetBill, hasPaymentMethod, hideBill, loadAccountEmail, loadOwnProfile, loadRecent, syncRecentBills, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 export default function Home() {
@@ -37,34 +38,47 @@ export default function Home() {
     if (DEMO && getPersona() !== "me") setPersona("me");
   }, []);
   // Bills the server no longer knows (expired, deleted, broken link) leave the list;
-  // for the others the paid status is brought up to date.
-  useEffect(() => {
-    let cancelled = false;
+  // for the others the paid status is brought up to date. Bills I take part in but never
+  // opened on this device (an expense a friend assigned to me) are added first.
+  const refresh = useCallback(async () => {
+    await api
+      .myBills()
+      .then(syncRecentBills)
+      .catch(() => {}); // offline, older server: keep the list as it is
     const list = loadRecent();
-    api
-      .getBills(list.map((b) => b.id))
-      .then((snaps) => {
-        for (const b of list) {
-          const snap = snaps[b.id];
-          if (snap === null) forgetBill(b.id);
-          else if (!snap) continue;
-          else if (snap.isOwner) {
-            const status = ownerStatus(snap);
-            if (status.settled !== Boolean(b.settled) || status.missing !== b.missing || status.currency !== b.currency) updateRecent(b.id, status);
-          } else if (snap.me) {
-            const status = guestStatus(snap);
-            if (status.markedPaid !== Boolean(b.markedPaid) || status.owed !== b.owed || status.settled !== Boolean(b.settled) || status.currency !== b.currency) {
-              updateRecent(b.id, status);
-            }
-          }
+    const snaps = await api.getBills(list.map((b) => b.id));
+    for (const b of list) {
+      const snap = snaps[b.id];
+      if (snap === null) forgetBill(b.id);
+      else if (!snap) continue;
+      else if (snap.isOwner) {
+        const status = ownerStatus(snap);
+        if (status.settled !== Boolean(b.settled) || status.missing !== b.missing || status.currency !== b.currency) updateRecent(b.id, status);
+      } else if (snap.me) {
+        const status = guestStatus(snap);
+        if (status.markedPaid !== Boolean(b.markedPaid) || status.owed !== b.owed || status.settled !== Boolean(b.settled) || status.currency !== b.currency) {
+          updateRecent(b.id, status);
         }
-        if (!cancelled) setRecent(loadRecent());
-      })
+      }
+    }
+  }, []);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    refresh()
+      .then(() => mounted.current && setRecent(loadRecent()))
       .catch(() => {}); // offline etc.: keep the list as it is
     return () => {
-      cancelled = true;
+      mounted.current = false;
     };
-  }, []);
+  }, [refresh]);
+  // Live: a bill changed – also one that is new for me (assigned while the app is open).
+  const onBillChanged = useCallback(() => {
+    refresh()
+      .then(() => mounted.current && setRecent(loadRecent()))
+      .catch(() => {});
+  }, [refresh]);
+  useBillChanges(onBillChanged);
   // Settlement payments sent to me that wait for my confirmation (shown on the dashboard button).
   const [toConfirm, setToConfirm] = useState(0);
   useEffect(() => {
@@ -305,7 +319,7 @@ export default function Home() {
               type="button"
               className="btn btn-danger btn-large"
               onClick={() => {
-                forgetBill(removing.id);
+                hideBill(removing.id);
                 setRecent(loadRecent());
                 setRemoving(null);
               }}

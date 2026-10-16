@@ -72,6 +72,12 @@ export interface BillData {
    * same part of the whole bill, counted like tip and fees (splitHeadCount).
    */
   equalSplit?: boolean;
+  /**
+   * The payer paid for others and is not part of the split ("Ausgabe eingeben": „Andy zahlt
+   * 5,00 €“): only the other participants count as heads and the payer's own share is 0.
+   * Applies to the equal split only; with ticking, the claims say who pays what.
+   */
+  ownerExcluded?: boolean;
   items: BillItem[];
   payment: PaymentInfo;
 }
@@ -348,7 +354,12 @@ export function billTotal(data: BillData): Cents {
  * payer's expected head count while people are still missing.
  */
 export function splitHeadCount(data: BillData, participants: PublicParticipant[]): number {
-  return Math.max(1, participants.length, data.tipSplitCount ?? 0);
+  return Math.max(1, splitPeople(data, participants).length, data.tipSplitCount ?? 0);
+}
+
+/** The participants the bill is split among: everyone, or in an equal split without the payer everyone else. */
+export function splitPeople(data: BillData, participants: PublicParticipant[]): PublicParticipant[] {
+  return data.equalSplit && data.ownerExcluded ? participants.filter((p) => !p.isOwner) : participants;
 }
 
 /** Every person pays the same part of tip and fees. */
@@ -414,7 +425,7 @@ export function equalShare(data: BillData, participants: PublicParticipant[]): C
 }
 
 export function participantShare(data: BillData, participants: PublicParticipant[], participantId: string): ShareSummary {
-  if (!participants.some((p) => p.id === participantId)) return { subtotal: 0, shared: 0, total: 0 };
+  if (!splitPeople(data, participants).some((p) => p.id === participantId)) return { subtotal: 0, shared: 0, total: 0 };
   if (data.equalSplit) {
     const total = equalShare(data, participants);
     const shared = sharedPerPerson(data, participants);
@@ -428,9 +439,9 @@ export function participantShare(data: BillData, participants: PublicParticipant
 /** Value of all units nobody has claimed yet, plus the tip and fee parts of people who have not joined yet. */
 export function unassignedAmount(data: BillData, participants: PublicParticipant[]): Cents {
   // Equal split: only the parts of people who have not joined yet are open.
-  if (data.equalSplit) return (splitHeadCount(data, participants) - participants.length) * equalShare(data, participants);
+  const missingPeople = splitHeadCount(data, participants) - splitPeople(data, participants).length;
+  if (data.equalSplit) return missingPeople * equalShare(data, participants);
   const sub = billedItems(data).reduce((sum, item) => sum + claimCost(item, item.qty - assignedUnits(item, participants)), 0);
-  const missingPeople = splitHeadCount(data, participants) - participants.length;
   return sub + discountShare(data, sub) + missingPeople * sharedPerPerson(data, participants);
 }
 

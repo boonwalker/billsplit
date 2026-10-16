@@ -47,6 +47,8 @@ export interface Draft {
   engine: "ai" | "ocr" | null;
   /** Kept from the bill when it is edited (set on the bill page). */
   equalSplit?: boolean;
+  /** Kept from the bill (see BillData.ownerExcluded); not editable in the editor. */
+  ownerExcluded?: boolean;
   /** A supermarket receipt: ask which items are not or only partly billed. */
   supermarket?: boolean;
   /** Kept from the bill when it is edited: the payer bills some items not or only partly. */
@@ -109,6 +111,7 @@ export function draftFromData(data: BillData): Draft {
     },
     tipOnReceipt: false,
     equalSplit: data.equalSplit,
+    ownerExcluded: data.ownerExcluded,
     supermarket: data.supermarket,
     partial: data.partial,
     tipExcluded: data.tipExcluded,
@@ -146,6 +149,7 @@ export function toBillData(draft: Draft, items: BillItem[]): BillData {
     payment: paymentFromProfile(loadProfile()),
     tipSplitCount: tipPersons(draft.tip),
     equalSplit: draft.equalSplit || undefined,
+    ownerExcluded: draft.ownerExcluded || undefined,
     supermarket: draft.supermarket || undefined,
     partial: draft.partial || undefined,
     tipExcluded: draft.tipExcluded || undefined,
