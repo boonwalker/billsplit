@@ -8,7 +8,10 @@ import {
   equalShare,
   hasTip,
   isFullyAssigned,
+  lineFor,
   perHeadFees,
+  personalTotal,
+  poolTotal,
   sharedPerPerson,
   sharedTotal,
   splitHeadCount,
@@ -93,6 +96,7 @@ function ReceiptLine({
   onResetDivisor,
   each,
   people = 1,
+  forNames,
 }: {
   item: BillItem;
   index: number;
@@ -103,6 +107,8 @@ function ReceiptLine({
   each?: number;
   /** Equal split: number of people the line is divided by. */
   people?: number;
+  /** Equal split: the line was given to these people (see lineFor) – their names instead of the share per person. */
+  forNames?: string[];
   onSetSlots?: (itemId: string, slots: number[], splits: number[]) => void;
   onToggleExcluded?: (itemId: string) => void;
   /** Payer: holding the line opens its settings (bill only a part of it). */
@@ -122,7 +128,8 @@ function ReceiptLine({
   // Some units crossed out by the payer: "3x" becomes "2x" in pencil, only the rest is billed.
   const struckUnits = excluded ? 0 : Math.min(item.qty - 1, item.struck ?? 0);
   const billedTotal = billedItem(item).total;
-  const done = excluded || isFullyAssigned(item, participants);
+  // Equal split (forNames set): ticks do not count here, only crossing out.
+  const done = excluded || (forNames === undefined && isFullyAssigned(item, participants));
   // Pressed in while the finger rests on the line, pops back up on release.
   const [holding, setHolding] = useState(false);
   // "geteilt" only once a unit really has two holders; an offered half nobody joined yet is still waiting.
@@ -309,17 +316,24 @@ function ReceiptLine({
           {item.qty > 1 && <span className="rline-unit">{t("à {price}", { price: formatMoney(Math.round(item.total / item.qty), currency) })}</span>}
         </span>
         <span className="rline-dots" aria-hidden="true" />
-        {each !== undefined && !excluded && (
-          <span className="pencil rline-each" title={t("Anteil pro Person")}>
-            {formatMoney(each, currency)}
+        {each !== undefined && !excluded && forNames?.length ? (
+          <span className="pencil rline-each rline-for" title={t("Direkt zugeordnet")}>
+            {forNames.join(" + ")}
           </span>
+        ) : (
+          each !== undefined &&
+          !excluded && (
+            <span className="pencil rline-each" title={t("Anteil pro Person")}>
+              {formatMoney(each, currency)}
+            </span>
+          )
         )}
         <span className="rline-price">
           {item.fullTotal !== undefined && <s className="rline-full">{formatMoney(item.fullTotal, currency)}</s>}
           {struckUnits > 0 && <s className="rline-full">{formatMoney(item.total, currency)}</s>}
           {formatMoney(billedTotal, currency)}
         </span>
-        {each !== undefined && !excluded && <span className="pencil rline-div">/{people}</span>}
+        {each !== undefined && !excluded && !forNames?.length && <span className="pencil rline-div">/{people}</span>}
       </button>
 
       {canEdit && item.qty > 1 && myUnits > 0 && (
@@ -341,7 +355,7 @@ function ReceiptLine({
         </div>
       )}
 
-      {claimants.length > 0 && each === undefined && (
+      {claimants.length > 0 && each === undefined && forNames === undefined && (
         <ul className="rline-claims">
           {claimants.map((p) => {
             const units = unitShare(item, participants, p.id);
@@ -606,6 +620,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 onResetDivisor={onResetDivisor && (() => (endDemo(), onResetDivisor(item.id)))}
                 each={perPerson(billedItem(item).total)}
                 people={people}
+                forNames={equal ? lineFor(item, participants).map((id) => (id === me ? t("Du") : (participants.find((p) => p.id === id)?.name ?? "?"))) : undefined}
               />
               </Fragment>
             ))}
@@ -619,7 +634,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
             <>
               <dt>{t("Zwischensumme")}</dt>
               <dd>
-                {equal && <span className="pencil rline-each">{formatMoney(perPerson(sub)!, data.currency)}</span>}
+                {equal && <span className="pencil rline-each">{formatMoney(perPerson(sub - personalTotal(data, participants))!, data.currency)}</span>}
                 {formatMoney(sub, data.currency)}
                 {equal && <span className="pencil rline-div">/{people}</span>}
               </dd>
@@ -678,10 +693,17 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
               </dd>
             </>
           )}
-          <dt className="grand">{t("SUMME")}</dt>
+          {/* Lines given to particular people: the full sum first, then what everyone shares. */}
+          {equal && people > 1 && personalTotal(data, participants) > 0 && (
+            <>
+              <dt className="grand">{t("SUMME")}</dt>
+              <dd className="grand">{formatMoney(total, data.currency)}</dd>
+            </>
+          )}
+          <dt className="grand">{equal && people > 1 && personalTotal(data, participants) > 0 ? t("Für alle") : t("SUMME")}</dt>
           {equal && people > 1 ? (
             <dd className="grand">
-              <EqualFraction total={total} people={people} share={equalShare(data, participants)} currency={data.currency} />
+              <EqualFraction total={poolTotal(data, participants)} people={people} share={equalShare(data, participants)} currency={data.currency} />
             </dd>
           ) : (
             <dd className="grand">{formatMoney(total, data.currency)}</dd>

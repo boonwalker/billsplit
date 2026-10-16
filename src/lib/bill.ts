@@ -19,6 +19,11 @@ export interface BillItem {
   struck?: number;
   /** Supermarket, "Alles aufteilen": probably not a shared expense – listed first for the payer, ready to cross out. */
   maybePersonal?: boolean;
+  /**
+   * Equal split: the payer gave the line to these people (long press, "Wer hatte das?") – they
+   * share it alone, the rest of the bill is split equally (see lineFor). Ignored with ticking.
+   */
+  for?: string[];
 }
 
 /** A fee on the bill (delivery, service, …). Fees are shared equally per person, like the tip. */
@@ -439,16 +444,39 @@ export function claimCost(item: BillItem, units: number): Cents {
   return Math.round((item.total * units) / item.qty);
 }
 
-/** In an equal split: what every person pays of the whole bill. */
+/** Equal split: who a line was given to on its own – those of them still in the bill (else nobody: it is shared). */
+export function lineFor(item: BillItem, participants: PublicParticipant[]): string[] {
+  return (item.for ?? []).filter((id) => participants.some((p) => p.id === id));
+}
+
+/** Equal split: the lines given to particular people, at their billed price. */
+export function personalTotal(data: BillData, participants: PublicParticipant[]): Cents {
+  return billedItems(data).reduce((sum, item) => sum + (lineFor(item, participants).length ? item.total : 0), 0);
+}
+
+/** Equal split: what one person pays for lines given to them (a line given to several is split among them). */
+export function personalShare(data: BillData, participants: PublicParticipant[], participantId: string): Cents {
+  return billedItems(data).reduce((sum, item) => {
+    const people = lineFor(item, participants);
+    return sum + (people.includes(participantId) ? Math.round(item.total / people.length) : 0);
+  }, 0);
+}
+
+/** Equal split: what is split per head – the whole bill but the lines given to particular people. */
+export function poolTotal(data: BillData, participants: PublicParticipant[]): Cents {
+  return billTotal(data) - personalTotal(data, participants);
+}
+
+/** In an equal split: what every person pays of the shared part of the bill. */
 export function equalShare(data: BillData, participants: PublicParticipant[]): Cents {
-  return Math.round(billTotal(data) / splitHeadCount(data, participants));
+  return Math.round(poolTotal(data, participants) / splitHeadCount(data, participants));
 }
 
 export function participantShare(data: BillData, participants: PublicParticipant[], participantId: string): ShareSummary {
   if (!splitPeople(data, participants).some((p) => p.id === participantId)) return { subtotal: 0, shared: 0, total: 0 };
   if (data.equalSplit) {
-    // Everything is split per head here, the tip included.
-    const total = equalShare(data, participants);
+    // Everything is split per head here, the tip included – plus the lines given to this person.
+    const total = equalShare(data, participants) + personalShare(data, participants, participantId);
     const shared = Math.round((tipTotal(data) + perHeadFees(data)) / splitHeadCount(data, participants));
     return { subtotal: total - shared, shared, total };
   }

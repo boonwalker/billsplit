@@ -38,6 +38,17 @@ export function setItemDivisor(data: BillData, itemId: string, divisor: number):
   return { ...data, items };
 }
 
+/** Gives a line to particular people (equal split, see lineFor); none: it is shared by everyone again. */
+export function setItemFor(data: BillData, itemId: string, people: string[]): BillData {
+  const items = data.items.map((item) => {
+    if (item.id !== itemId) return item;
+    const rest = { ...item };
+    delete rest.for;
+    return people.length ? { ...rest, for: people } : rest;
+  });
+  return { ...data, items };
+}
+
 /** Crosses a fee out (or brings it back). */
 export function toggleFeeExcluded(data: BillData, feeId: string): BillData {
   const fees = (data.fees ?? []).map((fee) => {

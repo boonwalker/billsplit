@@ -16,7 +16,7 @@ const legend = (mode: Mode, hold: boolean): [gesture: string, effect: string][] 
       ]
     : [
         [t("Antippen"), t("streichen – nochmal tippen holt es zurück")],
-        [t("Gedrückt halten"), t("nur einen Teil in Rechnung stellen")],
+        [t("Gedrückt halten"), t("jemandem direkt zuordnen oder nur einen Teil in Rechnung stellen")],
       ];
 
 /**

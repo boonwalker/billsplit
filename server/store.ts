@@ -53,6 +53,7 @@ export const BillDataSchema = z.object({
         excluded: z.boolean().optional(),
         struck: z.number().int().min(1).max(998).optional(),
         maybePersonal: z.boolean().optional(),
+        for: z.array(z.string().min(1).max(100)).max(30).optional(),
       }),
     )
     .min(1)

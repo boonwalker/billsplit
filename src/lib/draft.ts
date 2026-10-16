@@ -21,6 +21,8 @@ export interface Row {
   struck?: number;
   /** Kept from the bill: listed among "Vielleicht nicht für alle?". */
   maybePersonal?: boolean;
+  /** Kept from the bill: given to particular people (equal split, see BillItem.for). */
+  for?: string[];
 }
 
 export interface FeeRow {
@@ -82,6 +84,7 @@ export const newRow = (item?: ReceiptItem & { id?: string }): Row => ({
   excluded: item?.excluded,
   struck: item?.struck,
   maybePersonal: item?.maybePersonal,
+  for: item?.for,
 });
 
 export function emptyDraft(): Draft {
@@ -139,6 +142,7 @@ export function rowToItem(row: Row): BillItem | null {
     // A changed quantity may leave nothing to cross out partly any more.
     ...(row.struck && row.struck < qty ? { struck: row.struck } : {}),
     ...(row.maybePersonal ? { maybePersonal: true } : {}),
+    ...(row.for?.length ? { for: row.for } : {}),
   };
 }
 

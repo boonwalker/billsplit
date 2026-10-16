@@ -141,7 +141,7 @@ Hält der Bezahler eine Position auf der Rechnung gedrückt, öffnet sich ein Bl
 dem Beleg steht „/2“ hinter dem Namen und der Belegpreis klein durchgestrichen über dem berechneten Teil; /1 stellt die
 Position wieder her, ebenso ein Tipp direkt auf das „/2“. Kurzes Antippen anderswo auf der Zeile streicht wie gewohnt.
 
-### Direkt zuordnen (Rechnungssteller, „Jeder selber abhaken“)
+### Direkt zuordnen (Rechnungssteller)
 
 Bei Rechnungen mit Abhaken öffnet langes Drücken auf eine Position dasselbe Blatt, oben zusätzlich mit **„Wer hatte
 das?“**: runde Knöpfe wie bei „Ausgabe zuweisen“ – „Du“, alle Beigetretenen und bis zu zehn Personen aus früheren
@@ -153,6 +153,16 @@ etwas getan hat (abgehakt, auf Bezahlen getippt, als bezahlt markiert, Ausgleich
 aus der Freundesliste und aus ihrer eigenen Rechnungsliste (`untouchedAssignee`; Listeneinträge vom Server tragen
 `synced` und fallen weg, wenn die Rechnung noch existiert, man aber nicht mehr dabei ist). Darunter „Nur einen Teil aufteilen“ mit dem „/ N“ wie oben; „Übernehmen“ speichert
 nur, wenn sich der Teiler geändert hat. Die Gesten-Hilfe „?“ nennt dafür „Gedrückt halten“.
+
+**In der Gleichverteilung** gibt es dieselben Kreise. Eine so zugeordnete Position (z.B. das Duschgel für Andy) zahlen
+nur die gewählten Personen, zu gleichen Teilen; alles andere wird weiter gleich auf alle verteilt. Auf dem Beleg steht
+dann in Bleistift der Name statt des Betrags pro Person, unten „SUMME“ (alles) und „Für alle“ mit dem Bruch nur über
+den geteilten Rest; über der Rechnung „Rechnung … aufteilen auf“ ebenfalls nur der Rest. Gespeichert wird das an der
+Position (`BillItem.for`, `lineFor`/`personalShare`/`poolTotal` in `src/lib/bill.ts`, `setItemFor` in `billEdits.ts`) –
+nicht über die Häkchen, damit sich ältere Rechnungen nie ändern. Freunde, die noch nicht dabei waren, kommen über
+`BillCore.assign` dazu (mit der Position als Häkchen, damit beim Umschalten auf Abhaken alles stimmt) und gehen beim
+Zurücknehmen wie oben wieder. Eine „Du“-Position trägt der Rechnungssteller selbst. Wer die Rechnung verlässt, dessen
+Positionen werden wieder geteilt.
 
 ### Supermarkt-Einkäufe
 

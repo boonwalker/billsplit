@@ -14,8 +14,8 @@ import PayBar from "../components/PayBar";
 import Receipt from "../components/Receipt";
 import { api } from "../lib/api";
 import { guestStatus } from "../lib/balances";
-import { billUrl, sharedTotal, type BillData, type Contact, type Debtor } from "../lib/bill";
-import { setItemDivisor, toggleFeeExcluded, toggleItemExcluded, toggleTipExcluded } from "../lib/billEdits";
+import { billUrl, lineFor, sharedTotal, type BillData, type Contact, type Debtor } from "../lib/bill";
+import { setItemDivisor, setItemFor, toggleFeeExcluded, toggleItemExcluded, toggleTipExcluded } from "../lib/billEdits";
 import { DEMO } from "../lib/demo";
 import { isIosBrowser } from "../lib/handoff";
 import { confirmScan, knock } from "../lib/haptics";
@@ -133,7 +133,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   }, [snapshot, id, replace]);
 
   // Payer, bill with ticking: the people from earlier bills, once a line is long-pressed.
-  const wantContacts = Boolean(divisorFor && snapshot?.isOwner && !snapshot.data.equalSplit);
+  const wantContacts = Boolean(divisorFor && snapshot?.isOwner);
   useEffect(() => {
     if (!wantContacts || contacts) return;
     api
@@ -295,33 +295,56 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
    */
   function assignPeople(itemId: string): AssignPeople | undefined {
     const item = snap.data.items.find((i) => i.id === itemId);
-    if (!snap.isOwner || equal || !item || !snap.me) return undefined;
+    if (!snap.isOwner || !item || !snap.me) return undefined;
     const people: AssignPeople["people"] = [{ id: snap.me, name: snap.ownerName, me: true }];
     const add = (id: string, name: string) => {
       if (name.trim() && !people.some((p) => p.id === id)) people.push({ id, name: name.trim(), me: false });
     };
     for (const p of snap.participants) add(p.id, p.name);
     for (const c of (contacts ?? []).slice(0, MAX_ASSIGN_CONTACTS)) add(c.id, c.name);
-    const holders = snap.participants.filter((p) => (p.claims[itemId]?.length ?? 0) > 0).map((p) => p.id);
+    // Equal split: the people the line was given to (BillItem.for) – with ticking: who ticked it.
+    const holders = equal ? lineFor(item, snap.participants) : snap.participants.filter((p) => (p.claims[itemId]?.length ?? 0) > 0).map((p) => p.id);
+    const all = Array.from({ length: item.qty }, (_, slot) => slot);
+    /** A friend's claims with the line (or without): puts them into the bill, or lets an untouched assignee leave it. */
+    const syncClaims = (personId: string, on: boolean) => {
+      const claims = { ...snap.participants.find((p) => p.id === personId)?.claims };
+      if (on) claims[itemId] = all;
+      else delete claims[itemId];
+      return api.assign(id, [{ id: personId, claims }]);
+    };
+    const fail = (e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen."));
     return {
       people,
       holders,
       busy: assigning,
       onToggle: (personId) => {
-        const all = Array.from({ length: item.qty }, (_, slot) => slot);
         const on = !holders.includes(personId);
+        if (equal) {
+          // The line goes to these people alone; the rest of the bill stays split equally.
+          const next = on ? [...holders, personId] : holders.filter((h) => h !== personId);
+          guarded(setItemFor(snap.data, itemId, next), (data) => {
+            setAssigning(true);
+            const friend = personId !== snap.me;
+            void (async () => {
+              if (friend && on) await syncClaims(personId, true);
+              let fresh = await api.updateBill(id, data);
+              if (friend && !on) fresh = await syncClaims(personId, false);
+              replace(fresh);
+            })()
+              .catch(fail)
+              .finally(() => setAssigning(false));
+          });
+          return;
+        }
         if (personId === snap.me) {
           setSlots(itemId, on ? all : [], []);
           return;
         }
-        const claims = { ...snap.participants.find((p) => p.id === personId)?.claims };
-        if (on) claims[itemId] = all;
-        else delete claims[itemId];
         setAssigning(true);
         void flushClaims()
-          .then(() => api.assign(id, [{ id: personId, claims }]))
+          .then(() => syncClaims(personId, on))
           .then(replace)
-          .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")))
+          .catch(fail)
           .finally(() => setAssigning(false));
       },
     };

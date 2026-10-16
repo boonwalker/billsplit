@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 186 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 189 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -166,9 +166,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Deploy leer (Konten weg, Listen geleert). Seitdem: Server startet auf Railway nur mit Daten auf dem Volume
   (`server/dataDir.ts`), die App löscht unbekannte Rechnungen nicht (`markGone`, „nicht mehr verfügbar“) und meldet
   nicht still ab (`billsplit.accountLost`, Hinweis auf Startseite/Profil). Beides meldet sie an die Betriebsseite.
-- **Lange Drücken** nur für den Rechnungssteller: öffnet `DivisorSheet` („/ N“); im Modus „Jeder selber abhaken“
-  oben zusätzlich „Wer hatte das?“ mit Personenkreisen (`assignPeople` in `BillPage`, `api.assign` mit den
-  vollständigen Häkchen der Person – `assign` ersetzt sie). Ein präziser Tipp auf „/2“ hebt den Teiler auf, statt die
+- **Lange Drücken** nur für den Rechnungssteller: öffnet `DivisorSheet` mit „Wer hatte das?“ (Personenkreise,
+  `assignPeople` in `BillPage`) und „/ N“. Mit Abhaken: `api.assign` mit den vollständigen Häkchen der Person (`assign`
+  ersetzt sie). In der Gleichverteilung: `BillItem.for` (zählt nur dort, Häkchen zählen in der Gleichverteilung nie –
+  sonst änderten sich alte Rechnungen). Ein präziser Tipp auf „/2“ hebt den Teiler auf, statt die
   Zeile zu streichen.
 - **Datenschutzerklärung** (`src/pages/Legal.tsx`, Stand `AS_OF`): bei jedem neuen Datenfluss (neuer externer Dienst,
   neue gespeicherte Angaben, andere Speicherdauer) mit anpassen. Betreiberangaben nur über `OPERATOR_*`, nie ins Repo.

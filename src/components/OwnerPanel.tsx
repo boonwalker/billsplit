@@ -3,6 +3,7 @@ import {
   openShare,
   billTotal,
   equalShare,
+  poolTotal,
   participantShare,
   perHeadFees,
   sharedPerPerson,
@@ -60,7 +61,8 @@ export function TipSplit({ snapshot, onUpdateData }: { snapshot: BillSnapshot; o
   const missing = count - joined;
   const setCount = (n: number) => onUpdateData({ ...data, tipSplitCount: n <= joined ? undefined : n });
   const equal = Boolean(data.equalSplit);
-  const shared = formatMoney(equal ? billTotal(data) : sharedTotal(data), data.currency);
+  // Lines given to particular people (long press) are not part of what is split.
+  const shared = formatMoney(equal ? poolTotal(data, participants) : sharedTotal(data), data.currency);
   const perPerson = formatMoney(equal ? equalShare(data, participants) : sharedPerPerson(data, participants), data.currency);
 
   return (
