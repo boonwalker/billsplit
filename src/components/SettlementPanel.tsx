@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api } from "../lib/api";
 import type { NetworkEdge, Transfer, TransferAllocation } from "../lib/bill";
 import { t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
+import { loadSeenTransfers, markTransfersSeen } from "../lib/storage";
 import { planSettlement, type PlannedTransfer, type SettlementPlan } from "../lib/simplify";
 import PayButtons from "./PayButtons";
 
@@ -273,13 +274,23 @@ export function TransferInbox({
   const [error, setError] = useState<string | null>(null);
   const now = Date.now();
   const recent = (tr: Transfer) => now - Date.parse(tr.decidedAt ?? tr.createdAt) < RECENT_MS;
+  // An outcome ("… hat erhalten – alles ausgeglichen") is news only once: shown on the first visit
+  // after it, then gone (still there when a notification leads to it). Waiting ones always show.
+  const [seen] = useState(() => new Set(loadSeenTransfers()));
+  const news = (tr: Transfer) => tr.status === "pending" || !seen.has(tr.id) || focus === tr.id;
   const incoming = transfers.filter((tr) => tr.toId === me && tr.status === "pending");
   const outgoing = transfers.filter(
     (tr) =>
       tr.fromId === me &&
+      news(tr) &&
       (tr.status === "pending" || (tr.status === "rejected" && recent(tr)) || (tr.status === "confirmed" && now - Date.parse(tr.decidedAt ?? tr.createdAt) < CONFIRMED_MS)),
   );
-  const involved = transfers.filter((tr) => tr.fromId !== me && tr.toId !== me && tr.status !== "cancelled" && tr.status !== "rejected" && recent(tr));
+  const involved = transfers.filter((tr) => tr.fromId !== me && tr.toId !== me && tr.status !== "cancelled" && tr.status !== "rejected" && recent(tr) && news(tr));
+  const shownOutcomes = [...outgoing, ...involved].filter((tr) => tr.status !== "pending").map((tr) => tr.id);
+  const shownKey = shownOutcomes.join(",");
+  useEffect(() => {
+    if (shownKey) markTransfersSeen(shownKey.split(","));
+  }, [shownKey]);
   if (!incoming.length && !outgoing.length && !involved.length) return null;
   const fmt = (tr: Transfer, c: number) => formatMoney(c, tr.currency);
 

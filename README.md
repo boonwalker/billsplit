@@ -335,6 +335,9 @@ Der Empfänger bestätigt den Eingang im Dashboard (auf der Startseite steht dan
 ist alles in allen Rechnungen beglichen; „Nicht erhalten“ gibt die Anteile wieder frei, und solange sie wartet, kann
 der Zahlende die Zahlung zurückziehen. Wer nur mittelbar beteiligt ist (Andy), sieht im Dashboard, was für ihn
 beglichen wurde. Der Empfänger sieht nur Anteile aus Rechnungen, an denen er selbst teilnimmt.
+Ergebnisse („Katia hat 8,00 € erhalten – alles ausgeglichen.“, „… als erhalten eingetragen“, „… nicht erhalten“) stehen
+nur beim ersten Öffnen des Dashboards danach oben – beim nächsten Mal sind sie weg (Merker `billsplit.seenTransfers`);
+führt eine Mitteilung zu so einer Zahlung, erscheint sie trotzdem. Wartende Zahlungen stehen immer da.
 
 ### Nachträglich geändert, schon bezahlt
 

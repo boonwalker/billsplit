@@ -207,7 +207,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   immer antippbar („Verlauf ansehen ›“, Fenster „Du und Anna“ mit „Gemeinsame Rechnungen“), ebenso die Gesamtbilanz
   (Ring-Mitte bzw. „Alle Rechnungen ansehen ›“, Fenster „Deine Bilanz“: links „Du leihst“, rechts „Du schuldest“, Rechnung
   für Rechnung, `BalanceSheet`), „Du leihst“ (grün) / „Du schuldest“
-  (orange), „N Eingang bestätigen“
+  (orange), „N Eingang bestätigen“; erledigte Ausgleichs-Meldungen („… alles ausgeglichen.“) nur einmal (`billsplit.seenTransfers`)
 - ✕ in der Rechnungsliste: „Bist Du sicher, dass Du diese Rechnung löschen möchtest?“ mit „Löschen“ / „Abbrechen“
 - Profil-Assistent: „Wie heißt Du?“, dann „Wie willst Du bezahlt werden?“ mit PayPal / Überweisung / Wero – immer mit
   Ausweg („Überspringen“ beim Rechnungssteller, „Später“ beim Gast; kein Fenster ohne Ausgang)

@@ -79,4 +79,9 @@ test("Ausgleich mit einer Person: Erhaltenes selbst eintragen – die Person sie
   const carlPage = await phone(browser, carl.key, { profile: { name: "Carl" }, recent: [{ id: bar, title: "Bar", role: "guest" }] });
   await carlPage.goto("/#/dashboard");
   await expect(carlPage.locator(".transfer-inbox")).toContainText("Niklas hat 6,34 € von Dir als erhalten eingetragen");
+  // News only once: the next time Carl opens the dashboard it is gone.
+  await carlPage.goto("/");
+  await carlPage.goto("/#/dashboard");
+  await expect(carlPage.locator(".person-ring", { hasText: "Niklas" })).toBeVisible();
+  await expect(carlPage.locator(".transfer-inbox")).toHaveCount(0);
 });

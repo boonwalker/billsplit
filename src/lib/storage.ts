@@ -110,6 +110,15 @@ export const sessionCount = (): number => read<{ count: number }>(SESSIONS_KEY, 
 export const wasAsked = (name: string): boolean => read<boolean>(`billsplit.asked.${name}`, false);
 export const markAsked = (name: string) => write(`billsplit.asked.${name}`, true);
 
+/** Settlement payments whose outcome (confirmed, rejected, …) was shown once on the dashboard. */
+const SEEN_TRANSFERS_KEY = "billsplit.seenTransfers";
+export const loadSeenTransfers = (): string[] => read<string[]>(SEEN_TRANSFERS_KEY, []);
+export function markTransfersSeen(ids: string[]): void {
+  const known = loadSeenTransfers();
+  if (ids.every((id) => known.includes(id))) return;
+  write(SEEN_TRANSFERS_KEY, [...new Set([...ids, ...known])].slice(0, 300));
+}
+
 export function loadProfile(): Profile {
   // In the demo, friends are simulated personas with a fixed name.
   const friend = DEMO ? friendName(getPersona()) : null;
