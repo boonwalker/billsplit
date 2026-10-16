@@ -5,7 +5,7 @@ import { loadOperator, type Operator } from "../lib/operator";
 import { navigate } from "../lib/router";
 
 /** Date of the current version of the privacy policy. */
-const AS_OF = "16.10.2026";
+const AS_OF = "17.10.2026";
 
 /** Name, address and contact – or a note that they follow (no OPERATOR_* set, or the demo). */
 function OperatorBlock({ operator }: { operator: Operator | null }) {
@@ -158,11 +158,18 @@ function Privacy({ operator }: { operator: Operator | null }) {
             Datenschutz bei Railway
           </a>
         </p>
+        <p>
+          Die Namensauflösung der Domain klicksplit.de übernimmt die Cloudflare, Inc., USA. Rufst Du klicksplit.de ohne „www“ auf, leitet
+          Cloudflare Dich auf www.klicksplit.de weiter und verarbeitet dafür technisch Deine IP-Adresse und die aufgerufene Adresse.{" "}
+          <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">
+            Datenschutz bei Cloudflare
+          </a>
+        </p>
       </Section>
 
       <Section title="Übermittlung in die USA">
         <p>
-          Railway, Anthropic und Resend sitzen in den USA. Die Übermittlung erfolgt auf Grundlage des EU-US Data Privacy Framework, soweit der
+          Railway, Cloudflare, Anthropic und Resend sitzen in den USA. Die Übermittlung erfolgt auf Grundlage des EU-US Data Privacy Framework, soweit der
           Anbieter danach zertifiziert ist, und im Übrigen auf Grundlage der Standardvertragsklauseln der EU-Kommission (Art. 46 DSGVO).
         </p>
       </Section>

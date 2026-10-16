@@ -63,7 +63,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 | Demo (ohne Server) | https://claude.ai/artifact/UDuSsFPTSGVB8QNeGYoGVZ (Daten im Browser, „Ansicht als“ Anna/Ben) |
 | Repo | `boonwalker/billsplit`, Branch `main` |
 | Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse; `PUBLIC_URL=https://www.klicksplit.de`; **kein `DATA_DIR`** (Volume `billsplit-volume` auf `/data`, seit 16.10.2026 geprüft); `ADMIN_TOKEN` noch nicht gesetzt |
-| Domain | `klicksplit.de` bei INWX: CNAME `www` → Railway (Hauptdomain ohne www geht bei INWX nicht, Web-Weiterleitung von INWX nie benutzen – löscht alle CNAMEs). Einrichtung im README „Umzug auf eine neue Adresse“ |
+| Domain | `klicksplit.de` registriert bei INWX, **DNS seit 17.10.2026 bei Cloudflare** (Free): CNAME `www` → Railway (grau), Resend-Einträge (grau), `@` → `192.0.2.1` orange mit Redirect Rule `klicksplit.de` → `https://www.klicksplit.de` (301). DNS-Änderungen nur noch bei Cloudflare; Web-Weiterleitung von INWX nie benutzen. Details im README „Umzug auf eine neue Adresse“ |
 
 Render wird nicht mehr benutzt (zu teuer, `render.yaml` ist entfernt). Der Auftraggeber nutzt die App vor
 allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenheiten haben Vorrang.
@@ -238,8 +238,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Railway-Variablen `OPERATOR_NAME`, `OPERATOR_ADDRESS`, `OPERATOR_EMAIL` setzen (Impressum/Datenschutz zeigen sonst
   „Angaben zum Betreiber folgen.“).
 
-- `klicksplit.de` ohne www (bei INWX nicht möglich): einzelner DNS-Eintrag vom Typ URL oder Nameserver zu Cloudflare.
-  Umzug auf www.klicksplit.de, Umbenennung in „klicksplit“ und Logo B sind erledigt (11.10.2026).
+- Erledigt 17.10.2026: `klicksplit.de` ohne www leitet über Cloudflare auf www um. Umzug auf www.klicksplit.de,
+  Umbenennung in „klicksplit“ und Logo B sind erledigt (11.10.2026).
 
 Erledigt am 11.10.2026: optionales E-Mail-Konto. Erledigt am 11.10.2026 (Bedienbarkeits-Analyse vom 10.10.2026 komplett umgesetzt):
 Safari- und App-Identität zusammenführen (`?von=`-Code, `mergeParticipant`), „Hast Du … gesendet?“ nach Rückkehr von

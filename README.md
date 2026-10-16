@@ -598,10 +598,24 @@ der eigenen (`src/lib/move.ts`).
    `_railway-verify.www` (Wert aus Railway, „Show DNS records“). Einen CNAME auf der Hauptdomain selbst lehnt INWX ab
    („Der NS-Eintrag ist ungültig“), deshalb `www`. Die Resend-Einträge (`resend._domainkey`, `send`, `_dmarc`) bleiben.
 3. Die „Weiterleitung → Web“ von INWX **nicht** benutzen: Sie löscht alle A-, AAAA- und CNAME-Einträge (also auch
-   `www`) und kann kein HTTPS. Wer `klicksplit.de` ohne www erreichen soll, bekommt einen einzelnen DNS-Eintrag vom
-   Typ URL oder später Cloudflare als Nameserver (CNAME-Flattening).
+   `www`) und kann kein HTTPS.
 4. Railway → **Variables** `PUBLIC_URL=https://www.klicksplit.de`. Damit leitet die alte Adresse um (siehe oben) und
    die Mails verlinken die neue.
+
+**Seit 17.10.2026: DNS bei Cloudflare, `klicksplit.de` → `www`.** INWX ist nur noch Registrar; die Nameserver der
+Domain zeigen auf Cloudflare (Free). DNS-Einträge werden jetzt **bei Cloudflare** gepflegt (die alte Zone bei INWX
+ist nur noch Rückfall und wirkt nicht mehr):
+
+| Typ | Name | Ziel | Proxy |
+| --- | --- | --- | --- |
+| A | `@` | `192.0.2.1` (Platzhalter) | **orange** – nur für die Weiterleitung |
+| CNAME | `www` | `jdowg88e.up.railway.app` | grau (sonst kein Railway-Zertifikat) |
+| CNAME | `send`, `rsend` | Resend (`…forge.rmta.net`) | grau |
+| TXT | `resend._domainkey`, `_dmarc` | Resend | – |
+
+Redirect Rule „klicksplit.de → www“: Hostname equals `klicksplit.de` → dynamisch
+`concat("https://www.klicksplit.de", http.request.uri.path)`, 301, Query-String behalten (der `#`-Teil kommt vom
+Browser mit). DNSSEC ist aus; bei Bedarf bei Cloudflare einschalten und den DS-Eintrag bei INWX hinterlegen.
 
 ### Daten und Backups
 
