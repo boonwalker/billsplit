@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 170 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 171 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -156,6 +156,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - **Rechnungsliste** (`billsplit.recent`) liegt auf dem Gerät; die Startseite ergänzt beim Öffnen und bei Live-Änderungen
   fehlende Rechnungen aus `/api/my-bills` (`syncRecentBills`, z. B. zugeordnete Ausgaben). Mit ✕ entfernte bleiben über
   `billsplit.hidden` draußen – ✕ immer über `hideBill`, nie nur `forgetBill`.
+  Rechnungen mit offenem Geld oder ausstehender Bestätigung lassen sich nicht entfernen (`stillOpen`). Das Dashboard
+  rechnet mit allen Rechnungen vom Server (lokale Liste ∪ `/api/my-bills`), sonst widerspricht der Ring dem Planer.
 - **Lange Drücken („/2“)** nur für den Rechnungssteller und nicht im Modus „Jeder selber abhaken“; ein präziser Tipp
   auf „/2“ hebt den Teiler auf, statt die Zeile zu streichen.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit

@@ -152,6 +152,16 @@ export function guestStatus(snap: BillSnapshot): { markedPaid: boolean; owed: Ce
 }
 
 
+/**
+ * Something in the bill still concerns me: money open between me and someone (either way), or
+ * a friend marked their share as paid and waits for my "erhalten". Such a bill cannot be
+ * removed from the list (✕) – see also the settlement payments to confirm (Home).
+ */
+export function stillOpen(snap: BillSnapshot): boolean {
+  if (snap.isOwner) return (snap.debtors ?? []).some((d) => debtorOpen(d) > 0 || (d.refund ?? 0) > 0 || (Boolean(d.markedPaidAt) && !d.received));
+  return Boolean(snap.me) && (myOpen(snap) > 0 || (snap.myRefund ?? 0) > 0);
+}
+
 /** A balance in the home currency: all currencies converted and added up (see mergeBalances). */
 export interface MergedBalances extends Balances {
   /** Per person: the currency most of it is in (settling happens in a bill's own currency). */

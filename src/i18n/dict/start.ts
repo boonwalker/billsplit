@@ -80,6 +80,9 @@ export default {
     "Oder Link einfügen": "Or paste a link",
     "Gerät übernehmen": "Transfer to this device",
     "Rechnung öffnen": "Open bill",
+    "Diese Rechnung ist noch offen": "This bill is still open",
+    "Solange in „{title}“ noch Geld offen ist oder Du einen Zahlungseingang bestätigen musst, bleibt sie in Deiner Liste.": "As long as money is still open in “{title}” or you need to confirm a payment, it stays in your list.",
+    "OK": "OK",
     // OriginalReceipt
     "Originalbeleg": "Original receipt",
     "Lädt": "Loading",
@@ -360,6 +363,9 @@ export default {
     "Oder Link einfügen": "O pega un enlace",
     "Gerät übernehmen": "Transferir a este dispositivo",
     "Rechnung öffnen": "Abrir cuenta",
+    "Diese Rechnung ist noch offen": "Esta cuenta sigue abierta",
+    "Solange in „{title}“ noch Geld offen ist oder Du einen Zahlungseingang bestätigen musst, bleibt sie in Deiner Liste.": "Mientras quede dinero pendiente en «{title}» o tengas que confirmar un pago, se queda en tu lista.",
+    "OK": "OK",
     // OriginalReceipt
     "Originalbeleg": "Ticket original",
     "Lädt": "Cargando",

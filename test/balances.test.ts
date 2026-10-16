@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeBalances } from "../src/lib/balances";
+import { computeBalances, stillOpen } from "../src/lib/balances";
 import type { BillData, BillSnapshot } from "../src/lib/bill";
 
 const data = (over: Partial<BillData> = {}): BillData => ({
@@ -97,5 +97,21 @@ describe("balances over all bills", () => {
       ["anna-1", 800],
       ["anna-2", 800],
     ]);
+  });
+});
+
+describe("stillOpen: bills that cannot leave the list", () => {
+  it("keeps bills with money open either way or a payment to confirm", () => {
+    expect(stillOpen(owner([{ name: "Anna", amount: 800, item: "b" }]))).toBe(true);
+    expect(stillOpen(owner([{ name: "Anna", amount: 800, item: "b", received: true }]))).toBe(false);
+    // Anna marked it as paid: waits for my "erhalten".
+    const marked = owner([{ name: "Anna", amount: 800, item: "b" }]);
+    marked.debtors![0] = { ...marked.debtors![0], payAmount: 800, markedPaidAt: "x" };
+    expect(stillOpen(marked)).toBe(true);
+    // Nobody joined yet: nothing concrete is open with anyone.
+    expect(stillOpen(owner([]))).toBe(false);
+    expect(stillOpen(guest("Anna"))).toBe(true);
+    expect(stillOpen(guest("Anna", true))).toBe(false);
+    expect(stillOpen({ ...guest("Anna", true), myRefund: 200 })).toBe(true);
   });
 });

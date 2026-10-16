@@ -183,9 +183,13 @@ Das gilt mit und ohne Konto.
 ### Dashboard
 
 Über „Deine Rechnungen“ auf der Startseite (damit er bei vielen Rechnungen nicht nach unten rutscht) führt
-„Dashboard · Deine Bilanz“ zu einer Übersicht über alle Rechnungen auf dem Gerät. Das ✕ an einer Rechnung in der Liste
-fragt erst „Bist Du sicher, dass Du diese Rechnung löschen möchtest?“; „Löschen“ nimmt sie nur aus der eigenen Liste,
-für die anderen Teilnehmer bleibt sie erhalten. Ein Ringdiagramm zeigt, wie viel Du insgesamt leihst (grün: was Freunde Dir aus Deinen Rechnungen noch
+„Dashboard · Deine Bilanz“ zu einer Übersicht über alle Rechnungen, an denen Du beteiligt bist – auch über solche, die
+nicht (mehr) in der Liste auf dem Gerät stehen (`/api/my-bills`), damit Ring, Personen und Gesamtausgleich immer
+dasselbe zeigen. Das ✕ an einer Rechnung in der Liste fragt erst „Bist Du sicher, dass Du diese Rechnung löschen
+möchtest?“; „Löschen“ nimmt sie nur aus der eigenen Liste, für die anderen Teilnehmer bleibt sie erhalten. Solange in
+der Rechnung noch Geld offen ist (in eine der beiden Richtungen) oder Du einen Zahlungseingang bestätigen musst
+(„erhalten“ bzw. eine Ausgleichszahlung), geht das nicht: Dann erklärt „Diese Rechnung ist noch offen“, warum sie
+bleibt, mit „Rechnung öffnen“ (`stillOpen` in `src/lib/balances.ts`, Merker `open` in der Liste). Ein Ringdiagramm zeigt, wie viel Du insgesamt leihst (grün: was Freunde Dir aus Deinen Rechnungen noch
 schulden, bis Du es als erhalten markierst) und wie viel Du schuldest (orange: Dein Anteil an Rechnungen anderer, bis Du
 ihn als bezahlt markierst); in der Mitte steht die Bilanz, ein Tipp auf einen Ring-Teil oder die Legende zeigt dessen
 Betrag und Anteil. Darunter stehen die Einzelbilanzen mit jeder Person als kleine Ringe in

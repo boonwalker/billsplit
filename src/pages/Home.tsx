@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import InstallHint from "../components/InstallHint";
 import ProfileWizard from "../components/ProfileWizard";
 import { ownerStatus } from "../components/OwnerPanel";
-import { guestStatus } from "../lib/balances";
+import { guestStatus, stillOpen } from "../lib/balances";
 import { billUrl } from "../lib/bill";
 import { isIosBrowser } from "../lib/handoff";
 import { formatDate, rich, t } from "../lib/i18n";
@@ -46,19 +46,18 @@ export default function Home() {
       .then(syncRecentBills)
       .catch(() => {}); // offline, older server: keep the list as it is
     const list = loadRecent();
-    const snaps = await api.getBills(list.map((b) => b.id));
+    const [snaps, transfers] = await Promise.all([api.getBills(list.map((b) => b.id)), api.transfers().catch(() => null)]);
+    // Settlement payments to me that wait for my confirmation keep their bills in the list, too.
+    const toConfirm = new Set(
+      (transfers?.transfers ?? []).filter((tr) => tr.toId === transfers?.me && tr.status === "pending").flatMap((tr) => tr.allocations.map((a) => a.billId)),
+    );
     for (const b of list) {
       const snap = snaps[b.id];
       if (snap === null) forgetBill(b.id);
       else if (!snap) continue;
-      else if (snap.isOwner) {
-        const status = ownerStatus(snap);
-        if (status.settled !== Boolean(b.settled) || status.missing !== b.missing || status.currency !== b.currency) updateRecent(b.id, status);
-      } else if (snap.me) {
-        const status = guestStatus(snap);
-        if (status.markedPaid !== Boolean(b.markedPaid) || status.owed !== b.owed || status.settled !== Boolean(b.settled) || status.currency !== b.currency) {
-          updateRecent(b.id, status);
-        }
+      else {
+        const status = { ...(snap.isOwner ? ownerStatus(snap) : snap.me ? guestStatus(snap) : {}), open: stillOpen(snap) || toConfirm.has(b.id) };
+        if (Object.entries(status).some(([k, v]) => (b as unknown as Record<string, unknown>)[k] !== v)) updateRecent(b.id, status);
       }
     }
   }, []);
@@ -308,7 +307,27 @@ export default function Home() {
       )}
       {onboarding?.step === "install" && <InstallHint url={billUrl(onboarding.billId, window.location.href)} onClose={() => setOnboarding(null)} />}
 
-      {removing && (
+      {/* Money still open or a payment to confirm: the bill stays in the list until then. */}
+      {removing?.open && (
+        <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && setRemoving(null)}>
+          <div className="sheet confirm-sheet" role="alertdialog" aria-labelledby="keep-title" aria-describedby="keep-text">
+            <h2 id="keep-title">{t("Diese Rechnung ist noch offen")}</h2>
+            <p id="keep-text" className="muted">
+              {t("Solange in „{title}“ noch Geld offen ist oder Du einen Zahlungseingang bestätigen musst, bleibt sie in Deiner Liste.", {
+                title: removing.title || t("Rechnung"),
+              })}
+            </p>
+            <button type="button" className="btn btn-primary btn-large" onClick={() => navigate(`/b/${removing.id}`)}>
+              {t("Rechnung öffnen")}
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => setRemoving(null)}>
+              {t("OK")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {removing && !removing.open && (
         <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && setRemoving(null)}>
           <div className="sheet confirm-sheet" role="alertdialog" aria-labelledby="remove-title" aria-describedby="remove-text">
             <h2 id="remove-title">{t("Bist Du sicher, dass Du diese Rechnung löschen möchtest?")}</h2>

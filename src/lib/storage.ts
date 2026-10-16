@@ -163,6 +163,8 @@ export interface RecentBill {
   /** Payer only: what is still missing ("Dir fehlen noch"), in cents of `currency`. */
   missing?: number;
   currency?: string;
+  /** Money is still open or a payment waits for my confirmation: ✕ cannot remove it (see stillOpen). */
+  open?: boolean;
 }
 
 export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, []);

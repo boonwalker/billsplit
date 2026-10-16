@@ -127,8 +127,13 @@ const bill = (id: string) => `/api/bills/${encodeURIComponent(id)}`;
 const serverApi: Api = {
   createBill: (data, name) => request("POST", "/api/bills", { data, name }),
   getBill: (id) => request("GET", bill(id)),
-  getBills: async (ids) =>
-    ids.length ? (await request<{ bills: Record<string, BillSnapshot | null> }>("POST", "/api/bills/batch", { ids })).bills : {},
+  // In parts of 100 (the server's limit per request): the dashboard asks for all bills.
+  getBills: async (ids) => {
+    const parts: string[][] = [];
+    for (let i = 0; i < ids.length; i += 100) parts.push(ids.slice(i, i + 100));
+    const results = await Promise.all(parts.map((part) => request<{ bills: Record<string, BillSnapshot | null> }>("POST", "/api/bills/batch", { ids: part })));
+    return Object.assign({}, ...results.map((r) => r.bills)) as Record<string, BillSnapshot | null>;
+  },
   updateBill: (id, data) => request("PUT", bill(id), { data }),
   join: (id, name) => request("POST", `${bill(id)}/join`, { name }),
   setClaims: (id, claims, splits) => request("PUT", `${bill(id)}/claims`, { claims, splits }),

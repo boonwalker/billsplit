@@ -215,10 +215,16 @@ export default function Dashboard({ focusTransfer }: { focusTransfer?: string })
     return next;
   }, []);
 
-  /** Loads all bills on this device again, in one request (offline: none). */
+  /**
+   * Loads all my bills again (offline: none): those on this device and every other one the
+   * server knows I take part in – also ones removed from the list or never opened here –, so
+   * the balance and the plan below (from the server's open shares) always tell the same.
+   */
   const load = useCallback(async () => {
+    const mine = await api.myBills().catch(() => []);
+    const ids = [...new Set([...loadRecent().map((b) => b.id), ...mine.map((b) => b.id)])];
     const [snaps] = await Promise.all([
-      api.getBills(loadRecent().map((b) => b.id)).catch(() => ({}) as Record<string, BillSnapshot | null>),
+      api.getBills(ids).catch(() => ({}) as Record<string, BillSnapshot | null>),
       loadNetwork().catch(() => null),
     ]);
     const next = computeBalances(Object.values(snaps).filter((s): s is BillSnapshot => s !== null));
