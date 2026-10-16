@@ -7,6 +7,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fill, isLang, msg, pickLang, translate, type Lang, type Msg, type Vars } from "../src/i18n/index.ts";
 import { adminPage } from "./adminPage.ts";
+import type { VisitLog } from "./visits.ts";
 import type { Monitor } from "./monitor.ts";
 import { isAiConfigured, isSupportedMediaType, observeAi, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
 import { limitsFromEnv, RateLimiter, type Limits } from "./rateLimit.ts";
@@ -73,6 +74,8 @@ export interface AppOptions {
   monitor?: Monitor;
   /** Opens the admin page (`/api/admin?token=…`); without it there is none. */
   adminToken?: string;
+  /** App starts per day and the devices behind them, for the admin page. */
+  visits?: VisitLog;
   /** Optional e-mail accounts (in memory when not given). */
   accounts?: AccountStore;
   /** Sends a sign-in code (default: Resend, or the log without a mail service). */
@@ -208,6 +211,8 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   if (monitor) observeAi({ call: (usage) => monitor.aiCall(usage), failure: (message) => monitor.aiFailure(message) });
   /** Error reports from the app, per client address (a broken page must not flood the log). */
   const appErrors = new RateLimiter(30, 60 * 60 * 1000);
+  const visitReports = new RateLimiter(120, 60 * 60 * 1000);
+  const visits = options.visits;
   const push = options.push;
   // Whatever needs someone (money arrived, a payment to confirm, …) goes to their devices.
   if (push) {
@@ -366,6 +371,14 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       return sendJson(res, 200, { ok: true });
     }
 
+    // The app was opened (see src/lib/visits.ts): counted for the admin page.
+    if (url.pathname === "/api/visit" && method === "POST") {
+      const body = parse(z.object({ app: z.boolean(), lang: z.string().max(8).optional() }), await readJson(req, 1024));
+      const viewer = viewerId(req, url);
+      if (visits && viewer && visitReports.take(clientAddress(req, trustProxy)).ok) visits.visit(viewer, body);
+      return sendJson(res, 200, { ok: true });
+    }
+
     // The operator's page: usage, cost and errors – and a copy of the data.
     if (parts[1] === "admin" && method === "GET") {
       const token = url.searchParams.get("token") ?? "";
@@ -379,8 +392,15 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
           errors,
           storage: store.storage,
           version: (process.env.RAILWAY_GIT_COMMIT_SHA ?? "dev").slice(0, 7),
-          bills: store.billCount(),
           backupUrl: store.storage === "memory" ? null : `/api/admin/backup?token=${encodeURIComponent(token)}`,
+          visitDays: visits?.stats() ?? [],
+          devices: visits?.allDevices() ?? [],
+          active: { day: visits?.activeWithin(1) ?? 0, week: visits?.activeWithin(7) ?? 0, month: visits?.activeWithin(30) ?? 0 },
+          online: new Set(userStreams.keys()),
+          accounts: accounts.all().map((a) => ({ email: a.email, name: a.profile.name ?? "", createdAt: a.createdAt, id: participantIdFromKey(a.key) })),
+          bills: store.summaries(),
+          pushSubscribers: push?.subscribers ?? 0,
+          isPushed: (id: string) => push?.reachable(id) ?? false,
         });
         res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" });
         return void res.end(html);

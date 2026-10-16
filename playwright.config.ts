@@ -47,6 +47,8 @@ export default defineConfig({
       RESEND_API_KEY: "",
       // The whole suite creates more bills than one person would in an hour.
       BILL_LIMIT_PER_HOUR: "500",
+      // The admin page (admin.e2e.ts).
+      ADMIN_TOKEN: "e2e-admin-token-123456",
       // No AI in tests (and no costs).
       ANTHROPIC_API_KEY: "",
     },

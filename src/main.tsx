@@ -6,6 +6,7 @@ import { isStandalone } from "./lib/handoff";
 import { moveNow, newHome } from "./lib/move";
 import { startPush } from "./lib/push";
 import { watchForUpdates } from "./lib/updates";
+import { trackVisits } from "./lib/visits";
 import "@fontsource/space-grotesk/latin-500.css";
 import "@fontsource/space-grotesk/latin-700.css";
 import "@fontsource/jetbrains-mono/latin-400.css";
@@ -18,6 +19,7 @@ watchErrors();
 function start() {
   watchForUpdates();
   startPush();
+  trackVisits();
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <App />

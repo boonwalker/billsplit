@@ -566,16 +566,30 @@ Zurückspielen: Dienst stoppen, die gewünschte Sicherung als `billsplit.db` in 
 ### Monitoring
 
 Setzt man auf Railway unter **Variables** `ADMIN_TOKEN` (ein langes Zufallswort, mindestens 12 Zeichen), gibt es die
-Betriebsseite `https://<adresse>/api/admin?token=<ADMIN_TOKEN>` (ohne gültiges Token: „Not found“):
+Betriebsseite `https://<adresse>/api/admin?token=<ADMIN_TOKEN>` (ohne gültiges Token: „Not found“). Sie ist auch
+fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
 
-- **pro Tag:** Belegfotos, KI-Aufrufe und -Fehler, Tokens und geschätzte Kosten (Listenpreise in
+- **Kacheln:** gerade online (App offen), aktive Geräte in 24 h / 7 / 30 Tagen, Geräte gesamt (davon mit
+  Home-Bildschirm-App), Konten (davon mit Mitteilungen), Rechnungen (diesen Monat), Beitritte und wie viele davon
+  bezahlt haben, abgerechneter Betrag diesen Monat, KI-Kosten, Fehler
+- **Nutzung pro Tag:** Besuche, verschiedene Geräte, neue Geräte, Anteil in der App, neue Rechnungen, Beitritte, Betrag.
+  Ein Besuch ist ein App-Start oder eine Rückkehr nach mindestens 30 Minuten; die App meldet ihn an `/api/visit`
+  (`src/lib/visits.ts`: nur App oder Browser und Sprache), gezählt in `server/visits.ts` → `visits.json` (seit 16.10.2026)
+- **Konten:** E-Mail, Name, angelegt, zuletzt aktiv, Rechnungen als Rechnungssteller / als Gast, App oder Browser,
+  Mitteilungen, grüner Punkt = gerade online
+- **Geräte:** die zuletzt aktiven 150 mit Name (aus den Rechnungen bzw. dem Konto), Konto, erster und letzter Besuch,
+  Besuche, App/Browser, Sprache, Rechnungen, Mitteilungen
+- **Neueste Rechnungen:** angelegt, Titel, Rechnungssteller, Gäste, wie viele bezahlt haben, Betrag
+- **Belegerkennung pro Tag:** Belegfotos, KI-Aufrufe und -Fehler, Tokens und geschätzte Kosten (Listenpreise in
   `server/monitor.ts`), Server- und App-Fehler; oben die Summen des laufenden Monats
 - **letzte Fehler:** Serverfehler (mit Stacktrace), fehlgeschlagene Belegerkennungen und Abstürze in der App auf den
   Handys der Nutzer (die App meldet unbehandelte Fehler selbst; ein abgestürzter Bildschirm zeigt „Da ist etwas
   schiefgelaufen“ mit „Neu laden“ statt einer weißen Seite)
 - **„Datenbank herunterladen“:** eine aktuelle Kopie aller Rechnungen als zusätzliches Backup außerhalb von Railway
 
-Die Zahlen liegen in `monitor.json` im Datenordner (60 Tage, 200 Fehler).
+Die Zahlen liegen in `monitor.json` (60 Tage, 200 Fehler) und `visits.json` (Besuche pro Tag, Geräte) im Datenordner.
+Die Betriebsseite zeigt E-Mail-Adressen und Namen – den Token deshalb nicht weitergeben (spätestens jetzt gehört eine
+Datenschutzerklärung dazu, siehe Backlog).
 
 ### Demo ohne Server
 

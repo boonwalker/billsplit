@@ -8,6 +8,7 @@ import { Monitor } from "./monitor.ts";
 import { isAiConfigured } from "./parseReceipt.ts";
 import { PushService } from "./push.ts";
 import { RateService } from "./rates.ts";
+import { VisitLog } from "./visits.ts";
 import { BillStore } from "./store.ts";
 
 try {
@@ -48,10 +49,14 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN?.trim() || undefined;
 const accounts = new AccountStore(path.join(path.dirname(DATA_FILE), "accounts.json"));
 await accounts.load();
 
+// App starts per day and the devices behind them (admin page).
+const visits = new VisitLog(path.join(path.dirname(DATA_FILE), "visits.json"));
+await visits.load();
+
 // Exchange rates (ECB, daily) for balances in the home currency, kept next to the bills.
 const rates = new RateService(path.dirname(DATA_FILE));
 await rates.load();
-const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts, rates }));
+const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts, rates, visits }));
 
 server.listen(PORT, () => {
   console.log(
@@ -60,7 +65,7 @@ server.listen(PORT, () => {
 });
 
 async function shutdown(): Promise<void> {
-  await Promise.all([store.flush(), monitor.flush(), accounts.flush()]);
+  await Promise.all([store.flush(), monitor.flush(), accounts.flush(), visits.flush()]);
   store.close();
   process.exit(0);
 }

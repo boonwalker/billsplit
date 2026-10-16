@@ -1,5 +1,6 @@
 import { fill, msg, type Msg, type Vars } from "../i18n";
 import {
+  billTotal,
   compactClaims,
   openShare,
   overpaidShare,
@@ -19,6 +20,17 @@ import {
   type Transfer,
   type TransferAllocation,
 } from "./bill";
+
+/** One bill in brief, for the admin page (see BillCore.summaries). */
+export interface BillSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  currency: string;
+  total: number;
+  ownerId: string;
+  participants: { id: string; name: string; joinedAt: string; paid: boolean }[];
+}
 
 /**
  * The rules of a shared bill, independent of where it is stored. Used by the
@@ -203,6 +215,24 @@ export class BillCore {
       this.transfersChanged(t.id);
     }
     return changed;
+  }
+
+  /** For the admin page: every bill in brief – who took part and whether they paid, no items or payment details. */
+  summaries(): BillSummary[] {
+    return [...this.bills.values()].map((b) => ({
+      id: b.id,
+      title: b.data.title,
+      createdAt: b.createdAt,
+      currency: b.data.currency,
+      total: billTotal(b.data),
+      ownerId: b.ownerId,
+      participants: Object.entries(b.participants).map(([id, p]) => ({
+        id,
+        name: p.name,
+        joinedAt: p.joinedAt,
+        paid: Boolean(p.received || p.markedPaidAt),
+      })),
+    }));
   }
 
   /** The bills a participant takes part in, newest first (to rebuild the list on a new device). */

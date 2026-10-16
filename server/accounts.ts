@@ -59,6 +59,11 @@ export class AccountStore {
     return this.byEmail.size;
   }
 
+  /** Every account, newest first (admin page). */
+  all(): Account[] {
+    return [...this.byEmail.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
   byKey(key: string): Account | null {
     for (const account of this.byEmail.values()) if (account.key === key) return account;
     return null;

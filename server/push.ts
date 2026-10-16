@@ -75,6 +75,11 @@ export class PushService {
     return Boolean(this.keys) && (this.subscriptions.get(participantId)?.length ?? 0) > 0;
   }
 
+  /** How many participants get notifications (admin page). */
+  get subscribers(): number {
+    return this.subscriptions.size;
+  }
+
   has(participantId: string, endpoint: string): boolean {
     return (this.subscriptions.get(participantId) ?? []).some((s) => s.endpoint === endpoint);
   }
