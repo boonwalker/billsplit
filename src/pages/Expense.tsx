@@ -24,7 +24,7 @@ const today = () => {
 const MAX_PEOPLE = 8;
 
 /**
- * "Ausgabe eingeben": a single expense without a receipt (a taxi, concert tickets, …) – amount,
+ * "Ausgabe zuweisen": a single expense without a receipt (a taxi, concert tickets, …) – amount,
  * what for, when, and by how many it is split. It becomes a bill with an equal split, shared
  * like any other. Or it goes straight to people from earlier bills: "5 € Taxi → Andy", or
  * shared with Andy ("Du bist auch dabei") – they get it as their share right away.
@@ -103,7 +103,7 @@ export default function Expense() {
 
   return (
     <div className="page expense-page">
-      <Header back="/" title={t("Ausgabe eingeben")} />
+      <Header back="/" title={t("Ausgabe zuweisen")} />
       <main className="content">
         <PencilFilter />
         <form className="expense-form" onSubmit={submit} noValidate>

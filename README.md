@@ -163,10 +163,10 @@ Anfangsanimation zeigt das im Loop, bis der Beleg berührt wird: eine Zeile wird
 zweite angetippt und dann durchgestrichen, eine dritte gedrückt gehalten (ein Ring füllt sich um den Finger, „/2“
 erscheint, eine Comic-Sprechblase erklärt es). Die Animation nutzt nur Positionen mit einem Stück.
 
-### Ausgabe eingeben
+### Ausgabe zuweisen
 
 Für eine einzelne Ausgabe ohne Beleg (Taxi, Konzertkarten, Tanken …) gibt es auf der Startseite direkt unter
-„QR-Code scannen“ den Knopf **„Ausgabe eingeben“** (`#/ausgabe`). Die Eingabemaske fragt nur das Nötigste: den Betrag (groß,
+„QR-Code scannen“ den Knopf **„Ausgabe zuweisen“** (`#/ausgabe`). Die Eingabemaske fragt nur das Nötigste: den Betrag (groß,
 mit Zahlentastatur), „Wofür?“ (frei oder per Schnellauswahl Taxi, Tanken, Tickets, Einkauf, Essen, Geschenk), „Wann?“
 (heute vorbelegt) und „Wie viele teilen sich das?“ (inklusive Dir, mit dem Bleistift-„/ N“ wie auf dem Beleg);
 darunter steht sofort der Anteil pro Person. „Rechnung erstellen“ macht daraus eine Rechnung mit Gleichverteilung,

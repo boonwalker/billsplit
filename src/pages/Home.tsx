@@ -218,11 +218,18 @@ export default function Home() {
           )}
 
           {/* A single expense without a receipt (taxi, tickets, …), right below the ways to start a bill. */}
-          <button type="button" className="btn btn-secondary expense-btn" onClick={() => navigate("/ausgabe")}>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-            </svg>
-            {t("Ausgabe eingeben")}
+          <button type="button" className="action-card" onClick={() => navigate("/ausgabe")}>
+            <span className="action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="2.5" y="6" width="13" height="9" rx="2" />
+                <circle cx="9" cy="10.5" r="2" />
+                <path d="M15.5 17.5h6M18.5 14.5l3 3-3 3" />
+              </svg>
+            </span>
+            <span className="action-text">
+              <b>{t("Ausgabe zuweisen")}</b>
+              <small>{t("Ohne Beleg – z. B. Taxi oder Tickets, auch direkt an Freunde")}</small>
+            </span>
           </button>
         </section>
 

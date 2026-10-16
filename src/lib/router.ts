@@ -6,7 +6,7 @@ export type Route =
   | { name: "profile"; next?: string }
   /** Signing in with the e-mail account. */
   | { name: "signin" }
-  /** A single expense entered by hand ("Ausgabe eingeben"). */
+  /** A single expense entered by hand ("Ausgabe zuweisen"). */
   | { name: "expense" }
   | { name: "new" }
   | { name: "scan" }

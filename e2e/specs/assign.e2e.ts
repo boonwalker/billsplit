@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createBill, joinAndClaim, key, phone } from "./helpers";
 
-test("Ausgabe eingeben: 5 € Taxi direkt Andy zuordnen – oder 10 € mit Andy teilen", async ({ browser }) => {
+test("Ausgabe zuweisen: 5 € Taxi direkt Andy zuordnen – oder 10 € mit Andy teilen", async ({ browser }) => {
   const niklas = { key: key("niklas"), name: "Niklas", paypal: "nik" };
   const andy = { key: key("andy"), name: "Andy" };
   // An earlier bill together: Andy is one of Niklas' people now.

@@ -118,7 +118,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   (`/api/rates`, `rates.json`). Ausgleichszahlungen bleiben in der Währung der Rechnung.
 - **Belegerkennung:** `server/parseReceipt.ts` (Claude, Structured Outputs, Summenprüfung mit Wiederholung, Bild
   max. 2000 px Kantenlänge; „Rückgeld“ bei Kartenzahlung = Trinkgeld, in `RECEIPT_INSTRUCTIONS` und im OCR-Parser). Fallback: Tesseract.js im Browser. In der Demo über `window.claude` (`claudeRuntime.ts`).
-- **Seiten:** `Home`, `Expense` (Ausgabe eingeben), `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in
+- **Seiten:** `Home`, `Expense` (Ausgabe zuweisen), `Scan`, `Editor` (Prüfen, Trinkgeld, Supermarkt-Frage, „Manches nicht“; Entwurfs-Modell in
   `src/lib/draft.ts`, Wartebildschirme in `BusyScreen`), `BillPage` (fertige Rechnung; Teile in
   `src/components/bill/`: `QrHero`, `LiveBadge`, `ReceiptPeek`, `OwnerBar`; Streichen/„/2“ als reine Funktionen in
   `src/lib/billEdits.ts`), `Dashboard`, `Profile`, `DeviceLink`, `OriginalReceipt`.
@@ -202,7 +202,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
-- „Ausgabe eingeben“ (Startseite, Knopf direkt unter „QR-Code scannen“, `src/pages/Expense.tsx`, `#/ausgabe`): Betrag,
+- „Ausgabe zuweisen“ (bis 16.10.2026 „Ausgabe eingeben“; Startseite, Karte wie die anderen direkt unter „QR-Code scannen“,
+  Untertitel „Ohne Beleg – z. B. Taxi oder Tickets, auch direkt an Freunde“, `src/pages/Expense.tsx`, `#/ausgabe`): Betrag,
   „Wofür?“ mit Schnellauswahl, „Wann?“, „Direkt zuordnen“ (runde Knöpfe der Kontakte, „Du bist auch dabei“, „Andy zahlt
   5,00 €“) bzw. „Wie viele teilen sich das?“ / „inklusive Dir“, „Rechnung erstellen“; ergibt **immer eine Rechnung mit
   Gleichverteilung** (ohne „Du bist auch dabei“ mit `ownerExcluded`: „… – Du bist nicht dabei“)

@@ -78,7 +78,7 @@ export interface BillData {
    */
   equalSplit?: boolean;
   /**
-   * The payer paid for others and is not part of the split ("Ausgabe eingeben": „Andy zahlt
+   * The payer paid for others and is not part of the split ("Ausgabe zuweisen": „Andy zahlt
    * 5,00 €“): only the other participants count as heads and the payer's own share is 0.
    * Applies to the equal split only; with ticking, the claims say who pays what.
    */
@@ -231,7 +231,7 @@ export interface MyBill {
 }
 
 /** An open share between two people in a bill the viewer takes part in (for settling up). */
-/** Someone I shared bills with (see BillCore.contacts): "Ausgabe eingeben" can assign them an expense directly. */
+/** Someone I shared bills with (see BillCore.contacts): "Ausgabe zuweisen" can assign them an expense directly. */
 export interface Contact {
   /** Their participant id (the same in all bills from their device). */
   id: string;

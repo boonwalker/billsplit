@@ -65,7 +65,7 @@ export interface StoredParticipant {
   markedPaidAt?: string;
   /** Last reminder the payer sent as a notification (at most one every REMIND_COOLDOWN_MS). */
   remindedAt?: string;
-  /** The payer put them in ("Ausgabe eingeben" → directly to Andy), they did not scan the QR code. */
+  /** The payer put them in ("Ausgabe zuweisen" → directly to Andy), they did not scan the QR code. */
   assigned?: boolean;
 }
 
@@ -304,7 +304,7 @@ export class BillCore {
     this.changed(billId);
   }
 
-  /** People the viewer shares bills with – most bills, then most recent first (for "Ausgabe eingeben"). */
+  /** People the viewer shares bills with – most bills, then most recent first (for "Ausgabe zuweisen"). */
   contacts(viewerId: string, limit = 12): Contact[] {
     const found = new Map<string, Contact>();
     for (const bill of this.bills.values()) {

@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { key, phone } from "./helpers";
 
-test("Ausgabe eingeben: Betrag, wofür, mit wie vielen – daraus wird eine Rechnung mit Gleichverteilung", async ({ browser }) => {
+test("Ausgabe zuweisen: Betrag, wofür, mit wie vielen – daraus wird eine Rechnung mit Gleichverteilung", async ({ browser }) => {
   const page = await phone(browser, key("niklas"), { profile: { name: "Niklas", paypalMe: "nik" } });
   await page.goto("/");
-  await page.getByRole("button", { name: "Ausgabe eingeben" }).click();
+  await page.getByRole("button", { name: /Ausgabe zuweisen/ }).click();
   await expect(page).toHaveURL(/#\/ausgabe$/);
 
   // Nothing entered yet: the button says what is missing.

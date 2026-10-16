@@ -198,7 +198,7 @@ export function hideBill(id: string): void {
 
 /**
  * Brings bills this device takes part in into the list that it does not know yet – above all
- * expenses a friend assigned to me ("Ausgabe eingeben"), which I never opened myself. Bills
+ * expenses a friend assigned to me ("Ausgabe zuweisen"), which I never opened myself. Bills
  * removed with ✕ stay out. True when something was added.
  */
 export function syncRecentBills(mine: MyBill[]): boolean {

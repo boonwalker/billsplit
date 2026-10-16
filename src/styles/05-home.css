@@ -182,11 +182,7 @@
   font-size: 0.9rem;
 }
 
-/* "Ausgabe eingeben": a single expense entered by hand (pages/Expense). */
-.expense-btn {
-  width: 100%;
-}
-
+/* "Ausgabe zuweisen": a single expense entered by hand (pages/Expense). */
 .expense-form {
   display: flex;
   flex-direction: column;
@@ -266,7 +262,7 @@
   color: var(--text);
 }
 
-/* "Ausgabe eingeben": people from earlier bills as circles to assign the expense to. */
+/* "Ausgabe zuweisen": people from earlier bills as circles to assign the expense to. */
 .expense-people-card {
   display: flex;
   flex-direction: column;
