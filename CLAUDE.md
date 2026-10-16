@@ -204,7 +204,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   für Rechnung, `BalanceSheet`), „Du leihst“ (grün) / „Du schuldest“
   (orange), „N Eingang bestätigen“
 - ✕ in der Rechnungsliste: „Bist Du sicher, dass Du diese Rechnung löschen möchtest?“ mit „Löschen“ / „Abbrechen“
-- Profil-Assistent: „Wie heißt Du?“, dann „Wie willst Du bezahlt werden?“ mit PayPal / Überweisung / Wero
+- Profil-Assistent: „Wie heißt Du?“, dann „Wie willst Du bezahlt werden?“ mit PayPal / Überweisung / Wero – immer mit
+  Ausweg („Überspringen“ beim Rechnungssteller, „Später“ beim Gast; kein Fenster ohne Ausgang)
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“

@@ -16,7 +16,7 @@ import { receiptSum } from "../lib/receipt";
 import { recognizeReceipt } from "../lib/recognize";
 import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
-import { clearDraft, loadProfile, profileReady, rememberBill, saveDraft } from "../lib/storage";
+import { clearDraft, loadProfile, profileDue, rememberBill, saveDraft } from "../lib/storage";
 
 /** Photo taken on the home screen, handed over to the editor (files can't go through the URL). */
 let pendingPhoto: File | null = null;
@@ -130,7 +130,7 @@ export default function Editor({ billId }: { billId?: string }) {
   }
 
   // First bill on this device: the profile is asked for while the receipt is being read.
-  const [needProfile, setNeedProfile] = useState(() => !editing && !profileReady());
+  const [needProfile, setNeedProfile] = useState(() => !editing && profileDue());
   const wizard = needProfile ? <ProfileWizard role="payer" onDone={() => setNeedProfile(false)} /> : null;
 
   useEffect(() => {

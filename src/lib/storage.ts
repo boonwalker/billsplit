@@ -140,6 +140,16 @@ export function profileReady(): boolean {
   return Boolean(p.name.trim() && hasPaymentMethod(p));
 }
 
+/**
+ * Before the first own bill the assistant asks for the name and how to get paid. The way to
+ * get paid can be skipped ("Überspringen") – then it is not asked again; friends mark their
+ * share as paid, and it can be added in the profile any time.
+ */
+export function profileDue(): boolean {
+  const p = loadProfile();
+  return !p.name.trim() || (!hasPaymentMethod(p) && !wasAsked("payment"));
+}
+
 let memoryKey: string | null = null;
 /** Random secret that identifies this device towards the server. */
 export function deviceKey(): string {

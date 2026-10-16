@@ -26,3 +26,29 @@ test("Ausgabe zuweisen: Betrag, wofür, mit wie vielen – daraus wird eine Rech
   await page.goto("/");
   await expect(page.locator(".list-title")).toHaveText(["Taxi"]);
 });
+
+test("Ausgabe zuweisen ohne Profil: „Wie willst Du bezahlt werden?“ lässt sich überspringen – kein Sackgassen-Fenster", async ({ browser }) => {
+  const page = await phone(browser, key("new-payer"));
+  await page.goto("/#/ausgabe");
+  await page.getByLabel("Betrag in Euro").fill("10");
+  await page.getByRole("button", { name: "Essen" }).click();
+  await page.getByRole("button", { name: "Rechnung erstellen" }).click();
+
+  const wizard = page.locator(".wizard");
+  await wizard.getByPlaceholder("Dein Name").fill("Niklas");
+  await wizard.getByRole("button", { name: "Weiter" }).click();
+  await wizard.getByRole("button", { name: "Überspringen" }).click();
+  await expect(wizard.getByRole("heading", { name: "Wie willst Du bezahlt werden?" })).toBeVisible();
+  await wizard.getByRole("button", { name: "Überspringen" }).click();
+  // The bill is made anyway.
+  await expect(page).toHaveURL(/#\/b\//, { timeout: 15_000 });
+  await expect(page.locator(".receipt")).toContainText("Essen");
+
+  // Asked once: the next expense goes straight through.
+  await page.goto("/#/ausgabe");
+  await page.getByLabel("Betrag in Euro").fill("5");
+  await page.getByRole("button", { name: "Taxi" }).click();
+  await page.getByRole("button", { name: "Rechnung erstellen" }).click();
+  await expect(page).toHaveURL(/#\/b\//, { timeout: 15_000 });
+  await expect(page.locator(".wizard")).toHaveCount(0);
+});

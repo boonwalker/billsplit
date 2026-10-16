@@ -16,7 +16,9 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
 
 1. Gleich „Rechnung fotografieren“ – beim allerersten Mal fragt billsplit, während der Beleg gelesen wird, wie
    ein Assistent nach dem Namen und dann „Wie willst Du bezahlt werden?“ (PayPal, Überweisung oder Wero – nur die
-   gewählte Angabe wird eingetragen). Weitere Zahlungswege lassen sich später im Profil ergänzen.
+   gewählte Angabe wird eingetragen). Weitere Zahlungswege lassen sich später im Profil ergänzen. Die Zahlungsart lässt
+   sich auch hier „Überspringen“ (auch bei „Ausgabe zuweisen“) – dann entsteht die Rechnung trotzdem, Freunde markieren
+   ihren Anteil als bezahlt, und die Frage kommt nicht wieder (`profileDue`, Merker `billsplit.asked.payment`).
 2. „Rechnung fotografieren“: Der Beleg wird analysiert. Alle Positionen werden digitalisiert, auch solche mit
    mehrfacher Anzahl („3x Bier“).
 3. Das Ergebnis ist ein großer QR-Code. Er enthält den Link zur Rechnung und deine PayPal-Daten.

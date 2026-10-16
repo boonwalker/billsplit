@@ -10,7 +10,7 @@ import { rich, t } from "../lib/i18n";
 import { formatMoney, parseMoney } from "../lib/money";
 import { paymentFromProfile } from "../lib/payment";
 import { navigate } from "../lib/router";
-import { loadProfile, profileReady, rememberBill } from "../lib/storage";
+import { loadProfile, profileDue, rememberBill } from "../lib/storage";
 
 /** Quick picks for "Wofür?" – a tap fills in the description. */
 const picks = () => [t("Taxi"), t("Tanken"), t("Tickets"), t("Einkauf"), t("Essen"), t("Geschenk")];
@@ -95,7 +95,7 @@ export default function Expense() {
     setTouched(true);
     if (!valid) return;
     // The first bill on this device: name and how to get paid first.
-    if (!profileReady()) setNeedProfile(true);
+    if (profileDue()) setNeedProfile(true);
     else void create();
   }
 
@@ -208,7 +208,7 @@ export default function Expense() {
           hint={t("Kurz noch zu Dir, dann ist Deine Rechnung fertig.")}
           onDone={() => {
             setNeedProfile(false);
-            if (profileReady()) void create();
+            if (!profileDue()) void create();
           }}
         />
       )}

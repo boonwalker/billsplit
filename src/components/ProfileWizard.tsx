@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { formatIban, isValidEmail, isValidIban, isValidWero, normalizeIban, normalizePaypalMe } from "../lib/payment";
 import { accountsAvailable, saveProfileEverywhere } from "../lib/account";
 import { t } from "../lib/i18n";
-import { hasPaymentMethod, loadAccountEmail, loadOwnProfile } from "../lib/storage";
+import { hasPaymentMethod, loadAccountEmail, loadOwnProfile, markAsked } from "../lib/storage";
 import AccountForm from "./AccountForm";
 import { Wordmark } from "./Logo";
 
@@ -137,11 +137,17 @@ export default function ProfileWizard({
               </button>
             ))}
           </div>
-          {role === "guest" && (
-            <button type="button" className="btn btn-ghost" onClick={() => onDone(false, switched)}>
-              {t("Später")}
-            </button>
-          )}
+          {/* Never a dead end: without a way to get paid, friends mark their share as paid. */}
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => {
+              if (role === "payer") markAsked("payment");
+              onDone(false, switched);
+            }}
+          >
+            {role === "guest" ? t("Später") : t("Überspringen")}
+          </button>
         </div>
       ) : (
         <form className="sheet wizard" key="details" onSubmit={save}>
