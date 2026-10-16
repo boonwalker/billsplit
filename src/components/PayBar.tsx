@@ -103,6 +103,12 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
 
   return (
     <div className="paybar" ref={bar} role="region" aria-label={t("Dein Anteil")}>
+      {/* Right before leaving for PayPal: come back afterwards – the payer only sees it once it is confirmed here. */}
+      {!snapshot.myReceived && !coveredByCredit && !asking && !(myPayment && nothing) && ((action.kind === "paypalMe" && ready) || (action.kind === "email" && !nothing)) && (
+        <p className="paybar-bubble" role="status">
+          ↩ {t("Danach wieder zurück in die App kommen und die Zahlung bestätigen")}
+        </p>
+      )}
       <div className="paybar-inner">
         <div className="paybar-sum">
           <span className="paybar-label">

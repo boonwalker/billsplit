@@ -52,6 +52,9 @@ test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungsste
   await anna.getByRole("button", { name: /Anteil begleichen · 9,50/ }).click();
   await expect(anna.locator(".paybar-copied")).toContainText("9,50 € in die Zwischenablage kopiert");
   expect(await anna.evaluate(() => navigator.clipboard.readText())).toBe("9,50");
+  // Right before PayPal opens: come back and confirm afterwards.
+  await expect(anna.locator(".paybar-bubble")).toHaveText("↩ Danach wieder zurück in die App kommen und die Zahlung bestätigen");
+  await anna.screenshot({ path: process.env.SHOT_BUBBLE ?? "/dev/null" }).catch(() => undefined);
   expect(await followPaypal(anna, /Mit PayPal bezahlen · 9,50/)).toBe("https://www.paypal.com/paypalme/nik/9.50EUR");
   // Back from PayPal, the app asks right away whether the money went out.
   await leaveAndReturn(anna);

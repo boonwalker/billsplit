@@ -189,3 +189,45 @@
     opacity: 0;
   }
 }
+
+/* Above the bar, right before PayPal opens: come back and confirm the payment. */
+.paybar-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  width: max-content;
+  max-width: min(340px, calc(100vw - 32px));
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--mint);
+  color: var(--brand);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  animation: paybar-bubble-in 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+  pointer-events: none;
+}
+
+.paybar-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border-radius: 3px;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+@keyframes paybar-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px) scale(0.85);
+  }
+}

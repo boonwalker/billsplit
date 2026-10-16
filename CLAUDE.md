@@ -212,6 +212,7 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Profil-Assistent: „Wie heißt Du?“, dann „Wie willst Du bezahlt werden?“ mit PayPal / Überweisung / Wero – immer mit
   Ausweg („Überspringen“ beim Rechnungssteller, „Später“ beim Gast; kein Fenster ohne Ausgang)
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
+  · vor dem PayPal-Absprung Sprechblase über der Leiste: „↩ Danach wieder zurück in die App kommen und die Zahlung bestätigen“
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
 - „Ausgabe zuweisen“ (bis 16.10.2026 „Ausgabe eingeben“; Startseite, Karte wie die anderen direkt unter „QR-Code scannen“,
