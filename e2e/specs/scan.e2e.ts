@@ -50,3 +50,47 @@ test("Beleg fotografieren: Erkennung → Trinkgeld nachfragen → fertige Rechnu
   await page.goto("/");
   await expect(page.locator("main")).toContainText("Trattoria Da Mario");
 });
+
+test("Trinkgeld als Endbetrag: leeres Feld mit Frage, „230“ eintippen ergibt 22,00 € Trinkgeld", async ({ browser }) => {
+  const page = await phone(browser, key("niklas"), { profile: { name: "Niklas", paypalMe: "nik" } });
+  await page.route("**/api/parse-receipt", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        merchant: "C.C. Kowalski",
+        date: "2026-10-15",
+        currency: "EUR",
+        items: [
+          { name: "Wiener Schnitzel", qty: 4, total: 12600 },
+          { name: "Hirschgulasch", qty: 1, total: 8200 },
+        ],
+        total: 20800,
+        tip: null,
+        fees: [],
+        delivery: false,
+        supermarket: false,
+        engine: "ai",
+      }),
+    }),
+  );
+  await page.goto("/");
+  await page.locator(".action-card.primary input[type=file]").setInputFiles({ name: "beleg.png", mimeType: "image/png", buffer: PHOTO });
+  const sheet = page.locator(".sheet");
+  const create = page.getByRole("button", { name: "Rechnung erstellen" }).first();
+  await expect(sheet.or(create).first()).toBeVisible({ timeout: 15_000 });
+  if (!(await sheet.isVisible())) await create.click();
+
+  await sheet.getByRole("radio", { name: "als Endbetrag" }).click();
+  const total = sheet.getByLabel("Endbetrag inklusive Trinkgeld");
+  // Empty, with a question – not a grey "208,00" that looks filled in and locked.
+  await expect(total).toHaveValue("");
+  await expect(total).toHaveAttribute("placeholder", "Was hast Du bezahlt?");
+  await page.screenshot({ path: process.env.SHOT ?? "/dev/null" }).catch(() => undefined);
+  await total.click();
+  await page.keyboard.type("230");
+  await expect(sheet.locator(".tip-preview")).toContainText("22,00 €");
+  await sheet.getByRole("button", { name: "Rechnung erstellen" }).click();
+  await expect(page).toHaveURL(/#\/b\//, { timeout: 15_000 });
+  await expect(page.locator(".receipt-sums")).toContainText("230,00 €");
+});

@@ -183,7 +183,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   „Anteil“ statt „Teil“
 - Rechnungsliste: „Du schuldest · Betrag“ (immer der aktuell noch offene), „✓ als bezahlt markiert“, „✓ beglichen“,
   „Du leihst · Betrag“ (immer der aktuell noch offene), „Du leihst · ✓ ausgeglichen“ (grün mit Haken)
-- Trinkgeld-Reiter: „absolut“ (voreingestellt), „in Prozent“, „als Endbetrag“ (Endbetrag → Trinkgeld = Differenz); bei
+- Trinkgeld-Reiter: „absolut“ (voreingestellt), „in Prozent“, „als Endbetrag“ (Endbetrag → Trinkgeld = Differenz, Feld leer mit „Was hast Du bezahlt?“ – nie den
+  Rechnungsbetrag als Platzhalter, sah gesperrt aus); bei
   Lieferbestellungen unter „absolut“ Schnellknöpfe „0,50 €“, „1 €“, „2 €“
 - Supermarkt-Frage: „Soll etwas nicht oder nur teilweise in Rechnung gestellt werden?“ / kleiner „z.B. Gewürze,
   Duschgel, Pfand?“; Knöpfe „Alles aufteilen“, „Manches nicht“, „Jeder selber abhaken“; Personenzahl „inklusive Dir“

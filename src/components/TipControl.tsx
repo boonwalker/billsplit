@@ -82,7 +82,7 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
 
       {value.mode === "amount" ? (
         <>
-          <label className="tip-field wide">
+          <label className="tip-field wide" key="amount">
             <input
               id={`${uid}-amount`}
               inputMode="decimal"
@@ -129,13 +129,16 @@ export default function TipControl({ value, onChange, subtotal, currency, fees =
         </div>
       ) : (
         <>
-          <label className="tip-field wide">
+          {/* A word, not the bill amount, as placeholder: a grey "208,00" looked like a locked, filled-in field
+              on the iPhone (16.10.2026). Own key: never the reused element of another mode. */}
+          <label className="tip-field wide" key="total">
             <input
               id={`${uid}-total`}
               inputMode="decimal"
               aria-label={t("Endbetrag inklusive Trinkgeld")}
               value={value.total}
-              placeholder={formatMoney(billAmount, currency).replace(/^[^\d-]+|\s?[^\d.,-]+$/g, "")}
+              placeholder={t("Was hast Du bezahlt?")}
+              onFocus={(e) => e.currentTarget.select()}
               onChange={(e) => set({ total: e.target.value.replace(/[^\d.,]/g, "") })}
             />
             <span>{currency === "EUR" ? "€" : currency}</span>

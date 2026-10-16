@@ -132,6 +132,12 @@
   display: flex;
 }
 
+/* "Was hast Du bezahlt?": plainly a question, not a filled-in amount. */
+.tip-field.wide input::placeholder {
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+
 .tip-field span {
   font-weight: 600;
   color: var(--muted);

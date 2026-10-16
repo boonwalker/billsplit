@@ -87,7 +87,8 @@ mit Karte mehr als die Summe gezahlt, ist die Differenz Trinkgeld, selbst wenn d
 („Summe 208,00 · Kreditkarte 230,00 · Rückgeld 22,00“ → 22,00 € Trinkgeld; mit Karte gibt es kein Rückgeld). Nur bei
 Barzahlung ist Rückgeld wirklich Rückgeld. Sonst fragt billsplit vor dem Erstellen des
 QR-Codes nach: absolut (der Trinkgeldbetrag selbst, voreingestellt), in Prozent oder als Endbetrag, also was Du insgesamt bezahlt
-hast. Beim Endbetrag ist das Trinkgeld die Differenz zum Rechnungsbetrag. Bei einer erkannten Lieferbestellung stehen unter
+hast. Beim Endbetrag ist das Trinkgeld die Differenz zum Rechnungsbetrag; das Feld ist leer und fragt „Was hast Du
+bezahlt?“ (früher stand dort grau der Rechnungsbetrag, der auf dem iPhone wie ein gesperrtes Feld aussah). Bei einer erkannten Lieferbestellung stehen unter
 „absolut“ Schnellknöpfe für den Fahrer: 0,50 €, 1 €, 2 €.
 
 Das Trinkgeld wird gleichmäßig pro Person verteilt. Gezählt wird automatisch, wer der Rechnung per QR-Code
