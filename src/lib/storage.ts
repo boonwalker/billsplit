@@ -133,7 +133,7 @@ export function adoptDevice(key: string, profile: Partial<Profile> | null, bills
   memoryKey = key;
   write(DEVICE_KEY, key);
   if (profile) write(PROFILE_KEY, { name: "", paypalMe: "", paypalEmail: "", ...profile });
-  write(RECENT_KEY, bills.slice(0, 30));
+  write(RECENT_KEY, newestFirst(bills));
   window.dispatchEvent(new Event(DEVICE_CHANGED));
 }
 
@@ -176,11 +176,14 @@ export interface RecentBill {
   gone?: boolean;
 }
 
-export const loadRecent = (): RecentBill[] => read<RecentBill[]>(RECENT_KEY, []);
+/** The list is always by date, newest first – opening a bill again does not move it (no limit on its length). */
+const newestFirst = (bills: RecentBill[]) => [...bills].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+export const loadRecent = (): RecentBill[] => newestFirst(read<RecentBill[]>(RECENT_KEY, []));
 
 export function rememberBill(entry: RecentBill): void {
   const others = loadRecent().filter((b) => b.id !== entry.id);
-  write(RECENT_KEY, [entry, ...others].slice(0, 30));
+  write(RECENT_KEY, newestFirst([entry, ...others]));
   // Opened again: it belongs in the list again.
   if (loadHidden().includes(entry.id)) write(HIDDEN_KEY, loadHidden().filter((id) => id !== entry.id));
 }
@@ -190,7 +193,7 @@ const loadHidden = (): string[] => read<string[]>(HIDDEN_KEY, []);
 /** The user removed a bill from the list (✕). */
 export function hideBill(id: string): void {
   forgetBill(id);
-  write(HIDDEN_KEY, [id, ...loadHidden().filter((x) => x !== id)].slice(0, 200));
+  write(HIDDEN_KEY, [id, ...loadHidden().filter((x) => x !== id)]);
 }
 
 /**
@@ -210,7 +213,7 @@ export function addRecentBills(bills: RecentBill[]): void {
   const known = loadRecent();
   const fresh = bills.filter((b) => !known.some((k) => k.id === b.id));
   if (!fresh.length) return;
-  write(RECENT_KEY, [...known, ...fresh].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30));
+  write(RECENT_KEY, newestFirst([...known, ...fresh]));
 }
 
 /** Updates a remembered bill in place (keeps its position in the list). */

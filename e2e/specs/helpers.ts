@@ -49,7 +49,8 @@ export async function phone(
   deviceKey: string,
   options: {
     profile?: { name: string; paypalMe?: string };
-    recent?: { id: string; title: string; role: "owner" | "guest" }[];
+    /** Newest first (each one a minute older than the one before). */
+    recent?: { id: string; title: string; role: "owner" | "guest"; createdAt?: string }[];
     seen?: string[];
     /** Let a friend be asked "Wie willst Du bezahlt werden?" after paying (off by default). */
     askProfile?: boolean;
@@ -62,7 +63,7 @@ export async function phone(
       if (localStorage.getItem("billsplit.deviceKey")) return;
       localStorage.setItem("billsplit.deviceKey", JSON.stringify(k));
       if (profile) localStorage.setItem("billsplit.profile", JSON.stringify({ paypalMe: "", paypalEmail: "", ...profile }));
-      localStorage.setItem("billsplit.recent", JSON.stringify(recent.map((b) => ({ ...b, createdAt: new Date().toISOString() }))));
+      localStorage.setItem("billsplit.recent", JSON.stringify(recent.map((b, i) => ({ ...b, createdAt: b.createdAt ?? new Date(Date.now() - i * 60_000).toISOString() }))));
       for (const id of seen) for (const flag of ["claimDemo", "tapDemo", "peekShown"]) localStorage.setItem(`billsplit.${flag}.${id}`, "1");
       localStorage.setItem("billsplit.pushAsked", "1");
       if (!askProfile) localStorage.setItem("billsplit.profileAsked", "1");

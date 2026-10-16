@@ -346,3 +346,9 @@
 .account-lost p {
   margin: 0;
 }
+
+/* Below the newest bills: the older ones on request. */
+.list-more {
+  width: 100%;
+  margin-top: 8px;
+}

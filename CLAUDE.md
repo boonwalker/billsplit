@@ -153,7 +153,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   (Vorfall 11.10.2026: Einladung führte in die Rechnungssteller-Ansicht – Ursache war ein Testhandy, das mit dem
   Konto des Rechnungsstellers angemeldet war; Lücke trotzdem geschlossen). Rechnungssteller und Gast derselben
   Rechnung werden nie zusammengelegt (`mergeParticipant` lässt solche Rechnungen aus).
-- **Rechnungsliste** (`billsplit.recent`) liegt auf dem Gerät; die Startseite ergänzt beim Öffnen und bei Live-Änderungen
+- **Rechnungsliste** (`billsplit.recent`) liegt auf dem Gerät, immer nach Datum sortiert (neueste oben, `newestFirst` –
+  Öffnen verschiebt nichts), ohne Obergrenze (20 sichtbar, dann „Ältere anzeigen“); die Startseite ergänzt beim Öffnen und bei Live-Änderungen
   fehlende Rechnungen aus `/api/my-bills` (`syncRecentBills`, z. B. zugeordnete Ausgaben). Mit ✕ entfernte bleiben über
   `billsplit.hidden` draußen – ✕ immer über `hideBill`, nie nur `forgetBill`.
   Rechnungen mit offenem Geld oder ausstehender Bestätigung lassen sich nicht entfernen (`stillOpen`). Das Dashboard

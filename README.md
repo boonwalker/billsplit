@@ -174,6 +174,10 @@ dabei“ zählt der Rechnungssteller dabei nicht mit (`BillData.ownerExcluded`, 
 zahlt die ganzen 5,00 €, über der Rechnung steht „5,00 € für eine Person – Du bist nicht dabei“. Schaltet der
 Rechnungssteller die Gleichverteilung später aus, gelten die Zuordnungen von vorher (Andy hat das Taxi abgehakt).
 
+**Reihenfolge:** „Deine Rechnungen“ ist immer nach Datum sortiert, die neueste oben – eine erneut geöffnete Rechnung
+rutscht nicht mehr nach oben. Die Liste hat keine Obergrenze: Die neuesten 20 stehen da, „Ältere anzeigen (N)“ zeigt
+den Rest.
+
 **In der Rechnungsliste des Empfängers:** Die Liste „Deine Rechnungen“ liegt auf dem Gerät (`billsplit.recent`). Damit
 zugeordnete Rechnungen dort sofort auftauchen, ohne dass man sie erst über Push oder Dashboard öffnet, holt die
 Startseite beim Öffnen und bei jeder Live-Änderung `/api/my-bills` und ergänzt fehlende Rechnungen (`syncRecentBills`).

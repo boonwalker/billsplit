@@ -59,3 +59,32 @@ test("Dashboard: zählt auch Rechnungen, die nicht in der Liste auf dem Gerät s
   await expect(page.locator(".person-rings")).toContainText("Katia");
   await expect(page.locator(".plan-incoming")).toContainText("Katia 4,82 €");
 });
+
+test("Rechnungsliste: immer nach Datum (neueste oben), ohne Obergrenze – Ältere auf Wunsch", async ({ browser }) => {
+  const niklas = { key: key("niklas"), name: "Niklas", paypal: "nik" };
+  for (let n = 1; n <= 3; n++) await createBill(niklas, `Rechnung ${n}`, [{ id: "p", name: "Pizza", qty: 1, total: 900 }]);
+  // 18 older entries from January (the server does not know them: "nicht mehr verfügbar").
+  const old = Array.from({ length: 18 }, (_, n) => ({
+    id: `altRechnung${String(n).padStart(3, "0")}`,
+    title: `Januar ${n + 1}`,
+    role: "owner" as const,
+    createdAt: new Date(Date.UTC(2026, 0, 28 - n, 12)).toISOString(),
+  }));
+  // The three real ones come from the server (/api/my-bills) with their real dates.
+  const page = await phone(browser, niklas.key, { profile: { name: "Niklas", paypalMe: "nik" }, recent: old });
+  await page.goto("/");
+  const titles = page.locator(".list-title");
+  await expect(titles).toHaveCount(20);
+  await expect(titles.nth(0)).toHaveText("Rechnung 3");
+  await expect(titles.nth(2)).toHaveText("Rechnung 1");
+  await page.getByRole("button", { name: "Ältere anzeigen (1)" }).click();
+  await expect(titles).toHaveCount(21);
+  await expect(titles.last()).toHaveText("Januar 18");
+
+  // Opening an older one does not move it to the top.
+  await titles.nth(2).click();
+  await expect(page).toHaveURL(/#\/b\//);
+  await page.goto("/");
+  await expect(titles.nth(0)).toHaveText("Rechnung 3");
+  await expect(titles.nth(2)).toHaveText("Rechnung 1");
+});

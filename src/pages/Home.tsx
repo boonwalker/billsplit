@@ -19,6 +19,9 @@ import { useBillChanges } from "../lib/liveEvents";
 import { clearDraft, hasPaymentMethod, hideBill, markGone, loadAccountEmail, loadAccountLost, loadOwnProfile, loadRecent, syncRecentBills, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
+/** Bills shown before "Ältere anzeigen". */
+const LIST_PAGE = 20;
+
 export default function Home() {
   const [recent, setRecent] = useState<RecentBill[]>(loadRecent);
   /**
@@ -32,6 +35,8 @@ export default function Home() {
     const timer = window.setTimeout(() => setOnboarding({ step: "profile", billId }), ASK_PROFILE_AFTER_MS);
     return () => window.clearTimeout(timer);
   }, []);
+  /** The list has no limit: the newest LIST_PAGE first, the older ones on request. */
+  const [showAll, setShowAll] = useState(false);
   /** The bill whose ✕ was tapped: asked once more before it leaves the list. */
   const [removing, setRemoving] = useState<RecentBill | null>(null);
   // The home screen always belongs to the device owner, also in the demo.
@@ -245,7 +250,7 @@ export default function Home() {
             </button>
             <h3 className="section-title">{t("Deine Rechnungen")}</h3>
             <ul className="list">
-              {recent.map((b) => (
+              {(showAll ? recent : recent.slice(0, LIST_PAGE)).map((b) => (
                 <li key={b.id} className={`list-item${b.gone ? " gone" : ""}`}>
                   <button className="list-main" onClick={() => navigate(`/b/${b.id}`)}>
                     <span className="list-title">{b.title || t("Rechnung")}</span>
@@ -292,6 +297,11 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+            {!showAll && recent.length > LIST_PAGE && (
+              <button type="button" className="btn btn-ghost list-more" onClick={() => setShowAll(true)}>
+                {t("Ältere anzeigen ({n})", { n: recent.length - LIST_PAGE })}
+              </button>
+            )}
           </section>
         )}
 

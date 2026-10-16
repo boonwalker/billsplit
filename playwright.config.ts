@@ -45,6 +45,8 @@ export default defineConfig({
       // The app's address; 127.0.0.1 plays the old one (move.e2e.ts).
       PUBLIC_URL: `http://localhost:${PORT}`,
       RESEND_API_KEY: "",
+      // The whole suite creates more bills than one person would in an hour.
+      BILL_LIMIT_PER_HOUR: "500",
       // No AI in tests (and no costs).
       ANTHROPIC_API_KEY: "",
     },
