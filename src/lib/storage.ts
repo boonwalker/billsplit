@@ -218,23 +218,16 @@ export function updateRecent(id: string, patch: Partial<RecentBill>): void {
   write(RECENT_KEY, loadRecent().map((b) => (b.id === id ? { ...b, ...patch } : b)));
 }
 
-/** Bills are deleted on the server after 60 days (server/store.ts). */
-const BILL_LIFETIME_MS = 60 * 24 * 60 * 60 * 1000;
-
 /**
- * The server does not know a bill: an expired one leaves the list, any other stays, marked as
- * no longer available – a server that lost its data (16.10.2026) must not empty everyone's list.
- * True when it was marked (not expired).
+ * The server does not know a bill: it stays in the list, marked as no longer available – a
+ * server that lost its data (16.10.2026) must not empty everyone's list. Bills never expire,
+ * so this is never normal. True when it was marked just now.
  */
-export function markGone(id: string, now = Date.now()): boolean {
+export function markGone(id: string): boolean {
   const entry = loadRecent().find((b) => b.id === id);
-  if (!entry) return false;
-  if (now - Date.parse(entry.createdAt) > BILL_LIFETIME_MS) {
-    forgetBill(id);
-    return false;
-  }
-  if (!entry.gone) updateRecent(id, { gone: true, open: false });
-  return !entry.gone;
+  if (!entry || entry.gone) return false;
+  updateRecent(id, { gone: true, open: false });
+  return true;
 }
 
 export function forgetBill(id: string): void {

@@ -1,7 +1,7 @@
 import { mkdtemp, readdir, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { BACKUP_DAYS, dailyBackup, openPersistence } from "../server/persistence";
 import { BillStore } from "../server/store";
 import type { BillData } from "../src/lib/bill";
@@ -41,6 +41,24 @@ for (const sqlite of [true, false]) {
       expect(again.snapshot(id, "owner").debtors?.[0]).toMatchObject({ name: "Anna", creditPending: 950 });
       expect(again.listTransfers("owner")).toHaveLength(1);
       expect(await exists(join(dir, "billsplit.db"))).toBe(sqlite);
+      again.close();
+    });
+
+    it("keeps old bills for good (no expiry)", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "billsplit-"));
+      const file = join(dir, "bills.json");
+      const store = new BillStore(file, { sqlite });
+      await store.load();
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2025-01-15T12:00:00Z"));
+      const id = store.createBill(data, "owner", "Niklas");
+      vi.useRealTimers();
+      await store.flush();
+      store.close();
+
+      const again = new BillStore(file, { sqlite });
+      await again.load();
+      expect(again.snapshot(id, "owner").createdAt).toBe("2025-01-15T12:00:00.000Z");
       again.close();
     });
   });

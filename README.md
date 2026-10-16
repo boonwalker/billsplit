@@ -182,7 +182,7 @@ Das gilt mit und ohne Konto.
 
 Kennt der Server eine Rechnung nicht mehr, verschwindet sie nicht einfach: Sie bleibt ausgegraut mit „nicht mehr
 verfügbar“ stehen (`markGone`), bis man sie mit ✕ entfernt (ohne Rückfrage), und die App meldet das an die
-Betriebsseite. Nur Rechnungen älter als 60 Tage (auf dem Server abgelaufen) verschwinden still. Ebenso meldet die App
+Betriebsseite. Rechnungen laufen nicht ab – der Server löscht keine Rechnung nach einer bestimmten Zeit. Ebenso meldet die App
 nicht still ab, wenn der Server das Konto nicht mehr kennt: Startseite und Profil sagen „Du wurdest abgemeldet: Der
 Server kannte Dein Konto … nicht mehr“, „Wieder anmelden“ hat die Adresse schon eingetragen (`billsplit.accountLost`).
 
@@ -433,7 +433,7 @@ bleibt, wie es eingegeben wurde. Technik und feste Begriffe: `docs/i18n.md`.
 | Belegerkennung | Claude (Vision + Structured Outputs) auf dem Server. Fallback: Tesseract.js lokal im Browser |
 | Live-Sync | Node-Server mit Server-Sent Events. Jede Änderung wird sofort an alle Teilnehmer gepusht |
 | Identität | Jedes Gerät hat einen zufälligen geheimen Schlüssel. Andere sehen nur dessen Hash als Teilnehmer-ID |
-| Daten | SQLite-Datenbank `billsplit.db` (eingebautes `node:sqlite`, nur geänderte Rechnungen werden geschrieben), Belegfotos in `receipts/`, tägliche Sicherung in `backups/` (14 Tage). Rechnungen werden nach 60 Tagen gelöscht |
+| Daten | SQLite-Datenbank `billsplit.db` (eingebautes `node:sqlite`, nur geänderte Rechnungen werden geschrieben), Belegfotos in `receipts/`, tägliche Sicherung in `backups/` (14 Tage). Rechnungen und Ausgleichszahlungen werden nie automatisch gelöscht |
 | QR-Code | `qrcode`, Scanner in der App mit `jsQR` |
 | Schriften | Space Grotesk & JetBrains Mono, selbst gehostet (keine Google-Fonts-Anfragen) |
 

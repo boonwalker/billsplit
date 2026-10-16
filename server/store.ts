@@ -9,7 +9,6 @@ import { dailyBackup, openPersistence, type Persistence } from "./persistence.ts
 export { BillError as StoreError };
 
 /** Bills are deleted this long after creation. */
-const RETENTION_MS = 60 * 24 * 60 * 60 * 1000;
 
 /**
  * Largest amount in cents (10 million in the bill's currency). Generous on purpose: bills in
@@ -107,11 +106,10 @@ export class BillStore extends BillCore {
   async load(): Promise<void> {
     if (!this.file) return;
     this.persistence = await openPersistence(this.file, this.options);
-    const cutoff = new Date(Date.now() - RETENTION_MS).toISOString();
-    await this.persistence.prune(cutoff);
+    // Bills are kept for good – no expiry (decided on 16.10.2026).
     const { bills, transfers } = await this.persistence.load();
-    for (const bill of bills) if (bill.createdAt > cutoff) this.bills.set(bill.id, bill);
-    for (const t of transfers) if (t.createdAt > cutoff) this.transfers.set(t.id, t);
+    for (const bill of bills) this.bills.set(bill.id, bill);
+    for (const t of transfers) this.transfers.set(t.id, t);
     await this.removeOrphanImages();
   }
 

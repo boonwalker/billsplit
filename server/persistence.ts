@@ -31,8 +31,6 @@ export interface Persistence {
   load(): Promise<Snapshot>;
   /** Writes what changed; `all` is the complete state (for the JSON file). */
   save(changes: Changes, all: () => Snapshot): Promise<void>;
-  /** Removes bills and payments created before the cutoff (ISO date). */
-  prune(cutoff: string): Promise<void>;
   /** Writes a consistent copy of everything to `file`. */
   copyTo(file: string): Promise<void>;
   close(): void;
@@ -114,11 +112,6 @@ class SqlitePersistence implements Persistence {
     }
   }
 
-  async prune(cutoff: string): Promise<void> {
-    this.db.prepare("DELETE FROM bills WHERE created_at < ?").run(cutoff);
-    this.db.prepare("DELETE FROM transfers WHERE created_at < ?").run(cutoff);
-  }
-
   async copyTo(file: string): Promise<void> {
     await unlink(file).catch(() => {});
     this.db.prepare("VACUUM INTO ?").run(file);
@@ -144,9 +137,6 @@ class JsonPersistence implements Persistence {
     await rename(tmp, this.file);
   }
 
-  async prune(): Promise<void> {
-    // Expired entries are left out on load and disappear with the next write.
-  }
 
   async copyTo(file: string): Promise<void> {
     await copyFile(this.file, file).catch((error: NodeJS.ErrnoException) => {
