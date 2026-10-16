@@ -128,6 +128,16 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
           <p className="paybar-note paybar-copied">✓ {t("{name} hat Deinen Anteil als erhalten markiert.", { name: ownerName || t("Der Rechnungssteller") })}</p>
         )}
 
+        {/* The payer changed the bill after I paid: the difference is mine (it counts in the dashboard). */}
+        {snapshot.myRefund ? (
+          <p className="paybar-note paybar-refund">
+            {t("Du hast mehr bezahlt, als Dein Anteil jetzt beträgt – {name} schuldet Dir {amount}.", {
+              name: ownerName || t("Der Rechnungssteller"),
+              amount: formatMoney(snapshot.myRefund, data.currency),
+            })}
+          </p>
+        ) : null}
+
         {snapshot.myCredit?.notes.map(tMsg).map((note) => (
           <p key={note} className="paybar-note">
             ✓ {note}

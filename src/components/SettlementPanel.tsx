@@ -40,7 +40,7 @@ export function BillEntry({ title, text, amount, onOpen }: { title: string; text
 
 /** One settled share in words, from my point of view. */
 function describe(a: TransferAllocation, me: string, edges: Map<string, NetworkEdge>) {
-  const e = edges.get(`${a.billId}:${a.debtorId}`);
+  const e = edges.get(`${a.billId}:${a.debtorId}:${a.creditorId}`);
   const title = e?.title ?? t("Rechnung");
   const debtor = e?.debtorName ?? "";
   const creditor = e?.creditorName ?? "";
@@ -143,12 +143,12 @@ export function PlanPaySheet({
   const [planned, setPlanned] = useState(shown);
   const [stage, setStage] = useState<"pay" | "booking" | "done">("pay");
   const [notice, setNotice] = useState<string | null>(null);
-  const byShare = new Map(edges.map((e) => [`${e.billId}:${e.debtorId}`, e]));
+  const byShare = new Map(edges.map((e) => [`${e.billId}:${e.debtorId}:${e.creditorId}`, e]));
   const fmt = (c: number) => formatMoney(c, planned.currency);
   const same = (a: PlannedTransfer, b: PlannedTransfer) =>
     a.amount === b.amount &&
-    JSON.stringify([...a.allocations].sort((x, y) => `${x.billId}${x.debtorId}`.localeCompare(`${y.billId}${y.debtorId}`))) ===
-      JSON.stringify([...b.allocations].sort((x, y) => `${x.billId}${x.debtorId}`.localeCompare(`${y.billId}${y.debtorId}`)));
+    JSON.stringify([...a.allocations].sort((x, y) => `${x.billId}${x.debtorId}${x.creditorId}`.localeCompare(`${y.billId}${y.debtorId}${y.creditorId}`))) ===
+      JSON.stringify([...b.allocations].sort((x, y) => `${x.billId}${x.debtorId}${x.creditorId}`.localeCompare(`${y.billId}${y.debtorId}${y.creditorId}`)));
 
   /** Records the payment – only if the plan is still exactly what was paid. */
   async function book() {
@@ -205,7 +205,7 @@ export function PlanPaySheet({
                 const d = describe(a, me, byShare);
                 return (
                   <BillEntry
-                    key={`${a.billId}:${a.debtorId}`}
+                    key={`${a.billId}:${a.debtorId}:${a.creditorId}`}
                     title={d.title}
                     text={d.text}
                     amount={
@@ -299,7 +299,7 @@ export function TransferInbox({
   const lines = (tr: Transfer) =>
     tr.allocations.map((a) => (
       <BillEntry
-        key={`${a.billId}:${a.debtorId}`}
+        key={`${a.billId}:${a.debtorId}:${a.creditorId}`}
         title={a.billTitle}
         text={
           a.debtorId === me

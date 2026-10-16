@@ -1,6 +1,12 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. */
 export default {
   en: {
+    "Du hast mehr bezahlt, als Dein Anteil jetzt beträgt – {name} schuldet Dir {amount}.": "You paid more than your share is now – {name} owes you {amount}.",
+    "Du schuldest {name} {amount} zurück": "You owe {name} {amount} back",
+    "{name} hat schon bezahlt": "{name} has already paid",
+    "Einige haben schon bezahlt": "Some have already paid",
+    "{name} hat schon {paid} bezahlt – danach wären es nur {share}. Die {extra} werden {name} gutgeschrieben: Du schuldest sie {name} dann.": "{name} has already paid {paid} – afterwards it would only be {share}. The {extra} is credited to {name}: you'll owe it to {name} then.",
+    "Trotzdem ändern": "Change anyway",
     // src/components/PayBar.tsx
     "Lieber per Überweisung oder Wero": "Pay by bank transfer or Wero instead",
     "Lieber per Überweisung": "Pay by bank transfer instead",
@@ -220,6 +226,12 @@ export default {
     "Unbekannt": "Unknown",
   } as Record<string, string>,
   es: {
+    "Du hast mehr bezahlt, als Dein Anteil jetzt beträgt – {name} schuldet Dir {amount}.": "Has pagado más de lo que es tu parte ahora: {name} te debe {amount}.",
+    "Du schuldest {name} {amount} zurück": "Le debes {amount} a {name}",
+    "{name} hat schon bezahlt": "{name} ya ha pagado",
+    "Einige haben schon bezahlt": "Algunos ya han pagado",
+    "{name} hat schon {paid} bezahlt – danach wären es nur {share}. Die {extra} werden {name} gutgeschrieben: Du schuldest sie {name} dann.": "{name} ya ha pagado {paid}; después serían solo {share}. Los {extra} se le abonan a {name}: entonces se los deberás a {name}.",
+    "Trotzdem ändern": "Cambiar de todos modos",
     // src/components/PayBar.tsx
     "Lieber per Überweisung oder Wero": "Mejor por transferencia o Wero",
     "Lieber per Überweisung": "Mejor por transferencia",

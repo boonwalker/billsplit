@@ -95,6 +95,12 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
       for (const d of snap.debtors ?? []) {
         const p = person(b, d.id, d.name);
         p.bills++;
+        // They paid more than their share is now: I owe it back.
+        if (d.refund) {
+          p.owed += d.refund;
+          b.owed += d.refund;
+          p.entries.push({ ...bill, direction: "owed", amount: d.refund });
+        }
         const open = debtorOpen(d);
         if (open === 0) continue;
         p.lent += open;
@@ -108,6 +114,12 @@ export function computeBalances(snapshots: BillSnapshot[]): Balances[] {
       const payer = snap.participants.find((x) => x.isOwner);
       const p = person(b, payer?.id ?? `owner:${snap.id}`, snap.ownerName);
       p.bills++;
+      // I paid more than my share is now: the payer owes it back.
+      if (snap.myRefund) {
+        p.lent += snap.myRefund;
+        b.lent += snap.myRefund;
+        p.entries.push({ ...bill, direction: "lent", amount: snap.myRefund });
+      }
       const open = myOpen(snap);
       if (open === 0) continue;
       p.owed += open;

@@ -25,6 +25,8 @@ import { paymentFromProfile, samePayment } from "../lib/payment";
 import { forgetBill, hasPaymentMethod, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
 import { rich, t } from "../lib/i18n";
+import { newRefunds, type NewRefund } from "../lib/refunds";
+import RefundConfirm from "../components/RefundConfirm";
 import { scrollBehavior } from "../lib/motion";
 
 /**
@@ -41,6 +43,8 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   const [atEnd, setAtEnd] = useState(false);
   /** Payer: the line whose settings are open (after holding it). */
   const [divisorFor, setDivisorFor] = useState<string | null>(null);
+  /** A change that leaves friends having paid too much, waiting for the payer's yes. */
+  const [refundAsk, setRefundAsk] = useState<{ refunds: NewRefund[]; apply: () => void } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const [ownerBarHeight, setOwnerBarHeight] = useState(0);
   /**
@@ -223,18 +227,29 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")));
   }
 
-  function updateData(data: BillData) {
+  function save(data: BillData) {
     api
       .updateBill(id, data)
       .then(replace)
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")));
   }
 
+  /** Someone paid already and would have paid too much afterwards: ask first (see RefundConfirm). */
+  function guarded(data: BillData, apply: (data: BillData) => void) {
+    const refunds = newRefunds(snap, data);
+    if (refunds.length) setRefundAsk({ refunds, apply: () => apply(data) });
+    else apply(data);
+  }
+
+  const updateData = (data: BillData) => guarded(data, save);
+
   /** Equal split, payer: crossing out lines, fees and the tip, billing a part of a line (see billEdits). */
   function edit(data: BillData) {
-    // Show it right away; the server's answer follows.
-    replace({ ...snap, data });
-    updateData(data);
+    guarded(data, (next) => {
+      // Show it right away; the server's answer follows.
+      replace({ ...snap, data: next });
+      save(next);
+    });
   }
   const toggleExcluded = (itemId: string) => edit(toggleItemExcluded(snap.data, itemId));
   const applyDivisor = (itemId: string, divisor: number) => edit(setItemDivisor(snap.data, itemId, divisor));
@@ -332,6 +347,17 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         <ReceiptPeek billId={id} title={snap.data.title} scroller={scroller} bottom={Math.max(0, ownerBarHeight - 26)} hidden={atEnd} />
       )}
       {snap.isOwner && summary && <OwnerBar snapshot={snap} missing={summary.missing} away={atEnd} onHeight={setOwnerBarHeight} />}
+      {refundAsk && (
+        <RefundConfirm
+          refunds={refundAsk.refunds}
+          currency={snap.data.currency}
+          onConfirm={() => {
+            refundAsk.apply();
+            setRefundAsk(null);
+          }}
+          onCancel={() => setRefundAsk(null)}
+        />
+      )}
 
       {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} onHeight={setPayBarHeight} />}
 

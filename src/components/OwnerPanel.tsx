@@ -184,6 +184,10 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                   </span>
                   {d.remindedAt && !d.received && !d.markedPaidAt && <span className="debtor-reminded">{t("per Mitteilung erinnert {ago}", { ago: remindedAgo(d.remindedAt) })}</span>}
                   {/* Settled (partly) by settlement payments from the dashboard. */}
+                  {/* Paid more than the share is now: the payer owes it back (it counts in the dashboard). */}
+                  {d.refund ? (
+                    <span className="debtor-refund">{t("Du schuldest {name} {amount} zurück", { name: d.name, amount: formatMoney(d.refund, currency) })}</span>
+                  ) : null}
                   {d.creditNotes?.map(tMsg).map((note) => (
                     <span key={note} className="debtor-credit">
                       {note}

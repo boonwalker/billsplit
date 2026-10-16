@@ -110,6 +110,10 @@ export interface Debtor {
   payAmount?: Cents;
   /** The payer confirmed the money arrived on PayPal. */
   received: boolean;
+  /** What was open when the payer confirmed it without a pay click (see PaidState). */
+  receivedAmount?: Cents;
+  /** Paid more than the share is now: what the payer owes them back. */
+  refund?: Cents;
   /** The friend marked their share as paid. */
   markedPaidAt?: string;
   /** Settled by settlement payments (see Transfer): confirmed by their recipient … */
@@ -138,13 +142,31 @@ export interface ShareCredit {
  * marked as paid by them: with the amount of their pay click), less what settlement payments
  * covered (confirmed or still waiting). Whatever was added to the share afterwards stays open.
  */
-export function openShare(
-  share: Cents,
-  state: { received?: boolean; payAmount?: Cents; markedPaidAt?: string },
-  credited: Cents = 0,
-): Cents {
-  const settled = state.received ? (state.payAmount ?? share) : state.markedPaidAt ? (state.payAmount ?? 0) : 0;
-  return Math.max(0, share - settled - credited);
+export function openShare(share: Cents, state: PaidState, credited: Cents = 0): Cents {
+  return Math.max(0, share - settledInBill(share, state) - credited);
+}
+
+/** How a friend settled their share in the bill itself (see openShare). */
+export interface PaidState {
+  received?: boolean;
+  payAmount?: Cents;
+  /** What was open when the payer ticked "erhalten" without a pay click before. */
+  receivedAmount?: Cents;
+  markedPaidAt?: string;
+}
+
+/** What a friend paid in the bill itself: the amount of their pay click, or what was open when it was confirmed. */
+export function settledInBill(share: Cents, state: PaidState): Cents {
+  if (state.received) return state.payAmount ?? state.receivedAmount ?? share;
+  return state.markedPaidAt ? (state.payAmount ?? 0) : 0;
+}
+
+/**
+ * What a friend paid beyond their share – when the payer crossed out or changed something
+ * afterwards. The payer owes it back (see BillCore.refundOf).
+ */
+export function overpaidShare(share: Cents, state: PaidState, credited: Cents = 0): Cents {
+  return Math.max(0, settledInBill(share, state) + credited - share);
 }
 
 /** One share a settlement payment covers: what `debtorId` owed `creditorId` (the payer) in a bill. */
@@ -227,6 +249,8 @@ export interface BillSnapshot {
   myReceived?: boolean;
   /** What settlement payments covered of this participant's share. */
   myCredit?: ShareCredit;
+  /** Paid more than my share is now (the payer changed the bill): what the payer owes me back. */
+  myRefund?: Cents;
   /** The photo or screenshot the bill was read from is stored and can be viewed. */
   hasReceiptImage?: boolean;
   /** How many people of this bill have the app open right now (anywhere in the app). */

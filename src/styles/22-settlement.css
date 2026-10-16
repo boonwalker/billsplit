@@ -256,3 +256,12 @@
 .plan-explain {
   margin: 8px 0 0;
 }
+
+/* Paid more than the share is now: the payer owes it back. */
+.debtor-refund,
+.paybar-refund {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--owed);
+}

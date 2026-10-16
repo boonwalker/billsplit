@@ -153,7 +153,7 @@ export default function SettleSheet({ person, currency, me, edges: shownEdges, m
             <ul className="settle-entries">
               {s.edges.map((e) => (
                 <BillEntry
-                  key={`${e.billId}:${e.debtorId}`}
+                  key={`${e.billId}:${e.debtorId}:${e.creditorId}`}
                   title={e.title}
                   text={e.debtorId === me ? t("Du schuldest {name}", { name: person.name }) : t("{name} schuldet Dir", { name: person.name })}
                   amount={`${e.debtorId === me ? "−" : "+"}${fmt(e.amount)}`}

@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 158 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 161 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -131,6 +131,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Summe aufgehen (Zahler `+amount`, Empfänger `−amount`, alle anderen 0). Nur der Empfänger bestätigt/lehnt ab, nur
   der Zahler zieht zurück. Wartende Zahlungen zählen bereits als beglichen. Jeder sieht nur Zuordnungen aus
   Rechnungen, an denen er selbst teilnimmt (Datenschutz).
+- **Überzahlung:** Wird ein Anteil nach dem Bezahlen kleiner, schuldet der Rechnungssteller die Differenz zurück
+  (`overpaidShare`, `BillCore.refundOf`, umgekehrte Kante im `network`, Rückzahlung als Allocation mit
+  `debtorId = ownerId`). Anteile deshalb immer über `billId:debtorId:creditorId` schlüsseln. Vorher fragt
+  `RefundConfirm` (`src/lib/refunds.ts`).
 - **Gespeicherte Daten nie ohne Migration umbauen:** `server/store.ts` liest noch das alte Dateiformat (reine
   Rechnungsliste); Stück-genaue Zuordnungen werden beim Laden aus alten Mengen umgestellt. Rechnungen werden nach
   60 Tagen gelöscht.

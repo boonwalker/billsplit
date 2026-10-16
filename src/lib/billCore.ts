@@ -2,6 +2,7 @@ import { fill, msg, type Msg, type Vars } from "../i18n";
 import {
   compactClaims,
   openShare,
+  overpaidShare,
   participantShare,
   sanitizeClaims,
   sanitizeSplits,
@@ -45,6 +46,8 @@ export interface StoredParticipant {
   payClickedAt?: string;
   payAmount?: number;
   received?: boolean;
+  /** What was open when the payer ticked "erhalten" without a pay click (see PaidState). */
+  receivedAmount?: number;
   /** The friend marked their share as paid. */
   markedPaidAt?: string;
   /** Last reminder the payer sent as a notification (at most one every REMIND_COOLDOWN_MS). */
@@ -302,7 +305,11 @@ export class BillCore {
   setReceived(billId: string, requesterId: string, debtorId: string, received: boolean): void {
     const bill = this.get(billId);
     if (requesterId !== bill.ownerId) throw new BillError("Nur wer die Rechnung bezahlt hat, kann Zahlungseingänge abhaken.", 403);
-    this.participant(bill, debtorId).received = received;
+    const p = this.participant(bill, debtorId);
+    // Without a pay click the amount is what is open now – so a later change shows what was paid.
+    if (received && !p.received && p.payAmount === undefined) p.receivedAmount = this.openOf(bill, debtorId);
+    if (!received) delete p.receivedAmount;
+    p.received = received;
     this.changed(billId);
   }
 
@@ -376,6 +383,25 @@ export class BillCore {
   private debtorCredit(billId: string, participantId: string): Pick<Debtor, "credited" | "creditPending" | "creditNotes"> {
     const c = this.credit(billId, participantId);
     return c.notes.length ? { credited: c.confirmed, creditPending: c.pending, creditNotes: c.notes } : {};
+  }
+
+  /**
+   * What the payer owes a friend back: they paid more than their share is now (the payer
+   * changed the bill afterwards), less what settlement payments already paid back.
+   */
+  refundOf(bill: StoredBill, participantId: string): number {
+    const p = bill.participants[participantId];
+    if (!p || participantId === bill.ownerId) return 0;
+    const share = participantShare(bill.data, this.publicParticipants(bill), participantId).total;
+    const c = this.credit(bill.id, participantId);
+    let repaid = 0;
+    for (const t of this.transfers.values()) {
+      if (t.status !== "pending" && t.status !== "confirmed") continue;
+      for (const a of t.allocations) {
+        if (a.billId === bill.id && a.debtorId === bill.ownerId && a.creditorId === participantId) repaid += a.amount;
+      }
+    }
+    return Math.max(0, overpaidShare(share, p, c.confirmed + c.pending) - repaid);
   }
 
   /** Open part of a participant's share (after payments, confirmations and settlement payments). */
@@ -471,6 +497,22 @@ export class BillCore {
       if (!bill.participants[viewerId]) continue;
       const owner = bill.participants[bill.ownerId];
       for (const [pid, p] of Object.entries(bill.participants)) {
+        // Paid too much: the payer owes it back – the other way round.
+        const refund = this.refundOf(bill, pid);
+        if (refund > 0) {
+          edges.push({
+            billId: bill.id,
+            title: bill.data.title,
+            createdAt: bill.createdAt,
+            currency: bill.data.currency,
+            debtorId: bill.ownerId,
+            debtorName: owner?.name ?? "",
+            creditorId: pid,
+            creditorName: p.name,
+            amount: refund,
+            payment: {},
+          });
+        }
         const amount = this.openOf(bill, pid);
         if (amount <= 0) continue;
         edges.push({
@@ -515,12 +557,15 @@ export class BillCore {
       const bill = this.get(a.billId);
       if (!bill.participants[viewerId]) throw new BillError("Verrechnen lässt sich nur mit Rechnungen, an denen Du teilnimmst.", 403);
       if (bill.data.currency !== currency) throw new BillError("Die Rechnungen haben verschiedene Währungen.", 400);
-      if (a.creditorId !== bill.ownerId || a.debtorId === bill.ownerId || !bill.participants[a.debtorId]) {
+      // A share the payer is owed – or money the payer owes back (see refundOf).
+      const refund = a.debtorId === bill.ownerId;
+      const friend = refund ? a.creditorId : a.debtorId;
+      if ((refund ? a.debtorId !== bill.ownerId : a.creditorId !== bill.ownerId) || friend === bill.ownerId || !bill.participants[friend]) {
         throw new BillError("Ungültige Verrechnung.", 400);
       }
-      const key = `${a.billId}:${a.debtorId}`;
+      const key = `${a.billId}:${a.debtorId}:${a.creditorId}`;
       perShare.set(key, (perShare.get(key) ?? 0) + a.amount);
-      if (perShare.get(key)! > this.openOf(bill, a.debtorId)) {
+      if (perShare.get(key)! > (refund ? this.refundOf(bill, friend) : this.openOf(bill, a.debtorId))) {
         throw new BillError("Ein Betrag hat sich inzwischen geändert. Bitte lade die Übersicht neu.", 409);
       }
       balance.set(a.debtorId, (balance.get(a.debtorId) ?? 0) + a.amount);
@@ -667,6 +712,8 @@ export class BillCore {
       if (p.received) snap.myReceived = true;
       const credit = this.credit(billId, me);
       if (credit.notes.length) snap.myCredit = credit;
+      const refund = this.refundOf(bill, me);
+      if (refund > 0) snap.myRefund = refund;
     }
     if (isOwner) {
       snap.debtors = Object.entries(bill.participants)
@@ -680,7 +727,9 @@ export class BillCore {
             payClickedAt: p.payClickedAt,
             payAmount: p.payAmount,
             received: Boolean(p.received),
+            receivedAmount: p.receivedAmount,
             markedPaidAt: p.markedPaidAt,
+            refund: this.refundOf(bill, id) || undefined,
             reachable: this.canNotify(id),
             remindedAt: p.remindedAt,
             ...this.debtorCredit(billId, id),

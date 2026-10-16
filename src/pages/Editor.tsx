@@ -1,3 +1,5 @@
+import RefundConfirm from "../components/RefundConfirm";
+import { newRefunds, type NewRefund } from "../lib/refunds";
 import { useEffect, useRef, useState } from "react";
 import BusyScreen from "../components/BusyScreen";
 import Header from "../components/Header";
@@ -6,7 +8,7 @@ import SupermarketSheet from "../components/SupermarketSheet";
 import { looksPersonal } from "../lib/personal";
 import TipControl, { tipCents, tipPersons } from "../components/TipControl";
 import { api } from "../lib/api";
-import { subtotal, type BillData, type BillItem } from "../lib/bill";
+import { subtotal, type BillData, type BillItem, type BillSnapshot } from "../lib/bill";
 import { draftFees, draftFromData, emptyDraft, feeRowToFee, isConfident, newFeeRow, newRow, restoreDraft, rowToItem, toBillData, type Draft, type FeeRow, type Row } from "../lib/draft";
 import { prepareImage } from "../lib/image";
 import { centsToInput, formatMoney, parseMoney } from "../lib/money";
@@ -42,6 +44,9 @@ export default function Editor({ billId }: { billId?: string }) {
   const started = useRef(false);
   /** The prepared photo or screenshot of the last scan; stored with the bill. */
   const photo = useRef<Blob | null>(null);
+  /** The bill as it was loaded (editing): who paid already. */
+  const saved = useRef<BillSnapshot | null>(null);
+  const [refundAsk, setRefundAsk] = useState<NewRefund[] | null>(null);
 
   useEffect(() => {
     if (!billId) return;
@@ -49,6 +54,7 @@ export default function Editor({ billId }: { billId?: string }) {
       .getBill(billId)
       .then((snap) => {
         if (!snap.isOwner) throw new Error(t("Nur wer die Rechnung bezahlt hat, kann sie bearbeiten."));
+        saved.current = snap;
         setDraft(draftFromData(snap.data));
         setLoaded(true);
       })
@@ -155,7 +161,7 @@ export default function Editor({ billId }: { billId?: string }) {
   const persons = tipPersons(draft.tip);
   const setPersons = (n: number | undefined) => update({ tip: { ...draft.tip, persons: n ? String(Math.min(100, Math.max(1, n))) : "" } });
 
-  async function submit() {
+  async function submit(confirmed = false) {
     setShowErrors(true);
     if (items.some((i) => i === null) || validItems.length === 0) return;
     if (!billId) {
@@ -169,6 +175,10 @@ export default function Editor({ billId }: { billId?: string }) {
       return;
     }
     const data = toBillData(draft, validItems);
+    // Someone paid already and would have paid too much afterwards: ask first.
+    const refunds = saved.current ? newRefunds(saved.current, data) : [];
+    if (refunds.length && !confirmed) return setRefundAsk(refunds);
+    setRefundAsk(null);
     setBusy({ message: t("Wird gespeichert …"), create: true });
     try {
       await api.updateBill(billId, data);
@@ -328,7 +338,7 @@ export default function Editor({ billId }: { billId?: string }) {
             {showErrors && items.some((i) => i === null) && <div className="alert">{t("Bitte vervollständige die rot markierten Positionen.")}</div>}
 
             <div className="sticky-footer">
-              <button className="btn btn-primary btn-large" onClick={submit}>
+              <button className="btn btn-primary btn-large" onClick={() => void submit()}>
                 {editing ? t("Änderungen speichern") : t("Rechnung erstellen")}
               </button>
             </div>
@@ -459,6 +469,9 @@ export default function Editor({ billId }: { billId?: string }) {
             </button>
           </form>
         </div>
+      )}
+      {refundAsk && (
+        <RefundConfirm refunds={refundAsk} currency={draft.currency} onConfirm={() => void submit(true)} onCancel={() => setRefundAsk(null)} />
       )}
       {wizard}
     </div>

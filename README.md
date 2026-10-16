@@ -237,6 +237,17 @@ ist alles in allen Rechnungen beglichen; „Nicht erhalten“ gibt die Anteile w
 der Zahlende die Zahlung zurückziehen. Wer nur mittelbar beteiligt ist (Andy), sieht im Dashboard, was für ihn
 beglichen wurde. Der Empfänger sieht nur Anteile aus Rechnungen, an denen er selbst teilnimmt.
 
+### Nachträglich geändert, schon bezahlt
+
+Streicht der Rechnungssteller eine Position, nachdem jemand schon bezahlt hat (oder ändert er die Rechnung so, dass ein
+Anteil kleiner wird), fragt die App vorher: „Anna hat schon 10,00 € bezahlt – danach wären es nur 6,00 €. Die 4,00 €
+werden Anna gutgeschrieben …“ mit „Trotzdem ändern“ / „Abbrechen“ (auf der Rechnung und unter „Positionen
+bearbeiten“). Die Differenz zählt dann als Schuld des Rechnungsstellers: in der Rechnung („Du schuldest Anna 4,00 €
+zurück“ bzw. bei Anna „Niklas schuldet Dir 4,00 €“), im Dashboard und im Gesamtausgleich, wo sie mit anderen offenen
+Beträgen verrechnet wird (`BillCore.refundOf`, Rückzahlung als Ausgleichszahlung vom Rechnungssteller an den Gast).
+Hakt der Rechnungssteller „erhalten“ ab, ohne dass vorher jemand auf Bezahlen getippt hat, merkt sich die App den
+damals offenen Betrag (`receivedAmount`), damit eine spätere Änderung erkennbar bleibt.
+
 ### Benachrichtigungen
 
 billsplit kann per Push Bescheid sagen, wenn etwas auf einen wartet – auch wenn die App zu ist:
@@ -415,7 +426,7 @@ Für die Kamera (Foto und QR-Scanner) muss die App über **HTTPS** laufen (oder 
 - `npm run test:e2e`: feste Klick-Tests in einem Handy-großen Chromium (`e2e/specs/*.e2e.ts`, Playwright) gegen den
   gebauten Server mit leerem Datenordner: Beleg fotografieren (Erkennung simuliert) mit Trinkgeld; Rechnung beitreten,
   abhaken, per PayPal zahlen, „erhalten“; Mehrfach-Positionen; Positionen bearbeiten; Gesamtausgleich mit Bestätigung;
-  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch); Lieferbestellung mit Trinkgeld-Schnellknöpfen.
+  Ausgleich mit einer Person; Gerät wechseln; Wiederherstellungs-Code; Safari → App mit Übernahme; Konto per E-Mail-Code (Codes landen im Test in `MAIL_OUTBOX`); Umzug auf eine neue Adresse (127.0.0.1 spielt die alte); Sprache (Englisch/Spanisch vom Browser, Umstellen im Profil, Code-Mail auf Spanisch); Lieferbestellung mit Trinkgeld-Schnellknöpfen; nach dem Bezahlen streichen (Nachfrage, Rückzahlung).
   Weitere Prüfskripte für einzelne Funktionen liegen in `e2e/*.mjs` (siehe `e2e/README.md`).
 - **GitHub Actions** (`.github/workflows/ci.yml`) führt bei jedem Push auf `main` Typecheck, Tests, Build und
   Klick-Tests aus. Damit Railway nur grüne Stände ausrollt: im Railway-Service unter **Settings → Source** „Wait

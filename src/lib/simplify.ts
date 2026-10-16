@@ -26,7 +26,8 @@ export interface SettlementPlan {
   incoming: { id: string; name: string; amount: Cents }[];
 }
 
-const keyOf = (e: Pick<NetworkEdge, "billId" | "debtorId">) => `${e.billId}:${e.debtorId}`;
+// A share is identified by bill, debtor and creditor (the payer of a bill can owe a friend money back, see refunds).
+const keyOf = (e: Pick<NetworkEdge, "billId" | "debtorId" | "creditorId">) => `${e.billId}:${e.debtorId}:${e.creditorId}`;
 
 /** A chain of shares, each settled by the same amount: me → X → … → target. */
 interface Piece {
@@ -88,7 +89,7 @@ function planOne(me: string, edges: NetworkEdge[], currency: string): Settlement
           if (offset > 0) allocations.push(alloc(e, offset));
           left -= offset;
         }
-        for (const a of allocations) cap.set(`${a.billId}:${a.debtorId}`, (cap.get(`${a.billId}:${a.debtorId}`) ?? 0) - a.amount);
+        for (const a of allocations) cap.set(keyOf(a), (cap.get(keyOf(a)) ?? 0) - a.amount);
         offsets.push({ person: x, allocations });
       }
       continue;
@@ -200,7 +201,7 @@ function alloc(e: NetworkEdge, amount: Cents): TransferAllocation {
 function mergeAllocations(list: TransferAllocation[]): TransferAllocation[] {
   const merged = new Map<string, TransferAllocation>();
   for (const a of list) {
-    const k = `${a.billId}:${a.debtorId}`;
+    const k = keyOf(a);
     const m = merged.get(k);
     if (m) m.amount += a.amount;
     else merged.set(k, { ...a });
