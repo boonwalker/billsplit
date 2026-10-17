@@ -4,6 +4,7 @@ import App from "./App";
 import { watchErrors } from "./lib/errorReport";
 import { isStandalone } from "./lib/handoff";
 import { moveNow, newHome } from "./lib/move";
+import { openPathLink } from "./lib/router";
 import { startPush } from "./lib/push";
 import { watchForUpdates } from "./lib/updates";
 import { trackVisits } from "./lib/visits";
@@ -15,6 +16,8 @@ import "@fontsource/caveat/latin-600.css";
 import "./styles.css";
 
 watchErrors();
+// A shared link `/b/<id>`: the same page as `/#/b/<id>` (first, so moving address keeps it too).
+openPathLink();
 
 function start() {
   watchForUpdates();

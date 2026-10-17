@@ -434,6 +434,23 @@ es die Übertragung nicht.
 Das Foto bzw. der Screenshot, aus dem die Rechnung erkannt wurde, wird mit der Rechnung gespeichert. Ganz unten
 auf der digitalen Rechnung führt „Zum Originalbeleg“ dorthin – für alle, die an der Rechnung teilnehmen.
 
+### Teilen, Linkvorschau und Weiterempfehlen
+
+Rechnungslinks haben die Form **`https://www.klicksplit.de/b/<id>?to=<PayPal>`** (`billUrl`) – ein echter Pfad statt
+`/#/b/…`, denn nur den sieht WhatsApp beim Abrufen. Der Server schreibt dafür Open-Graph-Angaben in die Seite
+(`server/preview.ts`): Titel „Trattoria · Niklas hat bezahlt“, ein Satz („Hake ab, was Du hattest …“) und das Bild
+`public/og.png` (1200×630, erzeugt mit `node e2e/ogimage.mjs public/icon.svg public/og.png`). Beträge stehen nie in der
+Vorschau. Andere Seiten bekommen die allgemeine Vorschau „klicksplit – Einer zahlt. Alle splitten.“; die Sprache folgt
+`Accept-Language`, sonst Deutsch. Die App macht beim Start aus `/b/<id>?…` ihre Route `/#/b/<id>?…` (`openPathLink`).
+Alte Links und QR-Codes mit `#/b/` funktionieren weiter (`billIdFromUrl` liest beide Formen); die Demo bleibt bei
+`#/b/`, weil sie in einer fremden Seite läuft.
+
+Die WhatsApp-Nachricht endet kursiv mit „_mit klicksplit geteilt_“, „Link teilen“ gibt denselben Satz mit, und unten auf
+jedem Beleg steht klein „mit klicksplit geteilt · klicksplit.de“. Gäste, die ihren Anteil als bezahlt markiert haben
+(oder deren Eingang bestätigt ist), sehen unter dem Beleg „Nächstes Mal bezahlst Du? – Mit klicksplit fotografierst Du
+den Beleg und bekommst alles zurück.“ mit „So geht's“ (zur Startseite) – nur, solange sie selbst noch keine Rechnung
+erstellt haben (`GuestInvite`).
+
 ### Links auf dem iPhone
 
 Auf dem iPhone öffnen geteilte Links immer Safari, nie die Web-App auf dem Home-Bildschirm, und beide haben getrennte

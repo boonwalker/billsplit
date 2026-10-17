@@ -12,9 +12,16 @@ test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungsste
   await owner.goto(`/#/b/${id}`);
   await expect(owner.locator(".qr svg")).toBeVisible();
 
-  // Anna opens the link (= scans the QR code) and joins with her name.
+  // The payer shares the link by WhatsApp: a real path (for the preview), and where it comes from.
+  const shared = decodeURIComponent((await owner.getByRole("link", { name: "Per WhatsApp senden" }).getAttribute("href"))!.replace(/^.*?text=/, ""));
+  expect(shared).toContain(`http://localhost:4173/b/${id}?to=nik`);
+  expect(shared).toContain("_mit klicksplit geteilt_");
+  await expect(owner.locator(".receipt-brand")).toHaveText("mit klicksplit geteilt · klicksplit.de");
+
+  // Anna opens the link (= scans the QR code) and joins with her name; the app takes the path over as its own page.
   const anna = await phone(browser, key("anna"), { seen: [id] });
-  await anna.goto(`/#/b/${id}`);
+  await anna.goto(`/b/${id}?to=nik`);
+  await expect(anna).toHaveURL(new RegExp(`/#/b/${id}\\?to=nik$`));
   await anna.getByPlaceholder("Dein Name").fill("Anna");
   await anna.getByRole("button", { name: "Zur Rechnung" }).click();
   await expect(owner.locator(".debtor-name")).toHaveText(["Anna"]);
@@ -34,7 +41,7 @@ test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungsste
   await expect(remind).toBeVisible();
   const text = decodeURIComponent((await remind.getAttribute("href"))!.replace(/^.*?text=/, ""));
   expect(text.replace(/\s/g, " ")).toContain("Für „Trattoria“ sind bei Dir noch 9,50 € offen");
-  expect(text).toContain(`#/b/${id}`);
+  expect(text).toContain(`/b/${id}`);
 
   // Ben joined but has not ticked anything – and has notifications on: "Erinnern" sends one.
   const ben = key("ben");
@@ -62,6 +69,12 @@ test("Rechnung: Freund tritt bei, hakt ab, zahlt per PayPal – der Rechnungsste
   await expect(ask).toContainText("Hast Du 9,50 € an Niklas gesendet?");
   await ask.getByRole("button", { name: "✓ Ja, gesendet" }).click();
   await expect(anna.getByRole("button", { name: "✓ Als bezahlt markiert" })).toBeVisible();
+  // Next time she could be the one who pays.
+  const invite = anna.getByRole("region", { name: "Nächstes Mal bezahlst Du?" });
+  await expect(invite).toContainText("Mit klicksplit fotografierst Du den Beleg und bekommst alles zurück.");
+  await anna.locator(".bill-scroll").evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  await anna.waitForTimeout(400);
+  await anna.screenshot({ path: process.env.SHOT_INVITE ?? "/dev/null" }).catch(() => undefined);
 
   // The payer checks PayPal and ticks "erhalten"; Anna sees it.
   const debtor = owner.locator(".debtor", { hasText: "Anna" });

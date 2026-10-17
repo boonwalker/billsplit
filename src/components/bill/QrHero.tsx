@@ -18,6 +18,10 @@ function paymentSummary(payment: BillData["payment"]): string {
   return parts.length ? ` (${parts.join(", ")})` : "";
 }
 
+/** The WhatsApp message: the link (with its preview, see server/preview.ts) and, in italics, where it comes from. */
+export const shareText = (title: string, url: string): string =>
+  `${t("Ich habe „{title}“ bezahlt – hier kannst Du Deinen Anteil abhaken und begleichen: {url}", { title, url })}\n\n_${t("mit klicksplit geteilt")}_`;
+
 /** The payer's top of the bill: the QR code to scan, WhatsApp, sharing the link, editing the items. */
 export default function QrHero({ snapshot: snap, url }: { snapshot: BillSnapshot; url: string }) {
   const [copied, setCopied] = useState(false);
@@ -25,7 +29,7 @@ export default function QrHero({ snapshot: snap, url }: { snapshot: BillSnapshot
 
   async function share() {
     try {
-      if (navigator.share) await navigator.share({ title: `klicksplit · ${snap.data.title}`, url });
+      if (navigator.share) await navigator.share({ title: `klicksplit · ${snap.data.title}`, text: t("mit klicksplit geteilt"), url });
       else {
         await navigator.clipboard.writeText(url);
         setCopied(true);
@@ -51,7 +55,7 @@ export default function QrHero({ snapshot: snap, url }: { snapshot: BillSnapshot
       )}
       {/* Straight into WhatsApp: its share-sheet extension on the iPhone often only sends once
           WhatsApp itself is opened, a message written in the app goes out right away. */}
-      <a className="btn btn-whatsapp" href={whatsappLink(t("Ich habe „{title}“ bezahlt – hier kannst Du Deinen Anteil abhaken und begleichen: {url}", { title: snap.data.title, url }))}>
+      <a className="btn btn-whatsapp" href={whatsappLink(shareText(snap.data.title, url))}>
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path
             fill="currentColor"

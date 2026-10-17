@@ -62,6 +62,17 @@ export function parseHash(hash: string): Route {
 }
 
 /**
+ * Shared bill links are real paths (`/b/<id>?to=…`, see billUrl) so that link previews can show
+ * the bill; the app itself routes by hash: `/b/abc?to=x` becomes `/#/b/abc?to=x` before it starts.
+ */
+export function openPathLink(): void {
+  if (DEMO || window.location.hash.length > 1) return;
+  const { pathname, search } = window.location;
+  if (!/^\/b\/[A-Za-z0-9_-]{6,40}\/?$/.test(pathname)) return;
+  history.replaceState(null, "", `/#${pathname.replace(/\/$/, "")}${search}`);
+}
+
+/**
  * The demo is served inside a sandboxed frame where the URL hash cannot be
  * relied on, so it keeps the current route in memory instead.
  */

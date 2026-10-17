@@ -416,3 +416,13 @@
   font-size: 0.8rem;
   color: var(--ink-soft);
 }
+
+/* Where the bill comes from – small, at the very end of the paper. */
+.receipt-brand {
+  margin-top: 2px;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  opacity: 0.75;
+}

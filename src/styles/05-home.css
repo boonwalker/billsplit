@@ -404,3 +404,19 @@
   width: 100%;
   margin-top: 8px;
 }
+
+/* Below a paid share: next time the friend could be the one who pays (bill/GuestInvite). */
+.guest-invite {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  border-color: color-mix(in srgb, var(--mint) 55%, var(--surface));
+  background: color-mix(in srgb, var(--mint) 14%, var(--surface));
+}
+
+.guest-invite h3,
+.guest-invite p {
+  margin: 0;
+}

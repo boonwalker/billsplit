@@ -168,10 +168,16 @@ describe("crossed-out lines", () => {
 
 describe("links", () => {
   it("puts bill id and recipient into the QR link", () => {
-    const url = billUrl("AbCdEf123", "https://billsplit.app/#/old", { paypalMe: "niklas" });
-    expect(url).toBe("https://billsplit.app/#/b/AbCdEf123?to=niklas");
+    // A real path, so link previews can show the bill.
+    const url = billUrl("AbCdEf123", "https://www.klicksplit.de/#/old", { paypalMe: "niklas" });
+    expect(url).toBe("https://www.klicksplit.de/b/AbCdEf123?to=niklas");
     expect(billIdFromUrl(url)).toBe("AbCdEf123");
+    expect(billIdFromUrl(`Ich habe bezahlt: ${url}`)).toBe("AbCdEf123");
+    // The demo (inside another page) and older QR codes: the hash form.
+    expect(billUrl("AbCdEf123", "https://claude.ai/x/#/b/1", undefined, true)).toBe("https://claude.ai/x/#/b/AbCdEf123");
+    expect(billIdFromUrl("https://billsplit.app/#/b/AbCdEf123?to=niklas")).toBe("AbCdEf123");
     expect(billIdFromUrl("https://example.com")).toBeNull();
+    expect(billIdFromUrl("https://example.com/shop/b/AbCdEf123")).toBeNull();
   });
 });
 

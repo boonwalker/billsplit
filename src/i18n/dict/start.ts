@@ -188,6 +188,11 @@ export default {
     // AccountForm
     "Überspringen": "Skip",
     "Datenschutz": "Privacy",
+    "{title} · {name} hat bezahlt": "{title} · {name} paid",
+    "{title} · klicksplit": "{title} · klicksplit",
+    "klicksplit – Einer zahlt. Alle splitten.": "klicksplit – One pays. Everyone splits.",
+    "Hake ab, was Du hattest, und begleiche Deinen Anteil mit einem Tipp – mit klicksplit.": "Tick what you had and settle your share with one tap – with klicksplit.",
+    "Beleg fotografieren, per QR-Code teilen – jeder hakt ab, was er hatte, und zahlt seinen Anteil per PayPal.": "Snap the receipt, share it by QR code – everyone ticks what they had and pays their share via PayPal.",
     "Impressum": "Legal notice",
     "Rechtliches": "Legal",
     "Diese Seite gibt es nur auf Deutsch.": "This page is only available in German.",
@@ -487,6 +492,11 @@ export default {
     // AccountForm
     "Überspringen": "Omitir",
     "Datenschutz": "Privacidad",
+    "{title} · {name} hat bezahlt": "{title} · {name} ha pagado",
+    "{title} · klicksplit": "{title} · klicksplit",
+    "klicksplit – Einer zahlt. Alle splitten.": "klicksplit – Uno paga. Todos dividen.",
+    "Hake ab, was Du hattest, und begleiche Deinen Anteil mit einem Tipp – mit klicksplit.": "Marca lo que tomaste y paga tu parte con un toque – con klicksplit.",
+    "Beleg fotografieren, per QR-Code teilen – jeder hakt ab, was er hatte, und zahlt seinen Anteil per PayPal.": "Fotografía el ticket, compártelo con un código QR – cada uno marca lo suyo y paga su parte por PayPal.",
     "Impressum": "Aviso legal",
     "Rechtliches": "Información legal",
     "Diese Seite gibt es nur auf Deutsch.": "Esta página solo está disponible en alemán.",

@@ -70,7 +70,7 @@ test("Ausgleich mit einer Person: Erhaltenes selbst eintragen – die Person sie
   await expect(remind).toContainText("Carl hat noch nicht bezahlt?");
   const text = decodeURIComponent((await remind.getByRole("link", { name: "Carl per WhatsApp erinnern" }).getAttribute("href"))!.replace(/^.*?text=/, ""));
   expect(text.replace(/\s/g, " ")).toContain("Für „Bar“ sind bei Dir noch 6,34 € offen.");
-  expect(text).toContain(`#/b/${bar}`);
+  expect(text).toContain(`/b/${bar}`);
   await sheet.getByRole("button", { name: "✓ 6,34 € erhalten – eintragen" }).click();
   await expect(sheet).toContainText("als erhalten eingetragen");
   await sheet.getByRole("button", { name: "Fertig" }).click();

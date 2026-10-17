@@ -49,7 +49,7 @@ describe("moving to klicksplit.de", () => {
 
   it("names the new address in the page", async () => {
     const html = await (await fetch(`${base}/#/b/abc`)).text();
-    expect(html).toContain('<meta name="klicksplit-home" content="https://klicksplit.de"></head>');
+    expect(html).toContain('<meta name="klicksplit-home" content="https://klicksplit.de">');
     expect(originOf(" https://klicksplit.de/ ")).toBe("https://klicksplit.de");
     expect(originOf("")).toBeNull();
     expect(originOf("keine adresse")).toBeNull();

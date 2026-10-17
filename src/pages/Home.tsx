@@ -382,7 +382,7 @@ export default function Home() {
           }}
         />
       )}
-      {onboarding?.step === "install" && <InstallHint url={billUrl(onboarding.billId, window.location.href)} onClose={() => setOnboarding(null)} />}
+      {onboarding?.step === "install" && <InstallHint url={billUrl(onboarding.billId, window.location.href, undefined, DEMO)} onClose={() => setOnboarding(null)} />}
 
       {/* Money still open or a payment to confirm: the bill stays in the list until then. */}
       {ask && !onboarding && (

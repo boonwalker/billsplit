@@ -4,6 +4,7 @@ import OwnerBar from "../components/bill/OwnerBar";
 import QrHero from "../components/bill/QrHero";
 import ReceiptPeek from "../components/bill/ReceiptPeek";
 import DemoBar from "../components/DemoBar";
+import GuestInvite from "../components/bill/GuestInvite";
 import GestureHelp from "../components/GestureHelp";
 import DivisorSheet, { type AssignPeople } from "../components/DivisorSheet";
 import Header from "../components/Header";
@@ -220,7 +221,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
 
   const snap = snapshot;
   const equal = Boolean(snap.data.equalSplit);
-  const url = billUrl(id, window.location.href, snap.data.payment);
+  const url = billUrl(id, window.location.href, snap.data.payment, DEMO);
   const mine = snap.participants.find((p) => p.id === snap.me);
   const inBrowser = isIosBrowser();
 
@@ -414,6 +415,9 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
             onToggleTip={snap.isOwner && equal ? toggleTip : undefined}
           />
         </div>
+
+        {/* Paid: next time they could pay – and get it back with klicksplit. */}
+        {!snap.isOwner && snap.me && (snap.myPayment?.markedPaidAt || snap.myReceived) && <GuestInvite />}
 
         {snap.isOwner && <OwnerPanel snapshot={snap} onToggleReceived={toggleReceived} shareUrl={url} onRemind={async (d) => replace(await api.remind(id, d.id))} />}
       </main>

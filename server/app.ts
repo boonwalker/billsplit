@@ -19,6 +19,7 @@ import { isPushEndpoint, type PushService } from "./push.ts";
 import type { RateService } from "./rates.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
 import { operatorFromEnv, operatorMeta, type Operator } from "./operator";
+import { previewBillId, previewMeta, type PreviewBill } from "./preview";
 
 /** Base64 of a downscaled receipt photo is well below this. */
 const MAX_IMAGE_BODY = 12 * 1024 * 1024;
@@ -742,6 +743,19 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     throw new HttpError("Nicht gefunden.", 404);
   }
 
+  /** Link preview tags for the page (see preview.ts): a shared bill link shows its title and who paid. */
+  function previewFor(req: IncomingMessage, url: URL): string {
+    const forwarded = trustProxy ? (req.headers["x-forwarded-proto"] as string | undefined)?.split(",")[0]?.trim() : undefined;
+    const origin = home ?? `${forwarded ?? "http"}://${req.headers.host ?? "localhost"}`;
+    const billId = previewBillId(url.pathname);
+    let bill: PreviewBill | null = null;
+    if (billId && store.has(billId)) {
+      const snap = store.snapshot(billId, null);
+      bill = { title: snap.data.title, ownerName: snap.ownerName };
+    }
+    return previewMeta(origin, url.pathname, requestLang(req), bill);
+  }
+
   async function serveStatic(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
     const urlPath = decodeURIComponent(url.pathname);
     let filePath = path.join(distDir, urlPath);
@@ -757,7 +771,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     }
     try {
       let data: Buffer | string = await readFile(filePath);
-      if (headExtra && filePath.endsWith(".html")) data = data.toString("utf8").replace("</head>", `${headExtra}</head>`);
+      if (filePath.endsWith(".html")) data = data.toString("utf8").replace("</head>", `${headExtra}${previewFor(req, url)}</head>`);
       const cacheControl = urlPath.startsWith("/assets/")
         ? "public, max-age=31536000, immutable"
         : urlPath.startsWith("/ocr/")

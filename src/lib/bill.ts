@@ -562,15 +562,22 @@ export function sanitizeSplits(splits: ClaimsInput, claims: ItemClaims): ItemCla
 }
 
 /** Link that is encoded in the QR code. The recipient is part of it, too. */
-export function billUrl(id: string, base: string, payment?: PaymentInfo): string {
-  const root = base.replace(/#.*$/, "");
+/**
+ * The link to share: `https://www.klicksplit.de/b/<id>` – a real path, so link previews
+ * (WhatsApp, …) can show the bill (see server/preview.ts); the app turns it into its hash
+ * route on start (openPathLink). `hashOnly`: the old form `…/#/b/<id>` (the demo, which runs
+ * inside another page). Both forms are read by billIdFromUrl.
+ */
+export function billUrl(id: string, base: string, payment?: PaymentInfo, hashOnly = false): string {
   const to = payment?.paypalMe || payment?.paypalEmail;
-  return `${root}#/b/${id}${to ? `?to=${encodeURIComponent(to)}` : ""}`;
+  const query = to ? `?to=${encodeURIComponent(to)}` : "";
+  if (hashOnly) return `${base.replace(/#.*$/, "")}#/b/${id}${query}`;
+  return `${new URL(base).origin}/b/${id}${query}`;
 }
 
-/** Extracts the bill id from a scanned QR code / link, or null if it is not a billsplit link. */
+/** Extracts the bill id from a scanned QR code / link (`…/b/<id>` or `…#/b/<id>`), or null if it is not one. */
 export function billIdFromUrl(text: string): string | null {
-  const m = text.match(/#\/b\/([A-Za-z0-9_-]{6,40})/);
+  const m = text.match(/(?:#|https?:\/\/[^/\s#?]+)\/b\/([A-Za-z0-9_-]{6,40})/);
   return m ? m[1] : null;
 }
 

@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 191 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 194 Tests, alle grün).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -173,6 +173,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   ersetzt sie). In der Gleichverteilung: `BillItem.for` (zählt nur dort, Häkchen zählen in der Gleichverteilung nie –
   sonst änderten sich alte Rechnungen). Ein präziser Tipp auf „/2“ hebt den Teiler auf, statt die
   Zeile zu streichen.
+- **Rechnungslinks** sind echte Pfade `/b/<id>?to=…` (`billUrl`, für die WhatsApp-Vorschau aus `server/preview.ts`);
+  die App biegt sie beim Start auf `/#/b/…` um (`openPathLink` in `main.tsx`). `billIdFromUrl` liest beide Formen –
+  alte QR-Codes nie brechen. In der Demo `billUrl(…, DEMO)` → Hash-Form. Vorschau nie mit Beträgen.
 - **Datenschutzerklärung** (`src/pages/Legal.tsx`, Stand `AS_OF`): bei jedem neuen Datenfluss (neuer externer Dienst,
   neue gespeicherte Angaben, andere Speicherdauer) mit anpassen. Betreiberangaben nur über `OPERATOR_*`, nie ins Repo.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit
@@ -213,6 +216,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Ausweg („Überspringen“ beim Rechnungssteller, „Später“ beim Gast; kein Fenster ohne Ausgang)
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
   · vor dem PayPal-Absprung Sprechblase über der Leiste: „↩ Danach wieder zurück in die App kommen und die Zahlung bestätigen“
+  · nach dem Bezahlen unter dem Beleg „Nächstes Mal bezahlst Du?“ / „Mit klicksplit fotografierst Du den Beleg und bekommst
+  alles zurück.“ / „So geht's“ · WhatsApp-Text endet mit „_mit klicksplit geteilt_“, Beleg-Fuß „mit klicksplit geteilt · klicksplit.de“
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
 - „Ausgabe zuweisen“ (bis 16.10.2026 „Ausgabe eingeben“; Startseite, Karte wie die anderen direkt unter „QR-Code scannen“,

@@ -719,6 +719,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
         </p>
         <div className="receipt-barcode" aria-hidden="true" />
         <p className="receipt-thanks">{t("Danke & bis zum nächsten Mal!")}</p>
+        <p className="receipt-brand">{t("mit klicksplit geteilt")} · klicksplit.de</p>
         {onShowOriginal && (
           <button type="button" className="receipt-original" onClick={onShowOriginal}>
             {t("Zum Originalbeleg")}
