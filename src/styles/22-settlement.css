@@ -166,6 +166,8 @@
   cursor: pointer;
   filter: drop-shadow(0 -6px 16px rgb(0 0 0 / 0.35));
   -webkit-tap-highlight-color: transparent;
+  /* Strokes on it scroll the page (see ReceiptPeek), not the browser's own gestures. */
+  touch-action: none;
 }
 
 /* The receipt's own paper (same padding and type), torn at the top only. */
@@ -188,6 +190,11 @@
 }
 
 /* Once scrolling starts, the snippet holds still and waits for the receipt to reach it. */
+/* Handed over to the real receipt, while the finger that scrolled finishes its stroke. */
+.receipt-peek.gone {
+  visibility: hidden;
+}
+
 .receipt-peek.following .receipt-peek-paper {
   animation: peek-in 0.9s cubic-bezier(0.25, 1.4, 0.45, 1) 0.5s both;
 }
