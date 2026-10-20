@@ -84,6 +84,13 @@ mit vorausgefüllter Überweisung öffnen, deshalb zeigt billsplit Empfänger, I
 bleibt „Anteil begleichen“ der PayPal-Weg und darunter steht „Lieber per Überweisung oder Wero“; ohne PayPal öffnet
 „Anteil begleichen“ direkt die Überweisungsdaten. Danach geht es wie gewohnt mit „Als bezahlt markieren“ weiter.
 
+**Ohne Zahlungsdaten** (der Rechnungssteller hat „Wie willst Du bezahlt werden?“ übersprungen) sehen Freunde „Niklas hat
+keine Zahlungsdaten hinterlegt. Gib den Betrag direkt, z.B. bar – und markiere ihn dann als bezahlt.“ mit dem Knopf
+„Als bezahlt markieren“ (vermerkt den Betrag und markiert ihn, `paidInPerson`). Der Rechnungssteller sieht unter dem
+Beleg wie immer, wer beigetreten ist, und bei jedem Freund seinen Anteil – das gilt jetzt für alle Rechnungen: rechts
+steht der aktuelle Anteil, sobald jemand etwas hat (nach „Bezahlen“ der dabei vermerkte Betrag), und „ist beigetreten ·
+wählt noch aus …“ nur, solange noch nichts abgehakt ist. „erhalten“ erscheint nach dem Markieren wie gewohnt.
+
 ### Trinkgeld
 
 Steht ein Trinkgeld auf dem Beleg, wird es automatisch übernommen – auch wenn es nur als Differenz erkennbar ist: Wurde

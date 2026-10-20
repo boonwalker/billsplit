@@ -195,7 +195,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                         ? t("hat um {time} auf Bezahlen getippt", { time: time(d.payClickedAt) })
                         : d.assigned
                           ? t("von Dir zugeordnet · {amount} offen", { amount: formatMoney(d.amount, currency) })
-                        : snapshot.data.equalSplit
+                        : snapshot.data.equalSplit || d.amount > 0
                           ? t("ist beigetreten")
                           : t("ist beigetreten · wählt noch aus …")}
                     {changed && <> · {t("Auswahl jetzt {amount}", { amount: formatMoney(d.amount, currency) })}</>}
@@ -212,7 +212,8 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                     </span>
                   ))}
                 </span>
-                {d.payAmount !== undefined && <span className="debtor-amount">{formatMoney(d.payAmount, currency)}</span>}
+                {/* Their share – what they set out to pay, else what they have now (also without payment details in the bill). */}
+                {(d.payAmount ?? d.amount) > 0 && <span className="debtor-amount">{formatMoney(d.payAmount ?? d.amount, currency)}</span>}
                 {/* Still open (or nothing ticked yet): a friendly nudge – as a notification where it reaches them, else via WhatsApp. */}
                 {shareUrl && !d.received && !d.markedPaidAt && (openOf(d) > 0 || nothingTicked(d)) && (
                   <RemindButton

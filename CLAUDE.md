@@ -218,6 +218,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   · vor dem PayPal-Absprung Sprechblase über der Leiste: „↩ Danach wieder zurück in die App kommen und die Zahlung bestätigen“
   · nach dem Bezahlen unter dem Beleg „Nächstes Mal bezahlst Du?“ / „Mit klicksplit fotografierst Du den Beleg und bekommst
   alles zurück.“ / „So geht's“ · WhatsApp-Text endet mit „_mit klicksplit geteilt_“, Beleg-Fuß „mit klicksplit geteilt · klicksplit.de“
+  · ohne Zahlungsdaten: „… hat keine Zahlungsdaten hinterlegt. Gib den Betrag direkt, z.B. bar – und markiere ihn dann als
+  bezahlt.“ + „Als bezahlt markieren“; beim Rechnungssteller steht der Anteil jedes Freundes immer rechts in der Freundesliste
 - Supermarkt „Alles aufteilen“: „Wie viele teilen sich den Einkauf?“, „/ N“-Stepper, „Abgerechnet werden“; auf der
   Rechnung oben „Vielleicht nicht für alle?“
 - „Ausgabe zuweisen“ (bis 16.10.2026 „Ausgabe eingeben“; Startseite, Karte wie die anderen direkt unter „QR-Code scannen“,

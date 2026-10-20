@@ -14,12 +14,14 @@ interface Props {
   onPay: () => void;
   /** Marks the friend's share as paid (or takes that back). */
   onMarkPaid: (paid: boolean) => void;
+  /** No payment details: paid in person (e.g. cash) – notes the amount and marks it as paid. */
+  onPaidInPerson?: () => void;
   /** The bar's height whenever it changes (it grows after paying), so the page can scroll past it. */
   onHeight?: (px: number) => void;
 }
 
 /** Sticky bottom bar for friends: their individual sum and the pay button. */
-export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props) {
+export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, onHeight }: Props) {
   const bar = useRef<HTMLDivElement>(null);
   const oneLine = useOneLine();
   useLayoutEffect(() => {
@@ -314,8 +316,19 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onHeight }: Props)
                 {otherLabel}
               </button>
             )}
-            {action.kind === "none" && others.length === 0 && (
-              <p className="paybar-note">{t("{name} hat keine Zahlungsdaten hinterlegt.", { name: ownerName || t("Der Rechnungssteller") })}</p>
+            {/* No way to pay in the app: pay in person, then mark it – so the payer sees it and can tick "erhalten". */}
+            {action.kind === "none" && others.length === 0 && !(myPayment && nothing) && (
+              <>
+                <p className="paybar-note">
+                  {t("{name} hat keine Zahlungsdaten hinterlegt.", { name: ownerName || t("Der Rechnungssteller") })}{" "}
+                  {!nothing && t("Gib den Betrag direkt, z.B. bar – und markiere ihn dann als bezahlt.")}
+                </p>
+                {!nothing && onPaidInPerson && (
+                  <button type="button" className="btn btn-large btn-mark" onClick={onPaidInPerson}>
+                    {t("Als bezahlt markieren")}
+                  </button>
+                )}
+              </>
             )}
           </>
         )}

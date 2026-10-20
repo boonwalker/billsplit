@@ -280,6 +280,14 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Konnte Zahlung nicht vermerken.")));
   }
 
+  /** No payment details in the bill: paid in person – the amount is noted first, then marked as paid. */
+  function paidInPerson() {
+    void flushClaims()
+      .then(() => api.pay(id))
+      .then(() => markPaid(true))
+      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Konnte Zahlung nicht vermerken.")));
+  }
+
   function markPaid(paid: boolean) {
     api
       .markPaid(id, paid)
@@ -440,7 +448,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         />
       )}
 
-      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} onHeight={setPayBarHeight} />}
+      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} onPaidInPerson={paidInPerson} onHeight={setPayBarHeight} />}
 
       {divisorFor && snap.data.items.some((i) => i.id === divisorFor) && (
         <DivisorSheet
