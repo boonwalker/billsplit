@@ -178,6 +178,51 @@ export class BillCore {
   }
 
   /**
+   * Removes a bill as if it had never existed (admin page). Settlement payments lose its shares
+   * and their amount shrinks by them; one that no longer adds up without them (it passed money
+   * on between other people) is dropped as a whole. Returns everyone whose bills or balances changed.
+   */
+  removeBill(billId: string): { people: string[]; adjusted: number; dropped: number } {
+    const bill = this.get(billId);
+    const people = new Set(Object.keys(bill.participants));
+    const others = new Set<string>();
+    let adjusted = 0;
+    let dropped = 0;
+    for (const t of [...this.transfers.values()]) {
+      if (!t.allocations.some((a) => a.billId === billId)) continue;
+      people.add(t.fromId).add(t.toId);
+      const rest = t.allocations.filter((a) => a.billId !== billId);
+      const balance = new Map<string, number>();
+      for (const a of rest) {
+        balance.set(a.debtorId, (balance.get(a.debtorId) ?? 0) + a.amount);
+        balance.set(a.creditorId, (balance.get(a.creditorId) ?? 0) - a.amount);
+        people.add(a.debtorId).add(a.creditorId);
+        others.add(a.billId);
+      }
+      // The same rule as in createTransfer: the payer gains what the recipient loses, nobody else anything.
+      const amount = balance.get(t.fromId) ?? 0;
+      const addsUp =
+        amount >= 0 &&
+        balance.has(t.fromId) &&
+        balance.has(t.toId) &&
+        [...balance].every(([person, value]) => value === (person === t.fromId ? amount : person === t.toId ? -amount : 0));
+      if (addsUp) {
+        t.allocations = rest;
+        t.amount = amount;
+        adjusted++;
+      } else {
+        this.transfers.delete(t.id);
+        dropped++;
+      }
+      this.transfersChanged(t.id);
+    }
+    this.bills.delete(billId);
+    this.changed(billId);
+    for (const id of others) if (this.bills.has(id)) this.changed(id);
+    return { people: [...people], adjusted, dropped };
+  }
+
+  /**
    * One person, two identities: on the iPhone, Safari and the home-screen app keep separate
    * keys. Moves everything `fromId` did (joined bills, ticked units, payments, settlement
    * payments) over to `intoId`. Where both are in the same bill, the units and marks are combined.

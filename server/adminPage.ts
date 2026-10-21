@@ -111,6 +111,11 @@ export function adminPage(input: AdminInput): string {
       ${form(email, "delete", "Konto löschen", true)}
       <p class="muted">Alle Daten löschen (Löschanfrage): Konto weg, Name in allen Rechnungen „Gelöscht“, Zahlungsdaten und Belegfotos eigener Rechnungen weg; Beträge bleiben. Nicht rückgängig zu machen.</p>
       ${form(email, "erase", "Alle Daten löschen", true, true)}</details>`;
+  // Deleting a bill: as if it had never existed – a tick confirms it.
+  const removeBill = (id: string) => `<details class="manage"><summary>Löschen</summary>
+      <p class="muted">Die Rechnung verschwindet für alle: vom Server, aus den Rechnungslisten und Bilanzen aller Beteiligten, mit Belegfoto. Ausgleichszahlungen verlieren ihren Anteil daran. Nicht rückgängig zu machen.</p>
+      <form method="post" action="/api/admin/bill"><input type="hidden" name="token" value="${escape(input.token ?? "")}"><input type="hidden" name="id" value="${escape(id)}">
+      <label class="confirm"><input type="checkbox" name="confirm" value="ja" required> Endgültig löschen</label><button class="danger">Rechnung löschen</button></form></details>`;
   const accountRows = input.accounts
     .map((a) => {
       const d = deviceOf.get(a.id);
@@ -133,7 +138,8 @@ export function adminPage(input: AdminInput): string {
     .map((b) => {
       const others = b.participants.filter((p) => p.id !== b.ownerId);
       return `<tr><td>${when(b.createdAt)}</td><td class="left">${escape(b.title || "Rechnung")}</td><td class="left">${escape(nameOf(b.ownerId))}</td>
-        <td>${int(others.length)}</td><td>${int(others.filter((p) => p.paid).length)} / ${int(others.length)}</td><td>${money(b.total, b.currency)}</td></tr>`;
+        <td>${int(others.length)}</td><td>${int(others.filter((p) => p.paid).length)} / ${int(others.length)}</td><td>${money(b.total, b.currency)}</td>
+        <td class="left">${input.token ? removeBill(b.id) : ""}</td></tr>`;
     })
     .join("");
 
@@ -180,6 +186,8 @@ export function adminPage(input: AdminInput): string {
   details.manage form { display: flex; gap: 6px; }
   details.manage input, details.manage button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; }
   details.manage input { flex: 1; min-width: 0; }
+  details.manage label.confirm { display: flex; align-items: center; gap: 6px; flex: 1; font-size: 14px; }
+  details.manage label.confirm input { flex: none; margin: 0; }
   details.manage button { border-color: var(--accent); color: var(--accent); cursor: pointer; }
   details.manage button.danger { border-color: var(--bad); background: var(--bad); color: #fff; }
 </style></head><body>
@@ -216,8 +224,8 @@ ${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` :
 <tbody>${deviceRows || empty(9)}</tbody></table></div>
 
 <h2 id="rechnungen">Neueste Rechnungen (${int(input.bills.length)} insgesamt)</h2>
-<div class="scroll"><table><thead><tr><th>angelegt</th><th class="left">Titel</th><th class="left">Rechnungssteller</th><th>Gäste</th><th>bezahlt</th><th>Betrag</th></tr></thead>
-<tbody>${billRows || empty(6)}</tbody></table></div>
+<div class="scroll"><table><thead><tr><th>angelegt</th><th class="left">Titel</th><th class="left">Rechnungssteller</th><th>Gäste</th><th>bezahlt</th><th>Betrag</th><th class="left">Rechnung</th></tr></thead>
+<tbody>${billRows || empty(7)}</tbody></table></div>
 
 <h2 id="ki">Belegerkennung pro Tag</h2>
 <p class="muted">Kosten geschätzt nach dem Listenpreis des jeweiligen Modells (siehe <code>server/monitor.ts</code>). Ein Beleg kann zwei KI-Aufrufe brauchen (Summenprüfung).</p>

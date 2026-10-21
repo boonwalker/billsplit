@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 198 Tests, alle grün; 43 Klick-Tests).
+1. `npm run typecheck` und `npm test` (aktuell 202 Tests, alle grün; 44 Klick-Tests).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -99,6 +99,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   `ErrorBoundary`. Konten verwalten (`POST /api/admin/account`): „Profil zurücksetzen“, „Konto löschen“, „Alle Daten
   löschen“ (Name → „Gelöscht“ über `BillCore.anonymize`/`BillStore.erase`, Beträge bleiben); gelöschte Konten in
   `accounts-removed.json`, `/api/account` meldet `removed`, die App zeigt einmal einen Hinweis (`billsplit.accountRemoved`).
+  Rechnung löschen (`POST /api/admin/bill`, „Endgültig löschen“ ankreuzen): `BillCore.removeBill` (Ausgleichszahlungen
+  verlieren den Anteil bzw. fallen weg, wenn sie ohne ihn nicht aufgehen), Kennung in `deleted-bills.json`, Abruf → 410,
+  Batch → `deleted`, SSE-Ereignis `deleted`; die App entfernt sie spurlos (`dropDeletedBill`).
 - **Gerät wechseln:** Einmal-Code (`server/deviceLink.ts`, Route `#/geraet/<code>`) bzw. Wiederherstellungs-Code
   (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.
 - **Konto (optional):** E-Mail-Adresse ↔ Gerätekennung (`server/accounts.ts`, `DATA_DIR/accounts.json`), Anmeldung
@@ -146,7 +149,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   `RefundConfirm` (`src/lib/refunds.ts`).
 - **Gespeicherte Daten nie ohne Migration umbauen:** `server/store.ts` liest noch das alte Dateiformat (reine
   Rechnungsliste); Stück-genaue Zuordnungen werden beim Laden aus alten Mengen umgestellt. Rechnungen werden **nie**
-  automatisch gelöscht (60-Tage-Frist am 16.10.2026 auf Wunsch entfernt) – keine Frist wieder einbauen.
+  automatisch gelöscht (60-Tage-Frist am 16.10.2026 auf Wunsch entfernt) – keine Frist wieder einbauen; nur von Hand auf
+  der Betriebsseite („Rechnung löschen“).
 - **iPhone:** Safari und Home-Bildschirm-App haben getrennte Speicher (→ Weiterleitung über `server/handoff.ts`).
   In die Zwischenablage kopieren klappt nur, wenn derselbe Tipp die App nicht verlässt → PayPal in zwei Tipps.
   Haptik auf iOS 18 über den Schalter-Trick (`src/lib/haptics.ts`). Langes Drücken darf keine Textauswahl auslösen.

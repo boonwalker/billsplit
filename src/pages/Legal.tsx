@@ -185,7 +185,7 @@ function Privacy({ operator }: { operator: Operator | null }) {
       <Section title="Wie lange wir Daten speichern">
         <p>
           Rechnungen bleiben gespeichert, damit alle Beteiligten auch später noch nachsehen und ausgleichen können; sie werden nicht automatisch
-          gelöscht. Auf Wunsch löschen wir Dein Konto oder alle Deine Angaben – schreib uns an {contact}. Dann steht in allen Rechnungen
+          gelöscht. Auf Wunsch löschen wir eine Rechnung (dann für alle Beteiligten), Dein Konto oder alle Deine Angaben – schreib uns an {contact}. Dann steht in allen Rechnungen
           „Gelöscht“ statt Deines Namens, Zahlungsdaten und Belegfotos Deiner Rechnungen werden entfernt; die Beträge bleiben, damit die
           anderen weiter ausgleichen können. Ein Konto bleibt bis zu seiner Löschung, Push-Adressen bis zum Widerruf, Anmelde-Codes 15 Minuten.
         </p>

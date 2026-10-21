@@ -8,8 +8,6 @@ import { dailyBackup, openPersistence, type Persistence } from "./persistence.ts
 
 export { BillError as StoreError };
 
-/** Bills are deleted this long after creation. */
-
 /**
  * Largest amount in cents (10 million in the bill's currency). Generous on purpose: bills in
  * currencies like AED or JPY, or the odd luxury dinner, quickly reach six or seven figures.
@@ -112,6 +110,8 @@ export class BillStore extends BillCore {
     const { bills, transfers } = await this.persistence.load();
     for (const bill of bills) this.bills.set(bill.id, bill);
     for (const t of transfers) this.transfers.set(t.id, t);
+    const deleted = await readFile(this.deletedPath()!, "utf8").then((text) => JSON.parse(text) as Record<string, string>, () => ({}));
+    this.deleted = new Map(Object.entries(deleted));
     await this.removeOrphanImages();
   }
 
@@ -210,6 +210,7 @@ export class BillStore extends BillCore {
           bills: billIds.map((id) => this.bills.get(id)).filter((b) => b !== undefined),
           removedBills: billIds.filter((id) => !this.bills.has(id)),
           transfers: transferIds.map((id) => this.transfers.get(id)).filter((t) => t !== undefined),
+          removedTransfers: transferIds.filter((id) => !this.transfers.has(id)),
         },
         () => ({ bills: [...this.bills.values()], transfers: [...this.transfers.values()] }),
       );
@@ -262,6 +263,31 @@ export class BillStore extends BillCore {
       if (file) await unlink(file).catch(() => {});
     }
     return owned.length;
+  }
+
+  /** Bills deleted on the admin page (id → when): the app then drops them from its list, too. */
+  private deleted = new Map<string, string>();
+
+  private deletedPath(): string | null {
+    return this.file ? path.join(path.dirname(this.file), "deleted-bills.json") : null;
+  }
+
+  wasDeleted(billId: string): boolean {
+    return this.deleted.has(billId);
+  }
+
+  /** Deletes a bill for good (see BillCore.removeBill), with its receipt photo. */
+  async deleteBill(billId: string): Promise<ReturnType<BillCore["removeBill"]>> {
+    const result = this.removeBill(billId);
+    // Right away (before anything is awaited): from now on every request learns it was deleted.
+    this.deleted.set(billId, new Date().toISOString());
+    this.images.delete(billId);
+    const image = this.imagePath(billId);
+    if (image) await unlink(image).catch(() => {});
+    const file = this.deletedPath();
+    if (file) await writeFile(file, JSON.stringify(Object.fromEntries(this.deleted)));
+    await this.flush();
+    return result;
   }
 
   /** Deletes photos of bills that expired or no longer exist. */

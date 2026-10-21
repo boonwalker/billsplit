@@ -23,7 +23,7 @@ import { confirmScan, knock } from "../lib/haptics";
 import { navigate } from "../lib/router";
 import { askOnStartPage, SHOW_PAID_MS, takeProfileQuestion } from "../lib/onboarding";
 import { paymentFromProfile, samePayment } from "../lib/payment";
-import { hasPaymentMethod, markGone, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
+import { dropDeletedBill, hasPaymentMethod, markGone, loadOwnProfile, loadProfile, rememberBill, saveProfile, updateRecent } from "../lib/storage";
 import { useLiveBill } from "../lib/useLiveBill";
 import { rich, t } from "../lib/i18n";
 import { newRefunds, type NewRefund } from "../lib/refunds";
@@ -40,7 +40,7 @@ const MAX_ASSIGN_CONTACTS = 10;
  */
 
 export default function BillPage({ id, focus, back }: { id: string; focus?: string; back?: string }) {
-  const { snapshot, error, notFound, live, setMyClaims, flushClaims, replace } = useLiveBill(id);
+  const { snapshot, error, notFound, deleted, live, setMyClaims, flushClaims, replace } = useLiveBill(id);
   const [askName, setAskName] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   /** Scrolled to the very end, where the owner panel shows what the bar at the bottom says. */
@@ -192,6 +192,24 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   useEffect(() => {
     if (notFound) markGone(id);
   }, [notFound, id]);
+  // Deleted on the admin page: it leaves the device without a trace.
+  useEffect(() => {
+    if (deleted) dropDeletedBill(id);
+  }, [deleted, id]);
+
+  if (deleted) {
+    return (
+      <div className="page">
+        <Header back="/" />
+        <main className="content">
+          <div className="empty-state">
+            <div className="empty-emoji">🧾</div>
+            <h2>{t("Diese Rechnung wurde gelöscht.")}</h2>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (notFound) {
     return (

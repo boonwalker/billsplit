@@ -100,6 +100,7 @@ export default {
 
     // src/lib/billCore.ts – errors
     "Diese Rechnung gibt es nicht (mehr).": "This bill doesn't exist (any more).",
+    "Diese Rechnung wurde gelöscht.": "This bill was deleted.",
     "Du nimmst an dieser Rechnung noch nicht teil.": "You haven't joined this bill yet.",
     "Du hast die Rechnung selbst bezahlt.": "You paid this bill yourself.",
     "Nur wer die Rechnung bezahlt hat, kann Zahlungseingänge abhaken.": "Only the person who paid the bill can tick off incoming payments.",
@@ -272,6 +273,7 @@ export default {
 
     // src/lib/billCore.ts – errors
     "Diese Rechnung gibt es nicht (mehr).": "Esta cuenta no existe (o ya no existe).",
+    "Diese Rechnung wurde gelöscht.": "Esta cuenta se ha eliminado.",
     "Du nimmst an dieser Rechnung noch nicht teil.": "Todavía no te has unido a esta cuenta.",
     "Du hast die Rechnung selbst bezahlt.": "Esta cuenta la has pagado tú.",
     "Nur wer die Rechnung bezahlt hat, kann Zahlungseingänge abhaken.": "Solo quien ha pagado la cuenta puede marcar los pagos recibidos.",

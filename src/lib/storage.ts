@@ -305,6 +305,13 @@ export function forgetBill(id: string): void {
   write(RECENT_KEY, loadRecent().filter((b) => b.id !== id));
 }
 
+/** A bill deleted on the admin page: as if it had never existed – nothing of it stays on the device. */
+export function dropDeletedBill(id: string): void {
+  forgetBill(id);
+  if (loadHidden().includes(id)) write(HIDDEN_KEY, loadHidden().filter((x) => x !== id));
+  for (const flag of ["claimDemo", "tapDemo", "peekShown"]) remove(`billsplit.${flag}.${id}`);
+}
+
 export const loadDraft = <T>(): T | null => read<T | null>(DRAFT_KEY, null);
 export const saveDraft = (draft: unknown) => write(DRAFT_KEY, draft);
 export const clearDraft = () => remove(DRAFT_KEY);

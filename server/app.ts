@@ -243,7 +243,31 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     store.setReachability((participantId) => push.reachable(participantId));
   }
 
+  /** Tells these people's apps that a bill of theirs changed (the dashboard and list reload it). */
+  function tellChanged(people: Iterable<string>, billId: string): void {
+    for (const viewer of people) {
+      for (const res of userStreams.get(viewer) ?? []) {
+        try {
+          res.write(`event: changed\ndata: ${JSON.stringify({ billId })}\n\n`);
+        } catch {
+          // connection closed; cleaned up by its close handler
+        }
+      }
+    }
+  }
+
   store.onChange((billId, kind) => {
+    // Deleted on the admin page: whoever has it open learns so, the stream ends.
+    if (!store.has(billId)) {
+      for (const sub of subscribers.get(billId) ?? []) {
+        try {
+          sub.res.end(`event: deleted\ndata: {}\n\n`);
+        } catch {
+          // see below
+        }
+      }
+      return;
+    }
     for (const sub of subscribers.get(billId) ?? []) {
       try {
         sub.res.write(`event: snapshot\ndata: ${JSON.stringify(store.snapshot(billId, sub.viewer))}\n\n`);
@@ -253,16 +277,10 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     }
     // The dashboards of everyone in the bill reload their balances.
     if (kind !== "data") return;
-    for (const [viewer, streams] of userStreams) {
-      if (!store.participates(billId, viewer)) continue;
-      for (const res of streams) {
-        try {
-          res.write(`event: changed\ndata: ${JSON.stringify({ billId })}\n\n`);
-        } catch {
-          // see above
-        }
-      }
-    }
+    tellChanged(
+      [...userStreams.keys()].filter((viewer) => store.participates(billId, viewer)),
+      billId,
+    );
   });
 
   /**
@@ -430,6 +448,28 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       } else notice = "Unbekannte Aktion.";
       console.log(`Betriebsseite: ${notice}`);
       res.writeHead(303, { location: `/api/admin?token=${encodeURIComponent(sent)}&meldung=${encodeURIComponent(notice)}#konten`, "cache-control": "no-store" });
+      return void res.end();
+    }
+
+    // Admin page: deleting a bill as if it had never existed (a form post with the token, ticked to confirm).
+    if (parts[1] === "admin" && parts[2] === "bill" && parts.length === 3 && method === "POST") {
+      const form = new URLSearchParams((await readBody(req, MAX_JSON_BODY)).toString("utf8"));
+      const sent = form.get("token") ?? "";
+      if (!adminOk(sent)) throw new HttpError("Nicht gefunden.", 404);
+      const billId = form.get("id") ?? "";
+      let notice: string;
+      if (!store.has(billId)) notice = "Diese Rechnung gibt es nicht (mehr).";
+      else if (form.get("confirm") !== "ja") notice = "Nichts geändert: Zum Löschen bitte „Endgültig löschen“ ankreuzen.";
+      else {
+        const title = store.summaries().find((b) => b.id === billId)?.title || "Rechnung";
+        const { people, adjusted, dropped } = await store.deleteBill(billId);
+        tellChanged(people, billId);
+        notice =
+          `Rechnung „${title}“ (${billId}) gelöscht – auch aus den Listen und Bilanzen aller ${people.length} Beteiligten.` +
+          (adjusted || dropped ? ` Ausgleichszahlungen: ${adjusted} angepasst, ${dropped} entfernt.` : "");
+      }
+      console.log(`Betriebsseite: ${notice}`);
+      res.writeHead(303, { location: `/api/admin?token=${encodeURIComponent(sent)}&meldung=${encodeURIComponent(notice)}#rechnungen`, "cache-control": "no-store" });
       return void res.end();
     }
 
@@ -703,13 +743,15 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       const body = parse(z.object({ ids: z.array(z.string().regex(/^[A-Za-z0-9_-]{6,40}$/)).max(100) }), await readJson(req, MAX_JSON_BODY));
       const bills: Record<string, unknown> = {};
       for (const id of new Set(body.ids)) bills[id] = store.has(id) ? store.snapshot(id, viewer) : null;
-      return sendJson(res, 200, { bills });
+      // Deleted on the admin page (not lost): the app drops them from its list.
+      return sendJson(res, 200, { bills, deleted: body.ids.filter((id) => store.wasDeleted(id)) });
     }
 
     if (parts[1] === "bills" && parts[2]) {
       const billId = parts[2];
       const action = parts[3] ?? "";
       if (!/^[A-Za-z0-9_-]{6,40}$/.test(billId)) throw new HttpError("Nicht gefunden.", 404);
+      if (store.wasDeleted(billId)) throw new HttpError("Diese Rechnung wurde gelöscht.", 410);
 
       if (action === "" && method === "GET") {
         return sendJson(res, 200, store.snapshot(billId, viewerId(req, url)));

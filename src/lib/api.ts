@@ -4,7 +4,7 @@ import type { BillData, BillSnapshot, Contact, ItemClaims, MyBill, NetworkEdge, 
 import { checkForUpdate } from "./updates";
 import { DEMO } from "./demo";
 import { localApi } from "./localApi";
-import { deviceKey, type Profile } from "./storage";
+import { deviceKey, dropDeletedBill, type Profile } from "./storage";
 
 export { ApiError };
 
@@ -81,8 +81,8 @@ export interface Api {
    * changes in any of its bills. Returns a function that closes it.
    */
   subscribeEvents(onBillChanged: (billId: string) => void): () => void;
-  /** Live updates of one bill; returns an unsubscribe function. */
-  subscribe(id: string, onSnapshot: (s: BillSnapshot) => void, onLive: (live: boolean) => void): () => void;
+  /** Live updates of one bill (onDeleted: it was deleted on the admin page); returns an unsubscribe function. */
+  subscribe(id: string, onSnapshot: (s: BillSnapshot) => void, onLive: (live: boolean) => void, onDeleted?: () => void): () => void;
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -132,7 +132,11 @@ const serverApi: Api = {
   getBills: async (ids) => {
     const parts: string[][] = [];
     for (let i = 0; i < ids.length; i += 100) parts.push(ids.slice(i, i + 100));
-    const results = await Promise.all(parts.map((part) => request<{ bills: Record<string, BillSnapshot | null> }>("POST", "/api/bills/batch", { ids: part })));
+    const results = await Promise.all(
+      parts.map((part) => request<{ bills: Record<string, BillSnapshot | null>; deleted?: string[] }>("POST", "/api/bills/batch", { ids: part })),
+    );
+    // Bills deleted on the admin page leave the device right here – list, dashboard, everywhere.
+    for (const id of results.flatMap((r) => r.deleted ?? [])) dropDeletedBill(id);
     return Object.assign({}, ...results.map((r) => r.bills)) as Record<string, BillSnapshot | null>;
   },
   updateBill: (id, data) => request("PUT", bill(id), { data }),
@@ -181,7 +185,7 @@ const serverApi: Api = {
     });
     return () => source.close();
   },
-  subscribe(id, onSnapshot, onLive) {
+  subscribe(id, onSnapshot, onLive, onDeleted) {
     // EventSource cannot send headers, so the device key goes into the query.
     const source = new EventSource(`${bill(id)}/events?key=${encodeURIComponent(deviceKey())}`);
     let dropped = false;
@@ -191,6 +195,10 @@ const serverApi: Api = {
       dropped = false;
       onSnapshot(JSON.parse((e as MessageEvent<string>).data) as BillSnapshot);
       onLive(true);
+    });
+    source.addEventListener("deleted", () => {
+      source.close();
+      onDeleted?.();
     });
     source.onerror = () => {
       dropped = true;

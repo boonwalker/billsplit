@@ -24,6 +24,7 @@ export interface Changes {
   bills: StoredBill[];
   removedBills: string[];
   transfers: StoredTransfer[];
+  removedTransfers: string[];
 }
 
 export interface Persistence {
@@ -84,7 +85,7 @@ class SqlitePersistence implements Persistence {
     if (count === 0) {
       const legacy = await readJsonFile(this.legacyFile);
       if (legacy) {
-        this.write({ bills: legacy.bills, removedBills: [], transfers: legacy.transfers });
+        this.write({ bills: legacy.bills, removedBills: [], transfers: legacy.transfers, removedTransfers: [] });
         await rename(this.legacyFile, `${this.legacyFile}.imported`);
       }
     }
@@ -96,15 +97,17 @@ class SqlitePersistence implements Persistence {
     this.write(changes);
   }
 
-  private write({ bills, removedBills, transfers }: Changes): void {
+  private write({ bills, removedBills, transfers, removedTransfers }: Changes): void {
     const putBill = this.db.prepare("INSERT OR REPLACE INTO bills (id, created_at, data) VALUES (?, ?, ?)");
     const dropBill = this.db.prepare("DELETE FROM bills WHERE id = ?");
     const putTransfer = this.db.prepare("INSERT OR REPLACE INTO transfers (id, created_at, data) VALUES (?, ?, ?)");
+    const dropTransfer = this.db.prepare("DELETE FROM transfers WHERE id = ?");
     this.db.exec("BEGIN");
     try {
       for (const b of bills) putBill.run(b.id, b.createdAt, JSON.stringify(b));
       for (const id of removedBills) dropBill.run(id);
       for (const t of transfers) putTransfer.run(t.id, t.createdAt, JSON.stringify(t));
+      for (const id of removedTransfers) dropTransfer.run(id);
       this.db.exec("COMMIT");
     } catch (error) {
       this.db.exec("ROLLBACK");

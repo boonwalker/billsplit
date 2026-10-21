@@ -238,7 +238,8 @@ Das gilt mit und ohne Konto.
 
 Kennt der Server eine Rechnung nicht mehr, verschwindet sie nicht einfach: Sie bleibt ausgegraut mit „nicht mehr
 verfügbar“ stehen (`markGone`), bis man sie mit ✕ entfernt (ohne Rückfrage), und die App meldet das an die
-Betriebsseite. Rechnungen laufen nicht ab – der Server löscht keine Rechnung nach einer bestimmten Zeit. Ebenso meldet die App
+Betriebsseite. Rechnungen laufen nicht ab – der Server löscht keine Rechnung nach einer bestimmten Zeit. Nur eine auf der
+Betriebsseite gelöschte Rechnung verschwindet sofort und spurlos aus der Liste (siehe „Monitoring“). Ebenso meldet die App
 nicht still ab, wenn der Server das Konto nicht mehr kennt: Startseite und Profil sagen „Du wurdest abgemeldet: Der
 Server kannte Dein Konto … nicht mehr“, „Wieder anmelden“ hat die Adresse schon eingetragen (`billsplit.accountLost`).
 
@@ -658,6 +659,7 @@ Alles liegt im Datenordner (auf Railway das Volume):
 | `receipts/` | Belegfotos (nicht in den Backups) |
 | `vapid.json`, `push.json` | Push-Schlüssel und -Abos |
 | `accounts.json`, `accounts-removed.json` | Konten (E-Mail ↔ Gerätekennung, Profil) und auf der Betriebsseite gelöschte Konten |
+| `deleted-bills.json` | Kennungen der auf der Betriebsseite gelöschten Rechnungen (mit Zeitpunkt) |
 
 Zurückspielen: Dienst stoppen, die gewünschte Sicherung als `billsplit.db` in den Datenordner kopieren (vorhandene
 `billsplit.db-wal`/`-shm` löschen), Dienst starten. Eine Kopie zum Herunterladen gibt es über die Admin-Seite (siehe
@@ -704,9 +706,19 @@ fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
     Konto … und Deine Daten wurden gelöscht.“
   Rückgängig machen geht nur über eine Sicherung (`backups/`, 14 Tage). Gelöschte Konten merkt sich der Server in
   `accounts-removed.json` (nur Gerätekennung, Art und Zeitpunkt), damit die App den Hinweis zeigen kann.
+- **Rechnung löschen** (Tabelle „Neueste Rechnungen“, Spalte „Rechnung“ → „Löschen“, „Endgültig löschen“ ankreuzen,
+  `POST /api/admin/bill`): als hätte es die Rechnung nie gegeben. Sie verschwindet vom Server samt Belegfoto
+  (`BillCore.removeBill`, `BillStore.deleteBill`). Ausgleichszahlungen verlieren ihren Anteil daran, ihr Betrag sinkt
+  entsprechend; geht eine ohne diesen Anteil nicht mehr auf (sie hat Geld zwischen anderen weitergereicht), fällt sie
+  ganz weg und die übrigen Anteile sind wieder offen – die Meldung oben nennt, wie viele angepasst bzw. entfernt wurden.
+  Wer die Rechnung offen hat, sieht live „Diese Rechnung wurde gelöscht.“; Rechnungslisten, Dashboards und Bilanzen aller
+  Beteiligten laden neu und die App entfernt sie ohne Spur (`dropDeletedBill`, auch aus „ausgeblendet“). Dafür merkt sich
+  der Server die gelöschten Kennungen in `deleted-bills.json` (Abruf: HTTP 410, `deleted` in `/api/bills/batch`) – so
+  unterscheidet die App sie von verlorenen Rechnungen („nicht mehr verfügbar“). Bereits verschickte Mitteilungen lassen
+  sich nicht zurückholen; Rückgängig nur über eine Sicherung.
 
 Die Zahlen liegen in `monitor.json` (60 Tage, 200 Fehler) und `visits.json` (Besuche pro Tag, Geräte) im Datenordner.
-Die Betriebsseite zeigt E-Mail-Adressen und Namen und kann Konten löschen – den Token deshalb nicht weitergeben.
+Die Betriebsseite zeigt E-Mail-Adressen und Namen und kann Konten und Rechnungen löschen – den Token deshalb nicht weitergeben.
 
 ### Demo ohne Server
 

@@ -10,6 +10,8 @@ export interface LiveBill {
   snapshot: BillSnapshot | null;
   error: string | null;
   notFound: boolean;
+  /** Deleted on the admin page. */
+  deleted: boolean;
   /** False while the live connection is (re)connecting. */
   live: boolean;
   setMyClaims: (claims: ItemClaims, splits: ItemClaims) => void;
@@ -29,6 +31,7 @@ export function useLiveBill(id: string): LiveBill {
   const [localClaims, setLocalClaims] = useState<{ claims: ItemClaims; splits: ItemClaims } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [deleted, setDeleted] = useState(false);
   const [live, setLive] = useState(false);
   const pending = useRef<{ timer: number | null; inFlight: number; send: (() => void) | null; saving: Promise<unknown> }>({
     timer: null,
@@ -50,6 +53,7 @@ export function useLiveBill(id: string): LiveBill {
     let unsubscribe: (() => void) | null = null;
     setServerSnap(null);
     setNotFound(false);
+    setDeleted(false);
     setError(null);
 
     api
@@ -57,11 +61,12 @@ export function useLiveBill(id: string): LiveBill {
       .then((snap) => {
         if (cancelled) return;
         setServerSnap(snap);
-        unsubscribe = api.subscribe(id, setServerSnap, setLive);
+        unsubscribe = api.subscribe(id, setServerSnap, setLive, () => setDeleted(true));
       })
       .catch((e: unknown) => {
         if (cancelled) return;
-        if (e instanceof ApiError && e.status === 404) setNotFound(true);
+        if (e instanceof ApiError && e.status === 410) setDeleted(true);
+        else if (e instanceof ApiError && e.status === 404) setNotFound(true);
         else setError(e instanceof Error ? e.message : t("Die Rechnung konnte nicht geladen werden."));
       });
 
@@ -112,5 +117,5 @@ export function useLiveBill(id: string): LiveBill {
     };
   }
 
-  return { snapshot, error, notFound, live, setMyClaims, flushClaims, replace: setServerSnap };
+  return { snapshot, error, notFound, deleted, live, setMyClaims, flushClaims, replace: setServerSnap };
 }
