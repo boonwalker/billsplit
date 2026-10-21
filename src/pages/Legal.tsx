@@ -5,7 +5,7 @@ import { loadOperator, type Operator } from "../lib/operator";
 import { navigate } from "../lib/router";
 
 /** Date of the current version of the privacy policy. */
-const AS_OF = "17.10.2026";
+const AS_OF = "21.10.2026";
 
 /** Name, address and contact – or a note that they follow (no OPERATOR_* set, or the demo). */
 function OperatorBlock({ operator }: { operator: Operator | null }) {
@@ -185,8 +185,9 @@ function Privacy({ operator }: { operator: Operator | null }) {
       <Section title="Wie lange wir Daten speichern">
         <p>
           Rechnungen bleiben gespeichert, damit alle Beteiligten auch später noch nachsehen und ausgleichen können; sie werden nicht automatisch
-          gelöscht. Auf Wunsch löschen wir Rechnungen oder Deine Angaben darin – schreib uns an {contact}. Ein Konto bleibt bis zu seiner
-          Löschung, Push-Adressen bis zum Widerruf, Anmelde-Codes 15 Minuten.
+          gelöscht. Auf Wunsch löschen wir Dein Konto oder alle Deine Angaben – schreib uns an {contact}. Dann steht in allen Rechnungen
+          „Gelöscht“ statt Deines Namens, Zahlungsdaten und Belegfotos Deiner Rechnungen werden entfernt; die Beträge bleiben, damit die
+          anderen weiter ausgleichen können. Ein Konto bleibt bis zu seiner Löschung, Push-Adressen bis zum Widerruf, Anmelde-Codes 15 Minuten.
         </p>
       </Section>
 

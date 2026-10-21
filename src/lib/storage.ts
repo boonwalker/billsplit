@@ -201,6 +201,16 @@ export function saveAccountEmail(email: string | null): void {
 }
 
 export const loadAccountLost = (): string | null => read<string | null>(ACCOUNT_LOST_KEY, null);
+
+/** The account was deleted on the admin page: said once on the start page (see refreshAccount). */
+const ACCOUNT_REMOVED_KEY = "billsplit.accountRemoved";
+export interface AccountRemoved {
+  email: string;
+  /** All of the person's data was erased, not just the account. */
+  erased: boolean;
+}
+export const loadAccountRemoved = (): AccountRemoved | null => read<AccountRemoved | null>(ACCOUNT_REMOVED_KEY, null);
+export const saveAccountRemoved = (removed: AccountRemoved | null) => (removed ? write(ACCOUNT_REMOVED_KEY, removed) : remove(ACCOUNT_REMOVED_KEY));
 export const saveAccountLost = (email: string) => write(ACCOUNT_LOST_KEY, email);
 
 /** Signing out: this device starts over with a new identity (the account keeps everything). */

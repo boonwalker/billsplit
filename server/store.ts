@@ -251,6 +251,19 @@ export class BillStore extends BillCore {
     return readFile(file).catch(() => null);
   }
 
+  /** Erases a person's data (see BillCore.anonymize) – and the receipt photos of the bills they paid. */
+  async erase(participantId: string): Promise<number> {
+    const owned = this.anonymize(participantId);
+    for (const billId of owned) {
+      const bill = this.bills.get(billId);
+      if (bill) bill.receiptImage = undefined;
+      this.images.delete(billId);
+      const file = this.imagePath(billId);
+      if (file) await unlink(file).catch(() => {});
+    }
+    return owned.length;
+  }
+
   /** Deletes photos of bills that expired or no longer exist. */
   private async removeOrphanImages(): Promise<void> {
     if (!this.file) return;

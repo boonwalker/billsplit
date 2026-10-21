@@ -112,6 +112,11 @@ export class VisitLog {
     return true;
   }
 
+  /** Forgets a device (its owner's data was erased); the daily counts stay. */
+  forget(participantId: string): void {
+    if (this.devices.delete(participantId)) this.scheduleSave();
+  }
+
   device(participantId: string): DeviceInfo | null {
     return this.devices.get(participantId) ?? null;
   }

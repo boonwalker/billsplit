@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 194 Tests, alle grün).
+1. `npm run typecheck` und `npm test` (aktuell 198 Tests, alle grün; 43 Klick-Tests).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -62,7 +62,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 | Live-App | **https://www.klicksplit.de** (seit 11.10.2026; Railway, Free-Tarif, ein Service + Volume `/data`). Alte Adresse https://billsplit-production-af2e.up.railway.app bleibt und leitet um – nie löschen |
 | Demo (ohne Server) | https://claude.ai/artifact/UDuSsFPTSGVB8QNeGYoGVZ (Daten im Browser, „Ansicht als“ Anna/Ben) |
 | Repo | `boonwalker/billsplit`, Branch `main` |
-| Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse; `PUBLIC_URL=https://www.klicksplit.de`; **kein `DATA_DIR`** (Volume `billsplit-volume` auf `/data`, seit 16.10.2026 geprüft); `ADMIN_TOKEN` noch nicht gesetzt |
+| Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse; `PUBLIC_URL=https://www.klicksplit.de`; **kein `DATA_DIR`** (Volume `billsplit-volume` auf `/data`, seit 16.10.2026 geprüft); `ADMIN_TOKEN` gesetzt (nie weitergeben) |
 | Domain | `klicksplit.de` registriert bei INWX, **DNS seit 17.10.2026 bei Cloudflare** (Free): CNAME `www` → Railway (grau), Resend-Einträge (grau), `@` → `192.0.2.1` orange mit Redirect Rule `klicksplit.de` → `https://www.klicksplit.de` (301). DNS-Änderungen nur noch bei Cloudflare; Web-Weiterleitung von INWX nie benutzen. Details im README „Umzug auf eine neue Adresse“ |
 
 Render wird nicht mehr benutzt (zu teuer, `render.yaml` ist entfernt). Der Auftraggeber nutzt die App vor
@@ -96,7 +96,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - **Monitoring:** `server/monitor.ts` (KI-Aufrufe, Tokens, Kosten, Fehler pro Tag → `monitor.json`), Besuche/Geräte
   `server/visits.ts` (`/api/visit` von `src/lib/visits.ts` → `visits.json`), Betriebsseite
   `server/adminPage.ts` unter `/api/admin` (Token-Formular bzw. `?token=ADMIN_TOKEN`, ≥ 12 Zeichen, `adminSecret`; Nutzung, Konten, Geräte, Rechnungen, KI, Fehler); die App meldet Fehler über `src/lib/errorReport.ts` und
-  `ErrorBoundary`.
+  `ErrorBoundary`. Konten verwalten (`POST /api/admin/account`): „Profil zurücksetzen“, „Konto löschen“, „Alle Daten
+  löschen“ (Name → „Gelöscht“ über `BillCore.anonymize`/`BillStore.erase`, Beträge bleiben); gelöschte Konten in
+  `accounts-removed.json`, `/api/account` meldet `removed`, die App zeigt einmal einen Hinweis (`billsplit.accountRemoved`).
 - **Gerät wechseln:** Einmal-Code (`server/deviceLink.ts`, Route `#/geraet/<code>`) bzw. Wiederherstellungs-Code
   (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.
 - **Konto (optional):** E-Mail-Adresse ↔ Gerätekennung (`server/accounts.ts`, `DATA_DIR/accounts.json`), Anmeldung

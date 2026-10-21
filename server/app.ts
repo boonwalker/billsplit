@@ -221,6 +221,12 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const verifiesPerClient = new RateLimiter(40, 60 * 60 * 1000);
   const home = originOf(options.homeUrl ?? process.env.PUBLIC_URL);
   const operator = options.operator === undefined ? operatorFromEnv() : options.operator;
+  /** The admin token as sent matches ADMIN_TOKEN (compared in constant time; none set: never). */
+  const adminOk = (sent: string): boolean => {
+    const expected = adminSecret(options.adminToken);
+    const token = adminSecret(sent) ?? "";
+    return Boolean(expected) && token.length === expected!.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected!));
+  };
   // Added to every page's head: the app's address (see src/lib/move.ts) and who runs it.
   const headExtra = `${home ? `<meta name="klicksplit-home" content="${home}">` : ""}${operator ? operatorMeta(operator) : ""}`;
   const monitor = options.monitor;
@@ -395,13 +401,45 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       return sendJson(res, 200, { ok: true });
     }
 
+    // Admin page: deleting an account, resetting its profile or erasing all of a person's data.
+    // A form post with the token; deleting and erasing need the address typed in once more.
+    if (parts[1] === "admin" && parts[2] === "account" && parts.length === 3 && method === "POST") {
+      const form = new URLSearchParams((await readBody(req, MAX_JSON_BODY)).toString("utf8"));
+      const sent = form.get("token") ?? "";
+      if (!adminOk(sent)) throw new HttpError("Nicht gefunden.", 404);
+      const action = form.get("action");
+      const email = normalizeEmail(form.get("email") ?? "");
+      const account = accounts.get(email);
+      let notice: string;
+      if (!account) notice = `Kein Konto mit ${email || "dieser Adresse"} gefunden.`;
+      else if (action === "reset") {
+        accounts.resetProfile(email);
+        notice = `Profil von ${email} zurückgesetzt (Name und Zahlungsdaten im Konto gelöscht).`;
+      } else if ((action === "delete" || action === "erase") && normalizeEmail(form.get("confirm") ?? "") !== email) {
+        notice = `Nichts geändert: Zur Bestätigung muss die Adresse ${email} genau abgetippt werden.`;
+      } else if (action === "delete") {
+        accounts.removeByAddress(email, "deleted");
+        notice = `Konto ${email} gelöscht. Rechnungen und Gerät bleiben, die Adresse ist wieder frei.`;
+      } else if (action === "erase") {
+        const id = participantIdFromKey(account.key);
+        accounts.removeByAddress(email, "erased");
+        const paid = await store.erase(id);
+        push?.forget(id);
+        visits?.forget(id);
+        notice = `Alle Daten von ${email} gelöscht: Konto weg, Name in allen Rechnungen „Gelöscht“, Zahlungsdaten und Belegfotos von ${paid} eigenen Rechnung(en) entfernt.`;
+      } else notice = "Unbekannte Aktion.";
+      console.log(`Betriebsseite: ${notice}`);
+      res.writeHead(303, { location: `/api/admin?token=${encodeURIComponent(sent)}&meldung=${encodeURIComponent(notice)}#konten`, "cache-control": "no-store" });
+      return void res.end();
+    }
+
     // The operator's page: usage, cost and errors – and a copy of the data.
     if (parts[1] === "admin" && method === "GET") {
       const expected = adminSecret(options.adminToken);
       if (!expected) throw new HttpError("Nicht gefunden.", 404);
       const sent = url.searchParams.get("token");
       const token = adminSecret(sent ?? "") ?? "";
-      const ok = token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+      const ok = adminOk(sent ?? "");
       if (!ok) {
         // A form instead of a bare "not found": the token can be typed (or filled in by the password manager).
         if (sent !== null) console.warn(`Betriebsseite: Token passt nicht (${token.length} Zeichen geschickt, ${expected.length} erwartet)`);
@@ -424,6 +462,8 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
           bills: store.summaries(),
           pushSubscribers: push?.subscribers ?? 0,
           isPushed: (id: string) => push?.reachable(id) ?? false,
+          token,
+          notice: url.searchParams.get("meldung"),
         });
         res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" });
         return void res.end(html);
@@ -531,7 +571,9 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       const email = z.string().trim().max(200).email();
       if (parts.length === 2 && method === "GET") {
         const account = accounts.byKey(key);
-        return sendJson(res, 200, { account: account ? { email: account.email } : null });
+        // Deleted on the admin page: the device says so (instead of "the server no longer knew it").
+        const removed = account ? null : accounts.removalOf(key);
+        return sendJson(res, 200, { account: account ? { email: account.email } : null, ...(removed ? { removed } : {}) });
       }
       if (parts.length === 2 && method === "DELETE") {
         accounts.remove(key);

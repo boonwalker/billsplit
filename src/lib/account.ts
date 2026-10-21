@@ -2,7 +2,7 @@ import { api } from "./api";
 import { DEMO } from "./demo";
 import { disablePush, resubscribePush } from "./push";
 import { reportError } from "./errorReport";
-import { adoptDevice, loadAccountEmail, loadOwnProfile, resetDevice, saveAccountEmail, saveAccountLost, saveProfile, type Profile } from "./storage";
+import { adoptDevice, loadAccountEmail, loadOwnProfile, resetDevice, saveAccountEmail, saveAccountLost, saveProfile, type Profile, saveAccountRemoved } from "./storage";
 
 /**
  * The optional e-mail account (see server/accounts.ts): no password, a six-digit code from the
@@ -45,8 +45,16 @@ export async function syncAccountProfile(profile: Profile = loadOwnProfile()): P
 export async function refreshAccount(): Promise<string | null> {
   if (!accountsAvailable) return null;
   try {
-    const { account } = await api.account();
+    const { account, removed } = await api.account();
     const before = loadAccountEmail();
+    // Deleted on the admin page (e.g. on request): said once, no alarm. With all data erased this
+    // device starts over – its name and payment details must not come back into the bills.
+    if (before && !account && removed) {
+      if (removed === "erased") resetDevice();
+      saveAccountEmail(null);
+      saveAccountRemoved({ email: before, erased: removed === "erased" });
+      return null;
+    }
     // Signed in here, but the server does not know the account (any more): never silently –
     // the app says so and offers the address for signing in again (and the admin page hears of it).
     if (before && !account) {

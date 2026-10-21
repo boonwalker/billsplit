@@ -24,6 +24,10 @@ export interface AdminInput {
   bills: BillSummary[];
   pushSubscribers: number;
   isPushed: (participantId: string) => boolean;
+  /** The admin token, for the forms that change accounts (sent with each of them). */
+  token?: string;
+  /** What the last change on this page did (shown at the top). */
+  notice?: string | null;
   now?: Date;
 }
 
@@ -95,11 +99,23 @@ export function adminPage(input: AdminInput): string {
   const guests = sum(input.bills, (b) => b.participants.length - 1);
   const paidGuests = sum(input.bills, (b) => b.participants.filter((p) => p.id !== b.ownerId && p.paid).length);
 
+  // Changing an account: a small form per action, the token and the address go along.
+  const form = (email: string, action: string, label: string, confirm: boolean, danger = false) => `<form method="post" action="/api/admin/account">
+      <input type="hidden" name="token" value="${escape(input.token ?? "")}"><input type="hidden" name="email" value="${escape(email)}"><input type="hidden" name="action" value="${action}">
+      ${confirm ? `<input name="confirm" placeholder="${escape(email)}" aria-label="E-Mail zur Bestätigung" autocomplete="off" required>` : ""}
+      <button${danger ? ' class="danger"' : ""}>${label}</button></form>`;
+  const manage = (email: string) => `<details class="manage"><summary>Verwalten</summary>
+      <p class="muted">Zurücksetzen: Name und Zahlungsdaten im Konto vergessen – ein neues Gerät startet ohne sie.</p>
+      ${form(email, "reset", "Profil zurücksetzen", false)}
+      <p class="muted">Löschen: Verbindung von Adresse und Gerät lösen; Rechnungen bleiben, die Adresse ist wieder frei. Zur Bestätigung die Adresse abtippen.</p>
+      ${form(email, "delete", "Konto löschen", true)}
+      <p class="muted">Alle Daten löschen (Löschanfrage): Konto weg, Name in allen Rechnungen „Gelöscht“, Zahlungsdaten und Belegfotos eigener Rechnungen weg; Beträge bleiben. Nicht rückgängig zu machen.</p>
+      ${form(email, "erase", "Alle Daten löschen", true, true)}</details>`;
   const accountRows = input.accounts
     .map((a) => {
       const d = deviceOf.get(a.id);
       return `<tr><td>${dot(a.id)}${escape(a.email)}</td><td class="left">${escape(nameOf(a.id))}</td><td>${when(a.createdAt)}</td><td>${when(d?.lastSeen ?? "")}</td>
-        <td>${billsOf(a.id)}</td><td>${d ? (d.app ? "App" : "Browser") : "–"}</td><td>${yes(input.isPushed(a.id))}</td></tr>`;
+        <td>${billsOf(a.id)}</td><td>${d ? (d.app ? "App" : "Browser") : "–"}</td><td>${yes(input.isPushed(a.id))}</td><td class="left">${input.token ? manage(a.email) : ""}</td></tr>`;
     })
     .join("");
 
@@ -156,10 +172,21 @@ export function adminPage(input: AdminInput): string {
   time { color: var(--muted); font-variant-numeric: tabular-nums; } b.server, b.ai { color: var(--bad); } b.app { color: var(--accent); }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 6px; vertical-align: middle; }
   pre { white-space: pre-wrap; font-size: 12px; } a { color: var(--accent); }
+  .notice { margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--accent); border-radius: 12px; }
+  tr:has(details.manage[open]) td { vertical-align: top; }
+  details.manage summary { cursor: pointer; color: var(--accent); }
+  details.manage[open] { white-space: normal; min-width: 280px; max-width: 360px; }
+  details.manage p { margin: 10px 0 4px; font-size: 13px; }
+  details.manage form { display: flex; gap: 6px; }
+  details.manage input, details.manage button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; }
+  details.manage input { flex: 1; min-width: 0; }
+  details.manage button { border-color: var(--accent); color: var(--accent); cursor: pointer; }
+  details.manage button.danger { border-color: var(--bad); background: var(--bad); color: #fff; }
 </style></head><body>
 <h1>klicksplit · Betrieb</h1>
 <p class="muted">Stand ${escape(when(now.toISOString()))} · Version ${escape(input.version)} · Speicher: ${escape(input.storage)}
 ${input.backupUrl ? ` · <a href="${escape(input.backupUrl)}">Datenbank herunterladen</a>` : ""}</p>
+${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` : ""}
 <nav><a href="#nutzung">Nutzung</a><a href="#konten">Konten</a><a href="#geraete">Geräte</a><a href="#rechnungen">Rechnungen</a><a href="#ki">Belegerkennung</a><a href="#fehler">Fehler</a></nav>
 <div class="tiles">
   <div class="tile"><span class="muted">Gerade online</span><b>${int(input.online.size)}</b><small>App offen</small></div>
@@ -180,8 +207,8 @@ ${input.backupUrl ? ` · <a href="${escape(input.backupUrl)}">Datenbank herunter
 
 <h2 id="konten">Konten (${int(input.accounts.length)})</h2>
 <p class="muted">Rechnungen: als Rechnungssteller / als Gast. <span class="dot"></span>= gerade online.</p>
-<div class="scroll"><table><thead><tr><th>E-Mail</th><th class="left">Name</th><th>angelegt</th><th>zuletzt aktiv</th><th>Rechnungen</th><th>genutzt als</th><th>Mitteilungen</th></tr></thead>
-<tbody>${accountRows || empty(7)}</tbody></table></div>
+<div class="scroll"><table><thead><tr><th>E-Mail</th><th class="left">Name</th><th>angelegt</th><th>zuletzt aktiv</th><th>Rechnungen</th><th>genutzt als</th><th>Mitteilungen</th><th class="left">Konto</th></tr></thead>
+<tbody>${accountRows || empty(8)}</tbody></table></div>
 
 <h2 id="geraete">Geräte (${int(input.devices.length)})</h2>
 <p class="muted">Die zuletzt aktiven 150. Name aus den Rechnungen bzw. dem Konto; ein Gerät ohne Konto bleibt anonym bis auf diesen Namen.</p>

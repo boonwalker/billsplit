@@ -17,7 +17,7 @@ import { createSampleBill } from "../lib/sampleBill";
 import { accountsAvailable, refreshAccount } from "../lib/account";
 import { reportError } from "../lib/errorReport";
 import { useBillChanges } from "../lib/liveEvents";
-import { clearDraft, forgetBill, hasPaymentMethod, hideBill, markGone, loadAccountEmail, loadAccountLost, markAsked, loadOwnProfile, loadRecent, sessionCount, startedFresh, startedOnHome, syncRecentBills, wasAsked, updateRecent, type RecentBill } from "../lib/storage";
+import { clearDraft, forgetBill, hasPaymentMethod, hideBill, markGone, loadAccountEmail, loadAccountLost, loadAccountRemoved, saveAccountRemoved, markAsked, loadOwnProfile, loadRecent, sessionCount, startedFresh, startedOnHome, syncRecentBills, wasAsked, updateRecent, type RecentBill } from "../lib/storage";
 import { setPendingPhoto } from "./Editor";
 
 /** Bills shown before "Ältere anzeigen". */
@@ -120,9 +120,14 @@ export default function Home() {
   }, []);
   // Is this device still signed in? If the server lost the account, the start page says so.
   const [lostAccount, setLostAccount] = useState(loadAccountLost);
+  const [removedAccount, setRemovedAccount] = useState(loadAccountRemoved);
   useEffect(() => {
     if (!accountsAvailable || !loadAccountEmail()) return;
-    void refreshAccount().then(() => setLostAccount(loadAccountLost()));
+    void refreshAccount().then(() => {
+      setLostAccount(loadAccountLost());
+      setRemovedAccount(loadAccountRemoved());
+      setRecent(loadRecent());
+    });
   }, []);
   const profile = loadOwnProfile();
   const account = loadAccountEmail();
@@ -249,6 +254,27 @@ export default function Home() {
             </span>
           </button>
         </section>
+
+        {/* Deleted on the admin page: said once. */}
+        {removedAccount && !account && (
+          <div className="card account-lost" role="status">
+            <p>
+              {removedAccount.erased
+                ? t("Dein Konto {email} und Deine Daten wurden gelöscht.", { email: removedAccount.email })
+                : t("Dein Konto {email} wurde gelöscht. Deine Rechnungen bleiben auf diesem Gerät.", { email: removedAccount.email })}
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                saveAccountRemoved(null);
+                setRemovedAccount(null);
+              }}
+            >
+              {t("OK")}
+            </button>
+          </div>
+        )}
 
         {/* A new device (or a wiped browser): the bills come back with the e-mail account. */}
         {lostAccount && !account && (

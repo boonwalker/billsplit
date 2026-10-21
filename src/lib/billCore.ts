@@ -69,6 +69,9 @@ export interface StoredParticipant {
   assigned?: boolean;
 }
 
+/** The name of someone whose data was erased (stored data, never translated). */
+export const ERASED_NAME = "Gelöscht";
+
 /** A friend gets at most one reminder notification per bill in this time. */
 export const REMIND_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
@@ -146,6 +149,32 @@ export class BillCore {
     const bills = [...this.bills.values()].filter((b) => b.participants[participantId]);
     bills.sort((a, b) => b.participants[participantId].joinedAt.localeCompare(a.participants[participantId].joinedAt));
     return bills[0]?.participants[participantId].name ?? null;
+  }
+
+  /**
+   * Erasing a person's data on request (admin page): their name becomes ERASED_NAME in every bill
+   * and settlement payment, the payment details of bills they paid are removed. Amounts, ticks and
+   * payments stay – the others' bills must still add up. Returns the bills they paid.
+   */
+  anonymize(participantId: string): string[] {
+    const owned: string[] = [];
+    for (const [billId, bill] of this.bills) {
+      const p = bill.participants[participantId];
+      if (!p) continue;
+      p.name = ERASED_NAME;
+      if (bill.ownerId === participantId) {
+        bill.data = { ...bill.data, payment: {} };
+        owned.push(billId);
+      }
+      this.changed(billId);
+    }
+    for (const t of this.transfers.values()) {
+      if (t.fromId !== participantId && t.toId !== participantId) continue;
+      if (t.fromId === participantId) t.fromName = ERASED_NAME;
+      if (t.toId === participantId) t.toName = ERASED_NAME;
+      this.transfersChanged(t.id);
+    }
+    return owned;
   }
 
   /**

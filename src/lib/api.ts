@@ -63,7 +63,8 @@ export interface Api {
   /** At the new address: takes over the old address's key (see move.ts). */
   move(code: string): Promise<{ key: string; profile: Partial<Profile>; bills: MyBill[] }>;
   /** The optional e-mail account of this device (null: none). */
-  account(): Promise<{ account: { email: string } | null }>;
+  /** removed: the account was deleted on the admin page ("erased": with all of the person's data). */
+  account(): Promise<{ account: { email: string } | null; removed?: "deleted" | "erased" | null }>;
   /** Sends a six-digit sign-in code to the address. */
   requestCode(email: string, name?: string): Promise<{ ok: true }>;
   /**

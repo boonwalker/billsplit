@@ -70,6 +70,11 @@ export class PushService {
     this.scheduleSave();
   }
 
+  /** Forgets every subscription of a participant (their data was erased). */
+  forget(participantId: string): void {
+    if (this.subscriptions.delete(participantId)) this.scheduleSave();
+  }
+
   /** Whether notifications can reach a participant (keys ready and at least one device subscribed). */
   reachable(participantId: string): boolean {
     return Boolean(this.keys) && (this.subscriptions.get(participantId)?.length ?? 0) > 0;

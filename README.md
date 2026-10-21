@@ -657,6 +657,7 @@ Alles liegt im Datenordner (auf Railway das Volume):
 | `backups/billsplit-JJJJ-MM-TT.db` | eine Sicherung pro Tag (beim Start und alle 6 Stunden geprüft), die letzten 14 Tage |
 | `receipts/` | Belegfotos (nicht in den Backups) |
 | `vapid.json`, `push.json` | Push-Schlüssel und -Abos |
+| `accounts.json`, `accounts-removed.json` | Konten (E-Mail ↔ Gerätekennung, Profil) und auf der Betriebsseite gelöschte Konten |
 
 Zurückspielen: Dienst stoppen, die gewünschte Sicherung als `billsplit.db` in den Datenordner kopieren (vorhandene
 `billsplit.db-wal`/`-shm` löschen), Dienst starten. Eine Kopie zum Herunterladen gibt es über die Admin-Seite (siehe
@@ -689,10 +690,23 @@ fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
   Handys der Nutzer (die App meldet unbehandelte Fehler selbst; ein abgestürzter Bildschirm zeigt „Da ist etwas
   schiefgelaufen“ mit „Neu laden“ statt einer weißen Seite)
 - **„Datenbank herunterladen“:** eine aktuelle Kopie aller Rechnungen als zusätzliches Backup außerhalb von Railway
+- **Konten verwalten** (Spalte „Konto“ → „Verwalten“, `POST /api/admin/account`, jede Aktion steht als „Betriebsseite: …“
+  im Log, danach ein Hinweis oben auf der Seite):
+  - **Profil zurücksetzen:** Name und Zahlungsdaten im Konto vergessen – ein neu angemeldetes Gerät startet ohne sie;
+    Rechnungen und Geräte bleiben unberührt.
+  - **Konto löschen** (Adresse zur Bestätigung abtippen): Adresse und Gerätekennung werden getrennt, die Adresse ist
+    wieder frei; Rechnungen bleiben. Das Gerät meldet sich beim nächsten Öffnen ab und zeigt einmal „Dein Konto … wurde
+    gelöscht. Deine Rechnungen bleiben auf diesem Gerät.“
+  - **Alle Daten löschen** (Löschanfrage nach Art. 17 DSGVO, Adresse abtippen): Konto weg, der Name wird in allen
+    Rechnungen und Ausgleichszahlungen zu „Gelöscht“ (`BillCore.anonymize`), eigene Rechnungen verlieren Zahlungsdaten
+    und Belegfoto, Push-Abos und Besuchsdaten des Geräts werden vergessen. Beträge, Häkchen und Zahlungen bleiben,
+    damit die anderen weiter ausgleichen können. Das Gerät startet beim nächsten Öffnen leer und zeigt einmal „Dein
+    Konto … und Deine Daten wurden gelöscht.“
+  Rückgängig machen geht nur über eine Sicherung (`backups/`, 14 Tage). Gelöschte Konten merkt sich der Server in
+  `accounts-removed.json` (nur Gerätekennung, Art und Zeitpunkt), damit die App den Hinweis zeigen kann.
 
 Die Zahlen liegen in `monitor.json` (60 Tage, 200 Fehler) und `visits.json` (Besuche pro Tag, Geräte) im Datenordner.
-Die Betriebsseite zeigt E-Mail-Adressen und Namen – den Token deshalb nicht weitergeben (spätestens jetzt gehört eine
-Datenschutzerklärung dazu, siehe Backlog).
+Die Betriebsseite zeigt E-Mail-Adressen und Namen und kann Konten löschen – den Token deshalb nicht weitergeben.
 
 ### Demo ohne Server
 

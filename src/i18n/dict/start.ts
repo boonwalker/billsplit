@@ -188,6 +188,8 @@ export default {
     // AccountForm
     "Überspringen": "Skip",
     "Datenschutz": "Privacy",
+    "Dein Konto {email} und Deine Daten wurden gelöscht.": "Your account {email} and your data have been deleted.",
+    "Dein Konto {email} wurde gelöscht. Deine Rechnungen bleiben auf diesem Gerät.": "Your account {email} has been deleted. Your bills stay on this device.",
     "{title} · {name} hat bezahlt": "{title} · {name} paid",
     "{title} · klicksplit": "{title} · klicksplit",
     "klicksplit – Einer zahlt. Alle splitten.": "klicksplit – One pays. Everyone splits.",
@@ -492,6 +494,8 @@ export default {
     // AccountForm
     "Überspringen": "Omitir",
     "Datenschutz": "Privacidad",
+    "Dein Konto {email} und Deine Daten wurden gelöscht.": "Tu cuenta {email} y tus datos han sido eliminados.",
+    "Dein Konto {email} wurde gelöscht. Deine Rechnungen bleiben auf diesem Gerät.": "Tu cuenta {email} ha sido eliminada. Tus cuentas siguen en este dispositivo.",
     "{title} · {name} hat bezahlt": "{title} · {name} ha pagado",
     "{title} · klicksplit": "{title} · klicksplit",
     "klicksplit – Einer zahlt. Alle splitten.": "klicksplit – Uno paga. Todos dividen.",

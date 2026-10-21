@@ -28,6 +28,9 @@ interface PendingCode {
   attempts: number;
 }
 
+/** Deleted on the admin page: the device learns why it was signed out (and whether all its data went). */
+export type Removal = "deleted" | "erased";
+
 export type VerifyResult = { ok: true } | { ok: false; reason: "expired" | "wrong" };
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -37,6 +40,8 @@ const hashCode = (email: string, code: string) => createHash("sha256").update(`$
 export class AccountStore {
   private byEmail = new Map<string, Account>();
   private codes = new Map<string, PendingCode>();
+  /** Device keys whose account was deleted on the admin page (kept in accounts-removed.json). */
+  private removed = new Map<string, { removal: Removal; at: string }>();
   private saveTimer: NodeJS.Timeout | null = null;
 
   /** file: where the accounts are kept (null: in memory only, for tests). */
@@ -52,6 +57,11 @@ export class AccountStore {
       this.byEmail = new Map(list.map((a) => [a.email, a]));
     } catch {
       // No accounts yet.
+    }
+    try {
+      this.removed = new Map(Object.entries(JSON.parse(await readFile(this.removedFile()!, "utf8")) as Record<string, { removal: Removal; at: string }>));
+    } catch {
+      // Nothing deleted yet.
     }
   }
 
@@ -100,6 +110,7 @@ export class AccountStore {
 
   create(email: string, key: string, profile: Record<string, string>): Account {
     const account: Account = { email: normalizeEmail(email), key, profile, createdAt: new Date(this.now()).toISOString() };
+    this.removed.delete(key);
     this.byEmail.set(account.email, account);
     this.scheduleSave();
     return account;
@@ -109,6 +120,33 @@ export class AccountStore {
     const account = this.byKey(key);
     if (!account) return false;
     account.profile = profile;
+    this.scheduleSave();
+    return true;
+  }
+
+  /**
+   * Admin page: deletes the account of an address (the bills stay with the device key) and notes
+   * it for the device, so it can say so instead of "the server no longer knew it".
+   */
+  removeByAddress(email: string, removal: Removal): Account | null {
+    const account = this.get(email);
+    if (!account) return null;
+    this.byEmail.delete(account.email);
+    this.removed.set(account.key, { removal, at: new Date(this.now()).toISOString() });
+    this.scheduleSave();
+    return account;
+  }
+
+  /** Why the account of this device key is gone, if it was deleted on the admin page. */
+  removalOf(key: string): Removal | null {
+    return this.removed.get(key)?.removal ?? null;
+  }
+
+  /** Admin page: forgets the name and ways to get paid kept in the account (a new device starts without them). */
+  resetProfile(email: string): boolean {
+    const account = this.get(email);
+    if (!account) return false;
+    account.profile = {};
     this.scheduleSave();
     return true;
   }
@@ -141,10 +179,17 @@ export class AccountStore {
     }, 300);
   }
 
+  private removedFile(): string | null {
+    return this.file ? path.join(path.dirname(this.file), "accounts-removed.json") : null;
+  }
+
   private async write(): Promise<void> {
     if (!this.file) return;
     await mkdir(path.dirname(this.file), { recursive: true });
     await writeFile(`${this.file}.tmp`, JSON.stringify([...this.byEmail.values()]));
     await rename(`${this.file}.tmp`, this.file);
+    const removed = this.removedFile()!;
+    await writeFile(`${removed}.tmp`, JSON.stringify(Object.fromEntries(this.removed)));
+    await rename(`${removed}.tmp`, removed);
   }
 }
