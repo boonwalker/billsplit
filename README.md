@@ -692,7 +692,7 @@ fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
   Handys der Nutzer (die App meldet unbehandelte Fehler selbst; ein abgestürzter Bildschirm zeigt „Da ist etwas
   schiefgelaufen“ mit „Neu laden“ statt einer weißen Seite)
 - **„Datenbank herunterladen“:** eine aktuelle Kopie aller Rechnungen als zusätzliches Backup außerhalb von Railway
-- **Konten verwalten** (Spalte „Konto“ → „Verwalten“, `POST /api/admin/account`, jede Aktion steht als „Betriebsseite: …“
+- **Konten verwalten** (erste Spalte „Konto“ → „Verwalten“, auch auf dem iPhone ohne Wischen sichtbar, `POST /api/admin/account`, jede Aktion steht als „Betriebsseite: …“
   im Log, danach ein Hinweis oben auf der Seite):
   - **Profil zurücksetzen:** Name und Zahlungsdaten im Konto vergessen – ein neu angemeldetes Gerät startet ohne sie;
     Rechnungen und Geräte bleiben unberührt.
@@ -706,7 +706,7 @@ fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
     Konto … und Deine Daten wurden gelöscht.“
   Rückgängig machen geht nur über eine Sicherung (`backups/`, 14 Tage). Gelöschte Konten merkt sich der Server in
   `accounts-removed.json` (nur Gerätekennung, Art und Zeitpunkt), damit die App den Hinweis zeigen kann.
-- **Rechnung löschen** (Tabelle „Neueste Rechnungen“, Spalte „Rechnung“ → „Löschen“, „Endgültig löschen“ ankreuzen,
+- **Rechnung löschen** (Tabelle „Neueste Rechnungen“, erste Spalte „Rechnung“ → „Löschen“, „Endgültig löschen“ ankreuzen,
   `POST /api/admin/bill`): als hätte es die Rechnung nie gegeben. Sie verschwindet vom Server samt Belegfoto
   (`BillCore.removeBill`, `BillStore.deleteBill`). Ausgleichszahlungen verlieren ihren Anteil daran, ihr Betrag sinkt
   entsprechend; geht eine ohne diesen Anteil nicht mehr auf (sie hat Geld zwischen anderen weitergereicht), fällt sie

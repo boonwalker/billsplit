@@ -119,8 +119,8 @@ export function adminPage(input: AdminInput): string {
   const accountRows = input.accounts
     .map((a) => {
       const d = deviceOf.get(a.id);
-      return `<tr><td>${dot(a.id)}${escape(a.email)}</td><td class="left">${escape(nameOf(a.id))}</td><td>${when(a.createdAt)}</td><td>${when(d?.lastSeen ?? "")}</td>
-        <td>${billsOf(a.id)}</td><td>${d ? (d.app ? "App" : "Browser") : "–"}</td><td>${yes(input.isPushed(a.id))}</td><td class="left">${input.token ? manage(a.email) : ""}</td></tr>`;
+      return `<tr><td class="left">${input.token ? manage(a.email) : ""}</td><td>${dot(a.id)}${escape(a.email)}</td><td class="left">${escape(nameOf(a.id))}</td><td>${when(a.createdAt)}</td><td>${when(d?.lastSeen ?? "")}</td>
+        <td>${billsOf(a.id)}</td><td>${d ? (d.app ? "App" : "Browser") : "–"}</td><td>${yes(input.isPushed(a.id))}</td></tr>`;
     })
     .join("");
 
@@ -137,9 +137,8 @@ export function adminPage(input: AdminInput): string {
     .slice(0, 60)
     .map((b) => {
       const others = b.participants.filter((p) => p.id !== b.ownerId);
-      return `<tr><td>${when(b.createdAt)}</td><td class="left">${escape(b.title || "Rechnung")}</td><td class="left">${escape(nameOf(b.ownerId))}</td>
-        <td>${int(others.length)}</td><td>${int(others.filter((p) => p.paid).length)} / ${int(others.length)}</td><td>${money(b.total, b.currency)}</td>
-        <td class="left">${input.token ? removeBill(b.id) : ""}</td></tr>`;
+      return `<tr><td class="left">${input.token ? removeBill(b.id) : ""}</td><td>${when(b.createdAt)}</td><td class="left">${escape(b.title || "Rechnung")}</td><td class="left">${escape(nameOf(b.ownerId))}</td>
+        <td>${int(others.length)}</td><td>${int(others.filter((p) => p.paid).length)} / ${int(others.length)}</td><td>${money(b.total, b.currency)}</td></tr>`;
     })
     .join("");
 
@@ -215,7 +214,7 @@ ${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` :
 
 <h2 id="konten">Konten (${int(input.accounts.length)})</h2>
 <p class="muted">Rechnungen: als Rechnungssteller / als Gast. <span class="dot"></span>= gerade online.</p>
-<div class="scroll"><table><thead><tr><th>E-Mail</th><th class="left">Name</th><th>angelegt</th><th>zuletzt aktiv</th><th>Rechnungen</th><th>genutzt als</th><th>Mitteilungen</th><th class="left">Konto</th></tr></thead>
+<div class="scroll"><table><thead><tr><th class="left">Konto</th><th>E-Mail</th><th class="left">Name</th><th>angelegt</th><th>zuletzt aktiv</th><th>Rechnungen</th><th>genutzt als</th><th>Mitteilungen</th></tr></thead>
 <tbody>${accountRows || empty(8)}</tbody></table></div>
 
 <h2 id="geraete">Geräte (${int(input.devices.length)})</h2>
@@ -224,7 +223,7 @@ ${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` :
 <tbody>${deviceRows || empty(9)}</tbody></table></div>
 
 <h2 id="rechnungen">Neueste Rechnungen (${int(input.bills.length)} insgesamt)</h2>
-<div class="scroll"><table><thead><tr><th>angelegt</th><th class="left">Titel</th><th class="left">Rechnungssteller</th><th>Gäste</th><th>bezahlt</th><th>Betrag</th><th class="left">Rechnung</th></tr></thead>
+<div class="scroll"><table><thead><tr><th class="left">Rechnung</th><th>angelegt</th><th class="left">Titel</th><th class="left">Rechnungssteller</th><th>Gäste</th><th>bezahlt</th><th>Betrag</th></tr></thead>
 <tbody>${billRows || empty(7)}</tbody></table></div>
 
 <h2 id="ki">Belegerkennung pro Tag</h2>
