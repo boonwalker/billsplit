@@ -435,7 +435,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       {snap.isOwner && summary && (
         <ReceiptPeek billId={id} title={snap.data.title} scroller={scroller} bottom={Math.max(0, ownerBarHeight - 26)} hidden={atEnd} />
       )}
-      {snap.isOwner && summary && <OwnerBar snapshot={snap} missing={summary.missing} away={atEnd} onHeight={setOwnerBarHeight} />}
+      {snap.isOwner && summary && <OwnerBar snapshot={snap} missing={summary.missing} away={atEnd} onHeight={setOwnerBarHeight} scroller={scroller} />}
       {refundAsk && (
         <RefundConfirm
           refunds={refundAsk.refunds}
@@ -448,7 +448,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         />
       )}
 
-      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} onPaidInPerson={paidInPerson} onHeight={setPayBarHeight} />}
+      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} onPaidInPerson={paidInPerson} onHeight={setPayBarHeight} scroller={scroller} />}
 
       {divisorFor && snap.data.items.some((i) => i.id === divisorFor) && (
         <DivisorSheet

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { t } from "../../lib/i18n";
 import { scrollBehavior } from "../../lib/motion";
+import { useScrollThrough } from "../../lib/useScrollThrough";
 
 /**
  * First opening of a new bill (payer): the receipt peeks up from behind the bar at the top
@@ -68,56 +69,12 @@ export default function ReceiptPeek({
     };
   }, [peek !== "off", scroller]);
 
-  // The snippet sits on top of the page, so a swipe that starts on it would not reach the page
-  // below (on the iPhone nothing would move): its strokes and wheel turns scroll the page instead,
-  // with a little momentum when the finger lets go. A tap still jumps to the receipt.
-  const swipe = useRef<{ y: number; t: number; v: number; moved: boolean } | null>(null);
-  useEffect(() => {
-    const el = ref.current;
-    const root = scroller.current;
-    if (!el || !root) return;
-    const onStart = (e: TouchEvent) => {
-      touching.current = true;
-      swipe.current = { y: e.touches[0].clientY, t: e.timeStamp, v: 0, moved: false };
-    };
-    const onMove = (e: TouchEvent) => {
-      const s = swipe.current;
-      if (!s) return;
-      const y = e.touches[0].clientY;
-      const dy = s.y - y;
-      if (!s.moved && Math.abs(dy) < 6) return;
-      s.moved = true;
-      e.preventDefault();
-      root.scrollTop += dy;
-      const dt = Math.max(1, e.timeStamp - s.t);
-      s.v = dy / dt;
-      s.y = y;
-      s.t = e.timeStamp;
-    };
-    const onEnd = () => {
-      touching.current = false;
-      setPeek((state) => (state === "gone" ? "off" : state));
-      const s = swipe.current;
-      swipe.current = s && s.moved ? { ...s, y: 0 } : null;
-      if (s?.moved && Math.abs(s.v) > 0.1) root.scrollBy({ top: s.v * 320, behavior: scrollBehavior() });
-    };
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      root.scrollTop += e.deltaY;
-    };
-    el.addEventListener("touchstart", onStart, { passive: true });
-    el.addEventListener("touchmove", onMove, { passive: false });
-    el.addEventListener("touchend", onEnd);
-    el.addEventListener("touchcancel", onEnd);
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => {
-      el.removeEventListener("touchstart", onStart);
-      el.removeEventListener("touchmove", onMove);
-      el.removeEventListener("touchend", onEnd);
-      el.removeEventListener("touchcancel", onEnd);
-      el.removeEventListener("wheel", onWheel);
-    };
-  }, [peek !== "off", hidden, scroller]);
+  // It sits on top of the page: strokes on it scroll the page (see useScrollThrough). Handed over
+  // to the real receipt mid-stroke, it stays (invisible) until the finger lets go.
+  const through = useScrollThrough(ref, scroller, peek !== "off" && !hidden, (down) => {
+    touching.current = down;
+    if (!down) setPeek((state) => (state === "gone" ? "off" : state));
+  });
 
   if (peek === "off" || hidden) return null;
   return (
@@ -129,10 +86,7 @@ export default function ReceiptPeek({
       style={{ bottom, ...(box ? { left: box.left, width: box.width, transform: "none" } : {}) }}
       onClick={() => {
         // The end of a stroke is not a tap.
-        if (swipe.current?.moved) {
-          swipe.current = null;
-          return;
-        }
+        if (through.stroked()) return;
         document.querySelector("#receipt .receipt-paper")?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
       }}
       aria-label={t("Zur interaktiven Rechnung")}

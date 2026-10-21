@@ -1,5 +1,5 @@
 import { rich, t, tMsg } from "../lib/i18n";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { useOneLine } from "../lib/useOneLine";
 import { hasTip, participantShare, type BillSnapshot } from "../lib/bill";
 import { centsToInput, formatMoney } from "../lib/money";
@@ -7,6 +7,7 @@ import { copyText } from "../lib/clipboard";
 import { clickPress, clickRelease } from "../lib/haptics";
 import { otherMethods, payAction, type OtherMethod } from "../lib/payment";
 import TransferSheet from "./TransferSheet";
+import { useScrollThrough } from "../lib/useScrollThrough";
 
 interface Props {
   snapshot: BillSnapshot;
@@ -18,11 +19,16 @@ interface Props {
   onPaidInPerson?: () => void;
   /** The bar's height whenever it changes (it grows after paying), so the page can scroll past it. */
   onHeight?: (px: number) => void;
+  /** The page below: strokes on the bar scroll it (see useScrollThrough). */
+  scroller?: RefObject<HTMLDivElement | null>;
 }
 
 /** Sticky bottom bar for friends: their individual sum and the pay button. */
-export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, onHeight }: Props) {
+export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, onHeight, scroller }: Props) {
   const bar = useRef<HTMLDivElement>(null);
+  // A stroke that starts on the bar scrolls the receipt above it.
+  const noScroller = useRef<HTMLDivElement>(null);
+  useScrollThrough(bar, scroller ?? noScroller);
   const oneLine = useOneLine();
   useLayoutEffect(() => {
     const el = bar.current;

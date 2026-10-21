@@ -312,7 +312,10 @@ bis der echte Bon ihn erreicht, und geht dort in ihn über. Danach (und bei jede
 erscheint er nicht mehr. Ein Tipp auf den Schnipsel scrollt zum Bon. Weil er über der Seite liegt, würde ein Wisch,
 der auf ihm beginnt, die Seite sonst nicht bewegen (auf dem iPhone passierte gar nichts): Wischen und Mausrad auf dem
 Schnipsel scrollen deshalb die Seite (mit Schwung beim Loslassen, `touch-action: none`); übernimmt der echte Bon mitten
-im Wischen, bleibt der Schnipsel unsichtbar, bis der Finger loslässt.
+im Wischen, bleibt der Schnipsel unsichtbar, bis der Finger loslässt. Dasselbe gilt für die Leisten unten („Dir fehlen
+noch“ beim Rechnungssteller, „Dein Anteil“ bei Freunden): Im Safari-Browser bedecken sie mit dem Schnipsel fast das
+untere Drittel, ein Wisch dort bewegte bis 21.10.2026 nichts. Alle drei nutzen `useScrollThrough` (`src/lib/`);
+Knöpfe und Tipps darauf funktionieren wie bisher, Fenster, die aus der Leiste geöffnet werden, bleiben unberührt.
 
 ### Live-Anzeige und Echtzeit
 

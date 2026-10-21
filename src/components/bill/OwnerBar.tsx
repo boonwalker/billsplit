@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import type { BillSnapshot } from "../../lib/bill";
 import { t } from "../../lib/i18n";
 import { formatMoney } from "../../lib/money";
+import { useScrollThrough } from "../../lib/useScrollThrough";
 
 /** The payer's bar at the bottom: what is still missing; away at the end of the page, where the panel says the same. */
 export default function OwnerBar({
@@ -9,13 +10,17 @@ export default function OwnerBar({
   missing,
   away,
   onHeight,
+  scroller,
 }: {
   snapshot: BillSnapshot;
   missing: number;
   away: boolean;
   onHeight: (height: number) => void;
+  /** The page below: strokes on the bar scroll it (see useScrollThrough). */
+  scroller: RefObject<HTMLDivElement | null>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  useScrollThrough(ref, scroller, !away);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;

@@ -176,6 +176,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - **Rechnungslinks** sind echte Pfade `/b/<id>?to=…` (`billUrl`, für die WhatsApp-Vorschau aus `server/preview.ts`);
   die App biegt sie beim Start auf `/#/b/…` um (`openPathLink` in `main.tsx`). `billIdFromUrl` liest beide Formen –
   alte QR-Codes nie brechen. In der Demo `billUrl(…, DEMO)` → Hash-Form. Vorschau nie mit Beträgen.
+- **Auf der Rechnungsseite scrollt nur der Mittelteil** (`.bill-scroll`). Alles, was darüber liegt (Leisten unten,
+  Bon-Schnipsel), braucht `useScrollThrough`, sonst bewegt ein Wisch darauf nichts (Vorfall 21.10.2026, Safari).
 - **Datenschutzerklärung** (`src/pages/Legal.tsx`, Stand `AS_OF`): bei jedem neuen Datenfluss (neuer externer Dienst,
   neue gespeicherte Angaben, andere Speicherdauer) mit anpassen. Betreiberangaben nur über `OPERATOR_*`, nie ins Repo.
 - **Klick-Tests:** Alte Testserver vom selben Port verfälschen Ergebnisse. Beenden mit
