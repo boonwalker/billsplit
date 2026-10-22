@@ -397,6 +397,13 @@ immer in Safari öffnen, nie in der Home-Bildschirm-App).
 - **Neues Gerät:** auf der Startseite „Schon ein Konto? Anmelden“ (solange dort noch keine Rechnungen sind) oder im
   Profil. Nach dem Code hat das Gerät die Gerätekennung des Kontos, das Profil und alle Rechnungen. Was das Gerät
   vorher schon hatte (z. B. eine Rechnung, der man im Browser beigetreten ist), wird ins Konto übernommen.
+- **Bei jedem „Wie heißt Du?“** steht, solange das Gerät nicht angemeldet ist, darunter „Schon ein Konto? Anmelden“:
+  - Gast über einen Rechnungslink (`NamePrompt`): E-Mail, Code – und er tritt als er selbst bei, ohne weitere Frage
+    (schon in der Rechnung: nichts zu tun; sonst mit dem Namen aus dem Konto). Beim Rechnungssteller steht er so nicht
+    doppelt (z.B. Safari, das nach 7 Tagen die Daten gelöscht hat, oder ein fremder Browser).
+  - Rechnungssteller im Profil-Assistenten (`ProfileWizard`, während der Beleg gelesen wird bzw. bei „Ausgabe
+    zuweisen“): nach der Anmeldung entfallen Name und Zahlungsweg, wenn das Konto sie kennt; die neue Rechnung
+    gehört gleich dem Konto. „Zurück“ führt wieder zur Namensfrage.
 - **Einmal nachfragen:** Öffnet jemand die Startseite mit leerem Speicher (neues Handy, neue Home-Bildschirm-App,
   Browser hat die Daten gelöscht – nicht über einen Rechnungslink, da soll der Gast erst zahlen), fragt klicksplit
   einmal „Warst Du schon mal bei klicksplit?“ mit „Anmelden“ / „Ich bin neu hier“. Wer klicksplit zum zweiten Mal nutzt

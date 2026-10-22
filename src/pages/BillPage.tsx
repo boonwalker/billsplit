@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import LiveBadge from "../components/bill/LiveBadge";
 import OwnerBar from "../components/bill/OwnerBar";
 import QrHero from "../components/bill/QrHero";
@@ -111,27 +111,38 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
     return () => window.clearTimeout(timer);
   }, [focus, ready]);
 
+  /** Joins the bill under this name (and keeps the name in the profile). */
+  const joinAs = useCallback(
+    (name: string) => {
+      saveProfile({ ...loadProfile(), name });
+      joining.current = true;
+      api
+        .join(id, name)
+        .then((snap) => {
+          // Opened by scanning the QR code (e.g. with the camera app): in the bill now.
+          if (!snap.isOwner) confirmScan();
+          replace(snap);
+        })
+        .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Beitreten fehlgeschlagen.")))
+        .finally(() => (joining.current = false));
+    },
+    [id, replace],
+  );
+  /** Signed in from the name prompt: once the bill is loaded as the account, join without asking again. */
+  const signedIn = useRef(false);
+
   // Opening the bill (by scanning the QR code) joins it with the profile name.
   useEffect(() => {
     if (!snapshot || snapshot.me || joining.current) return;
     const name = loadProfile().name.trim();
     // In Safari on the iPhone, ask first: whoever continues in the home-screen app would
     // otherwise appear twice in the bill.
-    if (!name || isIosBrowser()) {
+    if (!name || (isIosBrowser() && !signedIn.current)) {
       setAskName(true);
       return;
     }
-    joining.current = true;
-    api
-      .join(id, name)
-      .then((snap) => {
-        // Opened by scanning the QR code (e.g. with the camera app): in the bill now.
-        if (!snap.isOwner) confirmScan();
-        replace(snap);
-      })
-      .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Beitreten fehlgeschlagen.")))
-      .finally(() => (joining.current = false));
-  }, [snapshot, id, replace]);
+    joinAs(name);
+  }, [snapshot, joinAs]);
 
   // Payer, bill with ticking: the people from earlier bills, once a line is long-pressed.
   const wantContacts = Boolean(divisorFor && snapshot?.isOwner);
@@ -485,17 +496,18 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
           initialName={loadProfile().name.trim()}
           extra={inBrowser ? <OpenInApp url={url} carry /> : undefined}
           onSubmit={(name) => {
-            saveProfile({ ...loadProfile(), name });
             setAskName(false);
-            joining.current = true;
-            api
-              .join(id, name)
-              .then((snap) => {
-                if (!snap.isOwner) confirmScan();
-                replace(snap);
-              })
-              .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Beitreten fehlgeschlagen.")))
-              .finally(() => (joining.current = false));
+            joinAs(name);
+          }}
+          onSignedIn={(result, typed) => {
+            setAskName(false);
+            signedIn.current = true;
+            // A device that took on the account's identity loads the bill again as that one (see
+            // useLiveBill) – already in it, or joining with the account's name. Otherwise join now.
+            if (result === "login") return;
+            const name = loadProfile().name.trim() || typed;
+            if (name) joinAs(name);
+            else setAskName(true);
           }}
         />
       )}

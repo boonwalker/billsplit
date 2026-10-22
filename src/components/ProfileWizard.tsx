@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { formatIban, isValidEmail, isValidIban, isValidWero, normalizeIban, normalizePaypalMe } from "../lib/payment";
 import { accountsAvailable, saveProfileEverywhere } from "../lib/account";
-import { t } from "../lib/i18n";
+import { rich, t } from "../lib/i18n";
 import { hasPaymentMethod, loadAccountEmail, loadOwnProfile, markAsked } from "../lib/storage";
 import AccountForm from "./AccountForm";
 import { Wordmark } from "./Logo";
@@ -38,6 +38,11 @@ export default function ProfileWizard({
   const [first] = useState<"name" | "email" | "method">(initial.name.trim() ? (askEmail ? "email" : "method") : "name");
   const [step, setStep] = useState<"name" | "email" | "method" | "details">(first);
   const [switched, setSwitched] = useState(false);
+  /** Signed in (or created the account) along the way: the e-mail step is done. */
+  const [hasAccount, setHasAccount] = useState(false);
+  /** "Schon ein Konto?" on the name step: the e-mail step came first, "Zurück" returns to the name. */
+  const [fromName, setFromName] = useState(false);
+  const emailNext = askEmail && !hasAccount;
   const [name, setName] = useState(initial.name);
   const [method, setMethod] = useState<Method | null>(null);
   const [value, setValue] = useState("");
@@ -81,7 +86,7 @@ export default function ProfileWizard({
             e.preventDefault();
             if (!name.trim()) return;
             saveProfileEverywhere({ ...loadOwnProfile(), name: name.trim() });
-            setStep(askEmail ? "email" : "method");
+            setStep(emailNext ? "email" : "method");
           }}
         >
           <div className="sheet-logo" aria-hidden="true">
@@ -94,6 +99,18 @@ export default function ProfileWizard({
           <button className="btn btn-primary btn-large" disabled={!name.trim()}>
             {t("Weiter")}
           </button>
+          {emailNext && (
+            <button
+              type="button"
+              className="btn btn-ghost signin-link"
+              onClick={() => {
+                setFromName(true);
+                setStep("email");
+              }}
+            >
+              {rich(t("Schon ein Konto? <b>Anmelden</b>"))}
+            </button>
+          )}
         </form>
       ) : step === "email" ? (
         <div className="sheet wizard" key="email" role="dialog" aria-label={t("Deine E-Mail-Adresse")}>
@@ -102,11 +119,20 @@ export default function ProfileWizard({
             onDone={(result) => {
               const login = result === "login";
               if (login) setSwitched(true);
+              setHasAccount(true);
+              const profile = loadOwnProfile();
+              // Signed in before giving a name: the account's name, or the question once more.
+              if (!profile.name.trim()) {
+                setStep("name");
+                return;
+              }
+              setName(profile.name);
               // An existing account may already know how its owner gets paid.
-              if (hasPaymentMethod(loadOwnProfile())) onDone(true, login);
+              if (hasPaymentMethod(profile)) onDone(true, login);
               else setStep("method");
             }}
-            onSkip={() => setStep("method")}
+            onSkip={() => setStep(fromName ? "name" : "method")}
+            skipLabel={fromName ? t("Zurück") : undefined}
           />
         </div>
       ) : step === "method" ? (

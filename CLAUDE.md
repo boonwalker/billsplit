@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 202 Tests, alle grün; 44 Klick-Tests).
+1. `npm run typecheck` und `npm test` (aktuell 202 Tests, alle grün; 46 Klick-Tests).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -243,7 +243,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   klicksplit:“, Code ohne Leerzeichen in Mint-Box; Schluss nach 3 Leerzeilen: „klicksplit •“, darunter groß „Einer
   zahlt.“ / „Alle splitten.“ (noch auf dem Bon, „Alle splitten.“ mint, kein dunkler Kasten). Willkommensmail „Willkommen bei klicksplit!“ nach Kontoanlage, mit Bon „So einfach geht's“ (Animation Durchstreichen/„/2“, Zeilen antippbar in Apple Mail; `demoReceipt` in `server/mail.ts`).
 - Konto: „Deine E-Mail-Adresse“, „Code senden“, „Code eingeben“, „Überspringen“, Startseite „Schon ein Konto?
-  Anmelden“, Profil ganz oben „Konto“: „● Angemeldet“ + Adresse bzw. „Nicht angemeldet“ + „Anmelden oder Konto
+  Anmelden“ – ebenso unter jedem „Wie heißt Du?“ (Beitreten und Profil-Assistent), solange nicht angemeldet; danach
+  ohne weitere Frage weiter (`signedIn` in `BillPage`), Profil ganz oben „Konto“: „● Angemeldet“ + Adresse bzw. „Nicht angemeldet“ + „Anmelden oder Konto
   anlegen“, „Abmelden“, „Konto löschen“; grüner Haken am Profil-Knopf der Startseite; einmalige Fenster „Warst Du schon mal bei
   klicksplit?“ („Anmelden“ / „Ich bin neu hier“, leerer Speicher auf der Startseite) und „Sichere Deine Rechnungen“
   („Konto anlegen“ / „Später“, zweite Nutzung ohne Konto mit Rechnungen)
