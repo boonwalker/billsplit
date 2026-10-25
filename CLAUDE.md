@@ -13,7 +13,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ## Zusammenarbeit (verbindlich)
 
-- **Sprache:** Antworten auf Deutsch, den Auftraggeber mit **„Sie“** ansprechen. Knapp, mit Ergebnis zuerst.
+- **Sprache:** Antworten auf Deutsch, den Auftraggeber **duzen** (ausdrücklich gewünscht, 25.10.2026). Knapp, mit Ergebnis zuerst.
 - **Name:** In allen App-Texten heißt das Produkt **„klicksplit“** (seit 11.10.2026, Logo B „Beleg mit Tipp“: Beleg
   mit Haken und Tipp-Ring, `src/components/Logo.tsx`, `public/icon.svg`, PNG-Icons mit `e2e/icons.mjs`). Repo, Ordner
   und interne Schlüssel (`billsplit.*`, `x-billsplit-key`, Ereignisnamen, Backup-Dateien) bleiben „billsplit“ – nie
@@ -68,7 +68,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 **Railway-Vorfall 21.10.2026:** Angreifer suchten in Railway-Variablen nach KI-/Cloud-Schlüsseln; Deploys waren
 mehrere Tage pausiert („Limited Access“), Pushes aus dieser Zeit wurden nicht nachgeholt. Danach von Hand deployt
 (Railway: Cmd+K → „Deploy Latest Commit“; ggf. GitHub in den Account Settings neu verbinden). `ANTHROPIC_API_KEY`,
-`RESEND_API_KEY` und `ADMIN_TOKEN` am 25.10.2026 ausgetauscht. Der Workspace läuft noch im Testzugang (Trial, Ende
+`RESEND_API_KEY` und `ADMIN_TOKEN` am 25.10.2026 ausgetauscht, Ausgabenlimit in der Anthropic-Konsole gesetzt. Der Workspace läuft noch im Testzugang (Trial, Ende
 etwa 9.11.2026) – vorher auf Hobby wechseln, sonst schaltet Railway ab.
 
 Render wird nicht mehr benutzt (zu teuer, `render.yaml` ist entfernt). Der Auftraggeber nutzt die App vor
@@ -258,7 +258,6 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 ## Offene Ideen / Backlog (noch nicht beauftragt)
 
 - Railway vor Ende des Testzugangs (etwa 9.11.2026) auf Hobby umstellen (Aufgabe des Auftraggebers).
-- Ausgabenlimit in der Anthropic-Konsole setzen (empfohlen, Aufgabe des Auftraggebers).
 
 - Railway-Variablen `OPERATOR_NAME`, `OPERATOR_ADDRESS`, `OPERATOR_EMAIL` setzen (Impressum/Datenschutz zeigen sonst
   „Angaben zum Betreiber folgen.“).
