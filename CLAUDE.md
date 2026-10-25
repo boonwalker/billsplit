@@ -65,6 +65,12 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 | Railway-Variablen | `ANTHROPIC_API_KEY` gesetzt; `RECEIPT_LIMIT_PER_DAY=20` als Kostenbremse; `PUBLIC_URL=https://www.klicksplit.de`; **kein `DATA_DIR`** (Volume `billsplit-volume` auf `/data`, seit 16.10.2026 geprüft); `ADMIN_TOKEN` gesetzt (nie weitergeben) |
 | Domain | `klicksplit.de` registriert bei INWX, **DNS seit 17.10.2026 bei Cloudflare** (Free): CNAME `www` → Railway (grau), Resend-Einträge (grau), `@` → `192.0.2.1` orange mit Redirect Rule `klicksplit.de` → `https://www.klicksplit.de` (301). DNS-Änderungen nur noch bei Cloudflare; Web-Weiterleitung von INWX nie benutzen. Details im README „Umzug auf eine neue Adresse“ |
 
+**Railway-Vorfall 21.10.2026:** Angreifer suchten in Railway-Variablen nach KI-/Cloud-Schlüsseln; Deploys waren
+mehrere Tage pausiert („Limited Access“), Pushes aus dieser Zeit wurden nicht nachgeholt. Danach von Hand deployt
+(Railway: Cmd+K → „Deploy Latest Commit“; ggf. GitHub in den Account Settings neu verbinden). `ANTHROPIC_API_KEY`,
+`RESEND_API_KEY` und `ADMIN_TOKEN` am 25.10.2026 ausgetauscht. Der Workspace läuft noch im Testzugang (Trial, Ende
+etwa 9.11.2026) – vorher auf Hobby wechseln, sonst schaltet Railway ab.
+
 Render wird nicht mehr benutzt (zu teuer, `render.yaml` ist entfernt). Der Auftraggeber nutzt die App vor
 allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenheiten haben Vorrang.
 
@@ -250,6 +256,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   („Konto anlegen“ / „Später“, zweite Nutzung ohne Konto mit Rechnungen)
 
 ## Offene Ideen / Backlog (noch nicht beauftragt)
+
+- Railway vor Ende des Testzugangs (etwa 9.11.2026) auf Hobby umstellen (Aufgabe des Auftraggebers).
+- Ausgabenlimit in der Anthropic-Konsole setzen (empfohlen, Aufgabe des Auftraggebers).
 
 - Railway-Variablen `OPERATOR_NAME`, `OPERATOR_ADDRESS`, `OPERATOR_EMAIL` setzen (Impressum/Datenschutz zeigen sonst
   „Angaben zum Betreiber folgen.“).
