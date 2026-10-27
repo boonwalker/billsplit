@@ -272,3 +272,48 @@
   font-weight: 600;
   color: var(--owed);
 }
+
+/* "Stimmt nicht?": a line shared after I paid – the other guest's part can be tapped away. */
+.paybar-refund-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.paybar .btn-contest {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  background: transparent;
+  color: var(--owed);
+  border: 1.5px solid var(--owed);
+}
+
+.paybar-contest-hint {
+  font-weight: 700;
+  opacity: 1;
+}
+
+.claim-btn.contest {
+  border-style: solid;
+  border-color: var(--owed);
+  background: color-mix(in srgb, var(--owed) 12%, transparent);
+  animation: contest-pulse 1.4s ease-in-out infinite;
+}
+
+.claim-btn.contest .claim-x {
+  margin-left: 4px;
+  font-weight: 700;
+  color: var(--owed);
+}
+
+@keyframes contest-pulse {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--owed) 30%, transparent);
+  }
+}
+
+.rline-hint.contest {
+  color: var(--owed);
+  font-weight: 700;
+}

@@ -1,6 +1,21 @@
 /** English and Spanish texts (keyed by the German original), see src/i18n/index.ts. */
 export default {
   en: {
+    // "Stimmt nicht?" – a line shared after paying
+    "{by} hat „{items}“ nachträglich mit Dir geteilt – darum schuldet Dir {name} jetzt wieder {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!":
+      "{by} shared “{items}” with you afterwards – so {name} now owes you {amount} back. It's noted in the dashboard and won't be forgotten!",
+    "der Rechnungssteller": "the payer",
+    "{name} hat die Rechnung nachträglich geändert und schuldet Dir jetzt {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!":
+      "{name} changed the bill afterwards and now owes you {amount} back. It's noted in the dashboard and won't be forgotten!",
+    "{by} hat die Rechnung nachträglich geändert – darum schuldet Dir {name} jetzt {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!":
+      "{by} changed the bill afterwards – so {name} now owes you {amount} back. It's noted in the dashboard and won't be forgotten!",
+    "Tippe in der Rechnung bei „{items}“ auf {by}, um den Anteil wegzuklicken.": "In the bill, tap {by} at “{items}” to remove that part.",
+    "Stimmt nicht?": "Not right?",
+    "Anteil von {name} wegklicken": "Remove {name}'s part",
+    "Hattest Du „{item}“ allein? Tippe auf {name}, um den Anteil wegzuklicken.": "Did you have “{item}” on your own? Tap {name} to remove their part.",
+    "Das lässt sich hier nicht mehr zurückholen.": "This can't be taken back here any more.",
+    "{name} hat „{item}“ allein bezahlt": "{name} paid for “{item}” alone",
+    "Dein Anteil daran ist wieder entfernt. Stimmt das nicht, sprecht kurz miteinander.": "Your part of it has been removed again. If that's not right, have a quick word with each other.",
     "von Dir zugeordnet · {amount} offen": "assigned by you · {amount} open",
     "Alle Währungen in {currency} umgerechnet – mit den Referenzkursen der Europäischen Zentralbank vom {date}.": "All currencies converted into {currency} – using the European Central Bank's reference rates of {date}.",
     "Ausgleichen in {currency}": "Settle in {currency}",
@@ -248,6 +263,21 @@ export default {
     "Unbekannt": "Unknown",
   } as Record<string, string>,
   es: {
+    // "Stimmt nicht?" – a line shared after paying
+    "{by} hat „{items}“ nachträglich mit Dir geteilt – darum schuldet Dir {name} jetzt wieder {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!":
+      "{by} compartió «{items}» contigo después; por eso {name} te debe ahora {amount}. Queda anotado en el panel y no se olvidará.",
+    "der Rechnungssteller": "quien pagó",
+    "{name} hat die Rechnung nachträglich geändert und schuldet Dir jetzt {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!":
+      "{name} cambió la cuenta después y ahora te debe {amount}. Queda anotado en el panel y no se olvidará.",
+    "{by} hat die Rechnung nachträglich geändert – darum schuldet Dir {name} jetzt {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!":
+      "{by} cambió la cuenta después; por eso {name} te debe ahora {amount}. Queda anotado en el panel y no se olvidará.",
+    "Tippe in der Rechnung bei „{items}“ auf {by}, um den Anteil wegzuklicken.": "En la cuenta, toca {by} en «{items}» para quitar esa parte.",
+    "Stimmt nicht?": "¿No es correcto?",
+    "Anteil von {name} wegklicken": "Quitar la parte de {name}",
+    "Hattest Du „{item}“ allein? Tippe auf {name}, um den Anteil wegzuklicken.": "¿«{item}» era solo tuyo? Toca {name} para quitar su parte.",
+    "Das lässt sich hier nicht mehr zurückholen.": "Esto ya no se puede deshacer aquí.",
+    "{name} hat „{item}“ allein bezahlt": "{name} pagó «{item}» por su cuenta",
+    "Dein Anteil daran ist wieder entfernt. Stimmt das nicht, sprecht kurz miteinander.": "Tu parte se ha quitado. Si no es correcto, hablad un momento.",
     "von Dir zugeordnet · {amount} offen": "asignado por ti · {amount} pendiente",
     "Alle Währungen in {currency} umgerechnet – mit den Referenzkursen der Europäischen Zentralbank vom {date}.": "Todas las monedas convertidas a {currency}, con los tipos de referencia del Banco Central Europeo del {date}.",
     "Ausgleichen in {currency}": "Liquidar en {currency}",

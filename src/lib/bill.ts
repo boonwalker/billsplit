@@ -285,6 +285,19 @@ export interface NetworkEdge {
   payment: PaymentInfo;
 }
 
+/**
+ * Someone made a friend's share smaller after the friend had paid. "shared": another guest ticked
+ * units the friend had (the friend can take them back: "Stimmt nicht?") · "changed": anything else
+ * (the payer edited the bill or gave a line to someone).
+ */
+export interface ShareChange {
+  at: string;
+  byId: string;
+  byName: string;
+  items: { id: string; name: string }[];
+  kind: "shared" | "changed";
+}
+
 export interface BillSnapshot {
   id: string;
   createdAt: string;
@@ -304,6 +317,8 @@ export interface BillSnapshot {
   myCredit?: ShareCredit;
   /** Paid more than my share is now (the payer changed the bill): what the payer owes me back. */
   myRefund?: Cents;
+  /** What made my share smaller after I had paid (shown with myRefund). */
+  myShareChange?: ShareChange;
   /** The photo or screenshot the bill was read from is stored and can be viewed. */
   hasReceiptImage?: boolean;
   /** How many people of this bill have the app open right now (anywhere in the app). */

@@ -7,6 +7,7 @@ import {
   participantShare,
   sanitizeClaims,
   sanitizeSplits,
+  unitShare,
   type BillData,
   type ClaimsInput,
   type Contact,
@@ -16,6 +17,7 @@ import {
   type MyBill,
   type NetworkEdge,
   type PublicParticipant,
+  type ShareChange,
   type ShareCredit,
   type Transfer,
   type TransferAllocation,
@@ -67,6 +69,8 @@ export interface StoredParticipant {
   remindedAt?: string;
   /** The payer put them in ("Ausgabe zuweisen" → directly to Andy), they did not scan the QR code. */
   assigned?: boolean;
+  /** The last change that made their share smaller after they had paid (see noteShareChanges). */
+  shareChange?: ShareChange;
 }
 
 /** The name of someone whose data was erased (stored data, never translated). */
@@ -373,11 +377,78 @@ export class BillCore {
     const others = Object.entries(bill.participants)
       .filter(([id]) => id !== participantId)
       .map(([, other]) => other.claims);
-    p.claims = sanitizeClaims(claims, bill.data.items, p.claims, others);
+    this.noteShareChanges(bill, participantId, () => {
+      p.claims = sanitizeClaims(claims, bill.data.items, p.claims, others);
+      p.splits = sanitizeSplits(splits ?? p.splits ?? {}, p.claims);
+    });
     // Ticking themselves: a participant of their own now, no longer just assigned by the payer.
     delete p.assigned;
-    p.splits = sanitizeSplits(splits ?? p.splits ?? {}, p.claims);
     this.changed(billId);
+  }
+
+  /**
+   * Runs a change and notes, for every friend who had already paid, when it made their share
+   * smaller: who did it and which lines (the friend's bill says so, the payer owes them the
+   * difference). Another guest ticking units the friend had is "shared" – the friend can take
+   * those back (contestShare); everything else is "changed".
+   */
+  private noteShareChanges(bill: StoredBill, actorId: string, change: () => void): void {
+    const watched = Object.keys(bill.participants).filter((id) => id !== actorId && id !== bill.ownerId);
+    const unitsOf = (id: string) => {
+      const people = this.publicParticipants(bill);
+      return new Map(bill.data.items.map((item) => [item.id, unitShare(item, people, id)]));
+    };
+    const before = new Map(watched.map((id) => [id, { refund: this.refundOf(bill, id), units: unitsOf(id) }]));
+    change();
+    for (const id of watched) {
+      const was = before.get(id)!;
+      const friend = bill.participants[id];
+      if (!friend || this.refundOf(bill, id) <= was.refund) continue;
+      const now = unitsOf(id);
+      const items = bill.data.items.filter((item) => (now.get(item.id) ?? 0) < (was.units.get(item.id) ?? 0) - 1e-9);
+      const actor = bill.participants[actorId];
+      const shared =
+        actorId !== bill.ownerId &&
+        items.length > 0 &&
+        items.every((item) => (actor?.claims[item.id] ?? []).some((slot) => (friend.claims[item.id] ?? []).includes(slot)));
+      friend.shareChange = {
+        at: new Date().toISOString(),
+        byId: actorId,
+        byName: actor?.name ?? "",
+        items: items.map((item) => ({ id: item.id, name: item.name })),
+        kind: shared ? "shared" : "changed",
+      };
+    }
+  }
+
+  /**
+   * "Stimmt nicht?": a friend who had paid takes back the units another guest ticked afterwards
+   * (only what that guest shares with them in that line, only after such a change).
+   */
+  contestShare(billId: string, viewerId: string, otherId: string, itemId: string): void {
+    const bill = this.get(billId);
+    const p = this.participant(bill, viewerId);
+    const change = p.shareChange;
+    if (!change || change.kind !== "shared" || change.byId !== otherId || !change.items.some((i) => i.id === itemId)) {
+      throw new BillError("Das lässt sich hier nicht mehr zurückholen.", 409);
+    }
+    const other = this.participant(bill, otherId);
+    const mine = p.claims[itemId] ?? [];
+    this.noteShareChanges(bill, viewerId, () => {
+      const keep = (other.claims[itemId] ?? []).filter((slot) => !mine.includes(slot));
+      if (keep.length) other.claims[itemId] = keep;
+      else delete other.claims[itemId];
+      other.splits = sanitizeSplits(other.splits ?? {}, other.claims);
+    });
+    change.items = change.items.filter((i) => i.id !== itemId);
+    if (!change.items.length) delete p.shareChange;
+    this.changed(billId);
+    const item = bill.data.items.find((i) => i.id === itemId);
+    this.notify(otherId, {
+      title: msg("{name} hat „{item}“ allein bezahlt", { name: p.name, item: item?.name ?? "" }),
+      body: msg("Dein Anteil daran ist wieder entfernt. Stimmt das nicht, sprecht kurz miteinander."),
+      path: `/b/${billId}`,
+    });
   }
 
   /** People the viewer shares bills with – most bills, then most recent first (for "Ausgabe zuweisen"). */
@@ -420,7 +491,9 @@ export class BillCore {
       const others = Object.entries(bill.participants)
         .filter(([pid]) => pid !== id)
         .map(([, p]) => p.claims);
-      bill.participants[id].claims = sanitizeClaims(claims, bill.data.items, bill.participants[id].claims, others);
+      this.noteShareChanges(bill, requesterId, () => {
+        bill.participants[id].claims = sanitizeClaims(claims, bill.data.items, bill.participants[id].claims, others);
+      });
       // Taken back before anything happened: they leave the bill again, as if never assigned.
       if (this.untouchedAssignee(billId, id)) {
         delete bill.participants[id];
@@ -511,17 +584,19 @@ export class BillCore {
   updateData(billId: string, requesterId: string, data: BillData): void {
     const bill = this.get(billId);
     this.assertOwner(billId, requesterId);
-    bill.data = data;
-    // When a quantity was lowered, the units taken first are kept.
-    const participants = Object.values(bill.participants);
-    const compacted = compactClaims(
-      participants.map((p) => p.claims),
-      data.items,
-      participants.map((p) => p.splits ?? {}),
-    );
-    participants.forEach((p, i) => {
-      p.claims = compacted.claims[i];
-      p.splits = compacted.splits[i];
+    this.noteShareChanges(bill, requesterId, () => {
+      bill.data = data;
+      // When a quantity was lowered, the units taken first are kept.
+      const participants = Object.values(bill.participants);
+      const compacted = compactClaims(
+        participants.map((p) => p.claims),
+        data.items,
+        participants.map((p) => p.splits ?? {}),
+      );
+      participants.forEach((p, i) => {
+        p.claims = compacted.claims[i];
+        p.splits = compacted.splits[i];
+      });
     });
     this.changed(billId);
   }
@@ -897,6 +972,7 @@ export class BillCore {
       if (credit.notes.length) snap.myCredit = credit;
       const refund = this.refundOf(bill, me);
       if (refund > 0) snap.myRefund = refund;
+      if (refund > 0 && p.shareChange) snap.myShareChange = p.shareChange;
     }
     if (isOwner) {
       snap.debtors = Object.entries(bill.participants)

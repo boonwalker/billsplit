@@ -21,15 +21,20 @@ interface Props {
   onHeight?: (px: number) => void;
   /** The page below: strokes on the bar scroll it (see useScrollThrough). */
   scroller?: RefObject<HTMLDivElement | null>;
+  /** "Stimmt nicht?": another guest shared a line I had paid for afterwards – show me where to take it back. */
+  onContest?: () => void;
+  /** … and the receipt now shows where (the hint stays here until it is done). */
+  contesting?: boolean;
 }
 
 /** Sticky bottom bar for friends: their individual sum and the pay button. */
-export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, onHeight, scroller }: Props) {
+export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, onHeight, scroller, onContest, contesting }: Props) {
   const bar = useRef<HTMLDivElement>(null);
   // A stroke that starts on the bar scrolls the receipt above it.
   const noScroller = useRef<HTMLDivElement>(null);
   useScrollThrough(bar, scroller ?? noScroller);
   const oneLine = useOneLine();
+  const change = snapshot.myShareChange;
   useLayoutEffect(() => {
     const el = bar.current;
     if (!el || !onHeight) return;
@@ -142,14 +147,48 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
           <p className="paybar-note paybar-copied">✓ {t("{name} hat Deinen Anteil als erhalten markiert.", { name: ownerName || t("Der Rechnungssteller") })}</p>
         )}
 
-        {/* The payer changed the bill after I paid: the difference is mine (it counts in the dashboard). */}
+        {/* The bill changed after I paid: the difference is mine (it counts in the dashboard) – and what changed. */}
         {snapshot.myRefund ? (
-          <p className="paybar-note paybar-refund">
-            {t("Du hast mehr bezahlt, als Dein Anteil jetzt beträgt – {name} schuldet Dir {amount}.", {
-              name: ownerName || t("Der Rechnungssteller"),
-              amount: formatMoney(snapshot.myRefund, data.currency),
-            })}
-          </p>
+          <div className="paybar-refund-box">
+            <p className="paybar-note paybar-refund">
+              {!change
+                ? t("Du hast mehr bezahlt, als Dein Anteil jetzt beträgt – {name} schuldet Dir {amount}.", {
+                    name: ownerName || t("Der Rechnungssteller"),
+                    amount: formatMoney(snapshot.myRefund, data.currency),
+                  })
+                : change.kind === "shared"
+                  ? t("{by} hat „{items}“ nachträglich mit Dir geteilt – darum schuldet Dir {name} jetzt wieder {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!", {
+                      by: change.byName,
+                      items: change.items.map((i) => i.name).join("“, „"),
+                      name: ownerName || t("der Rechnungssteller"),
+                      amount: formatMoney(snapshot.myRefund, data.currency),
+                    })
+                  : participants.some((p) => p.id === change.byId && p.isOwner)
+                    ? t("{name} hat die Rechnung nachträglich geändert und schuldet Dir jetzt {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!", {
+                        name: change.byName,
+                        amount: formatMoney(snapshot.myRefund, data.currency),
+                      })
+                    : t("{by} hat die Rechnung nachträglich geändert – darum schuldet Dir {name} jetzt {amount} zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!", {
+                        by: change.byName,
+                        name: ownerName || t("der Rechnungssteller"),
+                        amount: formatMoney(snapshot.myRefund, data.currency),
+                      })}
+            </p>
+            {onContest &&
+              change?.kind === "shared" &&
+              (contesting ? (
+                <p className="paybar-note paybar-contest-hint">
+                  {t("Tippe in der Rechnung bei „{items}“ auf {by}, um den Anteil wegzuklicken.", {
+                    items: change.items.map((i) => i.name).join("“, „"),
+                    by: change.byName,
+                  })}
+                </p>
+              ) : (
+                <button type="button" className="btn btn-ghost btn-contest" onClick={onContest}>
+                  {t("Stimmt nicht?")}
+                </button>
+              ))}
+          </div>
         ) : null}
 
         {snapshot.myCredit?.notes.map(tMsg).map((note) => (

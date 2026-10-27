@@ -359,10 +359,23 @@ Streicht der Rechnungssteller eine Position, nachdem jemand schon bezahlt hat (o
 Anteil kleiner wird), fragt die App vorher: „Anna hat schon 10,00 € bezahlt – danach wären es nur 6,00 €. Die 4,00 €
 werden Anna gutgeschrieben …“ mit „Trotzdem ändern“ / „Abbrechen“ (auf der Rechnung und unter „Positionen
 bearbeiten“). Die Differenz zählt dann als Schuld des Rechnungsstellers: in der Rechnung („Du schuldest Anna 4,00 €
-zurück“ bzw. bei Anna „Niklas schuldet Dir 4,00 €“), im Dashboard und im Gesamtausgleich, wo sie mit anderen offenen
+zurück“), im Dashboard und im Gesamtausgleich, wo sie mit anderen offenen
 Beträgen verrechnet wird (`BillCore.refundOf`, Rückzahlung als Ausgleichszahlung vom Rechnungssteller an den Gast).
 Hakt der Rechnungssteller „erhalten“ ab, ohne dass vorher jemand auf Bezahlen getippt hat, merkt sich die App den
 damals offenen Betrag (`receivedAmount`), damit eine spätere Änderung erkennbar bleibt.
+
+Der Gast sieht in der Bezahl-Leiste, **was** sich geändert hat (`ShareChange`, gemerkt in `BillCore.noteShareChanges`,
+sobald sein Guthaben durch eine Änderung eines anderen steigt):
+
+- Hat ein anderer Gast seine Position mit abgehakt: „Andy hat „Kakao mit Sahne“ nachträglich mit Dir geteilt – darum
+  schuldet Dir Niklas jetzt wieder 2,05 € zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!“
+- Hat der Rechnungssteller geändert: „Niklas hat die Rechnung nachträglich geändert und schuldet Dir jetzt 4,00 € zurück. …“
+
+**„Stimmt nicht?“** (nur beim Mitteilen durch einen anderen Gast): Ein Tipp zeigt „Tippe in der Rechnung bei „Kakao mit
+Sahne“ auf Andy, um den Anteil wegzuklicken.“ und scrollt zur Zeile; dort ist Andys Name orange umrandet mit ✕ („Hattest
+Du „Kakao mit Sahne“ allein? …“). Antippen entfernt nur Andys Stücke in dieser Zeile, die sich mit den eigenen
+überschneiden (`BillCore.contestShare`, `POST /api/bills/:id/contest`), das Guthaben verschwindet, und Andy bekommt die
+Mitteilung „Anna hat „Kakao mit Sahne“ allein bezahlt – Dein Anteil daran ist wieder entfernt.“
 
 ### Benachrichtigungen
 

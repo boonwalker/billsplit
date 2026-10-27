@@ -47,6 +47,16 @@ interface Props {
   /** … the same for a fee and for the tip. */
   onToggleFee?: (feeId: string) => void;
   onToggleTip?: () => void;
+  /** "Stimmt nicht?": in these lines the other guest's name can be tapped away (see BillCore.contestShare). */
+  contest?: Contest;
+}
+
+/** Lines someone shared with me after I had paid, and how to take them back. */
+export interface Contest {
+  personId: string;
+  personName: string;
+  itemIds: string[];
+  onRemove: (itemId: string) => void;
 }
 
 export function formatDate(iso: string): string {
@@ -97,6 +107,7 @@ function ReceiptLine({
   each,
   people = 1,
   forNames,
+  contest,
 }: {
   item: BillItem;
   index: number;
@@ -115,6 +126,8 @@ function ReceiptLine({
   onLongPress?: () => void;
   /** Payer: a tap right on the "/2" takes it back (instead of crossing the line out). */
   onResetDivisor?: () => void;
+  /** "Stimmt nicht?" for this line: the other guest's name taps away their part. */
+  contest?: Contest;
 }) {
   const holders = slotHolders(item.id, participants);
   const mine = me ? participants.find((p) => p.id === me) : undefined;
@@ -371,6 +384,23 @@ function ReceiptLine({
               </>
             );
             const clickable = canEdit && (!isMe || mySplits.length > 0 || soloSlot !== undefined);
+            if (contest && p.id === contest.personId) {
+              return (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="claim-btn contest"
+                    onClick={() => contest.onRemove(item.id)}
+                    aria-label={t("Anteil von {name} wegklicken", { name: p.name })}
+                  >
+                    {label}
+                    <span className="claim-x" aria-hidden="true">
+                      ✕
+                    </span>
+                  </button>
+                </li>
+              );
+            }
             return (
               <li key={p.id} className={isMe ? "me" : undefined}>
                 {clickable ? (
@@ -401,6 +431,11 @@ function ReceiptLine({
           {iAmWaiting && <li className="shared-note">{t("wartest auf jemanden")}</li>}
           {someoneElseWaiting && <li className="shared-note">{t("wartet auf jemanden")}</li>}
         </ul>
+      )}
+      {contest && (
+        <p className="rline-hint contest">
+          {t("Hattest Du „{item}“ allein? Tippe auf {name}, um den Anteil wegzuklicken.", { item: item.name, name: contest.personName })}
+        </p>
       )}
       {canEdit && myWaiting && (
         <p className="rline-hint">
@@ -551,7 +586,7 @@ function useTapDemo(billId: string, enabled: boolean, canHold: boolean, list: Re
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onEditDivisor, onResetDivisor, onToggleFee, onToggleTip }: Props) {
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onEditDivisor, onResetDivisor, onToggleFee, onToggleTip, contest }: Props) {
   const { data, participants, me, ownerName } = snapshot;
   const billed = billedItems(data);
   const sub = subtotal(billed);
@@ -621,6 +656,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 each={perPerson(billedItem(item).total)}
                 people={people}
                 forNames={equal ? lineFor(item, participants).map((id) => (id === me ? t("Du") : (participants.find((p) => p.id === id)?.name ?? "?"))) : undefined}
+                contest={contest?.itemIds.includes(item.id) ? contest : undefined}
               />
               </Fragment>
             ))}

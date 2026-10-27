@@ -12,7 +12,7 @@ import NamePrompt from "../components/NamePrompt";
 import OpenInApp from "../components/OpenInApp";
 import OwnerPanel, { EqualSplitToggle, ownerStatus, ownerSummary, TipSplit } from "../components/OwnerPanel";
 import PayBar from "../components/PayBar";
-import Receipt from "../components/Receipt";
+import Receipt, { type Contest } from "../components/Receipt";
 import { api } from "../lib/api";
 import { guestStatus } from "../lib/balances";
 import { billUrl, lineFor, sharedTotal, type BillData, type Contact, type Debtor } from "../lib/bill";
@@ -43,6 +43,8 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   const { snapshot, error, notFound, deleted, live, setMyClaims, flushClaims, replace } = useLiveBill(id);
   const [askName, setAskName] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** "Stimmt nicht?" was tapped: the receipt shows where the other guest's part can be tapped away. */
+  const [contesting, setContesting] = useState(false);
   /** Scrolled to the very end, where the owner panel shows what the bar at the bottom says. */
   const [atEnd, setAtEnd] = useState(false);
   /** Payer: the line whose settings are open (after holding it). */
@@ -309,6 +311,43 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Konnte Zahlung nicht vermerken.")));
   }
 
+  // Someone shared lines I had already paid for: where they still share my units, I can take them back.
+  const change = snap.myShareChange?.kind === "shared" ? snap.myShareChange : undefined;
+  const myClaims = snap.participants.find((p) => p.id === snap.me)?.claims ?? {};
+  const sharer = change && snap.participants.find((p) => p.id === change.byId);
+  const contestItems = (change?.items ?? [])
+    .map((i) => i.id)
+    .filter((itemId) => (sharer?.claims[itemId] ?? []).some((slot) => (myClaims[itemId] ?? []).includes(slot)));
+  const contest: Contest | undefined =
+    contesting && change && contestItems.length
+      ? {
+          personId: change.byId,
+          personName: change.byName,
+          itemIds: contestItems,
+          onRemove: (itemId) => {
+            api
+              .contestShare(id, change.byId, itemId)
+              .then((next) => {
+                replace(next);
+                if (contestItems.length <= 1) setContesting(false);
+              })
+              .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Das hat nicht geklappt.")));
+          },
+        }
+      : undefined;
+  function startContest() {
+    setContesting(true);
+    // To the first of those lines, centred in what the pay bar leaves visible.
+    window.setTimeout(() => {
+      const box = scroller.current;
+      const line = box?.querySelector<HTMLElement>(`li[data-item="${CSS.escape(contestItems[0])}"]`);
+      if (!box || !line) return;
+      const visible = box.clientHeight - (payBarHeight ?? 0);
+      const top = line.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+      box.scrollTo({ top: Math.max(0, top - (visible - line.offsetHeight) / 2), behavior: scrollBehavior() });
+    }, 50);
+  }
+
   /** No payment details in the bill: paid in person – the amount is noted first, then marked as paid. */
   function paidInPerson() {
     void flushClaims()
@@ -450,6 +489,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
             onEditDivisor={snap.isOwner ? setDivisorFor : undefined}
             onResetDivisor={snap.isOwner ? (itemId) => applyDivisor(itemId, 1) : undefined}
             onToggleTip={snap.isOwner && equal ? toggleTip : undefined}
+            contest={contest}
           />
         </div>
 
@@ -477,7 +517,16 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
         />
       )}
 
-      {!snap.isOwner && snap.me && <PayBar snapshot={snap} onPay={pay} onMarkPaid={markPaid} onPaidInPerson={paidInPerson} onHeight={setPayBarHeight} scroller={scroller} />}
+      {!snap.isOwner && snap.me && <PayBar
+          snapshot={snap}
+          onPay={pay}
+          onMarkPaid={markPaid}
+          onPaidInPerson={paidInPerson}
+          onHeight={setPayBarHeight}
+          scroller={scroller}
+          onContest={contestItems.length ? startContest : undefined}
+          contesting={Boolean(contest)}
+        />}
 
       {divisorFor && snap.data.items.some((i) => i.id === divisorFor) && (
         <DivisorSheet
