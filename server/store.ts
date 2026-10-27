@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import type { BillData } from "../src/lib/bill.ts";
 import { BillCore, BillError, type AuditEvent, type Notice, type StoredBill } from "../src/lib/billCore.ts";
-import { dailyBackup, listBackups, openPersistence, readBackupBill, type Persistence } from "./persistence.ts";
+import { dailyBackup, listBackups, openPersistence, readBackupBill, readBackupBills, type Persistence } from "./persistence.ts";
 
 export { BillError as StoreError };
 
@@ -161,6 +161,37 @@ export class BillStore extends BillCore {
   /** The daily backups, newest first (admin page: restoring a bill). */
   async backups(): Promise<{ day: string; file: string }[]> {
     return this.file ? listBackups(path.join(path.dirname(this.file), "backups")) : [];
+  }
+
+  /** Bills deleted on the admin page, newest first – with their title from the newest backup that still has them. */
+  async deletedBills(): Promise<{ id: string; at: string; title: string | null }[]> {
+    const list = [...this.deleted].map(([id, at]) => ({ id, at, title: null as string | null })).sort((a, b) => b.at.localeCompare(a.at));
+    let open = list.map((d) => d.id);
+    for (const { file } of await this.backups()) {
+      if (!open.length) break;
+      const found = await readBackupBills(file, open).catch(() => new Map<string, StoredBill>());
+      for (const d of list) if (found.has(d.id)) d.title = found.get(d.id)!.data.title || "";
+      open = open.filter((id) => !found.has(id));
+    }
+    return list;
+  }
+
+  /**
+   * Puts a bill back as it was in a backup – also one deleted on the admin page: it leaves the
+   * list of deleted bills, so every app shows it again. Returns everyone to tell.
+   */
+  async restoreFromBackup(saved: StoredBill, day: string): Promise<string[]> {
+    const people = this.restoreBill(saved, day);
+    const bill = this.bills.get(saved.id)!;
+    // A deleted bill's photo is gone for good.
+    const image = this.imagePath(saved.id);
+    if (bill.receiptImage && (!image || !(await stat(image).then(() => true, () => false)))) delete bill.receiptImage;
+    if (this.deleted.delete(saved.id)) {
+      const file = this.deletedPath();
+      if (file) await writeFile(file, JSON.stringify(Object.fromEntries(this.deleted)));
+    }
+    await this.flush();
+    return people;
   }
 
   /** A bill as it was in the backup of `day`; null when that backup did not have it. */

@@ -187,6 +187,28 @@ export async function listBackups(dir: string): Promise<{ day: string; file: str
     .map((b) => ({ day: b.day, file: path.join(dir, b.name) }));
 }
 
+/** Several bills as they were in a backup file (id → bill; those not in it are missing). */
+export async function readBackupBills(file: string, billIds: string[]): Promise<Map<string, StoredBill>> {
+  const found = new Map<string, StoredBill>();
+  if (file.endsWith(".json")) {
+    for (const b of (await readJsonFile(file))?.bills ?? []) if (billIds.includes(b.id)) found.set(b.id, b);
+    return found;
+  }
+  const lib = await loadSqlite();
+  if (!lib || !billIds.length) return found;
+  const db = new lib.DatabaseSync(file, { readOnly: true });
+  try {
+    const get = db.prepare("SELECT data FROM bills WHERE id = ?");
+    for (const id of billIds) {
+      const row = get.get(id) as { data: string } | undefined;
+      if (row) found.set(id, JSON.parse(row.data) as StoredBill);
+    }
+  } finally {
+    db.close();
+  }
+  return found;
+}
+
 /** One bill as it was in a backup file (SQLite opened read-only, or the JSON file); null when it was not in it. */
 export async function readBackupBill(file: string, billId: string): Promise<StoredBill | null> {
   if (file.endsWith(".json")) return (await readJsonFile(file))?.bills.find((b) => b.id === billId) ?? null;

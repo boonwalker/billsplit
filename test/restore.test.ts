@@ -95,3 +95,45 @@ describe("merging identities: never two people who both paid in a bill", () => {
     expect(events.at(-1)).toContain("Nicht zusammengelegt");
   });
 });
+
+describe("admin page: a deleted bill comes back from a backup", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "billsplit-undelete-"));
+  const store = new BillStore(path.join(dir, "bills.json"));
+  let server: Server;
+  let base: string;
+  let id: string;
+
+  beforeAll(async () => {
+    await store.load();
+    const dist = mkdtempSync(path.join(tmpdir(), "billsplit-admin-"));
+    writeFileSync(path.join(dist, "index.html"), "<html><head></head><body></body></html>");
+    id = store.createBill(data, "nik", "Niklas");
+    store.join(id, "anna", "Anna");
+    store.setClaims(id, "anna", { schnitzel: [0] });
+    await store.backup();
+    await store.deleteBill(id);
+    server = createServer(createApp(store, dist, { adminToken: TOKEN }));
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    base = `http://localhost:${(server.address() as AddressInfo).port}`;
+  });
+  afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
+
+  it("is listed with its title from the backup, and its history shows it was deleted", async () => {
+    const admin = await (await fetch(`${base}/api/admin?token=${TOKEN}`)).text();
+    expect(admin).toContain("Gelöschte Rechnungen (1)");
+    expect(admin).toContain("C.C. Kowalski");
+    const page = await (await fetch(`${base}/api/admin/restore?token=${TOKEN}&id=${id}`)).text();
+    expect(page).toContain("Auf der Betriebsseite gelöscht");
+    expect(page).toContain("Diese Fassung wiederherstellen");
+  });
+
+  it("comes back for everyone", async () => {
+    const day = (await store.backups())[0].day;
+    const res = await fetch(`${base}/api/admin/restore`, { method: "POST", body: new URLSearchParams({ token: TOKEN, id, day, confirm: "ja" }), redirect: "manual" });
+    expect(decodeURIComponent(res.headers.get("location")!)).toContain("wieder wie in der Sicherung");
+    expect(store.has(id)).toBe(true);
+    expect(store.wasDeleted(id)).toBe(false);
+    expect(store.myBills("anna").map((b) => b.id)).toContain(id);
+    expect((await store.deletedBills()).length).toBe(0);
+  });
+});

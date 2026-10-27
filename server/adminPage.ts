@@ -31,6 +31,8 @@ export interface AdminInput {
   notice?: string | null;
   /** What changed who is in a bill, newest first (see audit.ts). */
   audit?: AuditEntry[];
+  /** Bills deleted here, newest first (title from the newest backup that has them). */
+  deleted?: { id: string; at: string; title: string | null }[];
   now?: Date;
 }
 
@@ -216,6 +218,12 @@ export function adminPage(input: AdminInput): string {
         ${e.detail ? `<details><summary>Details</summary><pre>${escape(e.detail)}</pre></details>` : ""}</li>`,
     )
     .join("");
+  const deletedRows = (input.deleted ?? [])
+    .map(
+      (d) => `<tr><td>${when(d.at)}</td><td class="left">${d.title === null ? `<span class="muted">nicht mehr in den Sicherungen</span>` : escape(d.title || "Rechnung")}</td><td class="muted">${escape(d.id)}</td>
+        <td class="left">${input.token && d.title !== null ? `<a class="manage-link" href="/api/admin/restore?token=${encodeURIComponent(input.token)}&amp;id=${encodeURIComponent(d.id)}">Verlauf &amp; Wiederherstellen</a>` : ""}</td></tr>`,
+    )
+    .join("");
   const auditRows = (input.audit ?? [])
     .slice(0, 150)
     .map((e) => `<li><time>${escape(when(e.at))}</time> <b>${escape(e.kind)}</b> ${escape(e.text)}</li>`)
@@ -230,7 +238,7 @@ ${STYLE}</head><body>
 <p class="muted">Stand ${escape(when(now.toISOString()))} · Version ${escape(input.version)} · Speicher: ${escape(input.storage)}
 ${input.backupUrl ? ` · <a href="${escape(input.backupUrl)}">Datenbank herunterladen</a>` : ""}</p>
 ${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` : ""}
-<nav><a href="#nutzung">Nutzung</a><a href="#konten">Konten</a><a href="#geraete">Geräte</a><a href="#rechnungen">Rechnungen</a><a href="#ki">Belegerkennung</a><a href="#fehler">Fehler</a><a href="#protokoll">Protokoll</a></nav>
+<nav><a href="#nutzung">Nutzung</a><a href="#konten">Konten</a><a href="#geraete">Geräte</a><a href="#rechnungen">Rechnungen</a><a href="#geloescht">Gelöscht</a><a href="#ki">Belegerkennung</a><a href="#fehler">Fehler</a><a href="#protokoll">Protokoll</a></nav>
 <div class="tiles">
   <div class="tile"><span class="muted">Gerade online</span><b>${int(input.online.size)}</b><small>App offen</small></div>
   <div class="tile"><span class="muted">Aktiv (24 h)</span><b>${int(input.active.day)}</b><small>7 Tage: ${int(input.active.week)} · 30 Tage: ${int(input.active.month)}</small></div>
@@ -262,6 +270,11 @@ ${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` :
 <h2 id="rechnungen">Neueste Rechnungen (${int(input.bills.length)} insgesamt)</h2>
 <div class="scroll"><table><thead><tr><th class="left">Rechnung</th><th>angelegt</th><th class="left">Titel</th><th class="left">Rechnungssteller</th><th>Gäste</th><th>bezahlt</th><th>Betrag</th></tr></thead>
 <tbody>${billRows || empty(7)}</tbody></table></div>
+
+<h2 id="geloescht">Gelöschte Rechnungen (${int((input.deleted ?? []).length)})</h2>
+<p class="muted">Hier gelöscht, neueste zuerst. Solange eine Tagessicherung (14 Tage) sie noch enthält, lässt sie sich mit „Verlauf &amp; Wiederherstellen“ zurückholen – sie erscheint dann wieder in den Listen aller Beteiligten (das Belegfoto bleibt weg).</p>
+<div class="scroll"><table><thead><tr><th>gelöscht</th><th class="left">Titel</th><th>Kennung</th><th class="left"></th></tr></thead>
+<tbody>${deletedRows || empty(4)}</tbody></table></div>
 
 <h2 id="ki">Belegerkennung pro Tag</h2>
 <p class="muted">Kosten geschätzt nach dem Listenpreis des jeweiligen Modells (siehe <code>server/monitor.ts</code>). Ein Beleg kann zwei KI-Aufrufe brauchen (Summenprüfung).</p>
@@ -322,14 +335,23 @@ function billState(bill: StoredBill, missing: Set<string> = new Set()): string {
  * One bill's history for the operator: as it is now, as it was in each daily backup (people
  * missing now are marked), what the log says about it – and restoring one of those versions.
  */
-export function restorePage(input: { token: string; current: StoredBill; versions: { day: string; bill: StoredBill | null }[]; log: AuditEntry[] }): string {
+export function restorePage(input: {
+  token: string;
+  id: string;
+  /** null: deleted on the admin page (at `deletedAt`). */
+  current: StoredBill | null;
+  deletedAt?: string;
+  versions: { day: string; bill: StoredBill | null }[];
+  log: AuditEntry[];
+}): string {
   const { current, token } = input;
-  const now = new Set(Object.keys(current.participants));
-  const same = (b: StoredBill) => JSON.stringify(b.participants) === JSON.stringify(current.participants) && JSON.stringify(b.data) === JSON.stringify(current.data);
+  const now = new Set(Object.keys(current?.participants ?? {}));
+  const same = (b: StoredBill) => Boolean(current) && JSON.stringify(b.participants) === JSON.stringify(current!.participants) && JSON.stringify(b.data) === JSON.stringify(current!.data);
+  const newest = current ?? input.versions.find((v) => v.bill)?.bill ?? null;
   const versions = input.versions
     .map(({ day, bill }) => {
       if (!bill) return `<section class="version same"><h2>Sicherung vom ${escape(day)}</h2><p class="muted">Die Rechnung war in dieser Sicherung noch nicht da.</p></section>`;
-      const missing = new Set(Object.keys(bill.participants).filter((id) => !now.has(id)));
+      const missing = new Set(current ? Object.keys(bill.participants).filter((id) => !now.has(id)) : []);
       const unchanged = same(bill);
       return `<section class="version${unchanged ? " same" : ""}"><h2>Sicherung vom ${escape(day)}</h2>
         <p class="muted">${int(Object.keys(bill.participants).length)} Personen${missing.size ? ` · <span class="gone">${int(missing.size)} fehlen jetzt</span>` : ""}${unchanged ? " · genau wie jetzt" : ""}</p>
@@ -337,7 +359,7 @@ export function restorePage(input: { token: string; current: StoredBill; version
         ${
           unchanged
             ? ""
-            : `<form method="post" action="/api/admin/restore"><input type="hidden" name="token" value="${escape(token)}"><input type="hidden" name="id" value="${escape(current.id)}"><input type="hidden" name="day" value="${escape(day)}">
+            : `<form method="post" action="/api/admin/restore"><input type="hidden" name="token" value="${escape(token)}"><input type="hidden" name="id" value="${escape(input.id)}"><input type="hidden" name="day" value="${escape(day)}">
           <label><input type="checkbox" name="confirm" value="ja" required> Diese Fassung wiederherstellen</label><button>Wiederherstellen</button></form>`
         }</section>`;
     })
@@ -348,9 +370,13 @@ export function restorePage(input: { token: string; current: StoredBill; version
 <meta name="robots" content="noindex"><title>klicksplit · Wiederherstellen</title>
 ${STYLE}</head><body>
 <p><a href="/api/admin?token=${encodeURIComponent(token)}#rechnungen">← Betriebsseite</a></p>
-<h1>„${escape(current.data.title || "Rechnung")}“ · ${escape(current.id)}</h1>
-<p class="muted">Angelegt ${escape(when(current.createdAt))}. Wiederherstellen setzt nur diese Rechnung auf den Stand der Sicherung zurück (Personen, Häkchen, Zahlungen, Positionen) – alle anderen Rechnungen und die Ausgleichszahlungen bleiben, wie sie sind. Was seit der Sicherung in dieser Rechnung passiert ist, geht dabei verloren.</p>
-<section class="version"><h2>Jetzt</h2><p class="muted">${int(now.size)} Personen</p>${billState(current)}</section>
+<h1>„${escape(newest?.data.title || "Rechnung")}“ · ${escape(input.id)}</h1>
+<p class="muted">${newest ? `Angelegt ${escape(when(newest.createdAt))}. ` : ""}Wiederherstellen setzt nur diese Rechnung auf den Stand der Sicherung zurück (Personen, Häkchen, Zahlungen, Positionen) – alle anderen Rechnungen und die Ausgleichszahlungen bleiben, wie sie sind. Was seit der Sicherung in dieser Rechnung passiert ist, geht dabei verloren.</p>
+${
+  current
+    ? `<section class="version"><h2>Jetzt</h2><p class="muted">${int(now.size)} Personen</p>${billState(current)}</section>`
+    : `<section class="version"><h2>Jetzt</h2><p class="gone">Auf der Betriebsseite gelöscht${input.deletedAt ? ` am ${escape(when(input.deletedAt))}` : ""}.</p><p class="muted">Wiederherstellen holt sie aus der gewählten Sicherung zurück; sie erscheint dann wieder in den Listen aller Beteiligten. Ausgleichszahlungen, die beim Löschen angepasst wurden, bleiben so.</p></section>`
+}
 <h2>Protokoll dieser Rechnung</h2>
 <ul>${log || `<li class="muted">Keine Einträge (das Protokoll gibt es seit dem 27.10.2026).</li>`}</ul>
 ${versions || `<p class="muted">Keine Sicherungen gefunden.</p>`}

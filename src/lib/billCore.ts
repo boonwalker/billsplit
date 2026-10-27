@@ -471,12 +471,13 @@ export class BillCore {
    * settlement payments stay as they are. Returns everyone in it before or after (to tell them).
    */
   restoreBill(saved: StoredBill, day: string): string[] {
-    const bill = this.get(saved.id);
-    const people = new Set([...Object.keys(bill.participants), ...Object.keys(saved.participants)]);
+    // Deleted on the admin page meanwhile: it comes back as it was then.
+    const bill = this.bills.get(saved.id);
+    const people = new Set([...Object.keys(bill?.participants ?? {}), ...Object.keys(saved.participants)]);
     const names = (b: StoredBill) => Object.values(b.participants).map((p) => p.name).join(", ");
     this.audit({
       kind: "restore",
-      text: `„${bill.data.title}“ aus der Sicherung vom ${day} wiederhergestellt – vorher: ${names(bill)}; jetzt: ${names(saved)}`,
+      text: `„${saved.data.title}“ aus der Sicherung vom ${day} wiederhergestellt – vorher: ${bill ? names(bill) : "gelöscht"}; jetzt: ${names(saved)}`,
       billIds: [saved.id],
     });
     this.bills.set(saved.id, structuredClone(saved));

@@ -802,6 +802,10 @@ fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
   Protokoll dieser Rechnung. „Diese Fassung wiederherstellen“ ankreuzen + „Wiederherstellen“ (`POST /api/admin/restore`)
   setzt nur diese Rechnung auf den Stand der Sicherung zurück (`BillCore.restoreBill`); andere Rechnungen und
   Ausgleichszahlungen bleiben, alle Beteiligten sehen es live.
+- **Gelöschte Rechnungen** (Abschnitt unter „Neueste Rechnungen“): was hier gelöscht wurde, neueste zuerst, mit Titel aus
+  der neuesten Sicherung, die sie noch enthält (`deletedBills`). „Verlauf & Wiederherstellen“ holt sie aus einer Sicherung
+  zurück (`restoreFromBackup`): Sie verlässt `deleted-bills.json` und erscheint über `/api/my-bills` wieder in den Listen
+  aller Beteiligten (als ungelesen); das Belegfoto bleibt weg, beim Löschen angepasste Ausgleichszahlungen bleiben so.
 - **Protokoll** (Abschnitt ganz unten, `server/audit.ts`, `audit.json`, die neuesten 1.000): was verändert hat, wer in
   einer Rechnung ist – Zusammenlegungen von Identitäten mit Anlass („Anmeldung mit Konto“, „Safari → App“, „Umzug der
   Adresse“; auch „Nicht zusammengelegt“, wenn die Schutzregel greift), Anmeldungen auf einem weiteren Gerät, vom

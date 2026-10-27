@@ -497,10 +497,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         if (!adminOk(sent)) throw new HttpError("Nicht gefunden.", 404);
         const billId = url.searchParams.get("id") ?? "";
         const current = store.storedBill(billId);
-        if (!current) throw new HttpError("Diese Rechnung gibt es nicht (mehr).", 404);
+        const deletedAt = current ? undefined : (await store.deletedBills()).find((d) => d.id === billId)?.at;
+        if (!current && !deletedAt) throw new HttpError("Diese Rechnung gibt es nicht (mehr).", 404);
         const versions = await Promise.all((await store.backups()).map(async ({ day }) => ({ day, bill: await store.billFromBackup(day, billId) })));
         res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" });
-        return void res.end(restorePage({ token: adminSecret(sent) ?? "", current, versions, log: audit.list(billId) }));
+        return void res.end(restorePage({ token: adminSecret(sent) ?? "", id: billId, current, deletedAt, versions, log: audit.list(billId) }));
       }
       if (method === "POST") {
         const form = new URLSearchParams((await readBody(req, MAX_JSON_BODY)).toString("utf8"));
@@ -508,12 +509,13 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         if (!adminOk(sent)) throw new HttpError("Nicht gefunden.", 404);
         const billId = form.get("id") ?? "";
         const day = form.get("day") ?? "";
-        const saved = store.has(billId) ? await store.billFromBackup(day, billId) : null;
+        // Also a bill deleted on the admin page (it comes back from the backup).
+        const saved = store.has(billId) || store.wasDeleted(billId) ? await store.billFromBackup(day, billId) : null;
         let notice: string;
         if (!saved) notice = "Nichts geändert: Diese Rechnung ist in der Sicherung nicht (mehr) da.";
         else if (form.get("confirm") !== "ja") notice = "Nichts geändert: Zum Wiederherstellen bitte „Diese Fassung wiederherstellen“ ankreuzen.";
         else {
-          tellChanged(store.restoreBill(saved, day), billId);
+          tellChanged(await store.restoreFromBackup(saved, day), billId);
           notice = `„${saved.data.title || "Rechnung"}“ ist wieder wie in der Sicherung vom ${day}.`;
         }
         console.log(`Betriebsseite: ${notice}`);
@@ -576,6 +578,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
           token,
           notice: url.searchParams.get("meldung"),
           audit: audit.list(),
+          deleted: await store.deletedBills(),
         });
         res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" });
         return void res.end(html);
