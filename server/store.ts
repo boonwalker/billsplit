@@ -3,8 +3,8 @@ import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import type { BillData } from "../src/lib/bill.ts";
-import { BillCore, BillError, type Notice } from "../src/lib/billCore.ts";
-import { dailyBackup, openPersistence, type Persistence } from "./persistence.ts";
+import { BillCore, BillError, type AuditEvent, type Notice, type StoredBill } from "../src/lib/billCore.ts";
+import { dailyBackup, listBackups, openPersistence, readBackupBill, type Persistence } from "./persistence.ts";
 
 export { BillError as StoreError };
 
@@ -138,6 +138,35 @@ export class BillStore extends BillCore {
   onChange(listener: ChangeListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  // ───── what changed who is in a bill (the admin page's log, see audit.ts) ─────
+  private auditListeners = new Set<(event: AuditEvent) => void>();
+
+  onAudit(listener: (event: AuditEvent) => void): () => void {
+    this.auditListeners.add(listener);
+    return () => this.auditListeners.delete(listener);
+  }
+
+  protected override audit(event: AuditEvent): void {
+    for (const l of this.auditListeners) l(event);
+  }
+
+  /** A bill as stored (admin page: its history and restoring it). */
+  storedBill(billId: string): StoredBill | null {
+    const bill = this.bills.get(billId);
+    return bill ? structuredClone(bill) : null;
+  }
+
+  /** The daily backups, newest first (admin page: restoring a bill). */
+  async backups(): Promise<{ day: string; file: string }[]> {
+    return this.file ? listBackups(path.join(path.dirname(this.file), "backups")) : [];
+  }
+
+  /** A bill as it was in the backup of `day`; null when that backup did not have it. */
+  async billFromBackup(day: string, billId: string): Promise<StoredBill | null> {
+    const backup = (await this.backups()).find((b) => b.day === day);
+    return backup ? readBackupBill(backup.file, billId) : null;
   }
 
   // ───── notices for one person (the server sends them as push notifications) ─────

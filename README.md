@@ -796,6 +796,17 @@ fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
   der Server die gelöschten Kennungen in `deleted-bills.json` (Abruf: HTTP 410, `deleted` in `/api/bills/batch`) – so
   unterscheidet die App sie von verlorenen Rechnungen („nicht mehr verfügbar“). Bereits verschickte Mitteilungen lassen
   sich nicht zurückholen; Rückgängig nur über eine Sicherung.
+- **Verlauf & Wiederherstellen** (gleiche Spalte, Link unter den Aktionen, `GET /api/admin/restore?id=…`): zeigt die
+  Rechnung jetzt und in jeder Tagessicherung der letzten 14 Tage (`backups/`, `listBackups`/`readBackupBill`) – Personen,
+  Rolle, was sie abgehakt haben, ob sie bezahlt haben; wer jetzt fehlt, ist rot markiert („fehlt jetzt“) – dazu das
+  Protokoll dieser Rechnung. „Diese Fassung wiederherstellen“ ankreuzen + „Wiederherstellen“ (`POST /api/admin/restore`)
+  setzt nur diese Rechnung auf den Stand der Sicherung zurück (`BillCore.restoreBill`); andere Rechnungen und
+  Ausgleichszahlungen bleiben, alle Beteiligten sehen es live.
+- **Protokoll** (Abschnitt ganz unten, `server/audit.ts`, `audit.json`, die neuesten 1.000): was verändert hat, wer in
+  einer Rechnung ist – Zusammenlegungen von Identitäten mit Anlass („Anmeldung mit Konto“, „Safari → App“, „Umzug der
+  Adresse“; auch „Nicht zusammengelegt“, wenn die Schutzregel greift), Anmeldungen auf einem weiteren Gerät, vom
+  Rechnungssteller wieder herausgenommene Personen, entfernte Anteile („Namen gedrückt halten“, Betriebsseite, „Stimmt
+  nicht?“), Wiederherstellungen (`BillCore.audit` → `BillStore.onAudit`).
 - **Anteil entfernen** (gleiche Spalte, „Anteil entfernen“, „Person · Position“ wählen, „Entfernen“,
   `POST /api/admin/share`): nimmt die Häkchen einer Person bei einer Position heraus, z.B. einen versehentlich
   mitgeteilten Kakao, den die Beteiligten nicht selbst klären können (`BillCore.removeShare`). Die Anteile aller ändern

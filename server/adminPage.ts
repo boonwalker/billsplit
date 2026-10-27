@@ -1,4 +1,5 @@
-import type { BillSummary } from "../src/lib/billCore.ts";
+import type { BillSummary, StoredBill } from "../src/lib/billCore.ts";
+import type { AuditEntry } from "./audit.ts";
 import type { DayStats, ErrorEntry } from "./monitor.ts";
 import type { DeviceInfo, VisitDay } from "./visits.ts";
 
@@ -28,6 +29,8 @@ export interface AdminInput {
   token?: string;
   /** What the last change on this page did (shown at the top). */
   notice?: string | null;
+  /** What changed who is in a bill, newest first (see audit.ts). */
+  audit?: AuditEntry[];
   now?: Date;
 }
 
@@ -40,6 +43,47 @@ const when = (iso: string) =>
   iso ? new Date(iso).toLocaleString("de-DE", { timeZone: "Europe/Berlin", day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : "–";
 const dayOf = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
 const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)} %` : "–");
+
+/** The look of the admin pages (light and dark). */
+const STYLE = `<style>
+  :root { color-scheme: light dark; --bg: #f6f7f4; --fg: #14201a; --muted: #5d6b63; --line: #d9ded8; --accent: #0f7a4d; --bad: #b42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0e1612; --fg: #e8eee9; --muted: #9aa8a0; --line: #2a3530; --accent: #22a86a; --bad: #f97066; } }
+  body { margin: 0; padding: 16px; font: 15px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 28px 0 8px; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 10px 0 4px; font-size: 14px; }
+  .muted { color: var(--muted); } .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+  .tile { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+  .tile b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; } .tile small { color: var(--muted); }
+  .scroll { overflow-x: auto; } table { border-collapse: collapse; min-width: 640px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; }
+  th:first-child, td:first-child { text-align: left; } td.left, th.left { text-align: left; }
+  ul { list-style: none; padding: 0; margin: 0; } li { padding: 8px 0; border-bottom: 1px solid var(--line); word-break: break-word; }
+  time { color: var(--muted); font-variant-numeric: tabular-nums; } b.server, b.ai { color: var(--bad); } b.app { color: var(--accent); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 6px; vertical-align: middle; }
+  pre { white-space: pre-wrap; font-size: 12px; } a { color: var(--accent); }
+  .notice { margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--accent); border-radius: 12px; }
+  tr:has(details.manage[open]) td { vertical-align: top; }
+  details.manage summary { cursor: pointer; color: var(--accent); }
+  details.manage[open] { white-space: normal; min-width: 280px; max-width: 360px; }
+  details.manage p { margin: 10px 0 4px; font-size: 13px; }
+  details.manage form { display: flex; gap: 6px; }
+  details.manage select { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; }
+  details.manage input, details.manage button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; }
+  details.manage input { flex: 1; min-width: 0; }
+  details.manage label.confirm { display: flex; align-items: center; gap: 6px; flex: 1; font-size: 14px; }
+  details.manage label.confirm input { flex: none; margin: 0; }
+  details.manage button { border-color: var(--accent); color: var(--accent); cursor: pointer; }
+  .manage-link { display: block; margin-top: 4px; font-size: 14px; color: var(--accent); }
+  .version { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px 14px; margin: 14px 0; }
+  .version.same { opacity: 0.7; }
+  .version td.left { white-space: normal; min-width: 90px; }
+  .version form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .version label { display: flex; gap: 6px; align-items: center; }
+  .version button { font: inherit; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--bad); background: var(--bad); color: #fff; cursor: pointer; }
+  .gone { color: var(--bad); font-weight: 600; }
+  details.manage button.danger { border-color: var(--bad); background: var(--bad); color: #fff; }
+</style>`;
 
 export function adminPage(input: AdminInput): string {
   const now = input.now ?? new Date();
@@ -154,7 +198,7 @@ export function adminPage(input: AdminInput): string {
     .slice(0, 60)
     .map((b) => {
       const others = b.participants.filter((p) => p.id !== b.ownerId);
-      return `<tr><td class="left">${input.token ? removeShare(b) + removeBill(b.id) : ""}</td><td>${when(b.createdAt)}</td><td class="left">${escape(b.title || "Rechnung")}</td><td class="left">${escape(nameOf(b.ownerId))}</td>
+      return `<tr><td class="left">${input.token ? removeShare(b) + removeBill(b.id) + `<a class="manage-link" href="/api/admin/restore?token=${encodeURIComponent(input.token)}&amp;id=${encodeURIComponent(b.id)}">Verlauf &amp; Wiederherstellen</a>` : ""}</td><td>${when(b.createdAt)}</td><td class="left">${escape(b.title || "Rechnung")}</td><td class="left">${escape(nameOf(b.ownerId))}</td>
         <td>${int(others.length)}</td><td>${int(others.filter((p) => p.paid).length)} / ${int(others.length)}</td><td>${money(b.total, b.currency)}</td></tr>`;
     })
     .join("");
@@ -172,47 +216,21 @@ export function adminPage(input: AdminInput): string {
         ${e.detail ? `<details><summary>Details</summary><pre>${escape(e.detail)}</pre></details>` : ""}</li>`,
     )
     .join("");
+  const auditRows = (input.audit ?? [])
+    .slice(0, 150)
+    .map((e) => `<li><time>${escape(when(e.at))}</time> <b>${escape(e.kind)}</b> ${escape(e.text)}</li>`)
+    .join("");
   const empty = (cols: number) => `<tr><td colspan="${cols}" class="muted">Noch keine Daten.</td></tr>`;
 
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex"><title>klicksplit · Betrieb</title>
-<style>
-  :root { color-scheme: light dark; --bg: #f6f7f4; --fg: #14201a; --muted: #5d6b63; --line: #d9ded8; --accent: #0f7a4d; --bad: #b42318; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #0e1612; --fg: #e8eee9; --muted: #9aa8a0; --line: #2a3530; --accent: #22a86a; --bad: #f97066; } }
-  body { margin: 0; padding: 16px; font: 15px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
-  h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 28px 0 8px; }
-  nav { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 10px 0 4px; font-size: 14px; }
-  .muted { color: var(--muted); } .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
-  .tile { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
-  .tile b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; } .tile small { color: var(--muted); }
-  .scroll { overflow-x: auto; } table { border-collapse: collapse; min-width: 640px; font-variant-numeric: tabular-nums; }
-  th, td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
-  th { font-size: 13px; color: var(--muted); font-weight: 600; }
-  th:first-child, td:first-child { text-align: left; } td.left, th.left { text-align: left; }
-  ul { list-style: none; padding: 0; margin: 0; } li { padding: 8px 0; border-bottom: 1px solid var(--line); word-break: break-word; }
-  time { color: var(--muted); font-variant-numeric: tabular-nums; } b.server, b.ai { color: var(--bad); } b.app { color: var(--accent); }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 6px; vertical-align: middle; }
-  pre { white-space: pre-wrap; font-size: 12px; } a { color: var(--accent); }
-  .notice { margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--accent); border-radius: 12px; }
-  tr:has(details.manage[open]) td { vertical-align: top; }
-  details.manage summary { cursor: pointer; color: var(--accent); }
-  details.manage[open] { white-space: normal; min-width: 280px; max-width: 360px; }
-  details.manage p { margin: 10px 0 4px; font-size: 13px; }
-  details.manage form { display: flex; gap: 6px; }
-  details.manage select { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; }
-  details.manage input, details.manage button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; }
-  details.manage input { flex: 1; min-width: 0; }
-  details.manage label.confirm { display: flex; align-items: center; gap: 6px; flex: 1; font-size: 14px; }
-  details.manage label.confirm input { flex: none; margin: 0; }
-  details.manage button { border-color: var(--accent); color: var(--accent); cursor: pointer; }
-  details.manage button.danger { border-color: var(--bad); background: var(--bad); color: #fff; }
-</style></head><body>
+${STYLE}</head><body>
 <h1>klicksplit · Betrieb</h1>
 <p class="muted">Stand ${escape(when(now.toISOString()))} · Version ${escape(input.version)} · Speicher: ${escape(input.storage)}
 ${input.backupUrl ? ` · <a href="${escape(input.backupUrl)}">Datenbank herunterladen</a>` : ""}</p>
 ${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` : ""}
-<nav><a href="#nutzung">Nutzung</a><a href="#konten">Konten</a><a href="#geraete">Geräte</a><a href="#rechnungen">Rechnungen</a><a href="#ki">Belegerkennung</a><a href="#fehler">Fehler</a></nav>
+<nav><a href="#nutzung">Nutzung</a><a href="#konten">Konten</a><a href="#geraete">Geräte</a><a href="#rechnungen">Rechnungen</a><a href="#ki">Belegerkennung</a><a href="#fehler">Fehler</a><a href="#protokoll">Protokoll</a></nav>
 <div class="tiles">
   <div class="tile"><span class="muted">Gerade online</span><b>${int(input.online.size)}</b><small>App offen</small></div>
   <div class="tile"><span class="muted">Aktiv (24 h)</span><b>${int(input.active.day)}</b><small>7 Tage: ${int(input.active.week)} · 30 Tage: ${int(input.active.month)}</small></div>
@@ -252,6 +270,10 @@ ${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` :
 
 <h2 id="fehler">Letzte Fehler</h2>
 <ul>${errors || `<li class="muted">Keine.</li>`}</ul>
+
+<h2 id="protokoll">Protokoll</h2>
+<p class="muted">Was verändert hat, wer in einer Rechnung ist: Identitäten zusammengelegt (Anmeldung mit Konto, Safari → App, Umzug), Personen herausgenommen, Anteile entfernt, Rechnungen wiederhergestellt. Die neuesten 150, gespeichert in <code>audit.json</code>.</p>
+<ul>${auditRows || `<li class="muted">Noch nichts.</li>`}</ul>
 </body></html>`;
 }
 
@@ -277,5 +299,60 @@ export function adminLogin(wrong: boolean): string {
   <button type="submit">Öffnen</button>
   <p class="muted">Der Token ist der Wert der Variable ADMIN_TOKEN in Railway.</p>
 </form>
+</body></html>`;
+}
+
+/** What a version of a bill holds: who, what they ticked, whether they paid (admin page: restoring). */
+function billState(bill: StoredBill, missing: Set<string> = new Set()): string {
+  const rows = Object.entries(bill.participants)
+    .map(([id, p]) => {
+      const claims = bill.data.items
+        .filter((item) => (p.claims[item.id] ?? []).length > 0)
+        .map((item) => `${escape(item.name)}${item.qty > 1 ? ` ×${p.claims[item.id].length}` : ""}`)
+        .join(", ");
+      const paid = p.received ? "erhalten" : p.markedPaidAt ? "als bezahlt markiert" : p.payClickedAt ? "auf Bezahlen getippt" : "–";
+      return `<tr><td class="left${missing.has(id) ? " gone" : ""}">${escape(p.name)}${missing.has(id) ? " (fehlt jetzt)" : ""}</td><td>${id === bill.ownerId ? "Rechnungssteller" : "Gast"}</td>
+        <td class="left">${claims || "–"}</td><td>${paid}</td><td class="muted">${escape(id.slice(0, 8))}</td></tr>`;
+    })
+    .join("");
+  return `<div class="scroll"><table><thead><tr><th class="left">Person</th><th>Rolle</th><th class="left">abgehakt</th><th>bezahlt</th><th>Kennung</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/**
+ * One bill's history for the operator: as it is now, as it was in each daily backup (people
+ * missing now are marked), what the log says about it – and restoring one of those versions.
+ */
+export function restorePage(input: { token: string; current: StoredBill; versions: { day: string; bill: StoredBill | null }[]; log: AuditEntry[] }): string {
+  const { current, token } = input;
+  const now = new Set(Object.keys(current.participants));
+  const same = (b: StoredBill) => JSON.stringify(b.participants) === JSON.stringify(current.participants) && JSON.stringify(b.data) === JSON.stringify(current.data);
+  const versions = input.versions
+    .map(({ day, bill }) => {
+      if (!bill) return `<section class="version same"><h2>Sicherung vom ${escape(day)}</h2><p class="muted">Die Rechnung war in dieser Sicherung noch nicht da.</p></section>`;
+      const missing = new Set(Object.keys(bill.participants).filter((id) => !now.has(id)));
+      const unchanged = same(bill);
+      return `<section class="version${unchanged ? " same" : ""}"><h2>Sicherung vom ${escape(day)}</h2>
+        <p class="muted">${int(Object.keys(bill.participants).length)} Personen${missing.size ? ` · <span class="gone">${int(missing.size)} fehlen jetzt</span>` : ""}${unchanged ? " · genau wie jetzt" : ""}</p>
+        ${billState(bill, missing)}
+        ${
+          unchanged
+            ? ""
+            : `<form method="post" action="/api/admin/restore"><input type="hidden" name="token" value="${escape(token)}"><input type="hidden" name="id" value="${escape(current.id)}"><input type="hidden" name="day" value="${escape(day)}">
+          <label><input type="checkbox" name="confirm" value="ja" required> Diese Fassung wiederherstellen</label><button>Wiederherstellen</button></form>`
+        }</section>`;
+    })
+    .join("");
+  const log = input.log.map((e) => `<li><time>${escape(when(e.at))}</time> <b>${escape(e.kind)}</b> ${escape(e.text)}</li>`).join("");
+  return `<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>klicksplit · Wiederherstellen</title>
+${STYLE}</head><body>
+<p><a href="/api/admin?token=${encodeURIComponent(token)}#rechnungen">← Betriebsseite</a></p>
+<h1>„${escape(current.data.title || "Rechnung")}“ · ${escape(current.id)}</h1>
+<p class="muted">Angelegt ${escape(when(current.createdAt))}. Wiederherstellen setzt nur diese Rechnung auf den Stand der Sicherung zurück (Personen, Häkchen, Zahlungen, Positionen) – alle anderen Rechnungen und die Ausgleichszahlungen bleiben, wie sie sind. Was seit der Sicherung in dieser Rechnung passiert ist, geht dabei verloren.</p>
+<section class="version"><h2>Jetzt</h2><p class="muted">${int(now.size)} Personen</p>${billState(current)}</section>
+<h2>Protokoll dieser Rechnung</h2>
+<ul>${log || `<li class="muted">Keine Einträge (das Protokoll gibt es seit dem 27.10.2026).</li>`}</ul>
+${versions || `<p class="muted">Keine Sicherungen gefunden.</p>`}
 </body></html>`;
 }

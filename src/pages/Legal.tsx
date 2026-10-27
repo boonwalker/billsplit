@@ -153,6 +153,11 @@ function Privacy({ operator }: { operator: Operator | null }) {
             Deine IP-Adresse wird nur im Arbeitsspeicher verarbeitet: zur Begrenzung von Missbrauch (z.B. zu viele Code-Anforderungen) und für die
             Übergabe von Safari in die Home-Bildschirm-App (gilt nur im selben Netz). Sie wird von klicksplit nicht gespeichert.
           </li>
+          <li>
+            Änderungsprotokoll: Wird festgehalten, wer in einer Rechnung ist, sich ändert (z.B. Anmeldung mit Konto auf einem weiteren Gerät,
+            Anteil entfernt, Rechnung wiederhergestellt), speichert klicksplit Zeitpunkt, Art, die Namen in der Rechnung und gekürzte Kennungen –
+            um Fehler nachvollziehen und Rechnungen reparieren zu können; es bleiben die letzten 1.000 Einträge.
+          </li>
           <li>Zur Sicherung werden die Daten täglich kopiert; die Sicherungen werden nach 14 Tagen gelöscht.</li>
         </ul>
         <p>Rechtsgrundlage ist unser berechtigtes Interesse an einem sicheren, funktionierenden Betrieb (Art. 6 Abs. 1 lit. f DSGVO).</p>

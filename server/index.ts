@@ -5,6 +5,7 @@ import { AccountStore } from "./accounts.ts";
 import { adminSecret, createApp } from "./app.ts";
 import { dataDir, ephemeralDataProblem } from "./dataDir.ts";
 import { Monitor } from "./monitor.ts";
+import { AuditLog } from "./audit.ts";
 import { isAiConfigured } from "./parseReceipt.ts";
 import { PushService } from "./push.ts";
 import { RateService } from "./rates.ts";
@@ -53,6 +54,8 @@ await accounts.load();
 
 // App starts per day and the devices behind them (admin page).
 const visits = new VisitLog(path.join(path.dirname(DATA_FILE), "visits.json"));
+const audit = new AuditLog(path.join(path.dirname(DATA_FILE), "audit.json"));
+await audit.load();
 await visits.load();
 
 // Restaurant mode: restaurants, their tables and the bill open at each.
@@ -62,7 +65,7 @@ await venues.load();
 // Exchange rates (ECB, daily) for balances in the home currency, kept next to the bills.
 const rates = new RateService(path.dirname(DATA_FILE));
 await rates.load();
-const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts, rates, visits, venues }));
+const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts, rates, visits, venues, audit }));
 
 server.listen(PORT, () => {
   console.log(
@@ -71,7 +74,7 @@ server.listen(PORT, () => {
 });
 
 async function shutdown(): Promise<void> {
-  await Promise.all([store.flush(), monitor.flush(), accounts.flush(), visits.flush(), venues.flush()]);
+  await Promise.all([store.flush(), monitor.flush(), accounts.flush(), visits.flush(), venues.flush(), audit.flush()]);
   store.close();
   process.exit(0);
 }

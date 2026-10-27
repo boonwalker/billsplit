@@ -176,3 +176,27 @@ export async function dailyBackup(persistence: Persistence, dir: string, now = n
   for (const old of backups.slice(0, Math.max(0, backups.length - BACKUP_DAYS))) await unlink(path.join(dir, old)).catch(() => {});
   return exists ? null : file;
 }
+
+/** The daily backups in `dir`, newest first (see dailyBackup). */
+export async function listBackups(dir: string): Promise<{ day: string; file: string }[]> {
+  const names = await readdir(dir).catch(() => [] as string[]);
+  return names
+    .map((name) => ({ name, day: /^billsplit-(\d{4}-\d{2}-\d{2})\.(db|json)$/.exec(name)?.[1] }))
+    .filter((b): b is { name: string; day: string } => Boolean(b.day))
+    .sort((a, b) => b.day.localeCompare(a.day))
+    .map((b) => ({ day: b.day, file: path.join(dir, b.name) }));
+}
+
+/** One bill as it was in a backup file (SQLite opened read-only, or the JSON file); null when it was not in it. */
+export async function readBackupBill(file: string, billId: string): Promise<StoredBill | null> {
+  if (file.endsWith(".json")) return (await readJsonFile(file))?.bills.find((b) => b.id === billId) ?? null;
+  const lib = await loadSqlite();
+  if (!lib) return null;
+  const db = new lib.DatabaseSync(file, { readOnly: true });
+  try {
+    const row = db.prepare("SELECT data FROM bills WHERE id = ?").get(billId) as { data: string } | undefined;
+    return row ? (JSON.parse(row.data) as StoredBill) : null;
+  } finally {
+    db.close();
+  }
+}

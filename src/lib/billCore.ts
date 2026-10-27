@@ -121,6 +121,16 @@ export interface Notice {
   path: string;
 }
 
+/** For the admin page's log: what changed who is in a bill (names, never amounts). */
+export interface AuditEvent {
+  kind: string;
+  text: string;
+  billIds: string[];
+}
+
+/** A participant's own payment in a bill: tapped pay, marked as paid or confirmed (see mergeParticipant). */
+const hasPaid = (p: StoredParticipant) => Boolean(p.payClickedAt || p.markedPaidAt || p.received || p.topUps?.length);
+
 export class BillCore {
   protected bills = new Map<string, StoredBill>();
   protected transfers = new Map<string, StoredTransfer>();
@@ -133,6 +143,9 @@ export class BillCore {
 
   /** Tells a participant about something that needs them (the server sends it as a push notification). */
   protected notify(_participantId: string, _notice: Notice): void {}
+
+  /** Something changed who is in a bill or what they hold (the server keeps it for the admin page, see server/audit.ts). */
+  protected audit(_event: AuditEvent): void {}
 
   /** Whether notifications reach a participant (the server knows their push subscriptions). */
   protected canNotify(_participantId: string): boolean {
@@ -240,17 +253,29 @@ export class BillCore {
    * paid stay theirs – a leaked code must never make someone else the payer. Returns the bills
    * that changed.
    */
-  mergeParticipant(fromId: string, intoId: string, { ownership = true }: { ownership?: boolean } = {}): string[] {
+  mergeParticipant(fromId: string, intoId: string, { ownership = true, reason = "" }: { ownership?: boolean; reason?: string } = {}): string[] {
     if (fromId === intoId) return [];
     const kept = new Set(
       this.billsOf(fromId).filter((id) => {
         const bill = this.get(id);
+        const into = bill.participants[intoId];
         // The payer and a friend of the same bill are always two people (e.g. a test phone that
         // joined as a friend, then signed in to the payer's account): never one entry.
-        if (bill.participants[intoId] && (bill.ownerId === fromId || bill.ownerId === intoId)) return true;
+        if (into && (bill.ownerId === fromId || bill.ownerId === intoId)) return true;
+        // Both paid on their own in this bill: two people, whatever the devices say.
+        if (into && hasPaid(into) && hasPaid(bill.participants[fromId])) return true;
         return !ownership && bill.ownerId === fromId;
       }),
     );
+    const how = reason ? ` (${reason})` : "";
+    for (const id of kept) {
+      const bill = this.get(id);
+      this.audit({
+        kind: "merge",
+        text: `Nicht zusammengelegt${how}: „${bill.participants[fromId]?.name ?? "?"}“ und „${this.nameOf(intoId) ?? "?"}“ bleiben in „${bill.data.title}“ zwei Personen`,
+        billIds: [id],
+      });
+    }
     const union = (a: ItemClaims = {}, b: ItemClaims = {}) => {
       const out: ItemClaims = { ...a };
       for (const [item, slots] of Object.entries(b)) out[item] = [...new Set([...(out[item] ?? []), ...slots])].sort((x, y) => x - y);
@@ -283,8 +308,16 @@ export class BillCore {
         } else participants[pid] = p;
       }
       bill.participants = participants;
+      const role = bill.ownerId === fromId ? " als Rechnungssteller" : "";
       if (bill.ownerId === fromId) bill.ownerId = intoId;
       changed.push(id);
+      this.audit({
+        kind: "merge",
+        text: into
+          ? `Zusammengelegt${how}: „${from.name}“ in „${into.name}“ – beide waren in „${bill.data.title}“, Häkchen vereint`
+          : `Zusammengelegt${how}: „${from.name}“${role} in „${bill.data.title}“ übernommen (Kennung gewechselt)`,
+        billIds: [id],
+      });
       this.changed(id);
     }
     for (const t of this.transfers.values()) {
@@ -434,6 +467,25 @@ export class BillCore {
   }
 
   /**
+   * Admin page: puts a bill back as it was in a backup (`saved`, the same bill). Only that bill –
+   * settlement payments stay as they are. Returns everyone in it before or after (to tell them).
+   */
+  restoreBill(saved: StoredBill, day: string): string[] {
+    const bill = this.get(saved.id);
+    const people = new Set([...Object.keys(bill.participants), ...Object.keys(saved.participants)]);
+    const names = (b: StoredBill) => Object.values(b.participants).map((p) => p.name).join(", ");
+    this.audit({
+      kind: "restore",
+      text: `„${bill.data.title}“ aus der Sicherung vom ${day} wiederhergestellt – vorher: ${names(bill)}; jetzt: ${names(saved)}`,
+      billIds: [saved.id],
+    });
+    this.bills.set(saved.id, structuredClone(saved));
+    upgradeClaims(this.bills.get(saved.id)!);
+    this.changed(saved.id);
+    return [...people];
+  }
+
+  /**
    * Admin page ("Anteil entfernen"): takes a participant's ticks off one line, e.g. a share
    * ticked by mistake that the people involved cannot sort out themselves. A friend's note
    * about that change goes too. Returns the person's and the line's name, null when there was nothing to remove.
@@ -445,6 +497,7 @@ export class BillCore {
     if (!p || !item || !p.claims[itemId]?.length) return null;
     this.dropClaims(bill, participantId, itemId);
     this.changed(billId);
+    this.audit({ kind: "share", text: `Betriebsseite: Anteil von „${p.name}“ an „${item.name}“ in „${bill.data.title}“ entfernt`, billIds: [billId] });
     return { name: p.name, item: item.name };
   }
 
@@ -461,6 +514,11 @@ export class BillCore {
     if (!item || !p.claims[itemId]?.length) return;
     this.noteShareChanges(bill, requesterId, () => this.dropClaims(bill, participantId, itemId));
     this.changed(billId);
+    this.audit({
+      kind: "unclaim",
+      text: `„${bill.participants[requesterId]?.name ?? "?"}“ hat den Anteil von „${p.name}“ an „${item.name}“ in „${bill.data.title}“ entfernt`,
+      billIds: [billId],
+    });
     this.notify(participantId, {
       title: msg("{name} hat Deinen Anteil an „{item}“ entfernt", { name: bill.participants[bill.ownerId]?.name ?? "", item: item.name }),
       body: msg("Stimmt das nicht, hake es einfach wieder ab."),
@@ -504,6 +562,7 @@ export class BillCore {
     if (!change.items.length) delete p.shareChange;
     this.changed(billId);
     const item = bill.data.items.find((i) => i.id === itemId);
+    this.audit({ kind: "contest", text: `„${p.name}“ hat den Anteil von „${other.name}“ an „${item?.name ?? "?"}“ in „${bill.data.title}“ zurückgeholt („Stimmt nicht?“)`, billIds: [billId] });
     this.notify(otherId, {
       title: msg("{name} hat „{item}“ allein bezahlt", { name: p.name, item: item?.name ?? "" }),
       body: msg("Dein Anteil daran ist wieder entfernt. Stimmt das nicht, sprecht kurz miteinander."),
@@ -556,6 +615,7 @@ export class BillCore {
       });
       // Taken back before anything happened: they leave the bill again, as if never assigned.
       if (this.untouchedAssignee(billId, id)) {
+        this.audit({ kind: "leave", text: `„${bill.participants[id].name}“ hat „${bill.data.title}“ verlassen (vom Rechnungssteller wieder herausgenommen)`, billIds: [billId] });
         delete bill.participants[id];
         if (added.includes(id)) added.splice(added.indexOf(id), 1);
       }

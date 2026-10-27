@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 216 Tests, alle grün; 51 Klick-Tests).
+1. `npm run typecheck` und `npm test` (aktuell 220 Tests, alle grün; 51 Klick-Tests).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -109,6 +109,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   verlieren den Anteil bzw. fallen weg, wenn sie ohne ihn nicht aufgehen), Kennung in `deleted-bills.json`, Abruf → 410,
   Batch → `deleted`, SSE-Ereignis `deleted`; die App entfernt sie spurlos (`dropDeletedBill`). „Anteil entfernen“
   (`POST /api/admin/share`, `BillCore.removeShare`): Häkchen einer Person bei einer Position heraus, live.
+  „Verlauf & Wiederherstellen“ (`/api/admin/restore`, `restorePage`, `BillCore.restoreBill`): Rechnung in jeder
+  Tagessicherung ansehen und eine Fassung zurückspielen (nur diese Rechnung). **Protokoll** (`server/audit.ts`,
+  `audit.json`): jede Zusammenlegung, Anmeldung auf weiterem Gerät, entfernte Personen/Anteile, Wiederherstellungen –
+  neue Stellen, die Teilnehmer entfernen oder Häkchen umschreiben, immer mit `this.audit(…)` protokollieren.
   Gedruckte Kurzlinks (`PRINTED_LINKS` in `server/app.ts`, z.B. `/koeln` auf den Bierdeckeln, QR-Code →
   `https://www.klicksplit.de/koeln`): Aufruf zählt in `visits.json` (`sources`), Weiterleitung auf `/`; Kachel
   „Bierdeckel-Scans“. Bierdeckel-Design: https://claude.ai/artifact/5YfutcV3DZ4ZMaSJgLn1o2
@@ -182,7 +186,10 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   false })`, gilt nur im selben Netz (`networkKey`), und Rechnungssteller bekommen keinen `?von=` in kopierte Links
   (Vorfall 11.10.2026: Einladung führte in die Rechnungssteller-Ansicht – Ursache war ein Testhandy, das mit dem
   Konto des Rechnungsstellers angemeldet war; Lücke trotzdem geschlossen). Rechnungssteller und Gast derselben
-  Rechnung werden nie zusammengelegt (`mergeParticipant` lässt solche Rechnungen aus).
+  Rechnung werden nie zusammengelegt (`mergeParticipant` lässt solche Rechnungen aus), ebenso nie zwei Einträge einer
+  Rechnung, die beide schon bezahlt haben (`hasPaid`). Vorfall 27.10.2026: bei „C.C. Kowalski“ fehlten nach einer
+  Anmeldung im Browser alle Gäste außer Peter, ihre Häkchen standen beim Rechnungssteller – Ursache noch offen, darum
+  Protokoll + Wiederherstellen aus Sicherung.
 - **Rechnungsliste** (`billsplit.recent`) liegt auf dem Gerät, immer nach Datum sortiert (neueste oben, `newestFirst` –
   Öffnen verschiebt nichts), ohne Obergrenze (20 sichtbar, dann „Ältere anzeigen“); die Startseite ergänzt beim Öffnen und bei Live-Änderungen
   fehlende Rechnungen aus `/api/my-bills` (`syncRecentBills`, z. B. zugeordnete Ausgaben) – als ungelesen (`unread`, grün

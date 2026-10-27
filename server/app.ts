@@ -6,7 +6,8 @@ import { timingSafeEqual } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fill, isLang, msg, pickLang, translate, type Lang, type Msg, type Vars } from "../src/i18n/index.ts";
-import { adminLogin, adminPage } from "./adminPage.ts";
+import { adminLogin, adminPage, restorePage } from "./adminPage.ts";
+import { AuditLog } from "./audit.ts";
 import type { VisitLog } from "./visits.ts";
 import type { Monitor } from "./monitor.ts";
 import { isAiConfigured, isSupportedMediaType, observeAi, parseReceiptImage, ReceiptParseError } from "./parseReceipt.ts";
@@ -94,6 +95,8 @@ export interface AppOptions {
   operator?: Operator | null;
   /** Restaurants and their tables (restaurant mode; in memory when not given). */
   venues?: VenueStore;
+  /** What changed who is in a bill, for the admin page (in memory when not given). */
+  audit?: AuditLog;
 }
 
 /**
@@ -222,6 +225,8 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const deviceLinks = new DeviceLinks();
   const accounts = options.accounts ?? new AccountStore(null);
   const venues = options.venues ?? new VenueStore(null);
+  const audit = options.audit ?? new AuditLog(null);
+  store.onAudit((event) => audit.add(event));
   /** The bill open at a table – none when it was deleted meanwhile. */
   const openBill = (billId: string | null) => (billId && store.has(billId) ? billId : null);
   const mailer = options.sendCode && options.sendWelcome ? null : mailerFromEnv();
@@ -485,6 +490,38 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       return void res.end();
     }
 
+    // Admin page: a bill's history in the daily backups – and putting one of those versions back.
+    if (parts[1] === "admin" && parts[2] === "restore" && parts.length === 3) {
+      if (method === "GET") {
+        const sent = url.searchParams.get("token") ?? "";
+        if (!adminOk(sent)) throw new HttpError("Nicht gefunden.", 404);
+        const billId = url.searchParams.get("id") ?? "";
+        const current = store.storedBill(billId);
+        if (!current) throw new HttpError("Diese Rechnung gibt es nicht (mehr).", 404);
+        const versions = await Promise.all((await store.backups()).map(async ({ day }) => ({ day, bill: await store.billFromBackup(day, billId) })));
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" });
+        return void res.end(restorePage({ token: adminSecret(sent) ?? "", current, versions, log: audit.list(billId) }));
+      }
+      if (method === "POST") {
+        const form = new URLSearchParams((await readBody(req, MAX_JSON_BODY)).toString("utf8"));
+        const sent = form.get("token") ?? "";
+        if (!adminOk(sent)) throw new HttpError("Nicht gefunden.", 404);
+        const billId = form.get("id") ?? "";
+        const day = form.get("day") ?? "";
+        const saved = store.has(billId) ? await store.billFromBackup(day, billId) : null;
+        let notice: string;
+        if (!saved) notice = "Nichts geändert: Diese Rechnung ist in der Sicherung nicht (mehr) da.";
+        else if (form.get("confirm") !== "ja") notice = "Nichts geändert: Zum Wiederherstellen bitte „Diese Fassung wiederherstellen“ ankreuzen.";
+        else {
+          tellChanged(store.restoreBill(saved, day), billId);
+          notice = `„${saved.data.title || "Rechnung"}“ ist wieder wie in der Sicherung vom ${day}.`;
+        }
+        console.log(`Betriebsseite: ${notice}`);
+        res.writeHead(303, { location: `/api/admin?token=${encodeURIComponent(sent)}&meldung=${encodeURIComponent(notice)}#rechnungen`, "cache-control": "no-store" });
+        return void res.end();
+      }
+    }
+
     // Admin page: taking one person's ticks off one line of a bill ("Anteil entfernen").
     if (parts[1] === "admin" && parts[2] === "share" && parts.length === 3 && method === "POST") {
       const form = new URLSearchParams((await readBody(req, MAX_JSON_BODY)).toString("utf8"));
@@ -538,6 +575,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
           isPushed: (id: string) => push?.reachable(id) ?? false,
           token,
           notice: url.searchParams.get("meldung"),
+          audit: audit.list(),
         });
         res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" });
         return void res.end(html);
@@ -649,11 +687,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       // The code proves the old key, the request this browser's own: one person, so the payer's role moves too.
       if (accounts.byKey(key) && link.key !== key) {
         // This browser is signed in here already: the account's key stays, the old address's bills join it.
-        store.mergeParticipant(old, viewer);
+        store.mergeParticipant(old, viewer, { reason: "Umzug der Adresse" });
         return sendJson(res, 200, { key, profile: link.profile, bills: store.myBills(viewer) });
       }
       // Usually: the old key moves in, and whatever this browser did here so far joins it.
-      store.mergeParticipant(viewer, old);
+      store.mergeParticipant(viewer, old, { reason: "Umzug der Adresse" });
       return sendJson(res, 200, { key: link.key, profile: link.profile, bills: store.myBills(old) });
     }
 
@@ -717,7 +755,12 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         }
         // Signing in on another device: what this device did so far moves into the account.
         const owner = participantIdFromKey(existing.key);
-        store.mergeParticipant(viewer, owner);
+        const moved = store.mergeParticipant(viewer, owner, { reason: "Anmeldung mit Konto" });
+        audit.add({
+          kind: "login",
+          text: `Anmeldung mit dem Konto von „${existing.profile.name || store.nameOf(owner) || "?"}“ auf einem anderen Gerät (${viewer.slice(0, 8)} → ${owner.slice(0, 8)}): ${moved.length} Rechnung(en) übernommen`,
+          billIds: moved,
+        });
         return sendJson(res, 200, { status: "login", email: existing.email, key: existing.key, profile: existing.profile, bills: store.myBills(owner) });
       }
       if (parts[2] === "profile" && parts.length === 3 && method === "PUT") {
@@ -742,7 +785,7 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       // The name may have been entered in Safari only after the code was made.
       const name = store.nameOf(from);
       // Never the payer's role: bills paid in Safari stay with Safari's identity (the account moves those).
-      const merged = store.mergeParticipant(from, viewer, { ownership: false });
+      const merged = store.mergeParticipant(from, viewer, { ownership: false, reason: "Safari → App" });
       return sendJson(res, 200, { merged, bills: store.myBills(viewer), profile: { ...link.profile, ...(name ? { name } : {}) } });
     }
 
