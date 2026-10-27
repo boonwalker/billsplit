@@ -323,3 +323,16 @@
   font-weight: 700;
   color: var(--owed);
 }
+
+/* Payer: a guest's name can be held to take their part off the line – no text selection, pressed in while held. */
+.rline-claims li.holdable {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  transition: transform 0.18s ease;
+}
+
+.rline-claims li.holdable.holding {
+  transform: scale(0.92);
+}

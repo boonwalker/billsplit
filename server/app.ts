@@ -865,6 +865,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         store.setMarkedPaid(billId, viewer, body.paid);
         return sendJson(res, 200, store.snapshot(billId, viewer));
       }
+      if (action === "unclaim" && method === "POST") {
+        const body = parse(z.object({ participantId: z.string().max(64), itemId: z.string().max(24) }), await readJson(req, MAX_JSON_BODY));
+        store.removeGuestShare(billId, viewer, body.participantId, body.itemId);
+        return sendJson(res, 200, store.snapshot(billId, viewer));
+      }
       if (action === "contest" && method === "POST") {
         const body = parse(z.object({ participantId: z.string().max(64), itemId: z.string().max(24) }), await readJson(req, MAX_JSON_BODY));
         store.contestShare(billId, viewer, body.participantId, body.itemId);

@@ -443,6 +443,34 @@ export class BillCore {
     const p = bill.participants[participantId];
     const item = bill.data.items.find((i) => i.id === itemId);
     if (!p || !item || !p.claims[itemId]?.length) return null;
+    this.dropClaims(bill, participantId, itemId);
+    this.changed(billId);
+    return { name: p.name, item: item.name };
+  }
+
+  /**
+   * The payer holds a guest's name on a line ("Anteil entfernen"): their ticks there go, always –
+   * and they are told. Paid already, the difference is owed back to them (noteShareChanges).
+   */
+  removeGuestShare(billId: string, requesterId: string, participantId: string, itemId: string): void {
+    const bill = this.get(billId);
+    this.assertOwner(billId, requesterId);
+    if (participantId === bill.ownerId) throw new BillError("Deine eigenen Häkchen änderst Du direkt in der Rechnung.", 400);
+    const p = this.participant(bill, participantId);
+    const item = bill.data.items.find((i) => i.id === itemId);
+    if (!item || !p.claims[itemId]?.length) return;
+    this.noteShareChanges(bill, requesterId, () => this.dropClaims(bill, participantId, itemId));
+    this.changed(billId);
+    this.notify(participantId, {
+      title: msg("{name} hat Deinen Anteil an „{item}“ entfernt", { name: bill.participants[bill.ownerId]?.name ?? "", item: item.name }),
+      body: msg("Stimmt das nicht, hake es einfach wieder ab."),
+      path: `/b/${billId}`,
+    });
+  }
+
+  /** A participant's ticks on one line go – and a friend's note that they had shared it. */
+  private dropClaims(bill: StoredBill, participantId: string, itemId: string): void {
+    const p = bill.participants[participantId];
     delete p.claims[itemId];
     p.splits = sanitizeSplits(p.splits ?? {}, p.claims);
     for (const friend of Object.values(bill.participants)) {
@@ -451,8 +479,6 @@ export class BillCore {
       change.items = change.items.filter((i) => i.id !== itemId);
       if (!change.items.length) delete friend.shareChange;
     }
-    this.changed(billId);
-    return { name: p.name, item: item.name };
   }
 
   /**

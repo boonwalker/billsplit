@@ -167,6 +167,15 @@ aus der Freundesliste und aus ihrer eigenen Rechnungsliste (`untouchedAssignee`;
 `synced` und fallen weg, wenn die Rechnung noch existiert, man aber nicht mehr dabei ist). Darunter „Nur einen Teil aufteilen“ mit dem „/ N“ wie oben; „Übernehmen“ speichert
 nur, wenn sich der Teiler geändert hat. Die Gesten-Hilfe „?“ nennt dafür „Gedrückt halten“.
 
+**Namen gedrückt halten** (Rechnungssteller, mit Abhaken): Hält er die grüne Namensmarkierung eines Gastes an einer
+Position, fragt „Anteil von Andy entfernen?“ – „Andy hat „Kakao mit Sahne“ abgehakt (2,05 €). Danach ist der Anteil
+wieder frei – Andy bekommt eine Mitteilung und kann neu abhaken.“; hat der Gast schon bezahlt, steht darunter wie bei
+`RefundConfirm`, was ihm dann gutgeschrieben wird. „Anteil entfernen“ nimmt die Häkchen dieses Gastes an dieser
+Position heraus – immer, auch nach dem Bezahlen (`BillCore.removeGuestShare`, `POST /api/bills/:id/unclaim`, Dialog
+`RemoveShareConfirm`). Der Gast bekommt „Peter hat Deinen Anteil an „Kakao mit Sahne“ entfernt“ / „Stimmt das nicht,
+hake es einfach wieder ab.“; wer dadurch zu viel bezahlt hat, sieht „Peter hat die Rechnung nachträglich geändert …“.
+Die Gesten-Hilfe nennt „Namen gedrückt halten“ – „Anteil des Gastes entfernen“.
+
 **In der Gleichverteilung** gibt es dieselben Kreise. Eine so zugeordnete Position (z.B. das Duschgel für Andy) zahlen
 nur die gewählten Personen, zu gleichen Teilen; alles andere wird weiter gleich auf alle verteilt. Auf dem Beleg steht
 dann in Bleistift der Name statt des Betrags pro Person, unten „SUMME“ (alles) und „Für alle“ mit dem Bruch nur über

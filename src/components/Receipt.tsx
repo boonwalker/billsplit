@@ -49,6 +49,8 @@ interface Props {
   onToggleTip?: () => void;
   /** "Stimmt nicht?": in these lines the other guest's name can be tapped away (see BillCore.contestShare). */
   contest?: Contest;
+  /** Payer: a guest's name on a line was held – ask whether to take their part off it. */
+  onHoldShare?: (personId: string, itemId: string) => void;
 }
 
 /** Lines someone shared with me after I had paid, and how to take them back. */
@@ -108,6 +110,7 @@ function ReceiptLine({
   people = 1,
   forNames,
   contest,
+  onHoldShare,
 }: {
   item: BillItem;
   index: number;
@@ -128,6 +131,8 @@ function ReceiptLine({
   onResetDivisor?: () => void;
   /** "Stimmt nicht?" for this line: the other guest's name taps away their part. */
   contest?: Contest;
+  /** Payer: holding a guest's name asks whether to take their part off this line. */
+  onHoldShare?: (personId: string) => void;
 }) {
   const holders = slotHolders(item.id, participants);
   const mine = me ? participants.find((p) => p.id === me) : undefined;
@@ -214,6 +219,50 @@ function ReceiptLine({
     swipeStart.current = null;
     endPress();
   }
+
+  // Long press on a guest's name (payer): asks whether to take their part off the line.
+  const chipTimer = useRef<number | null>(null);
+  const chipStart = useRef<{ x: number; y: number } | null>(null);
+  const chipHeld = useRef(false);
+  const [holdingChip, setHoldingChip] = useState<string | null>(null);
+  function chipEnd() {
+    if (chipTimer.current) window.clearTimeout(chipTimer.current);
+    chipTimer.current = null;
+    chipStart.current = null;
+    setHoldingChip(null);
+  }
+  const chipHold = (personId: string) =>
+    onHoldShare && personId !== me
+      ? {
+          onPointerDown: (e: ReactPointerEvent) => {
+            chipHeld.current = false;
+            chipStart.current = { x: e.clientX, y: e.clientY };
+            setHoldingChip(personId);
+            chipTimer.current = window.setTimeout(() => {
+              chipHeld.current = true;
+              chipEnd();
+              vibrate([12]);
+              window.getSelection()?.removeAllRanges();
+              onHoldShare(personId);
+            }, 480);
+          },
+          onPointerMove: (e: ReactPointerEvent) => {
+            const start = chipStart.current;
+            if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) chipEnd();
+          },
+          onPointerUp: chipEnd,
+          onPointerLeave: chipEnd,
+          onPointerCancel: chipEnd,
+          onContextMenu: (e: ReactMouseEvent) => e.preventDefault(),
+          // The click that ends the long press does nothing else (e.g. share a unit).
+          onClickCapture: (e: ReactMouseEvent) => {
+            if (!chipHeld.current) return;
+            chipHeld.current = false;
+            e.stopPropagation();
+            e.preventDefault();
+          },
+        }
+      : {};
 
   function toggle(e: ReactMouseEvent<HTMLButtonElement>) {
     // The click that ends a long press only closes it.
@@ -402,7 +451,11 @@ function ReceiptLine({
               );
             }
             return (
-              <li key={p.id} className={isMe ? "me" : undefined}>
+              <li
+                key={p.id}
+                className={[isMe ? "me" : "", onHoldShare && !isMe ? "holdable" : "", holdingChip === p.id ? "holding" : ""].filter(Boolean).join(" ") || undefined}
+                {...chipHold(p.id)}
+              >
                 {clickable ? (
                   <button
                     type="button"
@@ -586,7 +639,7 @@ function useTapDemo(billId: string, enabled: boolean, canHold: boolean, list: Re
 }
 
 /** The digital bill in classic receipt style, with tick circles in front of every line. */
-export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onEditDivisor, onResetDivisor, onToggleFee, onToggleTip, contest }: Props) {
+export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggleExcluded, onEditDivisor, onResetDivisor, onToggleFee, onToggleTip, contest, onHoldShare }: Props) {
   const { data, participants, me, ownerName } = snapshot;
   const billed = billedItems(data);
   const sub = subtotal(billed);
@@ -657,6 +710,7 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
                 people={people}
                 forNames={equal ? lineFor(item, participants).map((id) => (id === me ? t("Du") : (participants.find((p) => p.id === id)?.name ?? "?"))) : undefined}
                 contest={contest?.itemIds.includes(item.id) ? contest : undefined}
+                onHoldShare={onHoldShare && !equal ? (personId) => onHoldShare(personId, item.id) : undefined}
               />
               </Fragment>
             ))}

@@ -12,7 +12,12 @@ const legend = (mode: Mode, hold: boolean): [gesture: string, effect: string][] 
         [t("„Du“ antippen"), t("Du willst mit jemandem teilen")],
         ["− / +", t("bei mehrfacher Menge weniger oder mehr nehmen")],
         // The payer only: who had a line, and "/ N".
-        ...(hold ? [[t("Gedrückt halten"), t("jemandem direkt zuordnen oder nur einen Teil in Rechnung stellen")] as [string, string]] : []),
+        ...(hold
+          ? [
+              [t("Gedrückt halten"), t("jemandem direkt zuordnen oder nur einen Teil in Rechnung stellen")] as [string, string],
+              [t("Namen gedrückt halten"), t("Anteil des Gastes entfernen")] as [string, string],
+            ]
+          : []),
       ]
     : [
         [t("Antippen"), t("streichen – nochmal tippen holt es zurück")],

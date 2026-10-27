@@ -148,6 +148,7 @@ export const localApi: Api = {
   // No notifications in the demo: "Erinnern" always opens WhatsApp there.
   remind: (id, participantId) => call(() => (localStore().remind(id, me(), participantId), view(id))),
   contestShare: (id, participantId, itemId) => call(() => (localStore().contestShare(id, me(), participantId, itemId), view(id))),
+  removeGuestShare: (id, participantId, itemId) => call(() => (localStore().removeGuestShare(id, me(), participantId, itemId), view(id))),
   reminders: () => call(() => localStore().reminderStatus(me())),
   remindPerson: (personId) => call(() => (localStore().remindPerson(me(), personId), localStore().reminderStatus(me()))),
   network: () => call(() => localStore().network(me())),

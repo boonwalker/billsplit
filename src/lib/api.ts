@@ -40,6 +40,8 @@ export interface Api {
   remind(id: string, participantId: string): Promise<BillSnapshot>;
   /** "Stimmt nicht?": takes back what another guest shared with me in a line after I had paid. */
   contestShare(id: string, participantId: string, itemId: string): Promise<BillSnapshot>;
+  /** Payer: takes a guest's ticks off a line (holding their name, see BillCore.removeGuestShare). */
+  removeGuestShare(id: string, participantId: string, itemId: string): Promise<BillSnapshot>;
   /** Whom notifications reach among the people in my bills, and when I last reminded each. */
   reminders(): Promise<ReminderStatus>;
   /** One reminder notification about everything a person still owes me. */
@@ -171,6 +173,7 @@ const serverApi: Api = {
   markPaid: (id, paid) => request("POST", `${bill(id)}/paid`, { paid }),
   remind: (id, participantId) => request("POST", `${bill(id)}/remind`, { participantId }),
   contestShare: (id, participantId, itemId) => request("POST", `${bill(id)}/contest`, { participantId, itemId }),
+  removeGuestShare: (id, participantId, itemId) => request("POST", `${bill(id)}/unclaim`, { participantId, itemId }),
   reminders: () => request("GET", "/api/reminders"),
   remindPerson: (personId) => request("POST", "/api/reminders", { personId }),
   network: async () => (await request<{ edges: NetworkEdge[] }>("GET", "/api/network")).edges,

@@ -15,7 +15,7 @@ import PayBar from "../components/PayBar";
 import Receipt, { type Contest } from "../components/Receipt";
 import { api } from "../lib/api";
 import { guestStatus } from "../lib/balances";
-import { billUrl, lineFor, sharedTotal, type BillData, type Contact, type Debtor } from "../lib/bill";
+import { billUrl, claimCost, lineFor, sharedTotal, unitShare, type BillData, type Contact, type Debtor } from "../lib/bill";
 import { setItemDivisor, setItemFor, toggleFeeExcluded, toggleItemExcluded, toggleTipExcluded } from "../lib/billEdits";
 import { DEMO } from "../lib/demo";
 import { isIosBrowser } from "../lib/handoff";
@@ -28,6 +28,7 @@ import { useLiveBill } from "../lib/useLiveBill";
 import { rich, t } from "../lib/i18n";
 import { newRefunds, type NewRefund } from "../lib/refunds";
 import RefundConfirm from "../components/RefundConfirm";
+import RemoveShareConfirm from "../components/RemoveShareConfirm";
 import { scrollBehavior } from "../lib/motion";
 
 /** People from earlier bills offered in the long-press sheet, besides those in the bill. */
@@ -54,6 +55,8 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   const [assigning, setAssigning] = useState(false);
   /** A change that leaves friends having paid too much, waiting for the payer's yes. */
   const [refundAsk, setRefundAsk] = useState<{ refunds: NewRefund[]; apply: () => void } | null>(null);
+  /** Payer held a guest's name on a line: take their part off it? */
+  const [removeAsk, setRemoveAsk] = useState<{ personId: string; itemId: string } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const [ownerBarHeight, setOwnerBarHeight] = useState(0);
   /**
@@ -490,6 +493,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
             onResetDivisor={snap.isOwner ? (itemId) => applyDivisor(itemId, 1) : undefined}
             onToggleTip={snap.isOwner && equal ? toggleTip : undefined}
             contest={contest}
+            onHoldShare={snap.isOwner ? (personId, itemId) => setRemoveAsk({ personId, itemId }) : undefined}
           />
         </div>
 
@@ -516,6 +520,40 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
           onCancel={() => setRefundAsk(null)}
         />
       )}
+
+      {removeAsk &&
+        (() => {
+          const person = snap.participants.find((p) => p.id === removeAsk.personId);
+          const item = snap.data.items.find((i) => i.id === removeAsk.itemId);
+          if (!person || !item) return null;
+          // Without their ticks on the line: did they pay more than their share is then?
+          const without = snap.participants.map((p) =>
+            p.id === person.id
+              ? {
+                  ...p,
+                  claims: Object.fromEntries(Object.entries(p.claims).filter(([itemId]) => itemId !== item.id)),
+                  splits: Object.fromEntries(Object.entries(p.splits ?? {}).filter(([itemId]) => itemId !== item.id)),
+                }
+              : p,
+          );
+          return (
+            <RemoveShareConfirm
+              name={person.name}
+              item={item.name}
+              amount={claimCost(item, unitShare(item, snap.participants, person.id))}
+              refund={newRefunds(snap, snap.data, without).find((r) => r.id === person.id)}
+              currency={snap.data.currency}
+              onConfirm={() => {
+                setRemoveAsk(null);
+                api
+                  .removeGuestShare(id, person.id, item.id)
+                  .then(replace)
+                  .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")));
+              }}
+              onCancel={() => setRemoveAsk(null)}
+            />
+          );
+        })()}
 
       {!snap.isOwner && snap.me && <PayBar
           snapshot={snap}

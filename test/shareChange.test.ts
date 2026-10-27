@@ -79,3 +79,25 @@ describe("admin page: Anteil entfernen (BillCore.removeShare)", () => {
     expect(store.removeShare(id, "nobody", "kakao")).toBeNull();
   });
 });
+
+describe("payer holds a guest's name: Anteil entfernen (BillCore.removeGuestShare)", () => {
+  it("only the payer, only guests – the guest is told, a paid guest is owed the difference", () => {
+    const { store, id, notices } = setup();
+    store.setClaims(id, "andy", { kakao: [0], cola: [0] });
+    expect(() => store.removeGuestShare(id, "andy", "anna", "kakao")).toThrow(BillError);
+    expect(() => store.removeGuestShare(id, "peter", "peter", "kakao")).toThrow(BillError);
+
+    // Anna paid the whole cocoa: with Andy's half gone, nothing is owed back.
+    store.removeGuestShare(id, "peter", "andy", "kakao");
+    expect(store.snapshot(id, "anna").myRefund).toBeUndefined();
+    expect(store.snapshot(id, "anna").myShareChange).toBeUndefined();
+    expect(store.snapshot(id, "andy").participants.find((p) => p.id === "andy")?.claims).toEqual({ cola: [0] });
+    expect(notices.at(-1)).toEqual({ to: "andy", title: "{name} hat Deinen Anteil an „{item}“ entfernt" });
+
+    // Anna's own cocoa: she paid it, so Peter owes it back – and her bill says he changed it.
+    store.removeGuestShare(id, "peter", "anna", "kakao");
+    const snap = store.snapshot(id, "anna");
+    expect(snap.myRefund).toBe(410);
+    expect(snap.myShareChange).toMatchObject({ byId: "peter", kind: "changed" });
+  });
+});

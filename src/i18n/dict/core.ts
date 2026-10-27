@@ -131,6 +131,9 @@ export default {
     "{money} per Ausgleich {from} → {to} (wartet auf Bestätigung von {to})": "{money} via settle-up {from} → {to} (waiting for confirmation from {to})",
     "{money} per Ausgleich {from} → {to} ✓": "{money} via settle-up {from} → {to} ✓",
     // src/lib/billCore.ts – notifications
+    "Deine eigenen Häkchen änderst Du direkt in der Rechnung.": "Change your own ticks right in the bill.",
+    "{name} hat Deinen Anteil an „{item}“ entfernt": "{name} removed your part of “{item}”",
+    "Stimmt das nicht, hake es einfach wieder ab.": "If that's not right, just tick it again.",
     "{name} hat nachgezahlt": "{name} paid the rest",
     "Diese Nachzahlung gibt es nicht (mehr).": "This additional payment doesn't exist (any more).",
     "{name} hat bezahlt": "{name} has paid",
@@ -306,6 +309,9 @@ export default {
     "{money} per Ausgleich {from} → {to} (wartet auf Bestätigung von {to})": "{money} por liquidación {from} → {to} (pendiente de confirmación de {to})",
     "{money} per Ausgleich {from} → {to} ✓": "{money} por liquidación {from} → {to} ✓",
     // src/lib/billCore.ts – notifications
+    "Deine eigenen Häkchen änderst Du direkt in der Rechnung.": "Tus propias marcas se cambian directamente en la cuenta.",
+    "{name} hat Deinen Anteil an „{item}“ entfernt": "{name} ha quitado tu parte de «{item}»",
+    "Stimmt das nicht, hake es einfach wieder ab.": "Si no es correcto, vuelve a marcarlo.",
     "{name} hat nachgezahlt": "{name} ha pagado el resto",
     "Diese Nachzahlung gibt es nicht (mehr).": "Este pago adicional ya no existe.",
     "{name} hat bezahlt": "{name} ha pagado",
