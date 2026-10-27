@@ -47,7 +47,9 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
 3. Unten steht der eigene Anteil. „Anteil begleichen“ öffnet die PayPal-App bzw. -Website mit Empfänger und
    Betrag. Nach dem Login muss man nur noch bestätigen.
    Kurz vor dem Absprung zu PayPal ploppt über der Bezahlleiste die Sprechblase „↩ Danach wieder zurück in die App
-   kommen und die Zahlung bestätigen“ auf (`paybar-bubble`).
+   kommen und die Zahlung bestätigen“ auf (`paybar-bubble`): Bei jedem Erscheinen bläst sie sich mit großer Schrift
+   über den Großteil der Rechnung auf, wackelt und schrumpft nach knapp drei Sekunden auf ihre Größe zurück (mit
+   „Bewegung reduzieren“ erscheint sie gleich klein).
    Kommt man danach in die App zurück, fragt sie gleich „Hast Du 11,80 € an Niklas gesendet?“ – ein Tipp auf
    „✓ Ja, gesendet“ markiert den Anteil als bezahlt (auch nach Überweisung oder Wero).
 
