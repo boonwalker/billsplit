@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 210 Tests, alle grün; 49 Klick-Tests).
+1. `npm run typecheck` und `npm test` (aktuell 215 Tests, alle grün; 50 Klick-Tests).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -164,6 +164,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   `RefundConfirm` (`src/lib/refunds.ts`). Was sich geändert hat, merkt `noteShareChanges` als `shareChange` beim Gast
   (Snapshot `myShareChange`, nur solange ein Guthaben besteht); „Stimmt nicht?“ → `contestShare` entfernt nur die
   überschneidenden Stücke des Mitteilenden in genau diesen Zeilen.
+- **Nachzahlung:** Wächst ein Anteil nach dem Bezahlen (markiert oder „erhalten“), wird der Unterschied eine eigene
+  Zahlung (`TopUp` in `topUps`, zählt in `settledInBill`). `recordPayClick`/`setMarkedPaid` greifen dann auf die
+  letzte Nachzahlung, `setReceived(…, topUp)` bestätigt sie einzeln; die erste Zahlung (`payAmount`) nie überschreiben.
 - **Gespeicherte Daten nie ohne Migration umbauen:** `server/store.ts` liest noch das alte Dateiformat (reine
   Rechnungsliste); Stück-genaue Zuordnungen werden beim Laden aus alten Mengen umgestellt. Rechnungen werden **nie**
   automatisch gelöscht (60-Tage-Frist am 16.10.2026 auf Wunsch entfernt) – keine Frist wieder einbauen; nur von Hand auf
@@ -242,6 +245,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
 - Nachträglich mitgeteilt (Bezahl-Leiste, orange): „Andy hat „Pommes“ nachträglich mit Dir geteilt – darum schuldet Dir
   Peter jetzt wieder 2,19 € zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!“, darunter
   „Stimmt nicht?“ → „Tippe in der Rechnung bei „Pommes“ auf Andy, um den Anteil wegzuklicken.“
+- Nachzahlung (Bezahl-Leiste): „✓ 4,10 € bezahlt – von Peter bestätigt“, orange „Dein Anteil ist nach Deiner Zahlung
+  gestiegen – es fehlen noch 5,00 €.“, „Anteil begleichen · 5,00 €“; beim Rechnungssteller eigene Zeile „Niklas ·
+  Nachzahlung“ mit eigenem „erhalten“, Mitteilung „Niklas hat nachgezahlt“
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
   · vor dem PayPal-Absprung Sprechblase über der Leiste: „↩ Danach wieder zurück in die App kommen und die Zahlung bestätigen“
   · nach dem Bezahlen unter dem Beleg „Nächstes Mal bezahlst Du?“ / „Mit klicksplit fotografierst Du den Beleg und bekommst

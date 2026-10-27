@@ -199,3 +199,22 @@ button.remind-btn:disabled {
 .debtor:has(.remind-error) {
   flex-wrap: wrap;
 }
+
+/* A payment on top (the share grew after paying): indented below the friend it belongs to. */
+.debtor.debtor-topup {
+  margin-left: 26px;
+  padding-block: 8px;
+}
+
+.debtor-topup:not(.announced, .received) {
+  border: 1.5px dashed color-mix(in srgb, var(--owed) 60%, transparent);
+}
+
+.avatar.avatar-topup {
+  width: 28px;
+  height: 28px;
+  font-size: 1rem;
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}

@@ -1,4 +1,4 @@
-import { openShare, participantShare, type BillSnapshot, type PaymentInfo } from "./bill";
+import { openShare, participantShare, type BillSnapshot, type PaidState, type PaymentInfo } from "./bill";
 import { ownerSummary } from "../components/OwnerPanel";
 import { t } from "./i18n";
 import { convert, type Rates } from "./currency";
@@ -94,12 +94,23 @@ function debtorOpen(d: NonNullable<BillSnapshot["debtors"]>[number]): Cents {
   return openShare(d.amount, d, (d.credited ?? 0) + (d.creditPending ?? 0));
 }
 
-/** My open amount in someone else's bill (0 once the payer confirmed it as received). */
+/** My open amount in someone else's bill – including what came on top after I had paid (see TopUp). */
 export function myOpen(snap: BillSnapshot): Cents {
-  if (!snap.me || snap.myReceived) return 0;
+  if (!snap.me) return 0;
   const share = participantShare(snap.data, snap.participants, snap.me).total;
   const credit = snap.myCredit ? snap.myCredit.confirmed + snap.myCredit.pending : 0;
-  return openShare(share, { payAmount: snap.myPayment?.amount, markedPaidAt: snap.myPayment?.markedPaidAt }, credit);
+  return openShare(share, myPaidState(snap), credit);
+}
+
+/** How I settled my share in the bill (as the payer sees it in Debtor). */
+export function myPaidState(snap: BillSnapshot): PaidState {
+  return {
+    received: snap.myReceived,
+    payAmount: snap.myPayment?.amount,
+    receivedAmount: snap.myReceivedAmount,
+    markedPaidAt: snap.myPayment?.markedPaidAt,
+    topUps: snap.myTopUps,
+  };
 }
 
 /**

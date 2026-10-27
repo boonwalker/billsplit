@@ -317,3 +317,9 @@
   color: var(--owed);
   font-weight: 700;
 }
+
+/* Paid, and then the share grew: what is still to pay on top. */
+.paybar-grown {
+  font-weight: 700;
+  color: var(--owed);
+}

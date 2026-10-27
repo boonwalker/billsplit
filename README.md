@@ -371,6 +371,16 @@ sobald sein Guthaben durch eine Änderung eines anderen steigt):
   schuldet Dir Niklas jetzt wieder 2,05 € zurück. Das wird im Dashboard vermerkt und gerät nicht in Vergessenheit!“
 - Hat der Rechnungssteller geändert: „Niklas hat die Rechnung nachträglich geändert und schuldet Dir jetzt 4,00 € zurück. …“
 
+**Nachzahlung:** Wird ein Anteil nach dem Bezahlen (als bezahlt markiert oder schon „erhalten“) größer – z.B. weil der
+Gast noch ein Bier abhakt –, ist der Unterschied eine eigene Zahlung (`TopUp`, `topUps` am Teilnehmer). Die
+Bezahl-Leiste zeigt die bisherigen Zahlungen („✓ 4,10 € bezahlt – von Peter bestätigt“) und darunter orange „Dein
+Anteil ist nach Deiner Zahlung gestiegen – es fehlen noch 5,00 €.“ mit „Anteil begleichen · 5,00 €“ – der übliche
+Ablauf mit PayPal, „Hast Du … gesendet?“ und „Als bezahlt markieren“, nur für den Unterschied. Der Rechnungssteller
+sieht unter dem Freund eine eigene, eingerückte Zeile „Niklas · Nachzahlung“ (erst „Auswahl nach der Zahlung erweitert
+– noch offen“, dann „hat auf Bezahlen getippt“ / „als bezahlt markiert“) mit eigenem „erhalten“ (`setReceived` mit
+`topUp`), bekommt die Mitteilung „Niklas hat nachgezahlt“; die erste Zahlung bleibt unverändert. Erneutes Tippen vor
+dem Markieren ändert dieselbe Nachzahlung; eine weitere Runde danach ergibt eine zweite.
+
 **„Stimmt nicht?“** (nur beim Mitteilen durch einen anderen Gast): Ein Tipp zeigt „Tippe in der Rechnung bei „Kakao mit
 Sahne“ auf Andy, um den Anteil wegzuklicken.“ und scrollt zur Zeile; dort ist Andys Name orange umrandet mit ✕ („Hattest
 Du „Kakao mit Sahne“ allein? …“). Antippen entfernt nur Andys Stücke in dieser Zeile, die sich mit den eigenen

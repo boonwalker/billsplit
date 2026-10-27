@@ -134,6 +134,8 @@ export interface Debtor {
   assigned?: boolean;
   /** The friend marked their share as paid. */
   markedPaidAt?: string;
+  /** Paid on top later, when their share grew after paying (see TopUp). */
+  topUps?: TopUp[];
   /** Settled by settlement payments (see Transfer): confirmed by their recipient … */
   credited?: Cents;
   /** … and still waiting for that confirmation. */
@@ -164,6 +166,17 @@ export function openShare(share: Cents, state: PaidState, credited: Cents = 0): 
   return Math.max(0, share - settledInBill(share, state) - credited);
 }
 
+/**
+ * A payment on top of one already made: the share grew after the friend had paid (e.g. ticked
+ * one more beer), so the difference is paid – and confirmed by the payer – on its own.
+ */
+export interface TopUp {
+  amount: Cents;
+  payClickedAt: string;
+  markedPaidAt?: string;
+  received?: boolean;
+}
+
 /** How a friend settled their share in the bill itself (see openShare). */
 export interface PaidState {
   received?: boolean;
@@ -171,12 +184,19 @@ export interface PaidState {
   /** What was open when the payer ticked "erhalten" without a pay click before. */
   receivedAmount?: Cents;
   markedPaidAt?: string;
+  topUps?: TopUp[];
 }
 
-/** What a friend paid in the bill itself: the amount of their pay click, or what was open when it was confirmed. */
+/** Paid in the bill and marked or confirmed: the first payment (base) or a later top-up. */
+export const isSettledPayment = (state: { received?: boolean; markedPaidAt?: string }) => Boolean(state.received || state.markedPaidAt);
+
+/**
+ * What a friend paid in the bill itself: the amount of their pay click, or what was open when it
+ * was confirmed – plus the top-ups marked as paid or confirmed since.
+ */
 export function settledInBill(share: Cents, state: PaidState): Cents {
-  if (state.received) return state.payAmount ?? state.receivedAmount ?? share;
-  return state.markedPaidAt ? (state.payAmount ?? 0) : 0;
+  const base = state.received ? (state.payAmount ?? state.receivedAmount ?? share) : state.markedPaidAt ? (state.payAmount ?? 0) : 0;
+  return base + (state.topUps ?? []).filter(isSettledPayment).reduce((sum, t) => sum + t.amount, 0);
 }
 
 /**
@@ -313,6 +333,10 @@ export interface BillSnapshot {
   myPayment?: { at: string; amount: Cents; markedPaidAt?: string };
   /** The payer confirmed this participant's share as received (also when it was offset against another bill). */
   myReceived?: boolean;
+  /** What was open when the payer confirmed my share without a pay click (see PaidState). */
+  myReceivedAmount?: Cents;
+  /** My payments on top after my share grew (see TopUp). */
+  myTopUps?: TopUp[];
   /** What settlement payments covered of this participant's share. */
   myCredit?: ShareCredit;
   /** Paid more than my share is now (the payer changed the bill): what the payer owes me back. */

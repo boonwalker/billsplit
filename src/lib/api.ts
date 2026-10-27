@@ -34,7 +34,8 @@ export interface Api {
   /** Address of the stored receipt photo, or null if there is none. */
   receiptImageUrl(id: string): Promise<string | null>;
   pay(id: string): Promise<{ amount: number }>;
-  setReceived(id: string, participantId: string, received: boolean): Promise<BillSnapshot>;
+  /** With `topUp` (its index): confirms a payment made on top later (see TopUp). */
+  setReceived(id: string, participantId: string, received: boolean, topUp?: number): Promise<BillSnapshot>;
   /** The payer reminds a friend by notification (only when it reaches them; else the app opens WhatsApp). */
   remind(id: string, participantId: string): Promise<BillSnapshot>;
   /** "Stimmt nicht?": takes back what another guest shared with me in a line after I had paid. */
@@ -166,7 +167,7 @@ const serverApi: Api = {
   receiptImageUrl: async (id) => `${bill(id)}/receipt-image`,
   // keepalive lets the request finish while the browser switches to PayPal.
   pay: (id) => request("POST", `${bill(id)}/pay`, {}, { keepalive: true }),
-  setReceived: (id, participantId, received) => request("POST", `${bill(id)}/received`, { participantId, received }),
+  setReceived: (id, participantId, received, topUp) => request("POST", `${bill(id)}/received`, { participantId, received, topUp }),
   markPaid: (id, paid) => request("POST", `${bill(id)}/paid`, { paid }),
   remind: (id, participantId) => request("POST", `${bill(id)}/remind`, { participantId }),
   contestShare: (id, participantId, itemId) => request("POST", `${bill(id)}/contest`, { participantId, itemId }),

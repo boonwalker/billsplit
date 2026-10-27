@@ -876,8 +876,11 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         return sendJson(res, 200, store.snapshot(billId, viewer));
       }
       if (action === "received" && method === "POST") {
-        const body = parse(z.object({ participantId: z.string().max(32), received: z.boolean() }), await readJson(req, MAX_JSON_BODY));
-        store.setReceived(billId, viewer, body.participantId, body.received);
+        const body = parse(
+          z.object({ participantId: z.string().max(32), received: z.boolean(), topUp: z.number().int().min(0).max(100).optional() }),
+          await readJson(req, MAX_JSON_BODY),
+        );
+        store.setReceived(billId, viewer, body.participantId, body.received, body.topUp);
         return sendJson(res, 200, store.snapshot(billId, viewer));
       }
       if (action === "" && method === "PUT") {

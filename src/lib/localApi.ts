@@ -143,7 +143,7 @@ export const localApi: Api = {
     }
   },
   pay: (id) => call(() => ({ amount: localStore().recordPayClick(id, me()) })),
-  setReceived: (id, participantId, received) => call(() => (localStore().setReceived(id, me(), participantId, received), view(id))),
+  setReceived: (id, participantId, received, topUp) => call(() => (localStore().setReceived(id, me(), participantId, received, topUp), view(id))),
   markPaid: (id, paid) => call(() => (localStore().setMarkedPaid(id, me(), paid), view(id))),
   // No notifications in the demo: "Erinnern" always opens WhatsApp there.
   remind: (id, participantId) => call(() => (localStore().remind(id, me(), participantId), view(id))),

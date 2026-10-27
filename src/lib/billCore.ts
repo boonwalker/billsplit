@@ -2,6 +2,7 @@ import { fill, msg, type Msg, type Vars } from "../i18n";
 import {
   billTotal,
   compactClaims,
+  isSettledPayment,
   openShare,
   overpaidShare,
   participantShare,
@@ -19,6 +20,7 @@ import {
   type PublicParticipant,
   type ShareChange,
   type ShareCredit,
+  type TopUp,
   type Transfer,
   type TransferAllocation,
 } from "./bill";
@@ -67,6 +69,8 @@ export interface StoredParticipant {
   receivedAmount?: number;
   /** The friend marked their share as paid. */
   markedPaidAt?: string;
+  /** Paid on top later, when their share grew after paying (see TopUp). */
+  topUps?: TopUp[];
   /** Last reminder the payer sent as a notification (at most one every REMIND_COOLDOWN_MS). */
   remindedAt?: string;
   /** The payer put them in ("Ausgabe zuweisen" → directly to Andy), they did not scan the QR code. */
@@ -267,6 +271,7 @@ export class BillCore {
             payClickedAt: into.payClickedAt ?? from.payClickedAt,
             payAmount: into.payAmount ?? from.payAmount,
             markedPaidAt: into.markedPaidAt ?? from.markedPaidAt,
+            topUps: into.topUps ?? from.topUps,
             received: Boolean(into.received || from.received) || undefined,
           }
         : from;
@@ -556,11 +561,26 @@ export class BillCore {
     return true;
   }
 
-  /** Records that a friend tapped "Bezahlen" and with which amount; returns that amount. */
+  /**
+   * Records that a friend tapped "Bezahlen" and with which amount; returns that amount. After
+   * paying (marked or confirmed), what came on top since is a payment of its own (TopUp).
+   */
   recordPayClick(billId: string, participantId: string): number {
     const bill = this.get(billId);
     if (participantId === bill.ownerId) throw new BillError("Du hast die Rechnung selbst bezahlt.", 400);
     const p = this.participant(bill, participantId);
+    if (isSettledPayment(p)) {
+      const open = this.openOf(bill, participantId);
+      const last = p.topUps?.at(-1);
+      const now = new Date().toISOString();
+      // Tapped again before marking it: the same top-up, with what is open now.
+      if (last && !isSettledPayment(last)) {
+        if (open > 0) Object.assign(last, { amount: open, payClickedAt: now });
+        else p.topUps!.pop();
+      } else if (open > 0) p.topUps = [...(p.topUps ?? []), { amount: open, payClickedAt: now }];
+      this.changed(billId);
+      return open;
+    }
     const amount = participantShare(bill.data, this.publicParticipants(bill), participantId).total;
     p.payClickedAt = new Date().toISOString();
     p.payAmount = amount;
@@ -568,11 +588,27 @@ export class BillCore {
     return amount;
   }
 
-  /** A friend marks their own share as paid (or takes it back). */
+  /** A friend marks their own share – or the top-up they are paying – as paid (or takes it back). */
   setMarkedPaid(billId: string, participantId: string, paid: boolean): void {
     const bill = this.get(billId);
     if (participantId === bill.ownerId) throw new BillError("Du hast die Rechnung selbst bezahlt.", 400);
     const p = this.participant(bill, participantId);
+    const last = p.topUps?.at(-1);
+    if (last) {
+      // Confirmed by the payer already: nothing to mark or take back.
+      if (last.received) return;
+      const before = last.markedPaidAt;
+      last.markedPaidAt = paid ? new Date().toISOString() : undefined;
+      this.changed(billId);
+      if (paid && !before) {
+        this.notify(bill.ownerId, {
+          title: msg("{name} hat nachgezahlt", { name: p.name }),
+          body: msg("{amount} für „{title}“ – bitte prüfe den Eingang.", { amount: { cents: last.amount, currency: bill.data.currency }, title: bill.data.title }),
+          path: `/b/${billId}?an=${participantId}`,
+        });
+      }
+      return;
+    }
     const before = p.markedPaidAt;
     p.markedPaidAt = paid ? new Date().toISOString() : undefined;
     this.changed(billId);
@@ -587,10 +623,18 @@ export class BillCore {
     }
   }
 
-  setReceived(billId: string, requesterId: string, debtorId: string, received: boolean): void {
+  /** The payer confirms the money arrived – for the first payment, or with `topUp` (its index) for a later one. */
+  setReceived(billId: string, requesterId: string, debtorId: string, received: boolean, topUp?: number): void {
     const bill = this.get(billId);
     if (requesterId !== bill.ownerId) throw new BillError("Nur wer die Rechnung bezahlt hat, kann Zahlungseingänge abhaken.", 403);
     const p = this.participant(bill, debtorId);
+    if (topUp !== undefined) {
+      const payment = p.topUps?.[topUp];
+      if (!payment) throw new BillError("Diese Nachzahlung gibt es nicht (mehr).", 404);
+      payment.received = received || undefined;
+      this.changed(billId);
+      return;
+    }
     // Without a pay click the amount is what is open now – so a later change shows what was paid.
     if (received && !p.received && p.payAmount === undefined) p.receivedAmount = this.openOf(bill, debtorId);
     if (!received) delete p.receivedAmount;
@@ -997,6 +1041,8 @@ export class BillCore {
         snap.myPayment = { at: p.payClickedAt, amount: p.payAmount, markedPaidAt: p.markedPaidAt };
       }
       if (p.received) snap.myReceived = true;
+      if (p.received && p.receivedAmount !== undefined) snap.myReceivedAmount = p.receivedAmount;
+      if (p.topUps?.length) snap.myTopUps = p.topUps;
       const credit = this.credit(billId, me);
       if (credit.notes.length) snap.myCredit = credit;
       const refund = this.refundOf(bill, me);
@@ -1017,6 +1063,7 @@ export class BillCore {
             received: Boolean(p.received),
             receivedAmount: p.receivedAmount,
             markedPaidAt: p.markedPaidAt,
+            topUps: p.topUps,
             refund: this.refundOf(bill, id) || undefined,
             assigned: p.assigned,
             reachable: this.canNotify(id),

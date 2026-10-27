@@ -131,6 +131,8 @@ export default {
     "{money} per Ausgleich {from} → {to} (wartet auf Bestätigung von {to})": "{money} via settle-up {from} → {to} (waiting for confirmation from {to})",
     "{money} per Ausgleich {from} → {to} ✓": "{money} via settle-up {from} → {to} ✓",
     // src/lib/billCore.ts – notifications
+    "{name} hat nachgezahlt": "{name} paid the rest",
+    "Diese Nachzahlung gibt es nicht (mehr).": "This additional payment doesn't exist (any more).",
     "{name} hat bezahlt": "{name} has paid",
     "{amount} für „{title}“ – bitte prüfe den Eingang.": "{amount} for “{title}” – please check it has arrived.",
     "{name} erinnert Dich": "{name} is reminding you",
@@ -304,6 +306,8 @@ export default {
     "{money} per Ausgleich {from} → {to} (wartet auf Bestätigung von {to})": "{money} por liquidación {from} → {to} (pendiente de confirmación de {to})",
     "{money} per Ausgleich {from} → {to} ✓": "{money} por liquidación {from} → {to} ✓",
     // src/lib/billCore.ts – notifications
+    "{name} hat nachgezahlt": "{name} ha pagado el resto",
+    "Diese Nachzahlung gibt es nicht (mehr).": "Este pago adicional ya no existe.",
     "{name} hat bezahlt": "{name} ha pagado",
     "{amount} für „{title}“ – bitte prüfe den Eingang.": "{amount} por «{title}»: comprueba que te ha llegado.",
     "{name} erinnert Dich": "{name} te lo recuerda",

@@ -49,11 +49,32 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
   const [prepared, setPrepared] = useState<{ amount: string; copied: boolean } | null>(null);
   const { data, participants, me, myPayment, ownerName } = snapshot;
   const share = me ? participantShare(data, participants, me) : { subtotal: 0, shared: 0, total: 0 };
-  const alreadyPaid = myPayment?.amount ?? 0;
+  const topUps = snapshot.myTopUps ?? [];
+  const lastTop = topUps.at(-1);
   // Covered by settlement payments (dashboard), confirmed or still waiting for the recipient.
   const credit = snapshot.myCredit ? snapshot.myCredit.confirmed + snapshot.myCredit.pending : 0;
-  const due = Math.max(0, share.total - alreadyPaid - credit);
-  const coveredByCredit = credit > 0 && due === 0 && !myPayment;
+  /** What the first payment covers: its pay click, or (confirmed without one) what was open then. */
+  const firstAmount = snapshot.myReceived ? (myPayment?.amount ?? snapshot.myReceivedAmount ?? share.total) : (myPayment?.amount ?? 0);
+  const due = Math.max(0, share.total - firstAmount - topUps.reduce((sum, top) => sum + top.amount, 0) - credit);
+  /** The latest payment: a top-up (the share grew after paying, see TopUp), else the first one. */
+  const latest: { amount: number; markedPaidAt?: string; received?: boolean } | null = lastTop
+    ? lastTop
+    : myPayment
+      ? { ...myPayment, received: snapshot.myReceived }
+      : snapshot.myReceived
+        ? { amount: firstAmount, received: true }
+        : null;
+  /** The payment this bar is about – none once it is confirmed, or marked while something new is due (a top-up then). */
+  const payment = latest && !latest.received && !(due > 0 && latest.markedPaidAt) ? latest : null;
+  /** Paid already, and something came on top since (being paid, or still to pay). */
+  const topUp = topUps.length > 0 || Boolean(!payment && due > 0 && latest);
+  /** The payments so far (not the one being paid right now). */
+  const history = [{ amount: firstAmount, received: snapshot.myReceived, markedPaidAt: myPayment?.markedPaidAt }, ...topUps].filter(
+    (paid) => paid !== payment && (paid.received || paid.markedPaidAt),
+  );
+  /** Confirmed by the payer and nothing new on top: nothing to pay here. */
+  const confirmed = Boolean(latest?.received) && due === 0;
+  const coveredByCredit = credit > 0 && due === 0 && !latest;
   const action = payAction(data.payment, due, data.currency);
   const nothing = due <= 0;
   /** Bank transfer / Wero: shown in a sheet with copy buttons. */
@@ -82,7 +103,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
-  const asking = askPaid && Boolean(myPayment) && !myPayment?.markedPaidAt && nothing && !snapshot.myReceived;
+  const asking = askPaid && Boolean(payment) && !payment?.markedPaidAt && nothing && !confirmed;
 
   /** Opens the transfer details (and notes the pay click, as the PayPal button does). */
   function openSheet(method: OtherMethod, record = true) {
@@ -117,7 +138,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
   return (
     <div className="paybar" ref={bar} role="region" aria-label={t("Dein Anteil")}>
       {/* Right before leaving for PayPal: come back afterwards – the payer only sees it once it is confirmed here. */}
-      {!snapshot.myReceived && !coveredByCredit && !asking && !(myPayment && nothing) && ((action.kind === "paypalMe" && ready) || (action.kind === "email" && !nothing)) && (
+      {!confirmed && !coveredByCredit && !asking && !(payment && nothing) && ((action.kind === "paypalMe" && ready) || (action.kind === "email" && !nothing)) && (
         <p className="paybar-bubble" role="status">
           ↩ {t("Danach wieder zurück in die App kommen und die Zahlung bestätigen")}
         </p>
@@ -143,8 +164,27 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
         </div>
 
         {/* The payer confirmed the share as received (e.g. offset in the dashboard): nothing to pay here. */}
-        {snapshot.myReceived && (
+        {snapshot.myReceived && !topUps.length && due === 0 && (
           <p className="paybar-note paybar-copied">✓ {t("{name} hat Deinen Anteil als erhalten markiert.", { name: ownerName || t("Der Rechnungssteller") })}</p>
+        )}
+
+        {/* Paid, and then the share grew: the payments so far, and what is still to pay on top. */}
+        {topUp && (
+          <>
+            {history.map((paid, i) => (
+              <p key={i} className="paybar-note paybar-copied">
+                ✓{" "}
+                {paid.received
+                  ? t("{amount} bezahlt – von {name} bestätigt", { amount: formatMoney(paid.amount, data.currency), name: ownerName || t("dem Rechnungssteller") })
+                  : t("{amount} als bezahlt markiert", { amount: formatMoney(paid.amount, data.currency) })}
+              </p>
+            ))}
+            {!payment && due > 0 && (
+              <p className="paybar-note paybar-grown">
+                {t("Dein Anteil ist nach Deiner Zahlung gestiegen – es fehlen noch {amount}.", { amount: formatMoney(due, data.currency) })}
+              </p>
+            )}
+          </>
         )}
 
         {/* The bill changed after I paid: the difference is mine (it counts in the dashboard) – and what changed. */}
@@ -197,27 +237,38 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
           </p>
         ))}
 
-        {!snapshot.myReceived && myPayment && (
+        {payment && (
           <p className="paybar-note">
             ✓{" "}
             {due > 0
-              ? t("Bezahlung über {amount} an {name} gestartet – durch Deine neue Auswahl kommen {extra} dazu.", {
-                  amount: formatMoney(myPayment.amount, data.currency),
-                  name: ownerName || t("den Rechnungssteller"),
-                  extra: formatMoney(due, data.currency),
-                })
-              : t("Bezahlung über {amount} an {name} gestartet.", {
-                  amount: formatMoney(myPayment.amount, data.currency),
-                  name: ownerName || t("den Rechnungssteller"),
-                })}
+              ? topUp
+                ? t("Nachzahlung über {amount} an {name} gestartet – durch Deine neue Auswahl kommen {extra} dazu.", {
+                    amount: formatMoney(payment.amount, data.currency),
+                    name: ownerName || t("den Rechnungssteller"),
+                    extra: formatMoney(due, data.currency),
+                  })
+                : t("Bezahlung über {amount} an {name} gestartet – durch Deine neue Auswahl kommen {extra} dazu.", {
+                    amount: formatMoney(payment.amount, data.currency),
+                    name: ownerName || t("den Rechnungssteller"),
+                    extra: formatMoney(due, data.currency),
+                  })
+              : topUp
+                ? t("Nachzahlung über {amount} an {name} gestartet.", {
+                    amount: formatMoney(payment.amount, data.currency),
+                    name: ownerName || t("den Rechnungssteller"),
+                  })
+                : t("Bezahlung über {amount} an {name} gestartet.", {
+                    amount: formatMoney(payment.amount, data.currency),
+                    name: ownerName || t("den Rechnungssteller"),
+                  })}
           </p>
         )}
 
-        {asking && myPayment && (
+        {asking && payment && (
           <div className="paybar-ask" role="alertdialog" aria-label={t("Hast Du bezahlt?")}>
             <p>
               {t("Hast Du {amount} an {name} gesendet?", {
-                amount: formatMoney(myPayment.amount, data.currency),
+                amount: formatMoney(payment.amount, data.currency),
                 name: ownerName || t("den Rechnungssteller"),
               })}
             </p>
@@ -239,44 +290,44 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
           </div>
         )}
 
-        {!snapshot.myReceived && !coveredByCredit && !asking && (
+        {!confirmed && !coveredByCredit && !asking && (
           <>
-            {myPayment && nothing && action.kind !== "none" && (
+            {payment && nothing && action.kind !== "none" && (
               <a
                 className="btn btn-done btn-large"
                 href={action.url}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => {
-                  if (action.kind === "paypalMe") copyText(centsToInput(myPayment.amount));
+                  if (action.kind === "paypalMe") copyText(centsToInput(payment.amount));
                   leaving();
                 }}
               >
                 {t("PayPal erneut öffnen")}
               </a>
             )}
-            {myPayment && nothing && action.kind === "none" && others.length > 0 && (
+            {payment && nothing && action.kind === "none" && others.length > 0 && (
               <button type="button" className="btn btn-done btn-large" onClick={() => openSheet(others[0], false)}>
                 {t("Zahlungsdaten erneut anzeigen")}
               </button>
             )}
-            {myPayment && nothing && (
+            {payment && nothing && (
               <button
                 type="button"
-                className={`btn btn-large ${myPayment.markedPaidAt ? "btn-done btn-marked" : "btn-mark"}`}
-                aria-pressed={Boolean(myPayment.markedPaidAt)}
-                onClick={() => onMarkPaid(!myPayment.markedPaidAt)}
+                className={`btn btn-large ${payment.markedPaidAt ? "btn-done btn-marked" : "btn-mark"}`}
+                aria-pressed={Boolean(payment.markedPaidAt)}
+                onClick={() => onMarkPaid(!payment.markedPaidAt)}
               >
-                {myPayment.markedPaidAt ? t("✓ Als bezahlt markiert") : t("Als bezahlt markieren")}
+                {payment.markedPaidAt ? t("✓ Als bezahlt markiert") : t("Als bezahlt markieren")}
               </button>
             )}
-            {myPayment?.markedPaidAt && nothing && (
+            {payment?.markedPaidAt && nothing && (
               <p className="paybar-note">
                 {t("{name} sieht das jetzt. Nochmal tippen macht es rückgängig.", { name: ownerName || t("Der Rechnungssteller") })}
               </p>
             )}
 
-            {action.kind === "paypalMe" && !(myPayment && nothing) && !ready && (
+            {action.kind === "paypalMe" && !(payment && nothing) && !ready && (
               <button
                 type="button"
                 className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
@@ -290,7 +341,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
                 {nothing ? t("Hake Deine Positionen ab") : t("Anteil begleichen · {amount}", { amount: formatMoney(due, data.currency) })}
               </button>
             )}
-            {action.kind === "paypalMe" && !(myPayment && nothing) && ready && (
+            {action.kind === "paypalMe" && !(payment && nothing) && ready && (
               <>
                 <p className="paybar-note paybar-copied">
                   {ready.copied ? (
@@ -319,7 +370,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
               </>
             )}
 
-            {action.kind === "email" && !(myPayment && nothing) && (
+            {action.kind === "email" && !(payment && nothing) && (
               <>
                 <a
                   className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
@@ -341,7 +392,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
             )}
 
             {/* Without PayPal the main button opens the bank / Wero details. */}
-            {action.kind === "none" && others.length > 0 && !(myPayment && nothing) && (
+            {action.kind === "none" && others.length > 0 && !(payment && nothing) && (
               <button
                 type="button"
                 className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
@@ -362,7 +413,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
               </button>
             )}
             {/* No way to pay in the app: pay in person, then mark it – so the payer sees it and can tick "erhalten". */}
-            {action.kind === "none" && others.length === 0 && !(myPayment && nothing) && (
+            {action.kind === "none" && others.length === 0 && !(payment && nothing) && (
               <>
                 <p className="paybar-note">
                   {t("{name} hat keine Zahlungsdaten hinterlegt.", { name: ownerName || t("Der Rechnungssteller") })}{" "}
@@ -382,7 +433,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
             payment={data.payment}
             methods={others}
             initial={sheet}
-            amount={nothing ? (myPayment?.amount ?? share.total) : due}
+            amount={nothing ? (payment?.amount ?? share.total) : due}
             currency={data.currency}
             ownerName={ownerName}
             reference={reference}

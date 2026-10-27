@@ -268,9 +268,9 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
     setMyClaims(claims, offered);
   }
 
-  function toggleReceived(d: Debtor, received: boolean) {
+  function toggleReceived(d: Debtor, received: boolean, topUp?: number) {
     api
-      .setReceived(id, d.id, received)
+      .setReceived(id, d.id, received, topUp)
       .then(replace)
       .catch((e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen.")));
   }

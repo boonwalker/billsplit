@@ -1,5 +1,7 @@
+import { Fragment } from "react";
 import { formatTime, rich, t, tMsg } from "../lib/i18n";
 import {
+  isSettledPayment,
   openShare,
   billTotal,
   equalShare,
@@ -20,7 +22,8 @@ import RemindButton, { remindedAgo } from "./RemindButton";
 
 interface Props {
   snapshot: BillSnapshot;
-  onToggleReceived: (debtor: Debtor, received: boolean) => void;
+  /** With `topUp` (its index): a payment made on top later (see TopUp). */
+  onToggleReceived: (debtor: Debtor, received: boolean, topUp?: number) => void;
   /** The bill's link, for reminders via WhatsApp. */
   shareUrl?: string;
   /** Sends a reminder as a notification (for friends it reaches). */
@@ -129,9 +132,14 @@ export function ownerSummary(snapshot: BillSnapshot) {
   const unassigned = unassignedAmount(snapshot.data, snapshot.participants);
   const others = debtors.reduce((s, d) => s + d.amount, 0);
   const own = Math.max(0, total - others - unassigned);
-  // Confirmed as received, plus what confirmed settlement payments covered (never more than the share).
+  // Confirmed as received (top-ups too), plus what confirmed settlement payments covered (never more than the share).
   const received = debtors.reduce(
-    (s, d) => s + Math.min(d.amount, (d.received ? (d.payAmount ?? d.amount) : 0) + (d.credited ?? 0)),
+    (s, d) =>
+      s +
+      Math.min(
+        d.amount,
+        (d.received ? (d.payAmount ?? d.amount) : 0) + (d.topUps ?? []).reduce((sum, top) => sum + (top.received ? top.amount : 0), 0) + (d.credited ?? 0),
+      ),
     0,
   );
   return { total, own, received, missing: Math.max(0, others + unassigned - received), unassigned };
@@ -141,7 +149,12 @@ export function ownerSummary(snapshot: BillSnapshot) {
 export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRemind }: Props) {
   const currency = snapshot.data.currency;
   const title = snapshot.data.title || t("die Rechnung");
-  const openOf = (d: Debtor) => (d.received ? 0 : openShare(d.amount, d, (d.credited ?? 0) + (d.creditPending ?? 0)));
+  const openOf = (d: Debtor) => openShare(d.amount, d, (d.credited ?? 0) + (d.creditPending ?? 0));
+  /** Their share grew after they had paid, and nobody started paying the difference yet. */
+  const grownBy = (d: Debtor) => {
+    const last = d.topUps?.at(-1);
+    return isSettledPayment(d) && !(last && !isSettledPayment(last)) ? openOf(d) : 0;
+  };
   /** Not ticked anything yet (and no equal split, where nothing needs ticking). */
   const nothingTicked = (d: Debtor) => d.amount === 0 && !snapshot.data.equalSplit;
   const reminder = (d: Debtor) =>
@@ -174,9 +187,11 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
       ) : (
         <ul className="debtors">
           {debtors.map((d) => {
-            const changed = d.payAmount !== undefined && d.payAmount !== d.amount;
+            const changed = d.payAmount !== undefined && d.payAmount !== d.amount && !isSettledPayment(d);
+            const grown = grownBy(d);
             return (
-              <li key={d.id} data-id={d.id} className={`debtor${d.received ? " received" : ""}${d.payClickedAt ? " announced" : ""}`}>
+              <Fragment key={d.id}>
+              <li data-id={d.id} className={`debtor${d.received ? " received" : ""}${d.payClickedAt ? " announced" : ""}`}>
                 <span className="avatar" aria-hidden="true">
                   {d.name.slice(0, 1).toUpperCase()}
                 </span>
@@ -231,6 +246,47 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                   </label>
                 )}
               </li>
+              {/* Paid, and then the share grew: each payment on top is a line of its own, confirmed on its own. */}
+              {d.topUps?.map((top, i) => (
+                <li key={`${d.id}-${i}`} className={`debtor debtor-topup${top.received ? " received" : " announced"}`}>
+                  <span className="avatar avatar-topup" aria-hidden="true">
+                    +
+                  </span>
+                  <span className="debtor-main">
+                    <span className="debtor-name">{t("{name} · Nachzahlung", { name: d.name })}</span>
+                    <span className="debtor-status">
+                      {top.received
+                        ? t("Zahlungseingang bestätigt")
+                        : top.markedPaidAt
+                          ? t("hat um {time} als bezahlt markiert", { time: time(top.markedPaidAt) })
+                          : t("hat um {time} auf Bezahlen getippt", { time: time(top.payClickedAt) })}
+                    </span>
+                  </span>
+                  <span className="debtor-amount">{formatMoney(top.amount, currency)}</span>
+                  <label className="received-toggle" title={t("Geld ist auf PayPal angekommen")}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(top.received)}
+                      onChange={(e) => onToggleReceived(d, e.target.checked, i)}
+                      aria-label={t("Nachzahlung von {name} erhalten", { name: d.name })}
+                    />
+                    <span>{t("erhalten")}</span>
+                  </label>
+                </li>
+              ))}
+              {grown > 0 && (
+                <li className="debtor debtor-topup">
+                  <span className="avatar avatar-topup" aria-hidden="true">
+                    +
+                  </span>
+                  <span className="debtor-main">
+                    <span className="debtor-name">{t("{name} · Nachzahlung", { name: d.name })}</span>
+                    <span className="debtor-status">{t("Auswahl nach der Zahlung erweitert – noch offen")}</span>
+                  </span>
+                  <span className="debtor-amount">{formatMoney(grown, currency)}</span>
+                </li>
+              )}
+              </Fragment>
             );
           })}
         </ul>
