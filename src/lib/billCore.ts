@@ -32,6 +32,8 @@ export interface BillSummary {
   total: number;
   ownerId: string;
   participants: { id: string; name: string; joinedAt: string; paid: boolean }[];
+  /** Who ticked what (admin page: "Anteil entfernen"). */
+  shares: { participantId: string; itemId: string; itemName: string; units: number; qty: number }[];
 }
 
 /**
@@ -310,6 +312,11 @@ export class BillCore {
         joinedAt: p.joinedAt,
         paid: Boolean(p.received || p.markedPaidAt),
       })),
+      shares: Object.entries(b.participants).flatMap(([id, p]) =>
+        b.data.items
+          .filter((item) => (p.claims[item.id] ?? []).length > 0)
+          .map((item) => ({ participantId: id, itemId: item.id, itemName: item.name, units: p.claims[item.id].length, qty: item.qty })),
+      ),
     }));
   }
 
@@ -419,6 +426,28 @@ export class BillCore {
         kind: shared ? "shared" : "changed",
       };
     }
+  }
+
+  /**
+   * Admin page ("Anteil entfernen"): takes a participant's ticks off one line, e.g. a share
+   * ticked by mistake that the people involved cannot sort out themselves. A friend's note
+   * about that change goes too. Returns the person's and the line's name, null when there was nothing to remove.
+   */
+  removeShare(billId: string, participantId: string, itemId: string): { name: string; item: string } | null {
+    const bill = this.get(billId);
+    const p = bill.participants[participantId];
+    const item = bill.data.items.find((i) => i.id === itemId);
+    if (!p || !item || !p.claims[itemId]?.length) return null;
+    delete p.claims[itemId];
+    p.splits = sanitizeSplits(p.splits ?? {}, p.claims);
+    for (const friend of Object.values(bill.participants)) {
+      const change = friend.shareChange;
+      if (!change || change.byId !== participantId) continue;
+      change.items = change.items.filter((i) => i.id !== itemId);
+      if (!change.items.length) delete friend.shareChange;
+    }
+    this.changed(billId);
+    return { name: p.name, item: item.name };
   }
 
   /**

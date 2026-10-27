@@ -120,6 +120,19 @@ export function adminPage(input: AdminInput): string {
       <p class="muted">Die Rechnung verschwindet für alle: vom Server, aus den Rechnungslisten und Bilanzen aller Beteiligten, mit Belegfoto. Ausgleichszahlungen verlieren ihren Anteil daran. Nicht rückgängig zu machen.</p>
       <form method="post" action="/api/admin/bill"><input type="hidden" name="token" value="${escape(input.token ?? "")}"><input type="hidden" name="id" value="${escape(id)}">
       <label class="confirm"><input type="checkbox" name="confirm" value="ja" required> Endgültig löschen</label><button class="danger">Rechnung löschen</button></form></details>`;
+  // Taking one person's ticks off one line (e.g. a cocoa ticked by mistake).
+  const removeShare = (b: BillSummary) =>
+    b.shares.length
+      ? `<details class="manage"><summary>Anteil entfernen</summary>
+      <p class="muted">Nimmt die Häkchen einer Person bei einer Position heraus – die Anteile aller ändern sich live. Abhaken lässt sie sich danach wieder.</p>
+      <form method="post" action="/api/admin/share"><input type="hidden" name="token" value="${escape(input.token ?? "")}"><input type="hidden" name="id" value="${escape(b.id)}">
+      <select name="share" aria-label="Person und Position" required><option value="">Person · Position</option>${b.shares
+        .map(
+          (sh) =>
+            `<option value="${escape(`${sh.participantId} ${sh.itemId}`)}">${escape(b.participants.find((p) => p.id === sh.participantId)?.name || nameOf(sh.participantId))} · ${escape(sh.itemName)}${sh.qty > 1 ? ` (${int(sh.units)} von ${int(sh.qty)})` : ""}</option>`,
+        )
+        .join("")}</select><button>Entfernen</button></form></details>`
+      : "";
   const accountRows = input.accounts
     .map((a) => {
       const d = deviceOf.get(a.id);
@@ -141,7 +154,7 @@ export function adminPage(input: AdminInput): string {
     .slice(0, 60)
     .map((b) => {
       const others = b.participants.filter((p) => p.id !== b.ownerId);
-      return `<tr><td class="left">${input.token ? removeBill(b.id) : ""}</td><td>${when(b.createdAt)}</td><td class="left">${escape(b.title || "Rechnung")}</td><td class="left">${escape(nameOf(b.ownerId))}</td>
+      return `<tr><td class="left">${input.token ? removeShare(b) + removeBill(b.id) : ""}</td><td>${when(b.createdAt)}</td><td class="left">${escape(b.title || "Rechnung")}</td><td class="left">${escape(nameOf(b.ownerId))}</td>
         <td>${int(others.length)}</td><td>${int(others.filter((p) => p.paid).length)} / ${int(others.length)}</td><td>${money(b.total, b.currency)}</td></tr>`;
     })
     .join("");
@@ -187,6 +200,7 @@ export function adminPage(input: AdminInput): string {
   details.manage[open] { white-space: normal; min-width: 280px; max-width: 360px; }
   details.manage p { margin: 10px 0 4px; font-size: 13px; }
   details.manage form { display: flex; gap: 6px; }
+  details.manage select { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; }
   details.manage input, details.manage button { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; }
   details.manage input { flex: 1; min-width: 0; }
   details.manage label.confirm { display: flex; align-items: center; gap: 6px; flex: 1; font-size: 14px; }

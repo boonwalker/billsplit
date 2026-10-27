@@ -485,6 +485,28 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       return void res.end();
     }
 
+    // Admin page: taking one person's ticks off one line of a bill ("Anteil entfernen").
+    if (parts[1] === "admin" && parts[2] === "share" && parts.length === 3 && method === "POST") {
+      const form = new URLSearchParams((await readBody(req, MAX_JSON_BODY)).toString("utf8"));
+      const sent = form.get("token") ?? "";
+      if (!adminOk(sent)) throw new HttpError("Nicht gefunden.", 404);
+      const billId = form.get("id") ?? "";
+      const [participantId = "", itemId = ""] = (form.get("share") ?? "").split(" ");
+      let notice: string;
+      if (!store.has(billId)) notice = "Diese Rechnung gibt es nicht (mehr).";
+      else {
+        const title = store.summaries().find((b) => b.id === billId)?.title || "Rechnung";
+        const removed = store.removeShare(billId, participantId, itemId);
+        if (removed) {
+          tellChanged(store.summaries().find((b) => b.id === billId)?.participants.map((p) => p.id) ?? [], billId);
+          notice = `Anteil von ${removed.name} an „${removed.item}“ in „${title}“ entfernt.`;
+        } else notice = "Nichts geändert: Diesen Anteil gibt es nicht (mehr).";
+      }
+      console.log(`Betriebsseite: ${notice}`);
+      res.writeHead(303, { location: `/api/admin?token=${encodeURIComponent(sent)}&meldung=${encodeURIComponent(notice)}#rechnungen`, "cache-control": "no-store" });
+      return void res.end();
+    }
+
     // The operator's page: usage, cost and errors – and a copy of the data.
     if (parts[1] === "admin" && method === "GET") {
       const expected = adminSecret(options.adminToken);

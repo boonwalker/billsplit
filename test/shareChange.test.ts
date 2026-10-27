@@ -63,3 +63,19 @@ describe("a share made smaller after paying: what changed, and taking it back", 
     expect(snap.myShareChange).toMatchObject({ byId: "peter", byName: "Peter", kind: "changed" });
   });
 });
+
+describe("admin page: Anteil entfernen (BillCore.removeShare)", () => {
+  it("takes one person's ticks off one line – the friend's credit and its note go with it", () => {
+    const { store, id } = setup();
+    store.setClaims(id, "andy", { kakao: [0], cola: [0] });
+    expect(store.summaries().find((b) => b.id === id)?.shares).toContainEqual({ participantId: "andy", itemId: "kakao", itemName: "Kakao mit Sahne", units: 1, qty: 1 });
+    expect(store.removeShare(id, "andy", "kakao")).toEqual({ name: "Andy", item: "Kakao mit Sahne" });
+    const snap = store.snapshot(id, "anna");
+    expect(snap.myRefund).toBeUndefined();
+    expect(snap.myShareChange).toBeUndefined();
+    expect(snap.participants.find((p) => p.id === "andy")?.claims).toEqual({ cola: [0] });
+    // Nothing (left) to remove.
+    expect(store.removeShare(id, "andy", "kakao")).toBeNull();
+    expect(store.removeShare(id, "nobody", "kakao")).toBeNull();
+  });
+});

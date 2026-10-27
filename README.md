@@ -774,6 +774,11 @@ fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
   der Server die gelöschten Kennungen in `deleted-bills.json` (Abruf: HTTP 410, `deleted` in `/api/bills/batch`) – so
   unterscheidet die App sie von verlorenen Rechnungen („nicht mehr verfügbar“). Bereits verschickte Mitteilungen lassen
   sich nicht zurückholen; Rückgängig nur über eine Sicherung.
+- **Anteil entfernen** (gleiche Spalte, „Anteil entfernen“, „Person · Position“ wählen, „Entfernen“,
+  `POST /api/admin/share`): nimmt die Häkchen einer Person bei einer Position heraus, z.B. einen versehentlich
+  mitgeteilten Kakao, den die Beteiligten nicht selbst klären können (`BillCore.removeShare`). Die Anteile aller ändern
+  sich live; ein dadurch entstandenes Guthaben samt Meldung „… nachträglich mit Dir geteilt“ verschwindet. Die Person
+  kann danach wieder abhaken, eine Mitteilung bekommt sie nicht.
 
 Die Zahlen liegen in `monitor.json` (60 Tage, 200 Fehler) und `visits.json` (Besuche pro Tag, Geräte) im Datenordner.
 Die Betriebsseite zeigt E-Mail-Adressen und Namen und kann Konten und Rechnungen löschen – den Token deshalb nicht weitergeben.
