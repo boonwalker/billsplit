@@ -9,6 +9,7 @@ import { isAiConfigured } from "./parseReceipt.ts";
 import { PushService } from "./push.ts";
 import { RateService } from "./rates.ts";
 import { VisitLog } from "./visits.ts";
+import { VenueStore } from "./venues.ts";
 import { BillStore } from "./store.ts";
 import { operatorFromEnv } from "./operator";
 
@@ -54,10 +55,14 @@ await accounts.load();
 const visits = new VisitLog(path.join(path.dirname(DATA_FILE), "visits.json"));
 await visits.load();
 
+// Restaurant mode: restaurants, their tables and the bill open at each.
+const venues = new VenueStore(path.join(path.dirname(DATA_FILE), "venues.json"));
+await venues.load();
+
 // Exchange rates (ECB, daily) for balances in the home currency, kept next to the bills.
 const rates = new RateService(path.dirname(DATA_FILE));
 await rates.load();
-const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts, rates, visits }));
+const server = createServer(createApp(store, path.join(root, "dist"), { trustProxy: TRUST_PROXY, push, monitor, adminToken: ADMIN_TOKEN, accounts, rates, visits, venues }));
 
 server.listen(PORT, () => {
   console.log(
@@ -66,7 +71,7 @@ server.listen(PORT, () => {
 });
 
 async function shutdown(): Promise<void> {
-  await Promise.all([store.flush(), monitor.flush(), accounts.flush(), visits.flush()]);
+  await Promise.all([store.flush(), monitor.flush(), accounts.flush(), visits.flush(), venues.flush()]);
   store.close();
   process.exit(0);
 }

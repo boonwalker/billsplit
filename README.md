@@ -522,6 +522,39 @@ einen Teil); beim Rechnungssteller mit Gleichverteilung „Antippen“ (streiche
 Ist auf dem Gerät „Bewegung reduzieren“ eingeschaltet, springen alle Animationen sofort ans Ende, die Erklär-Animationen
 entfallen (das „?“ bleibt) und es wird nicht weich gescrollt.
 
+### Restaurant-Modus: Tisch-QR und Ampel
+
+Für Restaurants und Bars (Stufe 2 des Konzepts, noch ohne Bezahlen über klicksplit): Jeder Tisch hat einen eigenen
+QR-Code, Gäste landen damit in der Rechnung, die gerade an diesem Tisch offen ist, und das Personal sieht auf einer
+Seite, welcher Tisch bezahlt ist.
+
+- **Einstieg:** Profil → „Für Restaurants“ → „Restaurant-Modus öffnen“ (`#/restaurant`). Beim ersten Mal „Name des
+  Restaurants“ und „Wie viele Tische?“ (1–80) → „Restaurant anlegen“. Die Tische heißen „Tisch 1“ … „Tisch N“.
+- **Ampel** (`src/pages/Restaurant.tsx`, `tableLight` in `src/lib/restaurant.ts`): je Tisch eine Karte, live
+  aktualisiert. **Frei** (grau), **Rot** = noch nichts erhalten, **Gelb** = teilweise erhalten („noch 5,00 € offen“,
+  dazu was schon bezahlt ist), **Grün** = alles erhalten. Gerechnet wird wie „Dir fehlen noch“ (`ownerSummary`):
+  Anteile der Gäste plus Unzugeordnetes minus Erhaltenes. Die Farbe steht immer auch als Wort da.
+- **Rechnung am Tisch anlegen:** auf einer freien Karte „Kassenbon fotografieren“ oder „Eintippen“ – das merkt sich
+  den Tisch (`billsplit.pendingTable`, 30 Minuten), der normale Ablauf (Erkennung, Prüfen, „Rechnung erstellen“) legt
+  die Rechnung an und hängt sie an den Tisch (`attachPendingTable`); „Zurück“ führt dann wieder zur Ampel.
+- **Bezahlen:** Gäste haken ab und zahlen wie gewohnt beim Personal (Karte, bar); das Personal markiert den Anteil in
+  der Rechnung als erhalten – die Ampel springt um. Hat das Restaurant keine Zahlungsdaten hinterlegt, sehen Gäste
+  „… hat keine Zahlungsdaten hinterlegt. Gib den Betrag direkt …“.
+- **Tisch freigeben:** löst die Rechnung vom Tisch (sie bleibt erhalten). Ist noch etwas offen, fragt die Karte
+  „Noch … offen – Tisch trotzdem freigeben?“.
+- **QR-Codes drucken** (`#/restaurant/qr`): eine Karte pro Tisch mit Restaurant, Tischname und QR-Code auf
+  `https://www.klicksplit.de/t/<Tisch-Kennung>`, „Drucken“ öffnet den Druckdialog (drei Karten je Zeile).
+- **Gast scannt den Tisch:** `/t/<id>` leitet auf die offene Rechnung (`/b/<id>`) weiter; ist keine offen, zeigt
+  `#/tisch/<id>` „Noch keine Rechnung an diesem Tisch …“ und springt von selbst in die Rechnung, sobald sie angelegt ist
+  (fragt alle 4 Sekunden nach).
+- **Server:** `server/venues.ts` (`venues.json` im Datenordner), `GET/POST /api/venues`, `POST
+  /api/venues/tables/<id>` (`{ billId }` bzw. `null`, nur eigene Rechnungen, nur das eigene Restaurant), `GET
+  /api/tables/<id>` (öffentlich: Restaurant, Tisch, offene Rechnung). Ein Restaurant gehört der Gerätekennung bzw. dem
+  Konto, das es angelegt hat – mehrere Geräte des Personals melden sich mit demselben Konto an. In der Demo gibt es
+  den Restaurant-Modus nicht.
+- Konzept mit den weiteren Stufen (Bezahlen per Apple Pay über Stripe, Kassenanbindung):
+  https://claude.ai/artifact/VAoxbJbFbDsPhtcjbcXSCf
+
 ### Sprachen (Deutsch, Englisch, Spanisch)
 
 klicksplit gibt es auf Deutsch, Englisch und Spanisch. Die App nimmt die Sprache des Browsers bzw. iPhones (Deutsch,
@@ -667,6 +700,7 @@ Alles liegt im Datenordner (auf Railway das Volume):
 | `vapid.json`, `push.json` | Push-Schlüssel und -Abos |
 | `accounts.json`, `accounts-removed.json` | Konten (E-Mail ↔ Gerätekennung, Profil) und auf der Betriebsseite gelöschte Konten |
 | `deleted-bills.json` | Kennungen der auf der Betriebsseite gelöschten Rechnungen (mit Zeitpunkt) |
+| `venues.json` | Restaurants (Restaurant-Modus): Name, Tische, offene Rechnung je Tisch |
 
 Zurückspielen: Dienst stoppen, die gewünschte Sicherung als `billsplit.db` in den Datenordner kopieren (vorhandene
 `billsplit.db-wal`/`-shm` löschen), Dienst starten. Eine Kopie zum Herunterladen gibt es über die Admin-Seite (siehe

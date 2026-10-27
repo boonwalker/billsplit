@@ -5,7 +5,7 @@ import { loadOperator, type Operator } from "../lib/operator";
 import { navigate } from "../lib/router";
 
 /** Date of the current version of the privacy policy. */
-const AS_OF = "21.10.2026";
+const AS_OF = "27.10.2026";
 
 /** Name, address and contact – or a note that they follow (no OPERATOR_* set, or the demo). */
 function OperatorBlock({ operator }: { operator: Operator | null }) {
@@ -121,6 +121,14 @@ function Privacy({ operator }: { operator: Operator | null }) {
           <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">
             Datenschutz bei Resend
           </a>
+        </p>
+      </Section>
+
+      <Section title="Restaurant-Modus (freiwillig)">
+        <p>
+          Nutzt ein Restaurant klicksplit mit Tisch-QR-Codes, speichert klicksplit den Namen des Restaurants, seine Tische und welche Rechnung
+          gerade an welchem Tisch offen ist. Wer den QR-Code eines Tischs scannt, landet in dieser Rechnung; dabei gilt das unter „Rechnungen“
+          Gesagte. Das Restaurant sieht wie jeder Rechnungssteller, wer seiner Rechnung beigetreten ist und was offen ist.
         </p>
       </Section>
 

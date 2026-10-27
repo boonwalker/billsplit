@@ -226,6 +226,30 @@ export interface TransferList {
   transfers: Transfer[];
 }
 
+/** A table of a restaurant (restaurant mode): its QR code leads to the bill open at it. */
+export interface VenueTable {
+  id: string;
+  name: string;
+  billId: string | null;
+  openedAt?: string;
+}
+
+/** A restaurant with its tables, as its owner sees it. */
+export interface Venue {
+  id: string;
+  name: string;
+  ownerId: string;
+  createdAt: string;
+  tables: VenueTable[];
+}
+
+/** What a guest's QR code scan learns about a table (no bill open: the page waits for one). */
+export interface TableInfo {
+  venue: string;
+  table: string;
+  billId: string | null;
+}
+
 /** A bill a device takes part in (to rebuild the list of bills on a new device). */
 export interface MyBill {
   id: string;

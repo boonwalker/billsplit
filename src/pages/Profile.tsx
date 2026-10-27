@@ -208,6 +208,15 @@ export default function Profile({ next }: { next?: string }) {
           </section>
         )}
         {!next && !DEMO && (
+          <section className="stack restaurant-section">
+            <h3 className="section-title">{t("Für Restaurants")}</h3>
+            <p className="muted small">{t("Tische mit eigenem QR-Code: Gäste haken ab und begleichen ihren Anteil, Du siehst an einer Ampel, welcher Tisch bezahlt ist.")}</p>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate("/restaurant")}>
+              {t("Restaurant-Modus öffnen")}
+            </button>
+          </section>
+        )}
+        {!next && !DEMO && (
           <section className="stack device-section">
             <h3 className="section-title">{t("Gerät wechseln & sichern")}</h3>
             <DeviceTransfer />

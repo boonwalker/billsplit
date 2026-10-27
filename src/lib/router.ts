@@ -22,6 +22,10 @@ export type Route =
   | { name: "bill"; id: string; focus?: string; back?: string }
   | { name: "original"; id: string }
   | { name: "edit"; id: string }
+  /** Restaurant mode for the staff: the tables as a traffic-light board, or their QR codes to print. */
+  | { name: "restaurant"; qr: boolean }
+  /** A table's QR code while no bill is open there (the guest waits for it). */
+  | { name: "table"; id: string }
   /** Privacy policy and imprint (pages/Legal). */
   | { name: "privacy" }
   | { name: "imprint" };
@@ -41,6 +45,10 @@ export function parseHash(hash: string): Route {
       return { name: "expense" };
     case "datenschutz":
       return { name: "privacy" };
+    case "restaurant":
+      return { name: "restaurant", qr: second === "qr" };
+    case "tisch":
+      return second ? { name: "table", id: second } : { name: "home" };
     case "impressum":
       return { name: "imprint" };
     case "scan":

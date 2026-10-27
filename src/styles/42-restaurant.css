@@ -1,0 +1,186 @@
+/* ───────────────────────── restaurant mode: traffic-light board, QR codes to print ───────────────────────── */
+.restaurant-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.restaurant-setup h2 {
+  font-size: 1.25rem;
+}
+
+.restaurant-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.restaurant-bar p {
+  margin: 0;
+}
+
+.table-board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 10px;
+}
+
+/* The light: a coloured card edge plus the word, so it never depends on colour alone. */
+.table-card {
+  --light: var(--ink-faint);
+  --light-tint: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 12px 14px;
+  border-radius: 16px;
+  background: linear-gradient(var(--light-tint), var(--light-tint)), var(--surface);
+  border: 2px solid var(--light);
+  box-shadow: var(--shadow-sm);
+}
+
+.table-card.light-red {
+  --light: #d92d20;
+  --light-tint: rgb(217 45 32 / 0.07);
+}
+
+.table-card.light-yellow {
+  --light: #e8a40c;
+  --light-tint: rgb(232 164 12 / 0.1);
+}
+
+.table-card.light-green {
+  --light: var(--claim);
+  --light-tint: color-mix(in srgb, var(--mint) 18%, transparent);
+}
+
+.table-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.table-card-head b {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.table-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.table-light i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--light);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--light) 25%, transparent);
+}
+
+.table-amount {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.table-card p.small,
+.table-card .muted.small {
+  margin: 0;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.table-actions {
+  margin-top: auto;
+}
+
+.table-actions .btn {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.table-wait h2 {
+  margin-bottom: 8px;
+}
+
+/* QR codes to print: one card per table. */
+.qr-sheet-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.qr-sheet-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.qr-sheet-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px dashed var(--ink-faint);
+  text-align: center;
+  break-inside: avoid;
+}
+
+.qr-sheet-card b {
+  font-family: var(--font-display);
+}
+
+.qr-sheet-card .qr {
+  width: 160px;
+  padding: 8px;
+  border-radius: 14px;
+  box-shadow: 0 0 0 4px var(--mint-soft);
+  animation: none;
+  margin: 6px 0;
+}
+
+@media print {
+  .topbar,
+  .qr-sheet-bar {
+    display: none;
+  }
+
+  html,
+  body,
+  .page {
+    background: #fff;
+  }
+
+  .qr-sheet-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

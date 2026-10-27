@@ -1,6 +1,6 @@
 import { lang, t } from "./i18n";
 import { ApiError } from "./apiError";
-import type { BillData, BillSnapshot, Contact, ItemClaims, MyBill, NetworkEdge, TransferAllocation, TransferList } from "./bill";
+import type { BillData, BillSnapshot, Contact, ItemClaims, MyBill, NetworkEdge, TableInfo, TransferAllocation, TransferList, Venue } from "./bill";
 import { checkForUpdate } from "./updates";
 import { DEMO } from "./demo";
 import { localApi } from "./localApi";
@@ -81,6 +81,13 @@ export interface Api {
    * changes in any of its bills. Returns a function that closes it.
    */
   subscribeEvents(onBillChanged: (billId: string) => void): () => void;
+  /** Restaurant mode: this device's restaurants with their tables. */
+  venues(): Promise<Venue[]>;
+  createVenue(name: string, tables: number): Promise<Venue>;
+  /** Opens a bill at a table (or clears the table with null). */
+  setTableBill(tableId: string, billId: string | null): Promise<Venue>;
+  /** What a table's QR code shows: its restaurant, its name and the bill open there. */
+  table(tableId: string): Promise<TableInfo>;
   /** Live updates of one bill (onDeleted: it was deleted on the admin page); returns an unsubscribe function. */
   subscribe(id: string, onSnapshot: (s: BillSnapshot) => void, onLive: (live: boolean) => void, onDeleted?: () => void): () => void;
 }
@@ -177,6 +184,10 @@ const serverApi: Api = {
   verifyCode: (email, code, profile) => request("POST", "/api/account/verify", { email, code, profile }),
   saveAccountProfile: (profile) => request("PUT", "/api/account/profile", { profile }),
   deleteAccount: () => request("DELETE", "/api/account"),
+  venues: async () => (await request<{ venues: Venue[] }>("GET", "/api/venues")).venues,
+  createVenue: (name, tables) => request("POST", "/api/venues", { name, tables }),
+  setTableBill: (tableId, billId) => request("POST", `/api/venues/tables/${encodeURIComponent(tableId)}`, { billId }),
+  table: (tableId) => request("GET", `/api/tables/${encodeURIComponent(tableId)}`),
   subscribeEvents(onBillChanged) {
     const source = new EventSource(`/api/events?key=${encodeURIComponent(deviceKey())}`);
     source.addEventListener("changed", (e) => {

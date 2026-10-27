@@ -6,12 +6,13 @@ import bill from "./bill";
 import core from "./core";
 import editor from "./editor";
 import pay from "./pay";
+import restaurant from "./restaurant";
 import start from "./start";
 
 type Dict = Record<string, string>;
 type Part = { en: Dict; es: Dict };
 
-const PARTS: Part[] = [core, start, bill, pay, editor];
+const PARTS: Part[] = [core, start, bill, pay, editor, restaurant];
 
 export const DICTIONARIES: { en: Dict; es: Dict } = {
   en: Object.assign({}, ...PARTS.map((p) => p.en)),

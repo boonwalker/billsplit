@@ -15,6 +15,8 @@ import SignIn from "./pages/SignIn";
 import Expense from "./pages/Expense";
 import Move from "./pages/Move";
 import Legal from "./pages/Legal";
+import Restaurant from "./pages/Restaurant";
+import TableWait from "./pages/TableWait";
 
 // The scanner pulls in the QR decoder; only load it when needed.
 const Scan = lazy(() => import("./pages/Scan"));
@@ -61,6 +63,10 @@ function Page(): ReactNode {
       return <DeviceLink code={route.code} />;
     case "move":
       return <Move code={route.code} target={route.target} app={route.app} />;
+    case "restaurant":
+      return <Restaurant key={String(route.qr)} qr={route.qr} />;
+    case "table":
+      return <TableWait id={route.id} />;
     case "privacy":
       return <Legal kind="privacy" />;
     case "imprint":

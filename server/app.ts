@@ -20,6 +20,7 @@ import type { RateService } from "./rates.ts";
 import { BillDataSchema, BillStore, ParticipantNameSchema, participantIdFromKey, StoreError } from "./store.ts";
 import { operatorFromEnv, operatorMeta, type Operator } from "./operator";
 import { previewBillId, previewMeta, type PreviewBill } from "./preview";
+import { MAX_TABLES, VenueError, VenueStore } from "./venues.ts";
 
 /** Base64 of a downscaled receipt photo is well below this. */
 const MAX_IMAGE_BODY = 12 * 1024 * 1024;
@@ -91,6 +92,8 @@ export interface AppOptions {
   homeUrl?: string;
   /** Who runs klicksplit, for imprint and privacy policy (default: OPERATOR_* variables, see operator.ts). */
   operator?: Operator | null;
+  /** Restaurants and their tables (restaurant mode; in memory when not given). */
+  venues?: VenueStore;
 }
 
 /**
@@ -218,6 +221,9 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   const handoffs = new HandoffBoard();
   const deviceLinks = new DeviceLinks();
   const accounts = options.accounts ?? new AccountStore(null);
+  const venues = options.venues ?? new VenueStore(null);
+  /** The bill open at a table – none when it was deleted meanwhile. */
+  const openBill = (billId: string | null) => (billId && store.has(billId) ? billId : null);
   const mailer = options.sendCode && options.sendWelcome ? null : mailerFromEnv();
   const sendCode = options.sendCode ?? mailer!.sendCode;
   const sendWelcome = options.sendWelcome ?? mailer!.sendWelcome;
@@ -565,6 +571,29 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     if (parts[1] === "contacts" && parts.length === 2 && method === "GET") {
       return sendJson(res, 200, { contacts: store.contacts(requireViewer(req, url)) });
     }
+    // Restaurant mode (see venues.ts): the restaurant's tables, and what a scanned table shows.
+    if (parts[1] === "venues") {
+      const viewer = requireViewer(req, url);
+      try {
+        if (parts.length === 2 && method === "GET") return sendJson(res, 200, { venues: venues.ofOwner(viewer) });
+        if (parts.length === 2 && method === "POST") {
+          const body = parse(z.object({ name: z.string().trim().min(1).max(60), tables: z.number().int().min(1).max(MAX_TABLES) }), await readJson(req, MAX_JSON_BODY));
+          return sendJson(res, 201, venues.create(viewer, body.name, body.tables));
+        }
+        if (parts[2] === "tables" && parts[3] && parts.length === 4 && method === "POST") {
+          const body = parse(z.object({ billId: z.string().regex(/^[A-Za-z0-9_-]{6,40}$/).nullable() }), await readJson(req, MAX_JSON_BODY));
+          if (body.billId && !store.snapshot(body.billId, viewer).isOwner) throw new HttpError("Nur eigene Rechnungen lassen sich einem Tisch zuordnen.", 403);
+          return sendJson(res, 200, venues.setBill(viewer, parts[3], body.billId));
+        }
+      } catch (error) {
+        throw error instanceof VenueError ? new HttpError(error.message, error.status) : error;
+      }
+    }
+    if (parts[1] === "tables" && parts[2] && parts.length === 3 && method === "GET") {
+      const found = venues.find(parts[2]);
+      if (!found) throw new HttpError("Diesen Tisch gibt es nicht.", 404);
+      return sendJson(res, 200, { venue: found.venue.name, table: found.table.name, billId: openBill(found.table.billId) });
+    }
     if (parts[1] === "my-bills" && parts.length === 2 && method === "GET") {
       return sendJson(res, 200, { bills: store.myBills(requireViewer(req, url)) });
     }
@@ -885,6 +914,14 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
         // A printed QR code (beer mats …): counted for the admin page, then the start page.
         if (req.method === "GET") visits?.source(printed);
         res.writeHead(302, { location: "/", "cache-control": "no-store" });
+        return void res.end();
+      }
+      // A table's QR code (restaurant mode): straight to the bill open there, else the waiting page.
+      const table = /^\/t\/([A-Za-z0-9_-]{6,20})\/?$/.exec(url.pathname);
+      if (table && (req.method === "GET" || req.method === "HEAD")) {
+        const found = venues.find(table[1]);
+        const billId = found ? openBill(found.table.billId) : null;
+        res.writeHead(302, { location: billId ? `/b/${billId}` : found ? `/#/tisch/${table[1]}` : "/", "cache-control": "no-store" });
         return void res.end();
       }
       if (url.pathname.startsWith("/api/")) {

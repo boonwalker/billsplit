@@ -16,6 +16,7 @@ import { receiptSum } from "../lib/receipt";
 import { recognizeReceipt } from "../lib/recognize";
 import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
+import { attachPendingTable } from "../lib/restaurant";
 import { clearDraft, loadProfile, profileDue, rememberBill, saveDraft } from "../lib/storage";
 
 /** Photo taken on the home screen, handed over to the editor (files can't go through the URL). */
@@ -74,7 +75,9 @@ export default function Editor({ billId }: { billId?: string }) {
       if (photo.current) await api.uploadReceiptImage(snap.id, photo.current).catch(() => null);
       rememberBill({ id: snap.id, title: data.title, role: "owner", createdAt: snap.createdAt });
       clearDraft();
-      navigate(`/b/${snap.id}`, { replace: true });
+      // Restaurant mode: started at a table ("Rechnung anlegen") – the bill opens there.
+      const atTable = await attachPendingTable(snap.id);
+      navigate(atTable ? `/b/${snap.id}?zurueck=restaurant` : `/b/${snap.id}`, { replace: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : t("Die Rechnung konnte nicht erstellt werden."));
       setBusy(null);

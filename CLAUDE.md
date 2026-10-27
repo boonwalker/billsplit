@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 204 Tests, alle grün; 46 Klick-Tests).
+1. `npm run typecheck` und `npm test` (aktuell 206 Tests, alle grün; 47 Klick-Tests).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -111,6 +111,11 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Gedruckte Kurzlinks (`PRINTED_LINKS` in `server/app.ts`, z.B. `/koeln` auf den Bierdeckeln, QR-Code →
   `https://www.klicksplit.de/koeln`): Aufruf zählt in `visits.json` (`sources`), Weiterleitung auf `/`; Kachel
   „Bierdeckel-Scans“. Bierdeckel-Design: https://claude.ai/artifact/5YfutcV3DZ4ZMaSJgLn1o2
+- **Restaurant-Modus** (Stufe 2, ohne Bezahlen): `server/venues.ts` (`venues.json`), Tisch-QR `/t/<id>` → offene
+  Rechnung bzw. `#/tisch/<id>` (Warteseite), Ampel `src/pages/Restaurant.tsx` (`#/restaurant`, QR-Druck
+  `#/restaurant/qr`, `tableLight` in `src/lib/restaurant.ts` über `ownerSummary`), Rechnung am Tisch anlegen über
+  `billsplit.pendingTable` + `attachPendingTable` im Editor. Einstieg im Profil „Für Restaurants“. Konzept mit Stufe 3
+  (Stripe Connect/Apple Pay) und 4 (Kassenanbindung): https://claude.ai/artifact/VAoxbJbFbDsPhtcjbcXSCf
 - **Gerät wechseln:** Einmal-Code (`server/deviceLink.ts`, Route `#/geraet/<code>`) bzw. Wiederherstellungs-Code
   (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.
 - **Konto (optional):** E-Mail-Adresse ↔ Gerätekennung (`server/accounts.ts`, `DATA_DIR/accounts.json`), Anmeldung

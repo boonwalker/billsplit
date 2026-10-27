@@ -164,6 +164,11 @@ export const localApi: Api = {
   verifyCode: () => Promise.reject(new ApiError(t("In der Demo gibt es keine Konten."), 400)),
   saveAccountProfile: () => Promise.resolve({ ok: true as const }),
   deleteAccount: () => Promise.resolve({ account: null }),
+  // Restaurant mode needs the server (the tables' QR codes point at it).
+  venues: () => Promise.resolve([]),
+  createVenue: () => Promise.reject(new ApiError(t("In der Demo gibt es keinen Restaurant-Modus."), 400)),
+  setTableBill: () => Promise.reject(new ApiError(t("In der Demo gibt es keinen Restaurant-Modus."), 400)),
+  table: () => Promise.reject(new ApiError(t("In der Demo gibt es keinen Restaurant-Modus."), 404)),
   subscribeEvents: (onBillChanged) => localStore().listenAll(onBillChanged),
   subscribe(id, onSnapshot, onLive) {
     const push = () => {
