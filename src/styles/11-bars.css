@@ -196,7 +196,7 @@
   left: 50%;
   bottom: calc(100% + 12px);
   width: max-content;
-  max-width: min(340px, calc(100vw - 32px));
+  max-width: min(222px, calc(100vw - 32px));
   margin: 0;
   padding: 10px 14px;
   border-radius: 16px;
@@ -209,8 +209,11 @@
   box-shadow: var(--shadow-lg);
   transform: translateX(-50%);
   transform-origin: 50% 100%;
-  /* Coming back after paying is easily forgotten: it blows up over the bill, wobbles, then settles. */
-  animation: paybar-bubble-in 2.8s ease-in-out both;
+  /*
+   * Coming back after paying is easily forgotten – like a "loud" message: it jumps up big
+   * (--pop, as big as fits the screen, see PayBar), rumbles, slams back down and settles.
+   */
+  animation: paybar-bubble-in 1.7s both;
   pointer-events: none;
   z-index: 5;
 }
@@ -230,74 +233,52 @@
 @keyframes paybar-bubble-in {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(10px) scale(0.6);
+    transform: translateX(-50%) scale(0.5);
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.25);
   }
-  6% {
+  13% {
     opacity: 1;
-  }
-  /* Blown up: big type over most of the bill. */
-  24% {
-    max-width: calc(100vw - 20px);
-    padding: 48px 20px;
-    border-radius: 28px;
-    font-size: 2.75rem;
-    line-height: 1.22;
-    transform: translateX(-50%) scale(1);
+    transform: translateX(-50%) translateY(-16px) scale(var(--pop, 1.5));
     animation-timing-function: ease-in-out;
   }
-  30% {
-    max-width: calc(100vw - 20px);
-    padding: 48px 20px;
-    border-radius: 28px;
-    font-size: 2.75rem;
-    line-height: 1.22;
-    transform: translateX(-50%) rotate(-4deg);
+  /* The rumble while it is big. */
+  19% {
+    transform: translateX(-50%) translateY(-16px) scale(var(--pop, 1.5)) rotate(-2deg);
+  }
+  25% {
+    transform: translateX(-50%) translateY(-18px) scale(var(--pop, 1.5)) rotate(2deg);
+  }
+  31% {
+    transform: translateX(-50%) translateY(-16px) scale(var(--pop, 1.5)) rotate(-1.6deg);
   }
   37% {
-    max-width: calc(100vw - 20px);
-    padding: 48px 20px;
-    border-radius: 28px;
-    font-size: 2.75rem;
-    line-height: 1.22;
-    transform: translateX(-50%) rotate(4deg);
+    transform: translateX(-50%) translateY(-18px) scale(var(--pop, 1.5)) rotate(1.6deg);
   }
-  44% {
-    max-width: calc(100vw - 20px);
-    padding: 48px 20px;
-    border-radius: 28px;
-    font-size: 2.75rem;
-    line-height: 1.22;
-    transform: translateX(-50%) rotate(-3deg);
+  43% {
+    transform: translateX(-50%) translateY(-16px) scale(var(--pop, 1.5)) rotate(-1deg);
   }
-  51% {
-    max-width: calc(100vw - 20px);
-    padding: 48px 20px;
-    border-radius: 28px;
-    font-size: 2.75rem;
-    line-height: 1.22;
-    transform: translateX(-50%) rotate(3deg);
+  49% {
+    transform: translateX(-50%) translateY(-17px) scale(var(--pop, 1.5)) rotate(1deg);
   }
   58% {
-    max-width: calc(100vw - 20px);
-    padding: 48px 20px;
-    border-radius: 28px;
-    font-size: 2.75rem;
-    line-height: 1.22;
-    transform: translateX(-50%) rotate(-1.5deg);
+    transform: translateX(-50%) translateY(-16px) scale(var(--pop, 1.5)) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.5);
   }
-  66% {
-    max-width: calc(100vw - 20px);
-    padding: 48px 20px;
-    border-radius: 28px;
-    font-size: 2.75rem;
-    line-height: 1.22;
-    transform: translateX(-50%) rotate(0deg);
+  /* Slammed down … */
+  68% {
+    transform: translateX(-50%) scale(0.9, 0.86);
+    animation-timing-function: ease-out;
   }
-  /* Back to its size, with a little bounce. */
+  /* … and settled. */
+  80% {
+    transform: translateX(-50%) scale(1.05);
+    animation-timing-function: ease-in-out;
+  }
   90% {
-    transform: translateX(-50%) scale(0.96);
+    transform: translateX(-50%) scale(0.98);
   }
   100% {
+    opacity: 1;
     transform: translateX(-50%) scale(1);
   }
 }

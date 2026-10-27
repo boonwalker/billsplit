@@ -252,7 +252,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Nachzahlung“ mit eigenem „erhalten“, Mitteilung „Niklas hat nachgezahlt“
 - Rechnungsliste beim Gast: „Du schuldest · Betrag“ · Rückkehr von PayPal: „Hast Du xx,xx € an Name gesendet?“
   · vor dem PayPal-Absprung Sprechblase über der Leiste: „↩ Danach wieder zurück in die App kommen und die Zahlung bestätigen“
-  (bläst sich bei jedem Erscheinen über den Großteil der Rechnung auf, wackelt, schrumpft zurück – `paybar-bubble-in`)
+  (springt bei jedem Erscheinen wie iMessage „auffällig senden“ groß auf, rumpelt, knallt zurück – `paybar-bubble-in`,
+  Größe per `fitPop`, nie aus dem Bild)
   · nach dem Bezahlen unter dem Beleg „Nächstes Mal bezahlst Du?“ / „Mit klicksplit fotografierst Du den Beleg und bekommst
   alles zurück.“ / „So geht's“ · WhatsApp-Text endet mit „_mit klicksplit geteilt_“, Beleg-Fuß „mit klicksplit geteilt · klicksplit.de“
   · ohne Zahlungsdaten: „… hat keine Zahlungsdaten hinterlegt. Gib den Betrag direkt, z.B. bar – und markiere ihn dann als

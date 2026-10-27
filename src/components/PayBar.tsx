@@ -27,6 +27,21 @@ interface Props {
   contesting?: boolean;
 }
 
+/**
+ * The bubble's "loud" jump (see .paybar-bubble): as big as fits – never wider than the screen,
+ * never higher than the room between the top bar and the pay bar.
+ */
+function fitPop(el: HTMLParagraphElement | null) {
+  if (!el) return;
+  // A little room for the corners while it rumbles (tilted by up to 2°).
+  const byWidth = (document.documentElement.clientWidth - 24) / el.offsetWidth;
+  const barTop = el.offsetParent?.getBoundingClientRect().top ?? window.innerHeight;
+  const headerBottom = document.querySelector(".topbar")?.getBoundingClientRect().bottom ?? 0;
+  // Its bottom sits 12px above the bar and it rises 18px while big.
+  const byHeight = (barTop - 12 - 18 - headerBottom - 8) / el.offsetHeight;
+  el.style.setProperty("--pop", String(Math.max(1, Math.min(2.2, byWidth, byHeight))));
+}
+
 /** Sticky bottom bar for friends: their individual sum and the pay button. */
 export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, onHeight, scroller, onContest, contesting }: Props) {
   const bar = useRef<HTMLDivElement>(null);
@@ -139,7 +154,7 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
     <div className="paybar" ref={bar} role="region" aria-label={t("Dein Anteil")}>
       {/* Right before leaving for PayPal: come back afterwards – the payer only sees it once it is confirmed here. */}
       {!confirmed && !coveredByCredit && !asking && !(payment && nothing) && ((action.kind === "paypalMe" && ready) || (action.kind === "email" && !nothing)) && (
-        <p className="paybar-bubble" role="status">
+        <p className="paybar-bubble" role="status" ref={fitPop}>
           ↩ {t("Danach wieder zurück in die App kommen und die Zahlung bestätigen")}
         </p>
       )}
