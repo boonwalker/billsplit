@@ -30,6 +30,8 @@ export interface VisitDay {
   newDevices: number;
   /** Visits from the home-screen app. */
   appVisits: number;
+  /** Opened through a printed link (e.g. the QR code on the beer mats: "koeln"), per link. */
+  sources?: Record<string, number>;
 }
 
 interface Stored {
@@ -110,6 +112,13 @@ export class VisitLog {
     });
     this.scheduleSave();
     return true;
+  }
+
+  /** Someone opened a printed link (see PRINTED_LINKS in app.ts). */
+  source(name: string): void {
+    const day = this.day();
+    day.sources = { ...day.sources, [name]: (day.sources?.[name] ?? 0) + 1 };
+    this.scheduleSave();
   }
 
   /** Forgets a device (its owner's data was erased); the daily counts stay. */

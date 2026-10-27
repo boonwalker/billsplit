@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 202 Tests, alle grün; 46 Klick-Tests).
+1. `npm run typecheck` und `npm test` (aktuell 204 Tests, alle grün; 46 Klick-Tests).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -108,6 +108,9 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   Rechnung löschen (`POST /api/admin/bill`, „Endgültig löschen“ ankreuzen): `BillCore.removeBill` (Ausgleichszahlungen
   verlieren den Anteil bzw. fallen weg, wenn sie ohne ihn nicht aufgehen), Kennung in `deleted-bills.json`, Abruf → 410,
   Batch → `deleted`, SSE-Ereignis `deleted`; die App entfernt sie spurlos (`dropDeletedBill`).
+  Gedruckte Kurzlinks (`PRINTED_LINKS` in `server/app.ts`, z.B. `/koeln` auf den Bierdeckeln, QR-Code →
+  `https://www.klicksplit.de/koeln`): Aufruf zählt in `visits.json` (`sources`), Weiterleitung auf `/`; Kachel
+  „Bierdeckel-Scans“. Bierdeckel-Design: https://claude.ai/artifact/5YfutcV3DZ4ZMaSJgLn1o2
 - **Gerät wechseln:** Einmal-Code (`server/deviceLink.ts`, Route `#/geraet/<code>`) bzw. Wiederherstellungs-Code
   (= Gerätekennung); die Rechnungsliste kommt dann von `/api/my-bills`.
 - **Konto (optional):** E-Mail-Adresse ↔ Gerätekennung (`server/accounts.ts`, `DATA_DIR/accounts.json`), Anmeldung

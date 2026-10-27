@@ -688,6 +688,10 @@ fürs iPhone gebaut (Kacheln, waagerecht wischbare Tabellen, Sprungmarken oben):
 - **Nutzung pro Tag:** Besuche, verschiedene Geräte, neue Geräte, Anteil in der App, neue Rechnungen, Beitritte, Betrag.
   Ein Besuch ist ein App-Start oder eine Rückkehr nach mindestens 30 Minuten; die App meldet ihn an `/api/visit`
   (`src/lib/visits.ts`: nur App oder Browser und Sprache), gezählt in `server/visits.ts` → `visits.json` (seit 16.10.2026)
+- **Gedruckt / Bierdeckel-Scans:** Aufrufe über gedruckte QR-Codes. `klicksplit.de/koeln` (Bierdeckel für Kölner
+  Bars) zählt einen Aufruf pro Tag in `visits.json` (`sources`) und leitet auf die Startseite weiter; weitere
+  Kurzlinks in `PRINTED_LINKS` (`server/app.ts`). Kachel „Bierdeckel-Scans“ (gesamt, diesen Monat) und Spalte
+  „Gedruckt“ in „Nutzung pro Tag“.
 - **Konten:** E-Mail, Name, angelegt, zuletzt aktiv, Rechnungen als Rechnungssteller / als Gast, App oder Browser,
   Mitteilungen, grüner Punkt = gerade online
 - **Geräte:** die zuletzt aktiven 150 mit Name (aus den Rechnungen bzw. dem Konto), Konto, erster und letzter Besuch,

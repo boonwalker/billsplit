@@ -102,6 +102,12 @@ export function adminSecret(value: string | undefined): string | null {
   return clean.length >= 12 ? clean : null;
 }
 
+/**
+ * Short links printed on paper (QR codes), e.g. klicksplit.de/koeln on the beer mats for bars in
+ * Cologne. Opening one counts for the admin page ("Gedruckt") and leads to the start page.
+ */
+export const PRINTED_LINKS = ["koeln"];
+
 /** The origin of an address like "https://klicksplit.de/", or null when there is none. */
 export function originOf(url: string | undefined): string | null {
   try {
@@ -874,6 +880,13 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
   return async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
+      const printed = PRINTED_LINKS.find((name) => url.pathname.replace(/\/+$/, "").toLowerCase() === `/${name}`);
+      if (printed && (req.method === "GET" || req.method === "HEAD")) {
+        // A printed QR code (beer mats …): counted for the admin page, then the start page.
+        if (req.method === "GET") visits?.source(printed);
+        res.writeHead(302, { location: "/", "cache-control": "no-store" });
+        return void res.end();
+      }
       if (url.pathname.startsWith("/api/")) {
         await handleApi(req, res, url);
       } else if (req.method === "GET" || req.method === "HEAD") {

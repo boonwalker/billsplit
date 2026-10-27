@@ -84,13 +84,17 @@ export function adminPage(input: AdminInput): string {
     }
   }
   const visitsByDay = new Map(input.visitDays.map((d) => [d.day, d]));
+  // Printed QR codes (beer mats): scans per day, all links together.
+  const printedOn = (d: VisitDay | undefined) => Object.values(d?.sources ?? {}).reduce((a, b) => a + b, 0);
+  const printedTotal = sum(input.visitDays, printedOn);
+  const printedMonth = sum(input.visitDays.filter((d) => d.day.startsWith(thisMonth)), printedOn);
   const usageDays = [...new Set([...visitsByDay.keys(), ...created.keys()])].sort().reverse().slice(0, 60);
   const usageRows = usageDays
     .map((day) => {
       const v = visitsByDay.get(day);
       return `<tr><td>${day}</td><td>${int(v?.visits ?? 0)}</td><td>${int(v?.devices ?? 0)}</td><td>${int(v?.newDevices ?? 0)}</td>
         <td>${pct(v?.appVisits ?? 0, v?.visits ?? 0)}</td><td>${int(created.get(day) ?? 0)}</td><td>${int(joins.get(day) ?? 0)}</td>
-        <td>${money(volume.get(day) ?? 0, "EUR")}</td></tr>`;
+        <td>${money(volume.get(day) ?? 0, "EUR")}</td><td>${int(printedOn(v))}</td></tr>`;
     })
     .join("");
 
@@ -203,14 +207,15 @@ ${input.notice ? `<p class="notice" role="status">${escape(input.notice)}</p>` :
   <div class="tile"><span class="muted">Rechnungen</span><b>${int(input.bills.length)}</b><small>${int(monthBills.length)} diesen Monat</small></div>
   <div class="tile"><span class="muted">Beigetreten</span><b>${int(guests)}</b><small>${pct(paidGuests, guests)} haben bezahlt</small></div>
   <div class="tile"><span class="muted">Abgerechnet diesen Monat</span><b>${money(sum(monthBills.filter((b) => b.currency === "EUR"), (b) => b.total), "EUR")}</b><small>Rechnungen in Euro</small></div>
+  <div class="tile"><span class="muted">Bierdeckel-Scans</span><b>${int(printedTotal)}</b><small>${int(printedMonth)} diesen Monat</small></div>
   <div class="tile"><span class="muted">KI diesen Monat</span><b>${usd(sum(monthDays, (d) => d.costUsd))}</b><small>${int(sum(monthDays, (d) => d.receipts))} Belege</small></div>
   <div class="tile"><span class="muted">Fehler diesen Monat</span><b>${int(sum(monthDays, (d) => d.serverErrors + d.appErrors + d.aiFailures))}</b><small>Server ${int(sum(monthDays, (d) => d.serverErrors))} · App ${int(sum(monthDays, (d) => d.appErrors))} · KI ${int(sum(monthDays, (d) => d.aiFailures))}</small></div>
 </div>
 
 <h2 id="nutzung">Nutzung pro Tag</h2>
-<p class="muted">Ein Besuch = App geöffnet oder nach mindestens 30 Minuten wieder geöffnet. Geräte = verschiedene Geräte an dem Tag, neu = zum ersten Mal gesehen. Besuche werden seit 16.10.2026 gezählt.</p>
-<div class="scroll"><table><thead><tr><th>Tag</th><th>Besuche</th><th>Geräte</th><th>davon neu</th><th>in der App</th><th>neue Rechnungen</th><th>Beitritte</th><th>Betrag (EUR)</th></tr></thead>
-<tbody>${usageRows || empty(8)}</tbody></table></div>
+<p class="muted">Ein Besuch = App geöffnet oder nach mindestens 30 Minuten wieder geöffnet. Geräte = verschiedene Geräte an dem Tag, neu = zum ersten Mal gesehen. Besuche werden seit 16.10.2026 gezählt. Gedruckt = Aufrufe über einen gedruckten QR-Code (Bierdeckel: klicksplit.de/koeln).</p>
+<div class="scroll"><table><thead><tr><th>Tag</th><th>Besuche</th><th>Geräte</th><th>davon neu</th><th>in der App</th><th>neue Rechnungen</th><th>Beitritte</th><th>Betrag (EUR)</th><th>Gedruckt</th></tr></thead>
+<tbody>${usageRows || empty(9)}</tbody></table></div>
 
 <h2 id="konten">Konten (${int(input.accounts.length)})</h2>
 <p class="muted">Rechnungen: als Rechnungssteller / als Gast. <span class="dot"></span>= gerade online.</p>
