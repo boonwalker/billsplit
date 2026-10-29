@@ -689,6 +689,23 @@ export function billUrl(id: string, base: string, payment?: PaymentInfo, hashOnl
   return `${new URL(base).origin}/b/${id}${query}`;
 }
 
+/**
+ * A reminder's link names whom it is for (`fuer=<participant id>`): opened in Safari, the bill
+ * greets them and offers their app first instead of asking a name (see RecipientPrompt).
+ */
+export function withRecipient(url: string, participantId: string): string {
+  const hash = url.indexOf("#");
+  if (hash >= 0) {
+    const [route, query = ""] = url.slice(hash + 1).split("?");
+    const params = new URLSearchParams(query);
+    params.set("fuer", participantId);
+    return `${url.slice(0, hash)}#${route}?${params}`;
+  }
+  const link = new URL(url);
+  link.searchParams.set("fuer", participantId);
+  return link.toString();
+}
+
 /** Extracts the bill id from a scanned QR code / link (`…/b/<id>` or `…#/b/<id>`), or null if it is not one. */
 export function billIdFromUrl(text: string): string | null {
   const m = text.match(/(?:#|https?:\/\/[^/\s#?]+)\/b\/([A-Za-z0-9_-]{6,40})/);

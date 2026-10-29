@@ -38,7 +38,7 @@ Beim Einstieg in eine neue Sitzung: diese Datei und das README lesen, `git log -
 
 ### Ablauf nach jeder Änderung
 
-1. `npm run typecheck` und `npm test` (aktuell 230 Tests, alle grün; 57 Klick-Tests).
+1. `npm run typecheck` und `npm test` (aktuell 232 Tests, alle grün; 58 Klick-Tests).
 2. `npm run build` und `npm run test:e2e` (feste Klick-Tests, `e2e/specs`; lokal mit
    `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). Bei UI-Änderungen zusätzlich passende Skripte
    aus `e2e/*.mjs` laufen lassen und Screenshots ansehen (siehe `e2e/README.md`). Neue Abläufe bekommen einen
@@ -135,7 +135,12 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   (`src/lib/account.ts`, `AccountForm`, `AccountSection`, Seite `#/anmelden`). Absender-Domain `klicksplit.de` (INWX,
   DNS-Einträge für Resend), `MAIL_FROM=klicksplit <code@klicksplit.de>`.
 - **Safari → App:** „In der App öffnen“ hängt `?von=<Einmal-Code>` an den kopierten Link; die App ruft
-  `/api/merge-device` auf, `mergeParticipant` legt die Safari-Identität mit der App-Identität zusammen.
+  `/api/merge-device` auf, `mergeParticipant` legt die Safari-Identität mit der App-Identität zusammen. iOS öffnet
+  Links nie in der Home-Bildschirm-App (nur echte App-Store-Apps können das). Die Übergabe nennt die Rechnung
+  (`announceHandoff(billId)`); ist die App schon Teilnehmer, springt sie beim Öffnen direkt hinein (`handoffStatus`,
+  Server verrät die Kennung nur Teilnehmern), sonst wie bisher „Kopierten Link öffnen“. Erinnerungslinks tragen
+  `?fuer=<Teilnehmer>` (`withRecipient`): Safari zeigt dann „Hi Niklas!“ (`RecipientPrompt`, `/recipient`) mit „In der
+  App öffnen“, „Anmelden“, „Hier im Browser weiter“ statt der Namensfrage.
 - **Umzug der Adresse:** `PUBLIC_URL` ist die maßgebliche Adresse (Meta-Tag `klicksplit-home`, `src/lib/move.ts`).
   Browser an anderen Adressen springen mit Einmal-Code (`#/umzug/<code>?ziel=…`, `/api/move`) dorthin, die alte
   Home-Bildschirm-App zeigt `MovedNotice`. Seit 11.10.2026 aktiv (`PUBLIC_URL=https://www.klicksplit.de`).

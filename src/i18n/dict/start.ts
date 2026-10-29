@@ -282,6 +282,13 @@ export default {
     "<b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“ – was Du hier abgehakt hast, kommt mit.": "<b>✓ Link copied.</b> Now open klicksplit on your Home Screen and tap “Open copied link” there – what you've ticked off here comes along.",
     "<b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“.": "<b>✓ Link copied.</b> Now open klicksplit on your Home Screen and tap “Open copied link” there.",
     "klicksplit auf dem Home-Bildschirm?": "klicksplit on your Home Screen?",
+    "<b>✓ Fertig.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm – die Rechnung öffnet sich dort von selbst.":
+      "<b>✓ Done.</b> Now open klicksplit on your home screen – the bill opens there by itself.",
+    "Du bist schon in dieser Rechnung. Öffne sie in Deiner klicksplit-App – dort ist alles gespeichert.":
+      "You're already in this bill. Open it in your klicksplit app – everything is saved there.",
+    "Du bist schon in dieser Rechnung – auf dem Gerät, mit dem Du beigetreten bist. Hast Du klicksplit dort als App, öffne sie dort.":
+      "You're already in this bill – on the device you joined with. If you have klicksplit as an app there, open it there.",
+    "Hier im Browser weiter": "Continue here in the browser",
     "In der App öffnen": "Open in app",
     // Header
     "Zurück": "Back",
@@ -588,6 +595,13 @@ export default {
     "<b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“ – was Du hier abgehakt hast, kommt mit.": "<b>✓ Enlace copiado.</b> Ahora abre klicksplit en tu pantalla de inicio y toca allí «Abrir enlace copiado» – lo que hayas marcado aquí viene contigo.",
     "<b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“.": "<b>✓ Enlace copiado.</b> Ahora abre klicksplit en tu pantalla de inicio y toca allí «Abrir enlace copiado».",
     "klicksplit auf dem Home-Bildschirm?": "¿klicksplit en la pantalla de inicio?",
+    "<b>✓ Fertig.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm – die Rechnung öffnet sich dort von selbst.":
+      "<b>✓ Listo.</b> Ahora abre klicksplit en tu pantalla de inicio: la cuenta se abrirá allí sola.",
+    "Du bist schon in dieser Rechnung. Öffne sie in Deiner klicksplit-App – dort ist alles gespeichert.":
+      "Ya estás en esta cuenta. Ábrela en tu app de klicksplit: allí está todo guardado.",
+    "Du bist schon in dieser Rechnung – auf dem Gerät, mit dem Du beigetreten bist. Hast Du klicksplit dort als App, öffne sie dort.":
+      "Ya estás en esta cuenta, en el dispositivo con el que te uniste. Si allí tienes klicksplit como app, ábrela allí.",
+    "Hier im Browser weiter": "Seguir aquí en el navegador",
     "In der App öffnen": "Abrir en la app",
     // Header
     "Zurück": "Atrás",

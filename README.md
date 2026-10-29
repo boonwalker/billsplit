@@ -527,6 +527,16 @@ ein paar Minuten auf dem Server (zur Netzwerkadresse des Handys, nicht zum Link)
 „Aus Safari weitergeleitet – Kopierten Link öffnen“; iOS fragt einmal mit „Einfügen“ nach, dann ist man in der
 Rechnung. Ist iCloud Private Relay aktiv, haben Safari und App verschiedene Adressen und der Hinweis erscheint nicht.
 
+**Schon in der Rechnung:** Die Weiterleitung nennt dem Server auch die Rechnung. Ist die App bereits Teilnehmer dieser
+Rechnung, öffnet sie sie beim Wechsel sofort – ohne „Kopierten Link öffnen“ und ohne iOS-Einfügen-Abfrage (die Kennung
+erfährt nur ein Teilnehmer, alle anderen fügen wie oben ein).
+
+**Erinnerungen per WhatsApp** tragen im Link, für wen sie sind (`?fuer=…`). Öffnet der Freund ihn in Safari, fragt
+klicksplit nicht nach dem Namen – das ergäbe einen zweiten „Niklas“ –, sondern begrüßt ihn: „Hi Niklas! Du bist schon in
+dieser Rechnung. Öffne sie in Deiner klicksplit-App – dort ist alles gespeichert.“ (bzw. „… auf dem Gerät, mit dem Du
+beigetreten bist“, wenn er die App nicht nutzt), darunter „In der App öffnen“ (danach öffnet sich die Rechnung in der
+App von selbst), „Schon ein Konto? Anmelden“ und „Hier im Browser weiter“ (Namensfrage wie gewohnt).
+
 Weil Safari und App getrennte Speicher haben, wären es für billsplit zwei verschiedene Personen: Wer in Safari
 beigetreten ist und abgehakt oder bezahlt hat, fände das in der App nicht wieder. Deshalb nimmt „In der App öffnen“
 die Safari-Identität per Einmal-Code (10 Minuten gültig) im kopierten Link mit. Beim Öffnen in der App übernimmt

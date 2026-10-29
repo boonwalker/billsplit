@@ -32,24 +32,34 @@ export function networkKey(address: string): string {
 }
 
 export class HandoffBoard {
-  private readonly waiting = new Map<string, number>();
+  /** Per network: until when the hand-over waits, and the bill it is about (if Safari said). */
+  private readonly waiting = new Map<string, { until: number; billId?: string }>();
 
   constructor(private readonly now: () => number = Date.now) {}
 
-  mark(address: string): void {
+  mark(address: string, billId?: string): void {
     const key = networkKey(address);
     this.waiting.delete(key);
-    this.waiting.set(key, this.now() + HANDOFF_TTL_MS);
+    this.waiting.set(key, { until: this.now() + HANDOFF_TTL_MS, billId });
     if (this.waiting.size > MAX_ENTRIES) this.waiting.delete(this.waiting.keys().next().value!);
   }
 
   pending(address: string): boolean {
+    return this.entry(address) !== null;
+  }
+
+  /** The bill of a waiting hand-over (the server tells it only to someone who is in that bill). */
+  billOf(address: string): string | undefined {
+    return this.entry(address)?.billId;
+  }
+
+  private entry(address: string): { until: number; billId?: string } | null {
     const key = networkKey(address);
-    const until = this.waiting.get(key);
-    if (until === undefined) return false;
-    if (until > this.now()) return true;
+    const entry = this.waiting.get(key);
+    if (!entry) return null;
+    if (entry.until > this.now()) return entry;
     this.waiting.delete(key);
-    return false;
+    return null;
   }
 
   clear(address: string): void {

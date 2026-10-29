@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { copyText } from "../lib/clipboard";
 import { withMergeCode } from "../lib/deviceTransfer";
 import { announceHandoff } from "../lib/handoff";
+import { billIdFromUrl } from "../lib/bill";
 import { rich, t } from "../lib/i18n";
 import { loadOwnProfile } from "../lib/storage";
 
@@ -32,7 +33,7 @@ function mergeCode(): Promise<string | null> {
  * Copies the link and tells the app (via the server) to offer opening it. With `carry`, the
  * link takes Safari's identity along, so whatever was ticked or paid here shows up in the app.
  */
-export default function OpenInApp({ url, carry = false, compact = false }: { url: string; carry?: boolean; compact?: boolean }) {
+export default function OpenInApp({ url, carry = false, compact = false, direct = false }: { url: string; carry?: boolean; compact?: boolean; direct?: boolean }) {
   const [copied, setCopied] = useState(false);
   const [code, setCode] = useState<string | null>(null);
 
@@ -52,7 +53,9 @@ export default function OpenInApp({ url, carry = false, compact = false }: { url
   if (copied) {
     return (
       <div className="open-in-app done" role="status">
-        {carry && code
+        {direct
+          ? rich(t("<b>✓ Fertig.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm – die Rechnung öffnet sich dort von selbst."))
+          : carry && code
           ? rich(t("<b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“ – was Du hier abgehakt hast, kommt mit."))
           : rich(t("<b>✓ Link kopiert.</b> Öffne jetzt klicksplit auf Deinem Home-Bildschirm und tippe dort auf „Kopierten Link öffnen“."))}
       </div>
@@ -66,7 +69,7 @@ export default function OpenInApp({ url, carry = false, compact = false }: { url
         className={compact ? "btn btn-primary btn-large" : "btn btn-small"}
         onClick={() => {
           copyText(carry && code ? withMergeCode(url, code) : url);
-          announceHandoff();
+          announceHandoff(billIdFromUrl(url) ?? undefined);
           setCopied(true);
         }}
       >

@@ -54,7 +54,7 @@ function Page(): ReactNode {
         </Suspense>
       );
     case "bill":
-      return <BillPage key={route.id} id={route.id} focus={route.focus} back={route.back} />;
+      return <BillPage key={route.id} id={route.id} focus={route.focus} back={route.back} recipient={route.recipient} />;
     case "original":
       return <OriginalReceipt id={route.id} />;
     case "dashboard":

@@ -19,7 +19,7 @@ export type Route =
    * focus: a participant whose place on the bill to show (the payer's list of friends, or the
    * friend's own share) · back: where "Zurück" leads (e.g. "dashboard" when opened from a list).
    */
-  | { name: "bill"; id: string; focus?: string; back?: string }
+  | { name: "bill"; id: string; focus?: string; back?: string; recipient?: string }
   | { name: "original"; id: string }
   | { name: "edit"; id: string }
   /** Restaurant mode for the staff: the tables as a traffic-light board, or their QR codes to print. */
@@ -63,7 +63,7 @@ export function parseHash(hash: string): Route {
       if (!second) return { name: "home" };
       if (third === "edit") return { name: "edit", id: second };
       if (third === "beleg") return { name: "original", id: second };
-      return { name: "bill", id: second, focus: params.get("an") ?? undefined, back: params.get("zurueck") ?? undefined };
+      return { name: "bill", id: second, focus: params.get("an") ?? undefined, back: params.get("zurueck") ?? undefined, recipient: params.get("fuer") ?? undefined };
     default:
       return { name: "home" };
   }

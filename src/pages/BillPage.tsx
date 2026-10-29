@@ -29,6 +29,7 @@ import { rich, t } from "../lib/i18n";
 import { newRefunds, type NewRefund } from "../lib/refunds";
 import RefundConfirm from "../components/RefundConfirm";
 import RemoveShareConfirm from "../components/RemoveShareConfirm";
+import RecipientPrompt from "../components/RecipientPrompt";
 import { scrollBehavior } from "../lib/motion";
 
 /** People from earlier bills offered in the long-press sheet, besides those in the bill. */
@@ -40,7 +41,7 @@ const MAX_ASSIGN_CONTACTS = 10;
  * their share. back: where "Zurück" leads (the list it was opened from).
  */
 
-export default function BillPage({ id, focus, back }: { id: string; focus?: string; back?: string }) {
+export default function BillPage({ id, focus, back, recipient: recipientId }: { id: string; focus?: string; back?: string; recipient?: string }) {
   const { snapshot, error, notFound, deleted, live, setMyClaims, flushClaims, replace } = useLiveBill(id);
   const [askName, setAskName] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -136,9 +137,27 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
   /** Signed in from the name prompt: once the bill is loaded as the account, join without asking again. */
   const signedIn = useRef(false);
 
+  // Safari, opened from a reminder for someone in the bill: greet them and offer their app first
+  // (undefined: still looking, null: not one of them – then the usual name prompt).
+  const [recipient, setRecipient] = useState<{ name: string; app: boolean } | null | undefined>(() =>
+    recipientId && isIosBrowser() ? undefined : null,
+  );
+  const [inBrowserAnyway, setInBrowserAnyway] = useState(false);
+  const needsRecipient = Boolean(snapshot && !snapshot.me && recipient === undefined);
+  useEffect(() => {
+    if (!needsRecipient || !recipientId) return;
+    api
+      .recipient(id, recipientId)
+      .then(setRecipient)
+      .catch(() => setRecipient(null));
+  }, [needsRecipient, id, recipientId]);
+  const greeting = recipient && snapshot && !snapshot.me && !inBrowserAnyway && !signedIn.current ? recipient : null;
+
   // Opening the bill (by scanning the QR code) joins it with the profile name.
   useEffect(() => {
     if (!snapshot || snapshot.me || joining.current) return;
+    // A reminder's recipient is asked by RecipientPrompt first (see above).
+    if (recipient === undefined || (recipient && !inBrowserAnyway && !signedIn.current)) return;
     const name = loadProfile().name.trim();
     // In Safari on the iPhone, ask first: whoever continues in the home-screen app would
     // otherwise appear twice in the bill.
@@ -147,7 +166,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       return;
     }
     joinAs(name);
-  }, [snapshot, joinAs]);
+  }, [snapshot, joinAs, recipient, inBrowserAnyway]);
 
   // Payer, bill with ticking: the people from earlier bills, once a line is long-pressed.
   const wantContacts = Boolean(divisorFor && snapshot?.isOwner);
@@ -580,7 +599,7 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
       {askName && (
         <NamePrompt
           ownerName={snap.ownerName}
-          initialName={loadProfile().name.trim()}
+          initialName={loadProfile().name.trim() || recipient?.name || ""}
           extra={inBrowser ? <OpenInApp url={url} carry /> : undefined}
           onSubmit={(name) => {
             setAskName(false);
@@ -596,6 +615,22 @@ export default function BillPage({ id, focus, back }: { id: string; focus?: stri
             if (name) joinAs(name);
             else setAskName(true);
           }}
+        />
+      )}
+      {greeting && !askName && (
+        <RecipientPrompt
+          name={greeting.name}
+          usesApp={greeting.app}
+          url={url}
+          onSignedIn={(result) => {
+            signedIn.current = true;
+            setInBrowserAnyway(true);
+            if (result === "login") return;
+            const name = loadProfile().name.trim();
+            if (name) joinAs(name);
+            else setAskName(true);
+          }}
+          onBrowser={() => setInBrowserAnyway(true)}
         />
       )}
     </div>

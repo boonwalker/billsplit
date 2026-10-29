@@ -1,4 +1,5 @@
 import { DEMO } from "./demo";
+import { deviceKey } from "./storage";
 
 /**
  * Hand-over from Safari to the home-screen app on the iPhone (see server/handoff.ts):
@@ -19,17 +20,21 @@ export function isIosBrowser(): boolean {
 
 const ENDPOINT = "/api/handoff";
 
-export function announceHandoff(): void {
-  fetch(ENDPOINT, { method: "POST" }).catch(() => {});
+/** Safari: a hand-over waits – for this bill, which the app opens by itself if it is in it already. */
+export function announceHandoff(billId?: string): void {
+  fetch(ENDPOINT, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(billId ? { billId } : {}) }).catch(() => {});
 }
 
-export async function handoffPending(): Promise<boolean> {
-  if (DEMO) return false;
+/** The app: whether a hand-over waits – with the bill when this device is in it (no pasting needed then). */
+export async function handoffStatus(): Promise<{ pending: boolean; billId?: string }> {
+  if (DEMO) return { pending: false };
   try {
-    const res = await fetch(ENDPOINT, { cache: "no-store" });
-    return res.ok && ((await res.json()) as { pending?: boolean }).pending === true;
+    const res = await fetch(ENDPOINT, { cache: "no-store", headers: { "x-billsplit-key": deviceKey() } });
+    if (!res.ok) return { pending: false };
+    const body = (await res.json()) as { pending?: boolean; billId?: string };
+    return { pending: body.pending === true, billId: body.billId };
   } catch {
-    return false;
+    return { pending: false };
   }
 }
 

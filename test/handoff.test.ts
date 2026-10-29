@@ -52,3 +52,36 @@ describe("/api/handoff", () => {
     expect(await pending()).toBe(false);
   });
 });
+
+describe("/api/handoff with a bill, /recipient", () => {
+  const store = new BillStore(null);
+  const NIK = "niklas-device-key-0123456789";
+  const STRANGER = "someone-else-key-0123456789";
+  let server: Server;
+  let base: string;
+  let id: string;
+  beforeAll(async () => {
+    const { participantIdFromKey } = await import("../server/store");
+    id = store.createBill({ title: "PiZz", date: "2026-10-29", currency: "EUR", tipPercent: 0, payment: {}, items: [{ id: "a", name: "Pizza", qty: 1, total: 900 }] }, "freddy", "Freddy R.");
+    store.join(id, participantIdFromKey(NIK), "Niklas");
+    server = createServer(createApp(store, "/nonexistent"));
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    base = `http://localhost:${(server.address() as AddressInfo).port}`;
+  });
+  afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
+
+  it("tells the bill only to an app that is in it – everyone else pastes the link as before", async () => {
+    await fetch(`${base}/api/handoff`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ billId: id }) });
+    const status = async (key: string) => (await (await fetch(`${base}/api/handoff`, { headers: { "x-billsplit-key": key } })).json()) as { pending: boolean; billId?: string };
+    expect(await status(NIK)).toEqual({ pending: true, billId: id });
+    expect(await status(STRANGER)).toEqual({ pending: true });
+  });
+
+  it("names a reminder's recipient (only people in the bill, never the payer)", async () => {
+    const { participantIdFromKey } = await import("../server/store");
+    const res = await fetch(`${base}/api/bills/${id}/recipient?fuer=${participantIdFromKey(NIK)}`);
+    expect(await res.json()).toEqual({ name: "Niklas", app: false });
+    expect((await fetch(`${base}/api/bills/${id}/recipient?fuer=freddy`)).status).toBe(404);
+    expect((await fetch(`${base}/api/bills/${id}/recipient?fuer=nobody`)).status).toBe(404);
+  });
+});

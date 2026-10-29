@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type ReminderStatus } from "../lib/api";
-import { billUrl } from "../lib/bill";
+import { billUrl, withRecipient } from "../lib/bill";
 import { DEMO } from "../lib/demo";
 import type { NetworkEdge } from "../lib/bill";
 import type { HistoryEntry } from "../lib/balances";
@@ -64,7 +64,7 @@ export default function SettleSheet({ person, history = [], currency, me, edges:
           name: person.name,
           title: owedToMe[0].title,
           amount: fmt(owedTotal),
-          url: billUrl(owedToMe[0].billId, window.location.href, undefined, DEMO),
+          url: withRecipient(billUrl(owedToMe[0].billId, window.location.href, undefined, DEMO), person.id),
         })
       : t("Hi {name}, kleine Erinnerung von klicksplit: Bei Dir sind noch {amount} aus {n} Rechnungen offen. Im Dashboard kannst Du alles auf einmal ausgleichen: {url}", {
           name: person.name,

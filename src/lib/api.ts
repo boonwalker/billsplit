@@ -40,6 +40,8 @@ export interface Api {
   remind(id: string, participantId: string): Promise<BillSnapshot>;
   /** "Stimmt nicht?": takes back what another guest shared with me in a line after I had paid. */
   contestShare(id: string, participantId: string, itemId: string): Promise<BillSnapshot>;
+  /** Whom a reminder link is for ("?fuer="): their name and whether they use the home-screen app. */
+  recipient(id: string, participantId: string): Promise<{ name: string; app: boolean }>;
   /** Payer: takes a guest's ticks off a line (holding their name, see BillCore.removeGuestShare). */
   removeGuestShare(id: string, participantId: string, itemId: string): Promise<BillSnapshot>;
   /** Whom notifications reach among the people in my bills, and when I last reminded each. */
@@ -174,6 +176,7 @@ const serverApi: Api = {
   remind: (id, participantId) => request("POST", `${bill(id)}/remind`, { participantId }),
   contestShare: (id, participantId, itemId) => request("POST", `${bill(id)}/contest`, { participantId, itemId }),
   removeGuestShare: (id, participantId, itemId) => request("POST", `${bill(id)}/unclaim`, { participantId, itemId }),
+  recipient: (id, participantId) => request("GET", `${bill(id)}/recipient?fuer=${encodeURIComponent(participantId)}`),
   reminders: () => request("GET", "/api/reminders"),
   remindPerson: (personId) => request("POST", "/api/reminders", { personId }),
   network: async () => (await request<{ edges: NetworkEdge[] }>("GET", "/api/network")).edges,

@@ -16,6 +16,7 @@ import {
   type BillData,
   type BillSnapshot,
   type Debtor,
+  withRecipient,
 } from "../lib/bill";
 import { formatMoney } from "../lib/money";
 import RemindButton, { remindedAgo } from "./RemindButton";
@@ -162,13 +163,13 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
       ? t("Hi {name}, kleine Erinnerung von klicksplit: Bitte hake in „{title}“ ab, was Du hattest. Hier geht's zur Rechnung: {url}", {
           name: d.name,
           title,
-          url: shareUrl ?? "",
+          url: shareUrl ? withRecipient(shareUrl, d.id) : "",
         })
       : t("Hi {name}, kleine Erinnerung von klicksplit: Für „{title}“ sind bei Dir noch {amount} offen. Hier kannst Du direkt begleichen: {url}", {
           name: d.name,
           title,
           amount: formatMoney(openOf(d), currency),
-          url: shareUrl ?? "",
+          url: shareUrl ? withRecipient(shareUrl, d.id) : "",
         });
   const debtors = snapshot.debtors ?? [];
   const { total, own, received, missing, unassigned } = ownerSummary(snapshot);

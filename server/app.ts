@@ -401,10 +401,18 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
     if (url.pathname === "/api/handoff") {
       const address = clientAddress(req, trustProxy);
       if (method === "POST") {
-        handoffs.mark(address);
+        const body = parse(z.object({ billId: z.string().regex(/^[A-Za-z0-9_-]{6,40}$/).optional() }), (await readJson(req, MAX_JSON_BODY).catch(() => ({}))) ?? {});
+        handoffs.mark(address, body.billId);
         return sendJson(res, 200, { ok: true });
       }
-      if (method === "GET") return sendJson(res, 200, { pending: handoffs.pending(address) });
+      if (method === "GET") {
+        // The app goes straight to the bill – but only when it is in that bill already (the
+        // link never reaches anyone else; they paste it, as before).
+        const billId = handoffs.billOf(address);
+        const viewer = viewerId(req, url);
+        const known = billId && viewer && store.storedBill(billId)?.participants[viewer] ? billId : undefined;
+        return sendJson(res, 200, { pending: handoffs.pending(address), ...(known ? { billId: known } : {}) });
+      }
       if (method === "DELETE") {
         handoffs.clear(address);
         return sendJson(res, 200, { ok: true });
@@ -861,6 +869,13 @@ export function createApp(store: BillStore, distDir: string, options: AppOptions
       }
       if (action === "events" && method === "GET") {
         return subscribe(req, res, billId, viewerId(req, url));
+      }
+      // A reminder link names whom it is for ("?fuer="): Safari greets them and offers their app.
+      if (action === "recipient" && method === "GET") {
+        const id = url.searchParams.get("fuer") ?? "";
+        const person = store.storedBill(billId)?.participants[id];
+        if (!person || id === store.storedBill(billId)?.ownerId) throw new HttpError("Nicht gefunden.", 404);
+        return sendJson(res, 200, { name: person.name, app: Boolean(visits?.device(id)?.app) });
       }
       if (action === "receipt-image" && method === "GET") {
         const image = await store.receiptImage(billId);

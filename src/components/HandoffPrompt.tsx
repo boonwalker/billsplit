@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { billIdFromUrl } from "../lib/bill";
 import { deviceCodeFromUrl, mergeCodeFromUrl, mergeFromSafari } from "../lib/deviceTransfer";
-import { finishHandoff, handoffPending, isStandalone } from "../lib/handoff";
+import { finishHandoff, handoffStatus, isStandalone } from "../lib/handoff";
 import { t } from "../lib/i18n";
 import { navigate } from "../lib/router";
 
@@ -16,7 +16,16 @@ export default function HandoffPrompt() {
   useEffect(() => {
     if (!isStandalone()) return;
     const check = () => {
-      if (document.visibilityState === "visible") void handoffPending().then(setShow);
+      if (document.visibilityState !== "visible") return;
+      void handoffStatus().then(({ pending, billId }) => {
+        // In that bill already (e.g. a reminder opened in Safari): straight there, nothing to paste.
+        if (billId) {
+          finishHandoff();
+          navigate(`/b/${billId}`);
+          return;
+        }
+        setShow(pending);
+      });
     };
     check();
     document.addEventListener("visibilitychange", check);
