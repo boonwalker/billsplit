@@ -46,7 +46,10 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
    bei allen.
 3. Unten steht der eigene Anteil. „Anteil begleichen“ öffnet die PayPal-App bzw. -Website mit Empfänger und
    Betrag. Nach dem Login muss man nur noch bestätigen.
-   Kurz vor dem Absprung zu PayPal ploppt über der Bezahlleiste die Sprechblase „↩ Danach wieder zurück in die App
+   Immer zwei Tipps, auch wenn der Rechnungssteller nur eine PayPal-E-Mail hinterlegt hat: „Anteil begleichen · Betrag“
+   kopiert den Betrag (iOS verliert die Zwischenablage, wenn derselbe Tipp die App verlässt), danach „Mit PayPal
+   bezahlen · Betrag“ bzw. „In PayPal bezahlen · Betrag“ mit „Sende … an <Adresse>“ und „Adresse kopieren“ (eigener Tipp).
+   Erst nach dem ersten Tipp ploppt über der Bezahlleiste die Sprechblase „↩ Danach wieder zurück in die App
    kommen und die Zahlung bestätigen“ auf (`paybar-bubble`): Bei jedem Erscheinen springt sie wie eine „auffällig“
    gesendete iMessage groß auf, rumpelt, knallt auf ihre Größe zurück und federt nach (1,7 s). Wie groß, rechnet
    `fitPop` in `PayBar` aus – nie breiter als der Bildschirm, nie über die Kopfzeile (mit „Bewegung reduzieren“

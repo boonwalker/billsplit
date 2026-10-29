@@ -139,21 +139,15 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
     setPrepared({ amount: dueText, copied: copyText(dueText) });
   }
 
-  async function payByEmail(email: string) {
-    onPay();
-    leaving();
-    try {
-      await navigator.clipboard.writeText(email);
-      setCopied(true);
-    } catch {
-      // clipboard not available – the address is shown anyway
-    }
+  /** The address in a tap of its own (the tap that leaves for PayPal loses the clipboard on iOS). */
+  function copyEmail(email: string) {
+    setCopied(copyText(email));
   }
 
   return (
     <div className="paybar" ref={bar} role="region" aria-label={t("Dein Anteil")}>
       {/* Right before leaving for PayPal: come back afterwards – the payer only sees it once it is confirmed here. */}
-      {!confirmed && !coveredByCredit && !asking && !(payment && nothing) && ((action.kind === "paypalMe" && ready) || (action.kind === "email" && !nothing)) && (
+      {!confirmed && !coveredByCredit && !asking && !(payment && nothing) && (action.kind === "paypalMe" || action.kind === "email") && ready && (
         <p className="paybar-bubble" role="status" ref={fitPop}>
           ↩ {t("Danach wieder zurück in die App kommen und die Zahlung bestätigen")}
         </p>
@@ -385,24 +379,53 @@ export default function PayBar({ snapshot, onPay, onMarkPaid, onPaidInPerson, on
               </>
             )}
 
-            {action.kind === "email" && !(payment && nothing) && (
+            {/* PayPal by e-mail address: the same two taps – the amount is copied first, then PayPal opens. */}
+            {action.kind === "email" && !(payment && nothing) && !ready && (
+              <button
+                type="button"
+                className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
+                disabled={nothing}
+                onPointerDown={nothing ? undefined : clickPress}
+                onClick={() => {
+                  prepareAmount();
+                  clickRelease();
+                }}
+              >
+                {nothing ? t("Hake Deine Positionen ab") : t("Anteil begleichen · {amount}", { amount: formatMoney(due, data.currency) })}
+              </button>
+            )}
+            {action.kind === "email" && !(payment && nothing) && ready && (
               <>
+                <p className="paybar-note paybar-copied">
+                  {ready.copied ? (
+                    <>
+                      ✓ {t("{amount} in die Zwischenablage kopiert –", { amount: formatMoney(due, data.currency) })}
+                      <span className="paybar-oneline" ref={oneLine}>
+                        {t("in PayPal ins Betragsfeld tippen und „Einfügen“ wählen.")}
+                      </span>
+                    </>
+                  ) : (
+                    t("Trag in PayPal {amount} ein.", { amount: formatMoney(due, data.currency) })
+                  )}
+                </p>
                 <a
-                  className={`btn btn-paypal btn-large${nothing ? " disabled" : ""}`}
-                  href={nothing ? undefined : action.url}
+                  className="btn btn-paypal btn-large"
+                  href={action.url}
                   target="_blank"
                   rel="noreferrer"
-                  aria-disabled={nothing}
-                  onClick={(e) => (nothing ? e.preventDefault() : void payByEmail(action.email))}
+                  onClick={() => {
+                    onPay();
+                    leaving();
+                  }}
                 >
-                  {nothing ? t("Hake Deine Positionen ab") : t("In PayPal bezahlen · {amount}", { amount: formatMoney(due, data.currency) })}
+                  {t("In PayPal bezahlen · {amount}", { amount: formatMoney(due, data.currency) })}
                 </a>
-                {!nothing && (
-                  <p className="paybar-note">
-                    {rich(t("Sende {amount} an <b>{email}</b>", { amount: formatMoney(due, data.currency), email: action.email }))}{" "}
-                    {copied && t("(Adresse kopiert)")}
-                  </p>
-                )}
+                <p className="paybar-note">
+                  {rich(t("Sende {amount} an <b>{email}</b>", { amount: formatMoney(due, data.currency), email: action.email }))}{" "}
+                  <button type="button" className="link" onClick={() => copyEmail(action.email)}>
+                    {copied ? t("(Adresse kopiert)") : t("Adresse kopieren")}
+                  </button>
+                </p>
               </>
             )}
 

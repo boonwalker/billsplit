@@ -71,6 +71,7 @@ export default {
     "Mit PayPal bezahlen · {amount}": "Pay with PayPal · {amount}",
     "In PayPal bezahlen · {amount}": "Pay in PayPal · {amount}",
     "Sende {amount} an <b>{email}</b>": "Send {amount} to <b>{email}</b>",
+    "Adresse kopieren": "Copy address",
     "(Adresse kopiert)": "(address copied)",
     "{name} hat keine Zahlungsdaten hinterlegt.": "{name} hasn't added any payment details.",
 
@@ -349,6 +350,7 @@ export default {
     "Mit PayPal bezahlen · {amount}": "Pagar con PayPal · {amount}",
     "In PayPal bezahlen · {amount}": "Pagar en PayPal · {amount}",
     "Sende {amount} an <b>{email}</b>": "Envía {amount} a <b>{email}</b>",
+    "Adresse kopieren": "Copiar dirección",
     "(Adresse kopiert)": "(dirección copiada)",
     "{name} hat keine Zahlungsdaten hinterlegt.": "{name} no ha añadido datos de pago.",
 

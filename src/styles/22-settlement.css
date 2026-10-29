@@ -336,3 +336,9 @@
 .rline-claims li.holdable.holding {
   transform: scale(0.92);
 }
+
+/* "Adresse kopieren" on the dark pay bar. */
+.paybar-note .link {
+  color: var(--mint);
+  font-weight: 600;
+}
