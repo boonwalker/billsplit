@@ -227,6 +227,8 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                     </span>
                   ))}
                 </span>
+                {/* Amount and actions as one block: on a narrow screen it moves below the name as a whole. */}
+                <span className="debtor-side">
                 {/* Their share – what they set out to pay, else what they have now (also without payment details in the bill). */}
                 {(d.payAmount ?? d.amount) > 0 && <span className="debtor-amount">{formatMoney(d.payAmount ?? d.amount, currency)}</span>}
                 {/* Still open (or nothing ticked yet): a friendly nudge – as a notification where it reaches them, else via WhatsApp. */}
@@ -251,6 +253,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                     <span>{t("erhalten")}</span>
                   </label>
                 )}
+                </span>
               </li>
               {/* Paid, and then the share grew: each payment on top is a line of its own, confirmed on its own. */}
               {d.topUps?.map((top, i) => (
@@ -268,6 +271,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                           : t("hat um {time} auf Bezahlen getippt", { time: time(top.payClickedAt) })}
                     </span>
                   </span>
+                  <span className="debtor-side">
                   <span className="debtor-amount">{formatMoney(top.amount, currency)}</span>
                   <label className="received-toggle" title={t("Geld ist auf PayPal angekommen")}>
                     <input
@@ -278,6 +282,7 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                     />
                     <span>{t("erhalten")}</span>
                   </label>
+                  </span>
                 </li>
               ))}
               {grown > 0 && (
@@ -289,7 +294,9 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                     <span className="debtor-name">{t("{name} · Nachzahlung", { name: d.name })}</span>
                     <span className="debtor-status">{t("Auswahl nach der Zahlung erweitert – noch offen")}</span>
                   </span>
-                  <span className="debtor-amount">{formatMoney(grown, currency)}</span>
+                  <span className="debtor-side">
+                    <span className="debtor-amount">{formatMoney(grown, currency)}</span>
+                  </span>
                 </li>
               )}
               </Fragment>

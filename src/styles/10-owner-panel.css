@@ -218,3 +218,31 @@ button.remind-btn:disabled {
   color: var(--text);
   border: 1.5px solid var(--border);
 }
+
+/*
+ * Never squeezed (iPhone mini, large text): name and status keep a readable width; amount,
+ * "Erinnern" and "erhalten" stay together and move below as one block when the row is too narrow.
+ */
+.debtor {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.debtor-main {
+  flex: 1 1 9.5rem;
+  min-width: min(9.5rem, 100%);
+}
+
+.debtor-name {
+  overflow-wrap: anywhere;
+}
+
+.debtor-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-left: auto;
+  max-width: 100%;
+}
