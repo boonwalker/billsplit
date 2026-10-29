@@ -59,6 +59,8 @@ export interface Draft {
   tipExcluded?: boolean;
   /** False only for older bills that split the tip per head (see BillData.tipByShare). */
   tipByShare?: boolean;
+  /** False only for older bills whose discounts all lower the items (see BillData.feeOffsets). */
+  feeOffsets?: boolean;
 }
 
 export const newFeeRow = (fee?: { id?: string; name: string; amount: number; excluded?: boolean }): FeeRow => ({
@@ -121,6 +123,7 @@ export function draftFromData(data: BillData): Draft {
     partial: data.partial,
     tipExcluded: data.tipExcluded,
     tipByShare: Boolean(data.tipByShare),
+    feeOffsets: Boolean(data.feeOffsets),
     rows: data.items.map(newRow),
     fees: (data.fees ?? []).map(newFeeRow),
     delivery: (data.fees ?? []).length > 0,
@@ -162,6 +165,7 @@ export function toBillData(draft: Draft, items: BillItem[]): BillData {
     tipExcluded: draft.tipExcluded || undefined,
     // New bills (and drafts saved before the flag existed): the tip follows the items.
     tipByShare: draft.tipByShare === false ? undefined : true,
+    feeOffsets: draft.feeOffsets === false ? undefined : true,
     fees: draftFees(draft).length ? draftFees(draft) : undefined,
   };
   if (draft.tip.mode === "total" || draft.tip.mode === "amount") {

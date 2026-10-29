@@ -19,6 +19,7 @@ export function createSampleBill(): string {
     currency: "EUR",
     tipPercent: 10,
     tipByShare: true,
+    feeOffsets: true,
     payment: paymentFromProfile(profile),
     items: [
       { id: ids.pizza, name: "Pizza Margherita", qty: 1, total: 950 },

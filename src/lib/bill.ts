@@ -67,6 +67,12 @@ export interface BillData {
    */
   tipByShare?: boolean;
   /**
+   * A discount that belongs to a fee ("Lieferrabatt" → "Lieferung") takes that fee back first;
+   * what is left of the fee is shared per head, only a discount beyond it lowers the items (see
+   * feeSplit). Set for every bill since 29.10.2026; older bills keep their discounts on the items.
+   */
+  feeOffsets?: boolean;
+  /**
    * Number of people (payer included) that tip and fees are split among, as expected by the payer.
    * Without it, everyone who joined the bill counts; with it, people who scan late are covered.
    */
@@ -393,17 +399,62 @@ export function feesTotal(data: BillData): Cents {
   return (data.fees ?? []).reduce((sum, f) => sum + (f.excluded ? 0 : f.amount), 0);
 }
 
-/** Fees above zero (delivery, service, …): shared per head like the tip. */
-export function perHeadFees(data: BillData): Cents {
-  return (data.fees ?? []).reduce((sum, f) => sum + (f.excluded || f.amount <= 0 ? 0 : f.amount), 0);
+/** Kinds of fees a discount can take back – by the words in their names (German, English, Spanish). */
+const FEE_KINDS = [
+  /liefer|versand|zustell|porto|deliver|shipping|env[ií]o|entrega|domicilio/i,
+  /service|servicio|bearbeitung|handling|plattform|platform/i,
+  /verpackung|packaging|embalaje|t[üu]te|bag|bolsa/i,
+  /mindestbestell|kleinbestell|small order|minimum order|pedido m[ií]nimo/i,
+];
+const feeKind = (name: string) => FEE_KINDS.findIndex((kind) => kind.test(name));
+
+/** A discount that took back (part of) a fee (see feeSplit). */
+export interface FeeOffset {
+  discount: BillFee;
+  fee: BillFee;
+  /** How much of the fee it took back (cents, above zero). */
+  amount: Cents;
 }
 
 /**
- * Discounts (fees below zero, e.g. "Rabatt -5,00"): they lower the items in proportion to their
- * price – split per head, someone with a small order would end up below zero.
+ * How the fees are split. Fees above zero (delivery, service, …) are shared per head like the
+ * tip; discounts (fees below zero, e.g. "Rabatt -5,00") lower the items in proportion to their
+ * price – split per head, someone with a small order would end up below zero. With feeOffsets a
+ * discount of the same kind as a fee ("Lieferrabatt", "Lieferung") – or, without a kind, of
+ * exactly its amount – takes that fee back first: a free delivery is no cost at all, a part of
+ * it leaves the rest per head, and only what goes beyond the fee lowers the items.
  */
+export function feeSplit(data: Pick<BillData, "fees" | "feeOffsets">): { perHead: Cents; discount: Cents; offsets: FeeOffset[] } {
+  const billed = (data.fees ?? []).filter((f) => !f.excluded);
+  const left = new Map(billed.filter((f) => f.amount > 0).map((f) => [f, f.amount]));
+  let discount = 0;
+  const offsets: FeeOffset[] = [];
+  for (const d of billed.filter((f) => f.amount < 0)) {
+    let rest = -d.amount;
+    if (data.feeOffsets) {
+      const kind = feeKind(d.name);
+      const open = [...left].filter(([, amount]) => amount > 0).map(([fee]) => fee);
+      const fee = kind >= 0 ? open.find((f) => feeKind(f.name) === kind) : open.find((f) => left.get(f) === rest);
+      if (fee) {
+        const taken = Math.min(rest, left.get(fee)!);
+        left.set(fee, left.get(fee)! - taken);
+        offsets.push({ discount: d, fee, amount: taken });
+        rest -= taken;
+      }
+    }
+    discount -= rest;
+  }
+  return { perHead: [...left.values()].reduce((sum, amount) => sum + amount, 0), discount, offsets };
+}
+
+/** Fees shared per head (see feeSplit). */
+export function perHeadFees(data: BillData): Cents {
+  return feeSplit(data).perHead;
+}
+
+/** Discounts that lower the items in proportion to their price (see feeSplit). */
 export function discountTotal(data: BillData): Cents {
-  return (data.fees ?? []).reduce((sum, f) => sum + (f.excluded || f.amount >= 0 ? 0 : f.amount), 0);
+  return feeSplit(data).discount;
 }
 
 /** The part of the discounts that falls on items worth `items` cents. */

@@ -134,6 +134,13 @@ sondern anteilig nach Bestellwert verteilt: Jede Position wird um denselben Proz
 „Rabatt auf jede Position -25 %“). So kann kein Anteil unter null fallen, und „Dir fehlen noch“ liegt nie über der
 Rechnungssumme. „N von M haben auf Bezahlen getippt“ erscheint erst, wenn jemand beigetreten ist.
 
+**Rabatt auf eine Gebühr** (Rechnungen seit 29.10.2026, `feeOffsets`, `feeSplit`): Gehört ein Rabatt erkennbar zu einer
+Gebühr – „Lieferrabatt“ / „Gratis Lieferung“ zu „Lieferung“, ebenso Service-, Verpackungs- und Mindestbestellwert-Gebühren
+(deutsch, englisch, spanisch), oder ein Rabatt ohne solche Angabe über genau den Betrag einer Gebühr –, wird er zuerst mit
+dieser Gebühr verrechnet: Ganz erstattet kostet sie niemanden etwas, teilweise erstattet wird der Rest pro Kopf geteilt, und
+nur was über die Gebühr hinausgeht, senkt die Positionen anteilig. Auf dem Beleg steht dann „Lieferrabatt mit Lieferung
+verrechnet -0,99 €“ vor „Gebühren ÷ 4 Personen“. Ältere Rechnungen bleiben, wie sie sind (bezahlte Anteile ändern sich nie).
+
 **Rundung:** „Dir fehlen noch“ ist immer genau die Summe dessen, was die Freunde laut ihrer Rechnung zahlen (plus was noch
 niemand hat) – nie „Gesamt minus eigener Anteil“. Bei 6,55 € für zwei zahlt der Freund 3,28 €, also fehlen 3,28 €;
 den Rundungscent trägt der Rechnungssteller, „Dein eigener Anteil“ zeigt 3,27 € (`ownerSummary` in `OwnerPanel.tsx`).

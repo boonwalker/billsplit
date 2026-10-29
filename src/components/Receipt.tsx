@@ -5,6 +5,7 @@ import {
   billTotal,
   claimCost,
   discountTotal,
+  feeSplit,
   equalShare,
   hasTip,
   isFullyAssigned,
@@ -753,6 +754,14 @@ export default function Receipt({ snapshot, onSetSlots, onShowOriginal, onToggle
               )}
             </>
           )}
+          {/* A discount that took back a fee (free delivery): said once, so the per-head fees add up. */}
+          {!equal &&
+            feeSplit(data).offsets.map((o) => (
+              <Fragment key={`${o.discount.id}-${o.fee.id}`}>
+                <dt className="tip-split">{t("{discount} mit {fee} verrechnet", { discount: o.discount.name, fee: o.fee.name })}</dt>
+                <dd className="tip-split">{formatMoney(-o.amount, data.currency)}</dd>
+              </Fragment>
+            ))}
           {sharedTotal(data) !== 0 && !equal && (
             <>
               <dt className="tip-split">

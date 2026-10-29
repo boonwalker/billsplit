@@ -8,7 +8,7 @@ import SupermarketSheet from "../components/SupermarketSheet";
 import { looksPersonal } from "../lib/personal";
 import TipControl, { tipCents, tipPersons } from "../components/TipControl";
 import { api } from "../lib/api";
-import { subtotal, type BillData, type BillItem, type BillSnapshot } from "../lib/bill";
+import { feeSplit, subtotal, type BillData, type BillItem, type BillSnapshot } from "../lib/bill";
 import { draftFees, draftFromData, emptyDraft, feeRowToFee, isConfident, newFeeRow, newRow, restoreDraft, rowToItem, toBillData, type Draft, type FeeRow, type Row } from "../lib/draft";
 import { prepareImage } from "../lib/image";
 import { centsToInput, formatMoney, parseMoney } from "../lib/money";
@@ -154,8 +154,8 @@ export default function Editor({ billId }: { billId?: string }) {
   const sum = validItems.reduce((s, i) => s + i.total, 0);
   const fees = draftFees(draft);
   const feeSum = fees.reduce((s, f) => s + f.amount, 0);
-  // Per head: fees above zero; discounts lower the items by their value (see discountShare).
-  const headFeeSum = fees.reduce((s, f) => s + Math.max(0, f.amount), 0);
+  // Per head: fees (less the discounts that take them back); other discounts lower the items by their value (see feeSplit).
+  const headFeeSum = feeSplit({ fees, feeOffsets: draft.feeOffsets !== false }).perHead;
   const discountSum = feeSum - headFeeSum;
   const mismatch = draft.receiptTotal !== null && validItems.length > 0 && draft.receiptTotal !== sum + feeSum;
   const updateFee = (id: string, patch: Partial<FeeRow>) => setDraft((d) => ({ ...d, fees: d.fees.map((f) => (f.id === id ? { ...f, ...patch } : f)) }));
