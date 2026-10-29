@@ -25,7 +25,8 @@ PayPal. Alle sehen live, wer welche Position übernommen hat.
 4. Weiter unten liegt die digitale Rechnung im Beleg-Design. Dort hakst du deine eigenen Positionen ab.
 5. Unter der Rechnung siehst du deine Freunde, sobald sie beigetreten sind. Hat jemand auf „Bezahlen“ getippt,
    erscheint der Betrag hinter seinem Namen. Diese Angaben gleichst du mit den PayPal-Eingängen ab und hakst
-   „erhalten“ an. Unten steht immer, wie viel dir noch fehlt.
+   „erhalten“ an – das Kästchen steht bei jedem, der etwas zu zahlen hat, auch bevor er auf „Bezahlen“ getippt hat
+   (z.B. bar bezahlt). Unten steht immer, wie viel dir noch fehlt.
    Wer noch etwas offen hat – oder beigetreten ist, aber noch nichts abgehakt hat –, bekommt einen Knopf „Erinnern“.
    Hat der Freund Benachrichtigungen eingeschaltet, schickt er eine Push-Mitteilung („Niklas erinnert Dich – Für
    „Trattoria“ sind bei Dir noch 9,50 € offen.“ bzw. „Bitte hake in „Trattoria“ ab, was Du hattest.“; ein Tipp führt
@@ -95,7 +96,7 @@ keine Zahlungsdaten hinterlegt. Gib den Betrag direkt, z.B. bar – und markiere
 „Als bezahlt markieren“ (vermerkt den Betrag und markiert ihn, `paidInPerson`). Der Rechnungssteller sieht unter dem
 Beleg wie immer, wer beigetreten ist, und bei jedem Freund seinen Anteil – das gilt jetzt für alle Rechnungen: rechts
 steht der aktuelle Anteil, sobald jemand etwas hat (nach „Bezahlen“ der dabei vermerkte Betrag), und „ist beigetreten ·
-wählt noch aus …“ nur, solange noch nichts abgehakt ist. „erhalten“ erscheint nach dem Markieren wie gewohnt.
+wählt noch aus …“ nur, solange noch nichts abgehakt ist. „erhalten“ lässt sich jederzeit abhaken.
 
 ### Trinkgeld
 

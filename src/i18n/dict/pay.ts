@@ -39,6 +39,7 @@ export default {
     "{name} hat „{item}“ abgehakt ({amount}). Danach ist der Anteil wieder frei – {name} bekommt eine Mitteilung und kann neu abhaken.":
       "{name} ticked “{item}” ({amount}). Afterwards that part is free again – {name} gets a notification and can tick again.",
     "Anteil entfernen": "Remove part",
+    "Anteil von {name} erhalten": "{name}'s share received",
     "{name} · Nachzahlung": "{name} · additional payment",
     "Nachzahlung von {name} erhalten": "Additional payment from {name} received",
     "Auswahl nach der Zahlung erweitert – noch offen": "Added to after paying – still open",
@@ -318,6 +319,7 @@ export default {
     "{name} hat „{item}“ abgehakt ({amount}). Danach ist der Anteil wieder frei – {name} bekommt eine Mitteilung und kann neu abhaken.":
       "{name} marcó «{item}» ({amount}). Después esa parte queda libre: {name} recibe un aviso y puede volver a marcarla.",
     "Anteil entfernen": "Quitar parte",
+    "Anteil von {name} erhalten": "Parte de {name} recibida",
     "{name} · Nachzahlung": "{name} · pago adicional",
     "Nachzahlung von {name} erhalten": "Pago adicional de {name} recibido",
     "Auswahl nach der Zahlung erweitert – noch offen": "Ampliado después de pagar – pendiente",

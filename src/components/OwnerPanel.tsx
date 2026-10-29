@@ -239,9 +239,15 @@ export default function OwnerPanel({ snapshot, onToggleReceived, shareUrl, onRem
                     onPush={() => onRemind!(d)}
                   />
                 )}
-                {d.payClickedAt && (
+                {/* Always (also before they tapped pay, e.g. paid in cash) – as soon as there is something to receive. */}
+                {(d.received || d.payClickedAt || d.amount > 0) && (
                   <label className="received-toggle" title={t("Geld ist auf PayPal angekommen")}>
-                    <input type="checkbox" checked={d.received} onChange={(e) => onToggleReceived(d, e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={d.received}
+                      onChange={(e) => onToggleReceived(d, e.target.checked)}
+                      aria-label={t("Anteil von {name} erhalten", { name: d.name })}
+                    />
                     <span>{t("erhalten")}</span>
                   </label>
                 )}
