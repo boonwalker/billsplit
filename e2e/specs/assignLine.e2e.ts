@@ -119,3 +119,49 @@ test("Gleichverteilung: gedrückt halten gibt eine Position direkt einem Freund 
   await expect(page.locator("li[data-item='duschgel'] .rline-for")).toHaveCount(0);
   await expect(page.locator(".tip-split-panel")).toContainText("Rechnung 12,00 €");
 });
+
+test("Mehrere Stück: der Rechnungssteller ordnet jedem genau seine Anzahl zu – statt Drittel", async ({ browser }) => {
+  const niklas = { key: key("niklas"), name: "Niklas", paypal: "nik" };
+  const freddy = { key: key("freddy"), name: "Freddy" };
+  const andy = { key: key("andy"), name: "Andy" };
+  const christoph = { key: key("christoph"), name: "Christoph" };
+  const bill = await createBill(niklas, "Hallmackenreuther", [{ id: "weizen", name: "Weizen", qty: 5, total: 2500 }]);
+  // The muddle from the screenshot: the fifth glass shared by all three – 2⅓, 2⅓, ⅓.
+  await joinAndClaim(freddy, bill, { weizen: [0, 1, 4] });
+  await joinAndClaim(andy, bill, { weizen: [2, 3, 4] });
+  await joinAndClaim(christoph, bill, { weizen: [4] });
+
+  const page = await phone(browser, niklas.key, { profile: { name: "Niklas", paypalMe: "nik" }, seen: [bill] });
+  await page.goto(`/#/b/${bill}`);
+  await expect(page.locator("li[data-item='weizen']")).toContainText("Christoph ×⅓");
+  await hold(page, "Weizen");
+  const rows = page.locator(".assign-units li");
+  await expect(rows).toHaveText(["Freddy−2⅓+", "Andy−2⅓+", "Christoph−⅓+"]);
+  await expect(page.locator(".assign-units-free")).toHaveText("Alle 5 Stück vergeben");
+
+  // Christoph had one glass: one tap makes his third the whole fifth glass.
+  await page.getByRole("button", { name: "Ein Stück mehr für Christoph" }).click();
+  await expect(rows).toHaveText(["Freddy−2+", "Andy−2+", "Christoph−1+"]);
+  // Andy had three after all: nothing is free, so it comes from whoever has the most.
+  await page.getByRole("button", { name: "Ein Stück mehr für Andy" }).click();
+  await expect(rows).toHaveText(["Freddy−1+", "Andy−3+", "Christoph−1+"]);
+  await page.getByRole("button", { name: "Ein Stück weniger für Andy" }).click();
+  await expect(page.locator(".assign-units-free")).toHaveText("Noch 1 von 5 Stück frei");
+  await page.getByRole("button", { name: "Ein Stück mehr für Freddy" }).click();
+  await expect(rows).toHaveText(["Freddy−2+", "Andy−2+", "Christoph−1+"]);
+  await page.screenshot({ path: process.env.SHOT_UNITS ?? "/dev/null" }).catch(() => undefined);
+
+  // Nothing is saved until "Übernehmen" – then all three at once.
+  await expect(page.locator("li[data-item='weizen']")).toContainText("Christoph ×⅓");
+  await page.getByRole("button", { name: "Übernehmen" }).click();
+  const line = page.locator("li[data-item='weizen'] .rline-claims");
+  await expect(line).toContainText("Freddy ×2");
+  await expect(line).toContainText("Andy ×2");
+  await expect(line).toContainText("Christoph ×1");
+  await expect(page.locator(".debtor", { hasText: "Christoph" })).toContainText("5,00 €");
+
+  // Christoph sees his one glass.
+  const christophPhone = await phone(browser, christoph.key, { profile: { name: "Christoph" }, seen: [bill] });
+  await christophPhone.goto(`/#/b/${bill}`);
+  await expect(christophPhone.locator("li[data-item='weizen'] .rline-claims")).toContainText("Du ×1");
+});

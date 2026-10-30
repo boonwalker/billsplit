@@ -7,6 +7,7 @@ import DemoBar from "../components/DemoBar";
 import GuestInvite from "../components/bill/GuestInvite";
 import GestureHelp from "../components/GestureHelp";
 import DivisorSheet, { type AssignPeople } from "../components/DivisorSheet";
+import { changedHolders } from "../lib/units";
 import Header from "../components/Header";
 import NamePrompt from "../components/NamePrompt";
 import OpenInApp from "../components/OpenInApp";
@@ -412,9 +413,35 @@ export default function BillPage({ id, focus, back, recipient: recipientId }: { 
       return api.assign(id, [{ id: personId, claims }]);
     };
     const fail = (e: unknown) => setActionError(e instanceof Error ? e.message : t("Speichern fehlgeschlagen."));
+    /** Several units, with ticking: exactly these units for each person whose units changed – one request. */
+    const before = Object.fromEntries(snap.participants.filter((p) => p.claims[itemId]?.length).map((p) => [p.id, p.claims[itemId]]));
+    const units: AssignPeople["units"] =
+      equal || item.qty < 2
+        ? undefined
+        : {
+            line: before,
+            onSave: (line, done) => {
+              setAssigning(true);
+              void flushClaims()
+                .then(() => {
+                  const changes = changedHolders(before, line).map((personId) => {
+                    const claims = { ...snap.participants.find((p) => p.id === personId)?.claims };
+                    if (line[personId]?.length) claims[itemId] = line[personId];
+                    else delete claims[itemId];
+                    return { id: personId, claims };
+                  });
+                  return api.assign(id, changes);
+                })
+                .then(replace)
+                .then(done)
+                .catch(fail)
+                .finally(() => setAssigning(false));
+            },
+          };
     return {
       people,
       holders,
+      units,
       busy: assigning,
       onToggle: (personId) => {
         const on = !holders.includes(personId);

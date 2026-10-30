@@ -614,6 +614,8 @@ export class BillCore {
       this.noteShareChanges(bill, requesterId, () => {
         bill.participants[id].claims = sanitizeClaims(claims, bill.data.items, bill.participants[id].claims, others);
       });
+      const p = bill.participants[id];
+      if (p.splits) p.splits = sanitizeSplits(p.splits, p.claims);
       // Taken back before anything happened: they leave the bill again, as if never assigned.
       if (this.untouchedAssignee(billId, id)) {
         this.audit({ kind: "leave", text: `„${bill.participants[id].name}“ hat „${bill.data.title}“ verlassen (vom Rechnungssteller wieder herausgenommen)`, billIds: [billId] });

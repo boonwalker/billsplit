@@ -181,6 +181,14 @@ aus der Freundesliste und aus ihrer eigenen Rechnungsliste (`untouchedAssignee`;
 `synced` und fallen weg, wenn die Rechnung noch existiert, man aber nicht mehr dabei ist). Darunter „Nur einen Teil aufteilen“ mit dem „/ N“ wie oben; „Übernehmen“ speichert
 nur, wenn sich der Teiler geändert hat. Die Gesten-Hilfe „?“ nennt dafür „Gedrückt halten“.
 
+**Positionen mit mehreren Stück** (z.B. „5x Weizen“) ordnet der Rechnungssteller stückgenau zu: Antippen gibt der Person
+alle noch freien Stück (mindestens eins), der Kreis zeigt die Anzahl („×2“), darunter steht pro Person eine Zeile mit
+„− / +“ und „Noch 1 von 5 Stück frei“ bzw. „Alle 5 Stück vergeben“. Geteilte Stücke erscheinen als Bruch (⅓); „+“ macht
+aus einem geteilten Stück das eigene, ein ganzes Stück mehr nimmt erst ein freies, dann eines von dem, der am meisten hat
+(`setUnits` in `src/lib/units.ts`). Hier wird erst mit „Übernehmen“ gespeichert – alle geänderten Personen in einer
+Anfrage (`api.assign`), danach der Teiler; Wegtippen verwirft. Bei Positionen mit einem Stück bleibt es beim sofortigen
+Speichern und Teilen zu gleichen Teilen.
+
 **Namen gedrückt halten** (Rechnungssteller, mit Abhaken): Hält er die grüne Namensmarkierung eines Gastes an einer
 Position, fragt „Anteil von Andy entfernen?“ – „Andy hat „Kakao mit Sahne“ abgehakt (2,05 €). Danach ist der Anteil
 wieder frei – Andy bekommt eine Mitteilung und kann neu abhaken.“; hat der Gast schon bezahlt, steht darunter wie bei

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { BillItem } from "../lib/bill";
 import { rich, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
+import { changedHolders, formatUnits, freeUnits, setUnits, unitsOf, type LineSlots } from "../lib/units";
 
 export const MAX_DIVISOR = 5;
 
@@ -12,6 +13,11 @@ export interface AssignPeople {
   holders: string[];
   onToggle: (personId: string) => void;
   busy: boolean;
+  /**
+   * Line with several units: who has which units, set per person in whole units and saved
+   * together with "Übernehmen" (then `done` runs).
+   */
+  units?: { line: LineSlots; onSave: (line: LineSlots, done: () => void) => void };
 }
 
 interface Props {
@@ -31,6 +37,10 @@ export default function DivisorSheet({ item, currency, onApply, onClose, assign 
   const full = item.fullTotal ?? item.total;
   const [divisor, setDivisor] = useState(Math.min(MAX_DIVISOR, item.divisor ?? 1));
   const billed = Math.round(full / divisor);
+  const exact = item.qty > 1 ? assign?.units : undefined;
+  const [line, setLine] = useState<LineSlots>(exact?.line ?? {});
+  const give = (personId: string, count: number) => setLine(setUnits(line, item.qty, personId, count));
+  const free = freeUnits(line, item.qty);
 
   return (
     <div className="sheet-backdrop divisor-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -40,10 +50,11 @@ export default function DivisorSheet({ item, currency, onApply, onClose, assign 
         {assign && (
           <>
             <h3 className="divisor-section">{t("Wer hatte das?")}</h3>
-            <p className="muted small">{t("Antippen = direkt zuordnen · mehrere = teilen")}</p>
+            <p className="muted small">{exact ? t("Antippen = zuordnen · Anzahl darunter anpassen") : t("Antippen = direkt zuordnen · mehrere = teilen")}</p>
             <div className="expense-people assign-people" role="group" aria-label={t("Wer hatte das?")} aria-busy={assign.busy}>
               {assign.people.map((p) => {
-                const on = assign.holders.includes(p.id);
+                const units = exact ? unitsOf(line, p.id) : 0;
+                const on = exact ? units > 0 : assign.holders.includes(p.id);
                 return (
                   <button
                     key={p.id}
@@ -51,16 +62,54 @@ export default function DivisorSheet({ item, currency, onApply, onClose, assign 
                     className={`person-pick${on ? " on" : ""}`}
                     aria-pressed={on}
                     disabled={assign.busy}
-                    onClick={() => assign.onToggle(p.id)}
+                    onClick={() => (exact ? give(p.id, on ? 0 : Math.max(1, free)) : assign.onToggle(p.id))}
                   >
                     <span className="person-pick-avatar" aria-hidden="true">
                       {p.me ? t("Du") : p.name.trim().slice(0, 1).toUpperCase() || "?"}
+                      {exact && on && <span className="person-pick-count">×{formatUnits(units)}</span>}
                     </span>
                     <span className="person-pick-name">{p.me ? t("Du") : p.name}</span>
                   </button>
                 );
               })}
             </div>
+            {exact && (
+              <>
+                <ul className="assign-units">
+                  {assign.people
+                    .filter((p) => unitsOf(line, p.id) > 0)
+                    .map((p) => {
+                      const units = unitsOf(line, p.id);
+                      const name = p.me ? t("Du") : p.name;
+                      const [label, less, more] = p.me
+                        ? [t("Stück für Dich"), t("Ein Stück weniger für Dich"), t("Ein Stück mehr für Dich")]
+                        : [t("Stück für {name}", { name }), t("Ein Stück weniger für {name}", { name }), t("Ein Stück mehr für {name}", { name })];
+                      return (
+                        <li key={p.id}>
+                          <span className="assign-units-name">{name}</span>
+                          <div className="stepper-mini" role="group" aria-label={label}>
+                            <button type="button" onClick={() => give(p.id, Math.ceil(units - 1e-9) - 1)} aria-label={less}>
+                              −
+                            </button>
+                            <span aria-live="polite">{formatUnits(units)}</span>
+                            <button
+                              type="button"
+                              onClick={() => give(p.id, Math.floor(units + 1e-9) + 1)}
+                              disabled={units > item.qty - 1e-9}
+                              aria-label={more}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                </ul>
+                <p className="assign-units-free muted small">
+                  {free > 0 ? t("Noch {free} von {qty} Stück frei", { free, qty: item.qty }) : t("Alle {qty} Stück vergeben", { qty: item.qty })}
+                </p>
+              </>
+            )}
             <h3 className="divisor-section">{t("Nur einen Teil aufteilen")}</h3>
           </>
         )}
@@ -105,9 +154,13 @@ export default function DivisorSheet({ item, currency, onApply, onClose, assign 
         <button
           type="button"
           className="btn btn-primary btn-large"
+          disabled={assign?.busy}
           onClick={() => {
-            // Only the people changed (bill with ticking): nothing to save here.
-            if (divisor !== (item.divisor ?? 1)) onApply(divisor);
+            const divided = divisor !== (item.divisor ?? 1);
+            const apply = () => divided && onApply(divisor);
+            // Units per person first, then the "/ N" – one after the other, so neither overwrites the other.
+            if (exact && changedHolders(exact.line, line).length > 0) exact.onSave(line, apply);
+            else apply();
             onClose();
           }}
         >

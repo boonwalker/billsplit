@@ -29,6 +29,7 @@ import {
 } from "../lib/bill";
 import { formatDate as formatLocaleDate, locale, t } from "../lib/i18n";
 import { formatMoney } from "../lib/money";
+import { formatUnits } from "../lib/units";
 import { vibrate } from "../lib/haptics";
 import ClaimDemo, { onceInView, useClaimDemo } from "./ClaimDemo";
 import ReceiptDemo, { demoLayout, useDemoLoop, type DemoLayout } from "./ReceiptDemo";
@@ -78,23 +79,6 @@ function useFlash(key: string): boolean {
     return () => window.clearTimeout(timer);
   }, [key]);
   return flash;
-}
-
-/** 1.5 → "1½", 0.333 → "⅓"; other fractions with one decimal. */
-function formatUnits(units: number): string {
-  const whole = Math.floor(units + 1e-9);
-  const rest = units - whole;
-  if (rest < 1e-6) return String(whole);
-  const glyph = [
-    [1 / 2, "½"],
-    [1 / 3, "⅓"],
-    [2 / 3, "⅔"],
-    [1 / 4, "¼"],
-    [3 / 4, "¾"],
-    [1 / 5, "⅕"],
-  ].find(([value]) => Math.abs((value as number) - rest) < 1e-6)?.[1];
-  if (glyph) return `${whole || ""}${glyph}`;
-  return units.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 function ReceiptLine({

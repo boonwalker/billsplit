@@ -367,6 +367,17 @@
   transform: scale(0.94);
 }
 
+/* Dark: the brand green would vanish on the dark mint circle. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .person-pick-avatar {
+    color: var(--mint);
+  }
+}
+
+:root[data-theme="dark"] .person-pick-avatar {
+  color: var(--mint);
+}
+
 .person-pick.on .person-pick-avatar {
   background: var(--brand);
   color: var(--paper);
