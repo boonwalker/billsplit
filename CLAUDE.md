@@ -120,7 +120,8 @@ allem auf dem **iPhone**, in Safari und als Home-Bildschirm-App – iOS-Eigenhei
   neue Stellen, die Teilnehmer entfernen oder Häkchen umschreiben, immer mit `this.audit(…)` protokollieren.
   Gedruckte Kurzlinks (`PRINTED_LINKS` in `server/app.ts`, z.B. `/koeln` auf den Bierdeckeln, QR-Code →
   `https://www.klicksplit.de/koeln`): Aufruf zählt in `visits.json` (`sources`), Weiterleitung auf `/`; Kachel
-  „Bierdeckel-Scans“. Bierdeckel-Design: https://claude.ai/artifact/5YfutcV3DZ4ZMaSJgLn1o2
+  „Bierdeckel-Scans“. Bierdeckel-Design: https://claude.ai/artifact/5YfutcV3DZ4ZMaSJgLn1o2, Sticker (gleicher QR-Code
+  `/koeln`): https://claude.ai/artifact/EwojwJMxZWThHu9UDXom2H
 - **Restaurant-Modus** (Stufe 2, ohne Bezahlen): `server/venues.ts` (`venues.json`), Tisch-QR `/t/<id>` → offene
   Rechnung bzw. `#/tisch/<id>` (Warteseite), Ampel `src/pages/Restaurant.tsx` (`#/restaurant`, QR-Druck
   `#/restaurant/qr`, `tableLight` in `src/lib/restaurant.ts` über `ownerSummary`), Rechnung am Tisch anlegen über
